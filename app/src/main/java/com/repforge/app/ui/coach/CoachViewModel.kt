@@ -21,7 +21,8 @@ internal data class CoachUiState(val loading: Boolean = true, val error: Boolean
     val refreshing: Boolean = false, val refreshFailed: Boolean = false,
     val variationPreview: NativeCoachVariation.Preview? = null, val variationBusy: Boolean = false,
     val variationFailed: Boolean = false, val variationSaved: Boolean = false,
-    val exercises: List<CoachExerciseAdvice> = emptyList(), val provider: String = "") {
+    val exercises: List<CoachExerciseAdvice> = emptyList(), val provider: String = "",
+    val programEditable: Boolean = false) {
     /** Only the initial load needs an expanding placeholder; re-reads keep the existing layout. */
     val initialLoading: Boolean get() = loading && provider.isBlank()
 }
@@ -37,13 +38,20 @@ internal class CoachViewModel internal constructor(application: Application,
     private var loading: Job? = null
     private var reloadAgain = false
     init { reload() }
-    fun previewVariation(exerciseId: String) {
+    fun previewVariation(exerciseId: String) = previewChange(exerciseId, applyToCurrent = false)
+
+    fun previewProgramApplication(exerciseId: String) = previewChange(exerciseId, applyToCurrent = true)
+
+    private fun previewChange(exerciseId: String, applyToCurrent: Boolean) {
         val target = _state.value.target ?: return
-        if (_state.value.variationBusy || _state.value.loading) return
+        if (_state.value.variationBusy || _state.value.loading || _state.value.error ||
+            (applyToCurrent && !_state.value.programEditable)) return
         _state.value = _state.value.copy(variationBusy = true, variationFailed = false, variationSaved = false)
         viewModelScope.launch {
             try {
-                val preview = withContext(Dispatchers.IO) { NativeCoachVariation(app, db).preview(target, exerciseId) }
+                val preview = withContext(Dispatchers.IO) {
+                    NativeCoachVariation(app, db).preview(target, exerciseId, applyToCurrent = applyToCurrent)
+                }
                 _state.value = _state.value.copy(variationPreview = preview)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { _state.value = _state.value.copy(variationFailed = true) }
@@ -125,6 +133,8 @@ internal class CoachViewModel internal constructor(application: Application,
         }
         CoachUiState(false, false, settings.language, selected.readiness, target,
             refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed,
-            exercises = advice, provider = selected.provider, variationSaved = _state.value.variationSaved)
+            exercises = advice, provider = selected.provider, variationSaved = _state.value.variationSaved,
+            programEditable = target?.takeIf { it.programId == settings.activeProgramId }
+                ?.let { db.programDao().getProgramWithDaysById(it.programId)?.program?.builtin == false } ?: false)
     }
 }

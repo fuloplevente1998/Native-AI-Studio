@@ -1,3 +1,10 @@
+# Coach · programmódosítás előnézettel
+
+- Ág `fix/coach-apply-program`. A Kulcsjelek csempe kikerült. A menthető súly- és gyakorlatváltoztatások az aktív saját program következő edzésnapjára alkalmazhatók előnézet és jóváhagyás után.
+- Mentéskor friss ellenőrzés fut. A módosítás megtartja a programazonosítót és a többi edzésnapot. A beépített sablonok és az aktív edzés szerkesztése védett. A pillanatnyi kímélő javaslatok tanácsként jelennek meg.
+
+---
+
 # TrainPilot 2802 · 1.4.3
 
 - Kiadási forrás `51aa6c2548125be31d341669c1cd05d146a53861`, [PR #342](https://github.com/fuloplevente1998/Native-AI-Studio/pull/342). A telefon belső kódja 280200, a Wear OS kódja 280202.

@@ -49,20 +49,48 @@ internal fun StudioCoachRecommendations(
     onStart: (String, String, String?) -> Unit,
     onWorkout: () -> Unit,
     onExercise: (String) -> Unit,
-    onPreviewVariation: (String) -> Unit,
+    onPreviewProgramApplication: (String) -> Unit,
     onCloseVariation: () -> Unit,
     onSaveVariation: () -> Unit,
-    showTarget: Boolean = true
+    showTarget: Boolean = true,
+    programChangeAllowed: Boolean = true
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
     val text = nativeResources(LocalContext.current, lang)
     state.variationPreview?.let { preview ->
-        com.example.ui.components.TrainPilotFormSheet(onDismissRequest = onCloseVariation,
-            title = { Text(coachTr(lang, "Gyakorlatváltozat előnézete", "Exercise Variation Preview", "Vorschau der Übungsvariante", "Previzualizare variantă exercițiu")) },
-            text = { Text(NativeCoachAdviceText.variation(text, preview.next)) },
+        TrainPilotFormSheet(onDismissRequest = onCloseVariation,
+            title = { Text(coachTr(lang, "Programmódosítás előnézete", "Preview program change", "Programmanpassung prüfen", "Previzualizare modificare program")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("${preview.target.programTitle} · ${preview.target.title}", fontWeight = FontWeight.Bold)
+                    preview.weight?.let { change ->
+                        val number = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag(lang)).apply {
+                            maximumFractionDigits = 2
+                        }
+                        val oldWeight = if (change.before > 0) "${number.format(change.before)} kg"
+                            else coachTr(lang, "nincs beállítva", "unset", "nicht festgelegt", "nesetat")
+                        val unit = when (change.loadType) {
+                            "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
+                            "total" -> coachTr(lang, " összesen", " total", " gesamt", " total")
+                            "single_dumbbell" -> coachTr(lang, " egy súlyzóval", " single dumbbell", " eine Hantel", " o ganteră")
+                            else -> ""
+                        }
+                        Text(change.exerciseName)
+                        Text("$oldWeight → ${number.format(change.after)} kg$unit")
+                    }
+                    preview.next?.let { Text(NativeCoachAdviceText.variation(text, it)) }
+                    Text(coachTr(lang, "A módosítás az aktuális program ezen edzésnapjára kerül.",
+                        "The change is saved to this day of the active program.",
+                        "Die Änderung wird für diesen Tag im aktiven Programm gespeichert.",
+                        "Modificarea se salvează pentru această zi din programul activ."))
+                    if (state.variationFailed) Text(programApplicationError(lang), color = palette.danger)
+                }
+            },
             confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSaveVariation, enabled = !state.variationBusy,
-                modifier = Modifier.testTag("studio_coach_variation_confirm")) { Text(coachTr(lang, "Változat mentése", "Save Variation", "Variante speichern", "Salvează varianta")) } },
+                modifier = Modifier.testTag("studio_coach_variation_confirm")) {
+                Text(coachTr(lang, "Mentés a programba", "Save to program", "Im Programm speichern", "Salvează în program"))
+            } },
             dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -139,17 +167,32 @@ internal fun StudioCoachRecommendations(
                             TextButton(onClick = { onExercise(row.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                                 Text(coachTr(lang, "Gyakorlat részletei", "Exercise details", "Übungsdetails", "Detalii exercițiu"))
                             }
-                            if (row.advice.action == "variation") TextButton(onClick = { onPreviewVariation(row.id) },
-                                enabled = !state.variationBusy && !state.loading && !state.error) { Text(coachTr(lang, "Változat előnézete", "Preview Variation", "Variante ansehen", "Previzualizează varianta")) }
+                            if (state.target != null && NativeCoachVariation.isApplicable(row, state.readiness)) {
+                                if (state.programEditable) OutlinedButton(onClick = { onPreviewProgramApplication(row.id) },
+                                    enabled = programChangeAllowed && !state.variationBusy && !state.loading && !state.error,
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag("studio_coach_apply_${row.id}")) {
+                                    Text(coachTr(lang, "Alkalmazás a programra", "Apply to program", "Auf das Programm anwenden", "Aplică în program"))
+                                } else Text(coachTr(lang, "A javaslat az aktív saját programban menthető.", "The recommendation can be saved to the active custom program.",
+                                    "Die Empfehlung kann im aktiven eigenen Programm gespeichert werden.", "Recomandarea poate fi salvată în programul personalizat activ."),
+                                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            }
                         }
                     }
                 }
             }
         }
-        if (state.variationFailed) Text(coachTr(lang, "A gyakorlatváltozat nem menthető; frissítsd az adatokat.", "Could not save exercise variation; refresh data.", "Übungsvariante konnte nicht gespeichert werden.", "Varianta nu a putut fi salvată."), color = palette.danger)
-        if (state.variationSaved) Text(coachTr(lang, "A gyakorlatváltozat elmentve.", "Exercise variation saved.", "Übungsvariante gespeichert.", "Varianta a fost salvată."), color = palette.success)
+        if (state.variationFailed && state.variationPreview == null)
+            Text(programApplicationError(lang), color = palette.danger)
+        if (state.variationSaved) Text(coachTr(lang, "A programmódosítás elmentve.", "Program change saved.",
+            "Programmänderung gespeichert.", "Modificarea programului a fost salvată."), color = palette.success)
     }
 }
+
+private fun programApplicationError(lang: String) = coachTr(lang,
+    "A programmódosítás nem menthető. Frissítsd a javaslatot, és ellenőrizd, hogy lezártad-e az aktív edzést.",
+    "The change could not be saved. Refresh the recommendation and check that the active workout is finished.",
+    "Die Änderung konnte nicht gespeichert werden. Empfehlung aktualisieren und laufendes Training beenden.",
+    "Modificarea nu a putut fi salvată. Actualizează recomandarea și verifică dacă ai încheiat antrenamentul activ.")
 
 /** The next real program day is the primary Coach action, not a secondary status tile. */
 @Composable

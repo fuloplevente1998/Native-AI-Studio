@@ -2076,68 +2076,18 @@ internal fun CoachDetailScreen(
             }
         }
 
-        // Put the next actionable day immediately after readiness, before supplementary signals.
+        // Put the next actionable day immediately after readiness.
         item {
             com.example.ui.components.StudioCoachNextTrainingCard(
                 nativeState, onStartCoachTarget, onOpenWorkout
             )
         }
 
-        // Kulcsjelek Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"),
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    CoachSignalRow(
-                        strings.sleepTitle,
-                        readiness?.sleepMinutes?.let {
-                            val hUnit = tr(uiState.language, "ó", "h", "Std.", "h")
-                            val mUnit = tr(uiState.language, "p", "m", "Min.", "m")
-                            "${it.toInt() / 60} $hUnit ${it.toInt() % 60} $mUnit"
-                        } ?: "—",
-                        palette.success
-                    )
-                    CoachSignalRow(strings.restingHrTitle, uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)
-                    CoachSignalRow("HRV (RMSSD)", readiness?.hrvMs?.let { "${it.toInt()} ms" } ?: "—", palette.primary)
-                    CoachSignalRow(tr(uiState.language, "Rögzített edzések", "Logged Workouts", "Erfasste Trainings", "Antrenamente înregistrate"), "${uiState.loggedWorkouts.size} ${tr(uiState.language, "db", "", "Stk.", "")}".trim(), palette.primary)
-                }
-            }
-        }
-
         item {
             com.example.ui.components.StudioCoachRecommendations(nativeState,
                 onStartCoachTarget, onOpenWorkout, onOpenExerciseDetail,
-                model::previewVariation, model::closeVariation, model::saveVariation,
-                showTarget = false)
-        }
-    }
-}
-
-@Composable
-private fun CoachSignalRow(label: String, value: String, dotColor: Color) {
-    val palette = LocalTrainPilotPalette.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = palette.textSecondary)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(value, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-            Spacer(modifier = Modifier.width(6.dp))
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
+                model::previewProgramApplication, model::closeVariation, model::saveVariation,
+                showTarget = false, programChangeAllowed = !uiState.isWorkoutSessionActive)
         }
     }
 }
