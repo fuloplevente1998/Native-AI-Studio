@@ -330,6 +330,24 @@ class NavigationOriginUiRegressionTest {
         }
     }
 
+    @Test fun programMenuShowsDeleteForCustomProgramsWithActiveProgramProtection() {
+        val own = com.example.model.TrainingProgramModel("own-delete", "Saját", "Custom",
+            "", "", emptyList(), isCustom = true, isActive = true, days = emptyList())
+        val builtIn = own.copy(id = "builtin-delete", nameHu = "Beépített", nameEn = "Built-in",
+            isCustom = false, isActive = false)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.ProgramsListScreen(
+                TrainPilotUiState(programs = listOf(own, builtIn), programsTabCustomOnly = false),
+                {}, {}, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("program_more_button_${own.id}").performScrollTo().performClick()
+        compose.onNodeWithTag("program_action_delete").assertIsNotEnabled()
+        compose.onNodeWithTag("program_action_delete_unavailable_hint").assertExists()
+        compose.onNodeWithTag("program_action_sheet_close").performClick()
+        compose.onNodeWithTag("program_more_button_${builtIn.id}").performScrollTo().performClick()
+        compose.onNodeWithTag("program_action_delete").assertDoesNotExist()
+    }
+
     @Test fun calendarCompletedWorkoutOpensMatchingLoggedWorkoutAndPreservesMonthAndDayOnBack() {
         val model = TrainPilotViewModel()
         val firstDifferentWorkout = LoggedWorkoutEntry(

@@ -155,8 +155,8 @@ fun TrainPilotMountainLogo(
 /**
  * Global Top Header + 5-Button Top Navigation Bar:
  * - Properly padded below the Android status bar (WindowInsets.statusBars + extra top margin)
- * - Thin top bar: TrainPilot dumbbell logo + app name + Language selector icon + Theme selector icon + Settings icon
- * - Single row of the 5 primary navigation buttons at the top: Kezdőlap, Edzés, Napló, Fejlődés, Egészség
+ * - Brand followed by Coach, Journal, Calendar and Settings.
+ * - Single row of the 5 primary navigation buttons at the top: Kezdőlap, Programok, Edzés, Fejlődés, Egészség
  */
 @Composable
 fun TrainPilotGlobalTopHeaderAndNav(
@@ -187,7 +187,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 .padding(top = 2.dp, bottom = 4.dp, start = 12.dp, end = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 1. Vékony sáv: App logó + TrainPilot név + Nyelvválasztó + Témaválasztó + Beállítások ikon
+            // Brand and shortcuts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,7 +220,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     }
                 }
 
-                // Right icons: Naptár (Calendar), Coach, Settings Gear
+                // Labelled shortcuts followed by icon-only actions.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -229,7 +229,25 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     val isCoachActive = (currentTab == MainTab.COACH || currentSubScreen == SubScreen.COACH_DETAIL) && currentSubScreen != SubScreen.SETTINGS_MAIN
                     val isSettingsActive = currentSubScreen == SubScreen.SETTINGS_MAIN
 
-                    // 1. Naptár (Calendar) Quick Button
+                    TopNavPillItem(
+                        label = strings.navCoach,
+                        icon = TrainPilotCoachIcon,
+                        selected = isCoachActive,
+                        onClick = { onSelectTab(MainTab.COACH) },
+                        modifier = Modifier.width(54.dp),
+                        testTag = "top_bar_coach_button",
+                        compact = true
+                    )
+                    TopNavPillItem(
+                        label = strings.navLog,
+                        icon = Icons.Default.Description,
+                        selected = currentTab == MainTab.LOG && currentSubScreen != SubScreen.SETTINGS_MAIN,
+                        onClick = { onSelectTab(MainTab.LOG) },
+                        modifier = Modifier.width(54.dp),
+                        testTag = "top_bar_journal_button",
+                        compact = true
+                    )
+
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
@@ -250,48 +268,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                                 tint = if (isCalendarActive) palette.onPrimary else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
-                        }
-                    }
-
-                    // 2. Coach Quick Button
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isCoachActive) palette.primary else palette.surfaceElevated,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.COACH) }
-                            .testTag("top_bar_coach_button")
-                            .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = TrainPilotCoachIcon, // 2774: sparkle (B)
-                                contentDescription = strings.navCoach,
-                                tint = if (isCoachActive) palette.onPrimary else palette.textPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    val journalActive = currentTab == MainTab.LOG && currentSubScreen != SubScreen.SETTINGS_MAIN
-                    val journalShape = RoundedCornerShape(10.dp)
-                    Surface(
-                        shape = journalShape,
-                        color = if (journalActive) palette.primary else palette.surfaceElevated,
-                        modifier = Modifier.size(48.dp)
-                            .trainPilotBorder(1.dp, if (journalActive) palette.primary else palette.cardBorder, journalShape)
-                            .clip(journalShape)
-                            .selectable(selected = journalActive, role = Role.Tab, onClick = { onSelectTab(MainTab.LOG) })
-                            .testTag("top_bar_journal_button")
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Description, strings.navLog,
-                                tint = if (journalActive) palette.onPrimary else palette.textPrimary,
-                                modifier = Modifier.size(20.dp))
                         }
                     }
 
@@ -388,7 +364,8 @@ private fun TopNavPillItem(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    testTag: String = ""
+    testTag: String = "",
+    compact: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val glowModifier = if (selected) Modifier.trainPilotSoftGlow(palette.primary, RoundedCornerShape(12.dp)) else Modifier
@@ -415,7 +392,7 @@ private fun TopNavPillItem(
     ) {
         Column(
             modifier = Modifier.padding(
-                vertical = 5.dp,
+                vertical = if (compact) 3.dp else 5.dp,
                 horizontal = 2.dp
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -425,21 +402,18 @@ private fun TopNavPillItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = if (selected) palette.primary else palette.textSecondary,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(if (compact) 16.dp else 18.dp)
             )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 10.sp
-                ),
-                color = if (selected) palette.primary else palette.textPrimary,
-                maxLines = 2,
-                textAlign = TextAlign.Center,
-                softWrap = true,
-                overflow = TextOverflow.Ellipsis
+            Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
+            val labelStyle = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                fontSize = 10.sp
             )
+            val labelColor = if (selected) palette.primary else palette.textPrimary
+            if (compact) TrainPilotFitText(label, style = labelStyle, color = labelColor,
+                minSize = 8.sp, textAlign = TextAlign.Center)
+            else Text(label, style = labelStyle, color = labelColor, maxLines = 2,
+                textAlign = TextAlign.Center, softWrap = true, overflow = TextOverflow.Ellipsis)
         }
     }
 }

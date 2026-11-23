@@ -8,6 +8,7 @@ import com.example.ui.components.StudioWorkoutCoachAdvice
 import androidx.compose.runtime.mutableStateOf
 import com.example.ui.theme.TrainPilotTheme
 import com.repforge.app.StudioWorkoutFeedback
+import com.repforge.app.NativeProgramEditor
 import com.repforge.app.ui.coach.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -26,6 +27,42 @@ import java.time.ZoneOffset
 @LooperMode(LooperMode.Mode.PAUSED)
 class StudioCoachDomainRegressionTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun onlyPersistableRecommendationsCanOpenTheActiveProgramPreview() {
+        val stable = NativeCoachExerciseAdvice.Advice("increase", "stable", 22.5, 20.0,
+            false, 3, NativeCoachExerciseAdvice.Target("reps", text = "8–12"))
+        val press = CoachExerciseAdvice("press", "Nyomás", stable, "total", plannedWeight = 20.0)
+        val recovery = press.copy(id = "row", name = "Evezés", advice = stable.copy(action = "easy", reason = "recovery"))
+        val state = mutableStateOf(CoachUiState(loading = false, programEditable = true,
+            target = CoachTarget("p", "a", "A nap"), exercises = listOf(press, recovery)))
+        var selected: String? = null
+        compose.setContent { TrainPilotTheme {
+            StudioCoachRecommendations(state.value, { _, _, _ -> }, {}, {}, { selected = it }, {}, {}, showTarget = false)
+        } }
+        compose.onNodeWithTag("studio_coach_advice_press").performClick()
+        compose.onNodeWithTag("studio_coach_apply_press").performClick()
+        compose.runOnIdle { assertEquals("press", selected); state.value = state.value.copy(programEditable = false) }
+        compose.onNodeWithTag("studio_coach_apply_press").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(programEditable = true) }
+        compose.onNodeWithTag("studio_coach_advice_row").performClick()
+        compose.onNodeWithTag("studio_coach_apply_row").assertDoesNotExist()
+    }
+
+    @Test fun programWeightChangesOnlyTheApprovedExerciseInTheApprovedDay() {
+        val first = NativeProgramEditor.DayDraft("a", "A", listOf(
+            JSONObject().put("id", "press").put("weight", 20).put("reps", "8–12").put("customField", true).toString(),
+            JSONObject.quote("row")))
+        val second = NativeProgramEditor.DayDraft("b", "B", listOf(JSONObject.quote("press")))
+        val draft = NativeProgramEditor.Draft("Program", "", listOf(first, second))
+        val edited = NativeCoachVariation.withDayWeight(draft, "a", "press", 22.5)
+        assertEquals(second, edited.days[1])
+        assertEquals(first.entries[1], edited.days[0].entries[1])
+        val entry = JSONObject(edited.days[0].entries[0])
+        assertEquals(22.5, entry.getDouble("weight"), 0.0)
+        assertEquals("8–12", entry.getString("reps"))
+        assertTrue(entry.getBoolean("customField"))
+        assertFalse(entry.getBoolean("trial"))
+    }
 
     @Test fun backgroundCoachReloadKeepsVisibleTargetPositionWithoutInitialLoadingPlaceholder() {
         val state = mutableStateOf(CoachUiState(loading = false, provider = "health_connect",

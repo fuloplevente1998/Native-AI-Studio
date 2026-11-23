@@ -1,5 +1,6 @@
 package com.repforge.app.ui.coach
 
+import com.repforge.app.NativeProgramPrescription
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.db.ExerciseLibraryEntity
 import com.repforge.app.data.store.TrainPilotUserSettings
@@ -13,7 +14,7 @@ internal data class CoachExerciseAdvice(val id: String, val name: String, val ad
     val loadType: String = "", val modePreview: NativeTrainingModeProgression.Preview? = null,
     val sourceFingerprint: String = "",
     /** 2779: the exercise's unit ("ism.", "mp", …) so the target reads "Cél: 25 mp". */
-    val repUnit: String = "")
+    val repUnit: String = "", val plannedWeight: Double? = null)
 
 /** Bounded canonical Room reads; no full-history relations/cache or second workout state. */
 internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
@@ -31,7 +32,11 @@ internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
             val library = requireNotNull(db.exerciseLibraryDao().getExerciseById(id)) { "Missing exercise: $id" }
             val rx = JSONObject(recipes.optJSONObject(id)?.toString() ?: "{}")
             if (item is JSONObject) for (key in item.keys()) if (key != "id") rx.put(key, item.get(key))
-            advice(library, rx, raw, target.programId, settings, readiness, now)
+            val plan = NativeProgramPrescription.effective(
+                program.program, if (item is JSONObject) item.toString() else JSONObject.quote(id),
+                library, emptyMap(), library.defaultRestSeconds, recipes)
+            advice(library, rx, raw, target.programId, settings, readiness, now).copy(
+                plannedWeight = NativeCoachExerciseAdvice.number(plan, "weight"))
         }
     }
 
