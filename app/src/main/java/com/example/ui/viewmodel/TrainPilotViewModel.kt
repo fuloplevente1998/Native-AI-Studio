@@ -2661,7 +2661,7 @@ class TrainPilotViewModel : ViewModel() {
         } else null
         customExerciseProgramTarget = if (program != null && day != null && dataset != null) {
             CustomExerciseProgramTarget(program.id, day.id,
-                "${program.localizedName(state.language)} · ${day.localizedName(state.language, state.exercises)}", dataset)
+                "${program.localizedName(state.language)} · ${day.localizedDayCode(state.language)}", dataset)
         } else null
         _uiState.update { it.copy(showAddCustomExerciseDialog = show) }
     }
