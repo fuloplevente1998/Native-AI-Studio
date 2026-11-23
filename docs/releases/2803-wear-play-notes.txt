@@ -1,0 +1,12 @@
+<hu-HU>
+A Wear OS alkalmazás működése és megjelenése megegyezik az előző kiadáséval.
+</hu-HU>
+<en-US>
+The Wear OS app has the same features and interface as the previous release.
+</en-US>
+<de-DE>
+Funktionen und Oberfläche der Wear-OS-App entsprechen der vorherigen Version.
+</de-DE>
+<ro>
+Aplicația Wear OS are aceleași funcții și aceeași interfață ca în versiunea precedentă.
+</ro>

@@ -1,0 +1,24 @@
+<hu-HU>
+• Új saját gyakorlat mentése a könyvtárba automatikus programhoz adás nélkül. Saját gyakorlatok és programok egyszerűbb törlése.
+• Kompaktabb Gyors edzés és Gyakorlatkönyvtár. A Coach és a Napló feliratot kapott a felső sávban.
+• A Coach menthető javaslatai előnézettel alkalmazhatók a saját program következő edzésnapjára.
+• Az Egészség megjegyzi a kiválasztott forrást. Javult a Health Connect lépésszámítása, a Heti célok pedig külön mozgatható. A Naplóban megnyithatók az edzés adatforrásai.
+</hu-HU>
+<en-US>
+• New custom exercises save to the library independently of your program. Easier deletion for custom exercises and programs.
+• More compact Quick Workout and Exercise Library. Coach and Log have labels in the top bar.
+• Preview and apply eligible Coach suggestions to the next workout day of your custom program.
+• Health remembers the selected source. Improved Health Connect step totals, movable Weekly Goals, and clearer workout sources in the Log.
+</en-US>
+<de-DE>
+• Neue eigene Übungen werden separat in der Bibliothek gespeichert. Eigene Übungen und Programme lassen sich leichter löschen.
+• Kompakteres Schnelltraining und eine kompaktere Übungsbibliothek. Coach und Tagebuch sind oben beschriftet.
+• Passende Coach-Empfehlungen mit Vorschau auf den nächsten Trainingstag des eigenen Programms anwenden.
+• Gesundheit merkt sich die Datenquelle. Verbesserte Health-Connect-Schrittzahlen, verschiebbare Wochenziele und klare Trainingsquellen im Tagebuch.
+</de-DE>
+<ro>
+• Exercițiile proprii noi se salvează separat în bibliotecă. Exercițiile și programele proprii se pot șterge mai ușor.
+• Antrenamentul rapid și biblioteca sunt mai compacte. Coach și Jurnal au etichete în bara de sus.
+• Poți previzualiza și aplica recomandările Coach pentru următoarea zi din programul propriu.
+• Sănătate reține sursa selectată. Totaluri de pași Health Connect îmbunătățite, obiective săptămânale mutabile și surse de antrenament mai clare în Jurnal.
+</ro>
