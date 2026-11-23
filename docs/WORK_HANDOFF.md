@@ -1,3 +1,12 @@
+# TrainPilot 2803 · 1.4.3
+
+- Kiadási forrás `be4fc3a613f51bd2cb0d2308737673927a291096`. A 2803-as kiadás a naplóforrásokat, a Gyors edzés és a Gyakorlatkönyvtár módosításait, az Egészség és a Coach változásait egyesíti. A programszerkesztőn belül külön jelölőnégyzet kapcsolja hozzá az új saját gyakorlatot a kiválasztott programnaphoz. A könyvtárból indított létrehozás önálló marad. [Kiadási PR](https://github.com/fuloplevente1998/Native-AI-Studio/pull/345) · [Programszerkesztő javítása](https://github.com/fuloplevente1998/Native-AI-Studio/pull/346)
+- A telefon kódja 280300, az óráé 280302. A megjelenő verzió 1.4.3. A főági JVM- és R8-ellenőrzés, valamint az aláírt kiadás sikeres. Mindkét nyers JUnit jelentés 849 telefonos és 204 Wear-tesztet tartalmaz, 0 hibával és 0 kihagyással. [Főági CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45105146025) · [Aláírt futás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45105722932)
+- A négy Drive-fájl mérete és célmappája, a csomagok SHA-256 lenyomata, verziója és tartós aláírása ellenőrizve. [Telefon APK](https://drive.google.com/file/d/1fuFDB1fUiD708SRlIhGJl_XDG5GRXK1u/view) · [Telefon AAB](https://drive.google.com/file/d/1pah4i9Z0oXJ_GcYd0bChnUe-WkdQOTcN/view) · [Wear APK](https://drive.google.com/file/d/1nlhbigS1Ffqsw98OS-9Z-9m1Res9PtFD/view) · [Wear AAB](https://drive.google.com/file/d/1r365vHc6xp7uU5Fgk8tuSgj3lQIogixD/view) · [Ellenőrzési adatok](https://drive.google.com/file/d/1CMS3ed3I5qblKs4yqeb9RZwpUmDqMjuf/view)
+- Négy nyelvű Play Console-szöveg a [telefonhoz](releases/2803-phone-play-notes.txt) és a [Wear OS-hez](releases/2803-wear-play-notes.txt). A Play Console-feltöltés és a telefonos Health Connect összevetés külön ellenőrzés.
+
+---
+
 # Coach · programmódosítás előnézettel
 
 - Ág `fix/coach-apply-program`. A Kulcsjelek csempe kikerült. A menthető súly- és gyakorlatváltoztatások az aktív saját program következő edzésnapjára alkalmazhatók előnézet és jóváhagyás után.
