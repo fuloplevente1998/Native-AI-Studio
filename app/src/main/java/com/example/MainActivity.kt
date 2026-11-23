@@ -448,6 +448,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         },
                         onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
                         onOpenExerciseLibrary = { viewModel.openExerciseLibraryForProgramDay() },
+                        onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true, fromProgramEditor = true) },
                         onMoveExercise = { fromIdx, toIdx -> viewModel.moveEditorExercise(fromIdx, toIdx) },
                         onCopyProgram = viewModel::copyEditorProgram,
                         onDeleteProgram = viewModel::deleteEditorProgram,
