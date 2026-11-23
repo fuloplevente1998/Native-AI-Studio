@@ -25,10 +25,10 @@ internal object HealthConnectSyncRecovery {
      * the days directly. That read is a successful sync; this is an informational note, not an error.
      */
     fun limitedMessage(language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {
-        "en" -> "Synced by reading days directly. Health Connect change tracking does not work on this phone; updating Health Connect in the Play Store may fix it."
-        "de" -> "Durch direktes Lesen der Tage synchronisiert. Die Änderungsverfolgung von Health Connect funktioniert auf diesem Telefon nicht; ein Health-Connect-Update im Play Store kann helfen."
-        "ro" -> "Sincronizat prin citirea directă a zilelor. Urmărirea modificărilor Health Connect nu funcționează pe acest telefon; actualizarea Health Connect din Play Store poate ajuta."
-        else -> "Szinkron kész a napok közvetlen olvasásával. A Health Connect változáskövetése ezen a telefonon nem működik; a Health Connect frissítése a Play Áruházban segíthet."
+        "en" -> "Sync completed by reading daily data directly."
+        "de" -> "Synchronisierung durch direktes Lesen der Tagesdaten abgeschlossen."
+        "ro" -> "Sincronizare finalizată prin citirea directă a datelor zilnice."
+        else -> "Szinkron kész a napi adatok közvetlen olvasásával."
     }
 
     fun failureMessage(error: Throwable, language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {

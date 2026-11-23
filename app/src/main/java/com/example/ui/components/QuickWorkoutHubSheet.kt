@@ -69,7 +69,7 @@ fun QuickWorkoutHubSheet(
             )
             val segShape = RoundedCornerShape(14.dp)
             Surface(shape = segShape, color = palette.surfaceCard,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
                     .trainPilotBorder(1.dp, palette.cardBorder, segShape)) {
                 Row(Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     tabs.forEachIndexed { i, label ->
@@ -77,12 +77,12 @@ fun QuickWorkoutHubSheet(
                         val shape = RoundedCornerShape(11.dp)
                         Surface(shape = shape, color = if (selected) palette.primary else palette.surfaceCard,
                             // 2784: longer labels get more room; the whole word always shows (font steps down if needed).
-                            modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 44.dp)
+                            modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 48.dp)
                                 .trainPilotClickable(shape) { onSelectTab(i) }.testTag("quick_tab_$i")) {
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                WorkoutModeArt(modes[i], Modifier.width(42.dp), height = 34.dp, selected = selected)
+                                verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                WorkoutModeArt(modes[i], Modifier.width(35.dp), height = 28.dp, selected = selected)
                                 TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (selected) palette.onPrimary else palette.textPrimary,

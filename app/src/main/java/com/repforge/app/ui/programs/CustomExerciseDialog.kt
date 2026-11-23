@@ -69,6 +69,10 @@ internal fun CustomExerciseDialog(
     var weightText by remember(exercise?.id) { mutableStateOf(draft.weight.toString()) }
     var restText by remember(exercise?.id) { mutableStateOf(draft.restSeconds.toString()) }
     var deleteConfirm by remember(exercise?.id) { mutableStateOf(false) }
+    if (exercise != null && deleteConfirm) {
+        CustomExerciseDeleteConfirmation(language, draft.name, saving, error, onDelete) { deleteConfirm = false }
+        return
+    }
     val muscles = listOf("chest", "back", "shoulders", "arms", "core", "legs", "cardio", "full")
     val measurements = listOf("reps", "time", "distance", "steps", "strength")
     val loads = listOf("bodyweight", "weight", "dumbbell", "barbell", "single_dumbbell",
@@ -152,11 +156,6 @@ internal fun CustomExerciseDialog(
                     }
                     Text(message, modifier = Modifier.testTag("custom_exercise_error"))
                 }
-                if (exercise != null && deleteConfirm) {
-                    Text(words[16]); Text(words[17])
-                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onDelete, enabled = !saving,
-                        modifier = Modifier.testTag("custom_exercise_confirm_delete")) { Text(words[15]) }
-                }
             }
         },
         confirmButton = {
@@ -173,4 +172,27 @@ internal fun CustomExerciseDialog(
                 TextButton(onClick = onCancel, enabled = !saving) { Text(words[14]) }
             }
         })
+}
+
+
+@Composable
+internal fun CustomExerciseDeleteConfirmation(
+    language: String, name: String, saving: Boolean, error: String?, onConfirm: () -> Unit, onCancel: () -> Unit
+) {
+    val words = formText(nativeResources(LocalContext.current, language))
+    AlertDialog(
+        onDismissRequest = { if (!saving) onCancel() },
+        title = { Text(words[16]) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(name)
+                if (error != null) Text(error, modifier = Modifier.testTag("custom_exercise_error"))
+            }
+        },
+        confirmButton = {
+            com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onConfirm, enabled = !saving,
+                modifier = Modifier.testTag("custom_exercise_confirm_delete")) { Text(words[15]) }
+        },
+        dismissButton = { TextButton(onClick = onCancel, enabled = !saving) { Text(words[14]) } }
+    )
 }

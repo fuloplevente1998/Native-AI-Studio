@@ -48,6 +48,14 @@ class HealthConnectSyncRecoveryRegressionTest {
         var failedDay: LocalDate? = null
     }
 
+    @Test fun stepsAggregateCoversFullLocalDayEvenInTheEarlyMorning() {
+        val zone = java.time.ZoneId.of("Europe/Budapest")
+        val date = LocalDate.parse("2026-11-23")
+        val early = Instant.parse("2026-11-23T02:10:00Z")
+        assertEquals(early, NativeHealthSync.window(date, zone, early).second)
+        assertEquals(Instant.parse("2026-11-23T23:00:00Z"), NativeHealthSync.stepAggregateEnd(date, zone))
+    }
+
     @Test fun tokenCreationAndInitialPollAndCatchupFailuresReadBoundedDaysWithoutAcknowledgingChanges() = runBlocking {
         for (stage in listOf("create", "poll", "catchup")) {
             val old = NativeHealthSync.Checkpoint("scope", "original-private-token", true, 42)
@@ -56,6 +64,7 @@ class HealthConnectSyncRecoveryRegressionTest {
             val report = NativeHealthSync.run(provider, journal, "scope", today, stage != "poll", {}, {})
             assertEquals((NativeHealthSync.recentDays(today, 30) + today.withMonth(10).withDayOfMonth(1)).toSet(), provider.reads.toSet())
             assertEquals(31, provider.reads.size)
+            assertEquals(today, provider.reads.first())
             assertTrue(report.changeTrackingUnavailable)
             assertFalse(report.successful)
             assertTrue(report.failedDays.isEmpty())

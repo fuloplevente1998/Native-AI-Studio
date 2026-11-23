@@ -21,7 +21,6 @@ import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.NativeDataReplacement
-import com.repforge.app.NativeHealthProviderData
 import com.repforge.app.NativePrivacyControls
 import com.repforge.app.SamsungHealthRepository
 import com.repforge.app.ui.health.hourlySteps
@@ -45,7 +44,7 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
     val lifecycleState by lifecycle.currentStateFlow.collectAsState()
     val visible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
     val snapshot = key(day, provider, origin, revision, visible) {
-        produceState<Pair<String, List<HourlySteps>>?>(null) {
+        produceState<List<HourlySteps>?>(null) {
             if (!visible) return@produceState
             try {
                 val ticket = NativeDataReplacement.continuationForCurrentData(context)
@@ -53,46 +52,38 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
                     val zone = ZoneId.systemDefault()
                     val now = Instant.now()
                     val store = HealthJournalStore.get(context)
-                    val alternative = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
-                        else HealthJournalStore.SAMSUNG
-                    listOf(provider, alternative).firstNotNullOfOrNull { candidate ->
-                        val privacy = if (candidate == HealthJournalStore.SAMSUNG) NativePrivacyControls.SAMSUNG_HEALTH
-                            else NativePrivacyControls.HEALTH_CONNECT
-                        val guard = {
-                            coroutineContext.ensureActive()
-                            ticket.requireCurrent(context)
-                            check(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-                            NativePrivacyControls.requireEnabled(context, privacy)
-                        }
-                        val candidateRows = try {
-                            guard()
-                            val readOrigin = if (candidate == provider) origin
-                                else NativeHealthProviderData.day(store, candidate, day)?.let {
-                                    it.optString("stepsOrigin").ifBlank { it.optString("activityOrigin") }
-                                }.orEmpty()
+                    val privacy = if (provider == HealthJournalStore.SAMSUNG) NativePrivacyControls.SAMSUNG_HEALTH
+                        else NativePrivacyControls.HEALTH_CONNECT
+                    val guard = {
+                        coroutineContext.ensureActive()
+                        ticket.requireCurrent(context)
+                        check(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+                        NativePrivacyControls.requireEnabled(context, privacy)
+                    }
+                    val rows = try {
+                        guard()
                             when {
-                                candidate == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day -> {
+                                provider == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day -> {
                                     val measured = SamsungHealthRepository.readHourlySteps(
                                         context, day, now.atZone(zone).toLocalDateTime(), guard)
                                     hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
                                 }
-                                candidate == HealthJournalStore.HC -> {
+                                provider == HealthJournalStore.HC -> {
                                     if ("READ_STEPS" !in HealthConnectRepository.currentlyGrantedReadKeys(context))
                                         emptyList()
-                                    else readHourlySteps(NativeHealthRecords(store), day, candidate, readOrigin, zone, now)
+                                    else readHourlySteps(NativeHealthRecords(store), day, provider, origin, zone, now)
                                 }
-                                else -> readHourlySteps(NativeHealthRecords(store), day, candidate,
-                                    readOrigin, zone, now)
+                                else -> readHourlySteps(NativeHealthRecords(store), day, provider,
+                                    origin, zone, now)
                             }.also { guard() }
-                        } catch (cancelled: CancellationException) { throw cancelled }
-                        catch (_: Exception) { emptyList() }
-                        candidateRows.takeIf { list -> list.any { it.count != null } }?.let { candidate to it }
-                    }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { emptyList() }
+                    rows.takeIf { list -> list.any { it.count != null } }
                 }
                 ticket.requireCurrent(context)
-                value = result ?: (provider to emptyList())
+                value = result.orEmpty()
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { value = provider to emptyList() }
+            catch (_: Exception) { value = emptyList() }
         }.value
     }
     fun word(hu: String, en: String, de: String, ro: String) = when (language) {
@@ -103,25 +94,20 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
     }
     Text(word("Lépések óránként", "Steps by hour", "Schritte pro Stunde", "Pași pe oră"),
         color = palette.textPrimary, style = MaterialTheme.typography.titleSmall)
-    val values = snapshot?.second
+    val values = snapshot
     if (values.isNullOrEmpty()) {
         Text(if (values == null) word("Betöltés…", "Loading…", "Wird geladen…", "Se încarcă…")
             else word("Nincs óránkénti adat.", "No hourly data.", "Keine Stundendaten.", "Fără date orare."),
             color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
         return
     }
-    val actualProvider = snapshot?.first ?: provider
-    Text(if (actualProvider == HealthJournalStore.SAMSUNG) "Samsung Health" else word("Health Connect · mért szakaszok", "Health Connect · measured intervals",
+    Text(if (provider == HealthJournalStore.SAMSUNG) "Samsung Health" else word("Health Connect · mért szakaszok", "Health Connect · measured intervals",
             "Health Connect · gemessene Intervalle", "Health Connect · intervale măsurate"),
         color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
-    var selection by remember(day, actualProvider, origin) { mutableIntStateOf(-1) }
+    var selection by remember(day, provider, origin) { mutableIntStateOf(-1) }
     val active = selection.takeIf { it in 0..23 } ?: (values.indexOfLast { it.count != null }.takeIf { it >= 0 }
         ?: values.indexOfLast { !it.future }.coerceAtLeast(0))
     val fractions = hourlyStepBarFractions(values)
-    if (actualProvider != provider) Text(word(
-        "A napi összeg másik forrásból származik.", "The daily total uses a different source.",
-        "Die Tagessumme stammt aus einer anderen Quelle.", "Totalul zilnic provine din altă sursă."),
-        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
     val entry = values[active]
     val hourLabel = "%02d:00–%02d:00".format(Locale.ROOT, active, active + 1)
     val valueText = when {

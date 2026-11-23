@@ -515,15 +515,14 @@ internal class HealthJournalStore(context: Context) :
                 ).use { c ->
                     if (c.moveToFirst()) {
                         val old = JSONObject(c.getString(0))
-                        if (old.optString("activityOrigin") != out.optString("activityOrigin")) {
-                            throw IllegalStateException("Retry new source aggregate")
-                        }
-                        val keys = old.keys()
-                        while (keys.hasNext()) {
-                            val key = keys.next()
-                            val value = out.opt(key)
-                            if (value == null || value === JSONObject.NULL || (value is JSONArray && value.length() == 0)) {
-                                out.put(key, old.get(key))
+                        if (old.optString("activityOrigin") == out.optString("activityOrigin")) {
+                            val keys = old.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                val value = out.opt(key)
+                                if (value == null || value === JSONObject.NULL || (value is JSONArray && value.length() == 0)) {
+                                    out.put(key, old.get(key))
+                                }
                             }
                         }
                     } else {

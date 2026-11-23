@@ -184,7 +184,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             failed = health.syncFailed, message = health.syncMessage)
     }
     androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
-        if (!health.healthRefreshing) viewModel.reloadHealthJournal()
+        viewModel.reloadHealthJournal()
     }
 
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -332,7 +332,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                     onSearchQueryChange = { viewModel.updateExerciseSearch(it) },
                     onSelectCategory = { viewModel.selectExerciseCategory(it) },
-                    onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
+                    onSelectExercise = { exId ->
+                        viewModel.toggleQuickWorkoutSheet(false)
+                        viewModel.openExerciseDetail(exId)
+                    },
                     onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
                     onStartExerciseNow = { ex -> viewModel.toggleQuickWorkoutSheet(false); viewModel.selectLibraryExercise(ex) },
                     // 2779: the quick-workout queue never edits a program day.
@@ -341,6 +344,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onStartQueuedWorkout = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startQueuedWorkout() },
                     onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
                     onToggleFavorite = viewModel::toggleExerciseFavorite,
+                    onDeleteCustomExercise = viewModel::deleteStudioCustomExercise,
                     embedded = true,
                     timedOnly = timed
                 )
@@ -561,7 +565,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
                             onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
                             onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
-                            onToggleFavorite = viewModel::toggleExerciseFavorite
+                            onToggleFavorite = viewModel::toggleExerciseFavorite,
+                            onDeleteCustomExercise = viewModel::deleteStudioCustomExercise
                         )
                     }
 
@@ -575,7 +580,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 com.example.ui.components.StudioCustomExerciseActions(ex.id, uiState.language.name.lowercase(),
                                     beforeWrite = viewModel::awaitStudioProgramWrites,
                                     onChanged = { deleted ->
-                                        if (deleted) viewModel.navigateBack()
+                                        if (deleted) {
+                                            viewModel.onStudioCustomExerciseDeleted(ex.id)
+                                            viewModel.navigateBack()
+                                        }
                                         viewModel.refreshAfterCloudSync(context)
                                     })
                             } },

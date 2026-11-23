@@ -1,4 +1,10 @@
 package com.example.ui.screens
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import com.example.ui.components.PageLayoutCard
 
 import com.example.ui.components.PageLayoutBlock
@@ -147,6 +153,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -714,7 +721,6 @@ fun HealthTabScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("health_weight_card")
-                        .trainPilotAnimatedExpansion()
                         .trainPilotBorder(
                             width = 1.dp,
                             color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
@@ -777,10 +783,21 @@ fun HealthTabScreen(
 
                         // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
                         // compact rows (edit/delete in a ⋮ menu) when open.
+                        AnimatedContent(
+                            targetState = uiState.expandedHealthWeightLog,
+                            transitionSpec = {
+                                (fadeIn(tween(150)) togetherWith fadeOut(tween(100)))
+                                    .using(SizeTransform { _, _ -> tween(220) })
+                            },
+                            contentAlignment = Alignment.TopStart,
+                            label = "weight log"
+                        ) { expanded ->
+                        Column(Modifier.fillMaxWidth()) {
                         WeightLogBody(
                             uiState = uiState,
+                            expanded = expanded,
                             strings = strings,
-                            chronological = if (uiState.expandedHealthWeightLog) chronologicalMeasurements else compactMeasurements,
+                            chronological = if (expanded) chronologicalMeasurements else compactMeasurements,
                             newestFirst = recentMeasurements,
                             dateFormatter = shortChartDateFormatter,
                             onToggle = { onToggleHealthSection("weight") },
@@ -793,6 +810,8 @@ fun HealthTabScreen(
                                 onDeleteWeightLog(entry.id)
                             }
                         )
+                        }
+                        }
                     }
                 }
             }
@@ -1009,7 +1028,8 @@ internal fun StudioTodayStatusDetailSheet(
                 val openHealthJournal: () -> Unit = {
                     val recordType = when (activeKey) {
                         "sleep" -> "SleepSessionRecord"
-                                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
+                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
                         "bodyFat" -> "BodyFatRecord"
                         "spo2" -> "OxygenSaturationRecord"
                         "vo2" -> "Vo2MaxRecord"
@@ -1447,7 +1467,7 @@ private fun HealthSourcesContent(
     ) {
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceElevated,
+            color = if (uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
             modifier = Modifier
                 .weight(1f)
                 .trainPilotBorder(
@@ -1456,6 +1476,7 @@ private fun HealthSourcesContent(
                     shape = RoundedCornerShape(14.dp)
                 )
                 .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
+                .semantics { selected = uiState.primaryHealthSourceSamsung }
                 .testTag("health_provider_samsung")
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -1470,7 +1491,7 @@ private fun HealthSourcesContent(
         }
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceElevated,
+            color = if (!uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
             modifier = Modifier
                 .weight(1f)
                 .trainPilotBorder(
@@ -1479,6 +1500,7 @@ private fun HealthSourcesContent(
                     shape = RoundedCornerShape(14.dp)
                 )
                 .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
+                .semantics { selected = !uiState.primaryHealthSourceSamsung }
                 .testTag("health_provider_connect")
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -3995,6 +4017,7 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
 @Composable
 private fun WeightLogBody(
     uiState: TrainPilotUiState,
+    expanded: Boolean,
     strings: com.example.localization.LocalizedStrings,
     chronological: List<WeightMeasurementEntry>,
     newestFirst: List<WeightMeasurementEntry>,
@@ -4008,7 +4031,6 @@ private fun WeightLogBody(
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
-    val expanded = uiState.expandedHealthWeightLog
     val kg: (Float) -> String = { "${"%.1f".format(it).replace('.', ',')}" }
     Spacer(Modifier.height(8.dp))
     if (expanded) {
@@ -4022,7 +4044,7 @@ private fun WeightLogBody(
         }
     }
     Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
-        modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
@@ -4335,7 +4357,6 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     }
     val type = when (key) {
         "sleep" -> "SleepSessionRecord"
-        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
         "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
         else -> null
     } ?: return

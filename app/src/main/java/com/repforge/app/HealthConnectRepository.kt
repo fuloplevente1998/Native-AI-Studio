@@ -206,12 +206,14 @@ object HealthConnectRepository {
         origin: String = "",
         requireForegroundGuard: () -> Unit = {},
         expectedGeneration: Long? = null,
-        readCommit: ((() -> Unit) -> Unit) = { writer -> writer() }
+        readCommit: ((() -> Unit) -> Unit) = { writer -> writer() },
+        stepsEnd: Instant? = null
     ): JSONObject = withContext(Dispatchers.IO) {
         val epoch = expectedGeneration ?: HealthJournalStore.get(context).generation()
         val access = Access(context, epoch, Runnable { requireForegroundGuard() })
         access.readCommit = readCommit
         val params = JSONObject().put("start", startIso).put("end", endIso).put("origin", origin)
+        stepsEnd?.let { params.put("stepsEnd", it.toString()) }
         Api34.readHealthDay(access, params)
     }
 
@@ -767,7 +769,9 @@ object HealthConnectRepository {
             // An explicitly chosen origin still applies a single-source filter.
             val activityOrigin = HealthDailySource.choose(requested, preferred, stepOrigins)
             p.origin = activityOrigin
-            putLongAgg(out, "steps", p, m, time, "READ_STEPS", StepsRecord.STEPS_COUNT_TOTAL, warnings)
+            val stepsEnd = c.optString("stepsEnd").takeIf(String::isNotEmpty)?.let(Instant::parse) ?: t[1]
+            val stepsTime = filter(arrayOf(t[0], stepsEnd))
+            putLongAgg(out, "steps", p, m, stepsTime, "READ_STEPS", StepsRecord.STEPS_COUNT_TOTAL, warnings)
             p.origin = requested
             putLongAgg(out, "averageHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_AVG, warnings)
             putLongAgg(out, "minHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MIN, warnings)

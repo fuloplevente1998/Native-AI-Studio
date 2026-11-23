@@ -17,7 +17,8 @@ internal object NativeHealthSync {
         override fun toString(): String = "Health change page (private)"
     }
     enum class Stage { PREPARING, CHANGES, DAYS, COMPLETE }
-    data class Progress(val stage: Stage, val completed: Int = 0, val total: Int = 0, val pages: Int = 0)
+    data class Progress(val stage: Stage, val completed: Int = 0, val total: Int = 0, val pages: Int = 0,
+        val publishedDay: LocalDate? = null)
     data class Report(val full: Boolean, val completedDays: Int, val failedDays: List<LocalDate>, val retryable: Boolean = false,
         val changeTrackingUnavailable: Boolean = false) {
         val successful: Boolean get() = failedDays.isEmpty() && !changeTrackingUnavailable
@@ -54,6 +55,10 @@ internal object NativeHealthSync {
         require(end.isAfter(start)) { "Health day has not started yet" }
         return start to end
     }
+
+    /** Whole-day step records must not be prorated by an elapsed-time cutoff. */
+    fun stepAggregateEnd(day: LocalDate, zone: ZoneId): Instant =
+        day.plusDays(1).atStartOfDay(zone).toInstant()
 
     suspend fun run(
         provider: Provider, journal: Journal, scope: String, today: LocalDate,
@@ -124,7 +129,7 @@ internal object NativeHealthSync {
             check(days.size <= 530) { "Too many dirty Health days; retry in smaller batches" }
             var done = 0
             progress(Progress(Stage.DAYS, done, days.size, pages))
-            for (day in days.sorted()) {
+            for (day in days.sortedDescending()) {
                 guard()
                 provider.requireIdentity()
                 val success = try { provider.readDay(day) }
@@ -137,7 +142,7 @@ internal object NativeHealthSync {
                 guard()
                 if (success) { failures.remove(day); completed.add(day); transientDays.remove(day) }
                 else { failures.add(day); completed.remove(day) }
-                progress(Progress(Stage.DAYS, ++done, days.size, pages))
+                progress(Progress(Stage.DAYS, ++done, days.size, pages, publishedDay = day.takeIf { success }))
             }
         }
         val days = recentDays(today, if (full) 30 else 2).toMutableSet()
