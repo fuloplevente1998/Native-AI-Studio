@@ -3133,9 +3133,9 @@ fun ExerciseLibraryScreen(
                 trW(state.language, "Gyakorlatok keresése…", "Search exercises…", "Übungen suchen…", "Caută exerciții…"))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
-                label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
-                modifier = Modifier.testTag("studio_library_favorites_only"))
+                com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
+                    label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
+                    modifier = Modifier.testTag("studio_library_favorites_only"))
                 com.example.ui.components.TrainPilotFilterChip(selected = false, onClick = onOpenAddCustomExercise,
                     label = { Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou")) },
                     modifier = Modifier.testTag("exercise_library_add_custom_button"))
@@ -3161,24 +3161,24 @@ fun ExerciseLibraryScreen(
                     val shape = RoundedCornerShape(14.dp)
                     Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(shape) { onSelectCategory(cat) },
                         contentAlignment = Alignment.Center) {
-                    Surface(
-                        shape = shape,
-                        color = if (selected) palette.primary else palette.surface,
-                        modifier = Modifier.heightIn(min = 40.dp).trainPilotBorder(
-                            1.dp, if (selected) palette.primary else palette.cardBorder, shape)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        Surface(
+                            shape = shape,
+                            color = if (selected) palette.primary else palette.surface,
+                            modifier = Modifier.heightIn(min = 40.dp).trainPilotBorder(
+                                1.dp, if (selected) palette.primary else palette.cardBorder, shape)
                         ) {
-                            Text(
-                                text = "${cat.localized(state.language)} ($catCount)",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) palette.onPrimary else palette.textPrimary
-                            )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${cat.localized(state.language)} ($catCount)",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) palette.onPrimary else palette.textPrimary
+                                )
+                            }
                         }
-                    }
                     }
                 }
             }

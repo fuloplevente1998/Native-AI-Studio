@@ -792,25 +792,25 @@ fun HealthTabScreen(
                             contentAlignment = Alignment.TopStart,
                             label = "weight log"
                         ) { expanded ->
-                        Column(Modifier.fillMaxWidth()) {
-                        WeightLogBody(
-                            uiState = uiState,
-                            expanded = expanded,
-                            strings = strings,
-                            chronological = if (expanded) chronologicalMeasurements else compactMeasurements,
-                            newestFirst = recentMeasurements,
-                            dateFormatter = shortChartDateFormatter,
-                            onToggle = { onToggleHealthSection("weight") },
-                            onSelectRange = onSelectWeightRange,
-                            onAdd = { onToggleAddWeightDialog(true) },
-                            onEdit = { editingMeasurement = it },
-                            onPhoto = { photoMeasurement = it },
-                            onDelete = { entry ->
-                                recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
-                                onDeleteWeightLog(entry.id)
+                            Column(Modifier.fillMaxWidth()) {
+                            WeightLogBody(
+                                uiState = uiState,
+                                expanded = expanded,
+                                strings = strings,
+                                chronological = if (expanded) chronologicalMeasurements else compactMeasurements,
+                                newestFirst = recentMeasurements,
+                                dateFormatter = shortChartDateFormatter,
+                                onToggle = { onToggleHealthSection("weight") },
+                                onSelectRange = onSelectWeightRange,
+                                onAdd = { onToggleAddWeightDialog(true) },
+                                onEdit = { editingMeasurement = it },
+                                onPhoto = { photoMeasurement = it },
+                                onDelete = { entry ->
+                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                                    onDeleteWeightLog(entry.id)
+                                }
+                            )
                             }
-                        )
-                        }
                         }
                     }
                 }

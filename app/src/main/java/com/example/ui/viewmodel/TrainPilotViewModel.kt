@@ -5131,7 +5131,8 @@ class TrainPilotViewModel : ViewModel() {
                         )
                     }
                 }
-            } catch (e: Throwable) {
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     _uiState.update {
                         loadedHealthProvider = null

@@ -132,17 +132,17 @@ internal object NativeHealthSync {
             for (day in days.sortedDescending()) {
                 guard()
                 provider.requireIdentity()
-                val success = try { provider.readDay(day) }
+                val result = try { provider.readDay(day) }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
                     guard()
                     if (com.repforge.app.ui.health.NativeHealthAppRefreshPolicy.transient(failure)) transientDays.add(day)
-                    false
+                    null
                 }
                 guard()
-                if (success) { failures.remove(day); completed.add(day); transientDays.remove(day) }
+                if (result == true) { failures.remove(day); completed.add(day); transientDays.remove(day) }
                 else { failures.add(day); completed.remove(day) }
-                progress(Progress(Stage.DAYS, ++done, days.size, pages, publishedDay = day.takeIf { success }))
+                progress(Progress(Stage.DAYS, ++done, days.size, pages, publishedDay = day.takeIf { result != null }))
             }
         }
         val days = recentDays(today, if (full) 30 else 2).toMutableSet()

@@ -62,20 +62,20 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
                     }
                     val rows = try {
                         guard()
-                            when {
-                                provider == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day -> {
-                                    val measured = SamsungHealthRepository.readHourlySteps(
-                                        context, day, now.atZone(zone).toLocalDateTime(), guard)
-                                    hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
-                                }
-                                provider == HealthJournalStore.HC -> {
-                                    if ("READ_STEPS" !in HealthConnectRepository.currentlyGrantedReadKeys(context))
-                                        emptyList()
-                                    else readHourlySteps(NativeHealthRecords(store), day, provider, origin, zone, now)
-                                }
-                                else -> readHourlySteps(NativeHealthRecords(store), day, provider,
-                                    origin, zone, now)
-                            }.also { guard() }
+                        when {
+                            provider == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day -> {
+                                val measured = SamsungHealthRepository.readHourlySteps(
+                                    context, day, now.atZone(zone).toLocalDateTime(), guard)
+                                hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
+                            }
+                            provider == HealthJournalStore.HC -> {
+                                if ("READ_STEPS" !in HealthConnectRepository.currentlyGrantedReadKeys(context))
+                                    emptyList()
+                                else readHourlySteps(NativeHealthRecords(store), day, provider, origin, zone, now)
+                            }
+                            else -> readHourlySteps(NativeHealthRecords(store), day, provider,
+                                origin, zone, now)
+                        }.also { guard() }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { emptyList() }
                     rows.takeIf { list -> list.any { it.count != null } }
