@@ -6,6 +6,8 @@
 - A Programok hárompontos menüjében a Törlés a saját programoknál látható. Aktív saját programnál a gomb letiltott és jelzi a váltás feltételét.
 - Mentéskor friss ellenőrzés fut. A módosítás megtartja a programazonosítót és a többi edzésnapot. A beépített sablonok és az aktív edzés szerkesztése védett. A pillanatnyi kímélő javaslatok tanácsként jelennek meg.
 
+- A `c497c395` forrás teljes JVM- és R8-ellenőrzése sikeres. A nyers JUnit XML és az archívum SHA-256 lenyomata ellenőrizve. Telefon 844, Wear 204 teszt, 0 hiba és 0 kihagyás. [Actions](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45103754295)
+
 ---
 
 # TrainPilot 2802 · 1.4.3
