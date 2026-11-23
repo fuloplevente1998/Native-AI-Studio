@@ -741,7 +741,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPhotos = { viewModel.openLogWorkoutPhotos() },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                            onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
+                            onOpenHealthTab = { viewModel.openHealthAndExpand(connect = true) },
                             deleteActions = {
                                 com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
                                     uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
@@ -1083,7 +1083,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
                                         else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
                                     strings = strings,
-                                    onToggleHealthSection = { viewModel.toggleHealthSection(it) },
+                                    onToggleHealthSection = { section ->
+                                        val returnToLog = section == "connect" && uiState.expandedHealthConnect &&
+                                            uiState.backStack.lastOrNull()?.subScreen == SubScreen.LOG_WORKOUT_DETAIL
+                                        viewModel.toggleHealthSection(section)
+                                        if (returnToLog) viewModel.navigateBack()
+                                    },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },

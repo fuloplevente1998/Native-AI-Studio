@@ -1103,15 +1103,15 @@ fun LogWorkoutDetailScreen(
                 color = palette.textSecondary
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = palette.surfaceCard,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenWatchSync() }
                         .testTag("log_detail_open_watch_sync")
@@ -1141,7 +1141,7 @@ fun LogWorkoutDetailScreen(
                     shape = RoundedCornerShape(16.dp),
                     color = palette.surfaceCard,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenHealthTab() }
                         .testTag("log_detail_open_health_connect")
@@ -1160,7 +1160,8 @@ fun LogWorkoutDetailScreen(
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = "Samsung Health / Health Connect",
+                                text = trL(uiState.language, "Források, óra és szinkron", "Sources, watch & sync",
+                                    "Quellen, Uhr & Sync", "Surse, ceas și sincronizare"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.secondary
                             )
