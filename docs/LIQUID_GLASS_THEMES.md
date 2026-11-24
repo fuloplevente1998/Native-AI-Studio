@@ -25,3 +25,21 @@
 
 ## V2 készülékes visszajelzés – optikai finomítás
 A nyolc téma blokkban lévő élő üvegelőnézet marad. Az iOS-szerű megjelenés V2-n még nem megfelelő. V3 első kísérlet: lekerekített téglalap signed-distance felületi normálja mentén erősebb peremi fénytörés, élesebb Clear mag, irányfüggő reflexió, a helyi élő tartalom-lencsén minimális kromatikus szétválás; nagyobb Frosted–Clear különbség. A felső nav öt gombja egy üveg track, kijelölés valódi háttérlencsével ahol elérhető, egyébként kontrollált scene-nel; a közös űrlapgombok üveganyagot kapnak, csak glass témában és nem aktív edzéskor. A teljes app valódi üveglencse és fizikai GPU-képellenőrzés még hátravan. Nincs átvett külső kód. A pontos vizuális minőséget csak eszközön lehet értékelni.
+
+## V4 (PR #373, 2026-11-24) – saját motor befejezése
+Saját, eredeti AGSL/Compose kód; nincs Kyant vagy más külső üveg-könyvtár, nincs átvett shader. Csak a 33–40 családnál; a 32 régi paletta és a saját témák változatlanok (`glassEffectsActive`).
+
+**Kész (kódban, JVM-tesztelt paraméterlogika):**
+- Anyag: `GlassOptics.kt` – a 0–100 csúszka minden optikai paramétert folytonosan, monoton képez le (homály dp exponenciálisan 24→1, peremi fénytörés, perem-szélesség, kromatikus szétválás csak a peremen, tónus, vibrancia, spekuláris perem, belső árnyék, API31–32 fátyol). A csúszka hüvelykujja folyamatos, minden 1%-os lépés élő előnézet, tartós írás csak elengedéskor.
+- Shader: `GlassShaders.kt` – lekerekített téglalap SDF normál (sarkonkénti sugár), erősebb fénytörés a peremen, tiszta közép, fényirányú vékony spekuláris perem + gyenge ellenfény, belső mélységárnyék, felső fényfolt, paletta-tónus. Kimeneti csatorna-plafon `LENS_PEAK=0.32` puha könyökkel; a paletta szöveg/ikon színei ehhez (és a jelenet/fátyol legrosszabb esetéhez) igazodva ≥4,5:1, kontúr ≥3:1.
+- Programok egyszer fordulnak (`GlassPrograms33`, folyamatszintű cache); görgetés/húzás közben csak uniformok változnak. Fordítási hiba → végleges opak fallback, nincs újrapróbálás képkockánként.
+- Valódi háttér: fejléc és a csúszó nav pill az alatta görgetett tartalmat mintázza (Home/Health/Beállítások, `GlassAwareScaffold`), API33: platform blur → lencse shader lánc. Kártyák/chipek/gombok: a lap procedurális háttere ugyanabban a gyökér-koordinátában – ez fizikailag az, ami mögöttük van. Modális lap: külön ablak, ezért procedurális jelenet (más ablak nem olvasható).
+- Mozgás: közös üveg kijelölő pill a fő nav 5 füle alatt; két él külön rugón (vezető él merevebb) → nyúlás + enyhe függőleges lapulás, majd beállás. Nyomás: rugós 0,96 skála + világos kiemelés, felengedéskor kis túllendülés. Rendszer „animációk ki” (animator scale 0) → nincs út/lapulás/skála.
+- Fallback: API33+ teljes; API31–32 platform blur + erős fátyol + vektoros perem; API<31 / szoftveres renderelés / aktív edzés: opak paletta-festés. Wear változatlanul opak. Nincs képernyőkép, bitmap-visszaolvasás, globális komponens-alpha.
+- Tesztek: `LiquidGlassNav373Test` (Robolectric: a pill a kijelölt fülre áll, mozgással nyúlik, „animációk ki” mellett nem; régi palettán nincs pill), `LiquidGlassOptics373Test` (folytonos/monoton leképezés 0/37/50/100 és köztes érték, lépés-kerekítés, kontraszt a renderelt legrosszabb esetekre, család/edzés kapu, csökkentett mozgás, shader-uniform ↔ binder egyezés). Az AGSL-t helyben Skia (skia-python, m144) SkSL-fordítóval ellenőriztük; Android 13 Skia régebbi.
+
+**Csak készüléken ellenőrizhető (nyitott):**
+- Tényleges képi minőség (Frosted vs Clear, 0/37/50/100), peremfény és kromatikus szél mértéke, fénytörés iránya; Samsung API33+ és egy API31–32 eszköz.
+- AGSL fordítás az adott Android Skia verzión (hiba esetén csendes opak fallback – logcat/vizuális ellenőrzés kell).
+- Frame time: görgetés Home/Health alatt, pill-út, csúszka-húzás (egész app újraszíneződik); időzítő-pontosság edzés közben (ott nincs üveg).
+- Nincs még kész: tab/képernyő-váltás átúsztatása (a route-host szerkezete miatt nem olcsó), a régi `rf/ui` felületek kártyái, a nem használt alsó nav pillje.

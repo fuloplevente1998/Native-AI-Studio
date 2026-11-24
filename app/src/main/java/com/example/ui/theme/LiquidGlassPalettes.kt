@@ -40,7 +40,10 @@ internal object LiquidGlassPalettes {
     }
 }
 
-/** Clarity changes paint strength, not opacity of content. The opaque palette is the Wear fallback. */
+/**
+ * Clarity changes paint strength, not opacity of content. The opaque palette is the Wear fallback.
+ * Text/accent colors are lifted until they stay readable on every rendered glass worst case.
+ */
 internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
     if (!isLiquidGlass) return this
     val clarity = value.coerceIn(0, 100)
@@ -49,7 +52,12 @@ internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
     val paint = Color(0xFF334359).copy(alpha = .82f - .58f * t)
     val card = paint.compositeOver(background)
     val inner = lerp(card, Color.White, .05f)
-    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner) +
+    val optics = GlassOptics.from(clarity)
+    // Worst cases of the rendered material: brightest lens output (shader peak guard), brightest
+    // procedural page scene, and blur-only content (API 31-32) under the veil over pure white.
+    val rendered = listOf(GlassOptics.lensWorstCase, GlassOptics.sceneWorstCase(background),
+        card.copy(alpha = optics.veil).compositeOver(Color.White))
+    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner) + rendered +
         listOf(.12f, .16f, .22f).map { primary.copy(alpha = it).compositeOver(card) }
     fun readable(seed: Color, minimum: Float): Color {
         for (step in 0..100) {

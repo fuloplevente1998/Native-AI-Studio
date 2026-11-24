@@ -5,6 +5,16 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.snap
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.clipPath
+import com.example.ui.theme.GlassMotion
+import com.example.ui.theme.glassEffectsActive
+import com.example.ui.theme.rememberGlassMotionEnabled
 import androidx.compose.ui.graphics.drawscope.scale
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.LocalGlassOpticsEnabled
@@ -102,20 +112,36 @@ fun Modifier.trainPilotCombinedClickable(
         )
 }
 
-/** Glass-only press spring. Compose respects the platform animation duration scale. */
+/**
+ * Glass-only press: spring scale to [GlassMotion.PRESS_SCALE] with a light-side highlight that
+ * brightens while held; release springs back with a small overshoot. Under reduced motion only
+ * the highlight remains (no scale). Draw-only: layout and the accessible touch bounds stay put.
+ */
 @Composable
-internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean): Modifier {
-    if (!LocalTrainPilotPalette.current.isLiquidGlass || !LocalGlassOpticsEnabled.current) return this
+internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean, shape: Shape? = null): Modifier {
+    if (!LocalTrainPilotPalette.current.glassEffectsActive(LocalGlassOpticsEnabled.current)) return this
+    val motion = rememberGlassMotionEnabled()
     val held by source.collectIsPressedAsState()
-    val pressScale = animateFloatAsState(
-        targetValue = if (enabled && held) .965f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow),
+    val press = animateFloatAsState(
+        targetValue = if (enabled && held) 1f else 0f,
+        animationSpec = if (motion) spring(dampingRatio = .55f, stiffness = Spring.StiffnessMediumLow) else snap(),
         label = "glass press"
     )
-    // Draw-only scale leaves layout and the accessible touch bounds unchanged.
     return drawWithContent {
-        scale(pressScale.value, pressScale.value) { this@drawWithContent.drawContent() }
+        val progress = press.value
+        val factor = if (motion) GlassMotion.pressScale(progress) else 1f
+        scale(factor, factor) {
+            this@drawWithContent.drawContent()
+            val glow = progress.coerceIn(0f, 1f) * GlassMotion.PRESS_HIGHLIGHT
+            if (glow > .001f) {
+                val light = Brush.radialGradient(listOf(Color.White.copy(alpha = glow), Color.Transparent),
+                    center = Offset(size.width * .3f, 0f), radius = maxOf(size.width, size.height) * .9f)
+                if (shape == null) drawRect(light) else {
+                    val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithContent)) }
+                    clipPath(path) { drawRect(light) }
+                }
+            }
+        }
     }
 }
 
@@ -126,7 +152,7 @@ internal fun Modifier.trainPilotPressIndication(
 ): Modifier {
     val alpha = interactionAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    return glassPressMotion(source, enabled).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
+    return glassPressMotion(source, enabled, shape).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
 }
 
 /** A held press covers the whole painted outline, including wide buttons. */

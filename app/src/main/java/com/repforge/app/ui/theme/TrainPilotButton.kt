@@ -62,7 +62,7 @@ fun TrainPilotButton(
 
     val materialButton: @Composable () -> Unit = {
         TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-            Button(onClick, surface.glassPressMotion(source, enabled).trainPilotGlassRim(palette, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+            Button(onClick, surface.glassPressMotion(source, enabled, shape).trainPilotGlassRim(palette, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
         }
     }
     if (paintedGlow) {
