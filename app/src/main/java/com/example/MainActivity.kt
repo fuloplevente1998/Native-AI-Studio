@@ -399,7 +399,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) }
                 )
-                    if (com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen)) {
+                    // #347: decided by the screen under an open sheet (e.g. the exercise library during a
+                    // swap), so the workout bar stays in place instead of disappearing and jumping back.
+                    if (com.example.ui.components.isActiveMeasurementScreen(uiState.sheetHostState().currentSubScreen)) {
                         com.example.ui.components.StudioWorkoutHandoverBar(uiState, strings) {
                             viewModel.toggleWatchControlMode(context as? android.app.Activity)
                         }
@@ -424,7 +426,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     .border(TrainPilotFrames.page(palette.cardBorder, palette.primary), RoundedCornerShape(24.dp))
                     .padding(1.dp)
             ) {
-                val nextWithFeedback = if (com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen))
+                // #347: same host rule, so Next keeps working and its state survives an open sheet.
+                val nextWithFeedback = if (com.example.ui.components.isActiveMeasurementScreen(uiState.sheetHostState().currentSubScreen))
                     com.example.ui.components.rememberExerciseFeedbackNext(uiState,
                         onNext = viewModel::nextActiveExercise,
                         onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },

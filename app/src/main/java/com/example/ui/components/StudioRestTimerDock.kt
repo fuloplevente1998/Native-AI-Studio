@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
@@ -116,25 +118,19 @@ internal fun StudioRestTimerDock(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = tr(lang, "Pihenőidő (Nagy mód)", "Rest timer (Expanded)", "Pausenzeit (Groß)", "Timp de pauză (Extins)"),
+                                text = tr(lang, "Pihenőidő", "Rest timer", "Pausenzeit", "Timp de pauză"),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold
                             )
-                            Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) {
-                                onLarge(false)
-                            }, contentAlignment = Alignment.Center) {
+                            // #347: only the arrow (pointing down = collapse); no "compact mode" caption.
+                            val collapse = tr(lang, "Pihenő összecsukása", "Collapse rest timer", "Pause zuklappen", "Restrânge pauza")
+                            Box(Modifier.size(48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) { onLarge(false) }
+                                .semantics { contentDescription = collapse }.testTag("rest_dock_collapse"),
+                                contentAlignment = Alignment.Center) {
                                 Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceElevated) {
-                                    Row(verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
-                                        Text(
-                                            text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = palette.textSecondary
-                                        )
-                                        Icon(Icons.Default.ExpandMore, null, tint = palette.textSecondary,
-                                            modifier = Modifier.size(14.dp))
-                                    }
+                                    Icon(Icons.Default.ExpandMore, null, tint = palette.textSecondary,
+                                        modifier = Modifier.padding(4.dp).size(18.dp))
                                 }
                             }
                         }

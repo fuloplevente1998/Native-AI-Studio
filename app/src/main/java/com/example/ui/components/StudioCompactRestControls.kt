@@ -34,7 +34,8 @@ internal fun StudioCompactRestControls(
     val label = word("Pihenő", "Rest", "Pause", "Pauză") + ": " + clock
     val toggle = if (running) word("Szünet", "Pause", "Pause", "Pauză") else word("Indít", "Start", "Start", "Start")
     val skip = word("Kihagy", "Skip", "Überspringen", "Omite")
-    val expand = word("Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins")
+    // #347: the arrow alone shows the mode; its spoken label says what it does.
+    val expand = word("Pihenő kibontása", "Expand rest timer", "Pause aufklappen", "Extinde pauza")
     val style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum")
     val measure = rememberTextMeasurer()
     val density = LocalDensity.current
