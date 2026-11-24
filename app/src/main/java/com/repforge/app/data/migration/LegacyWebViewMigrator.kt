@@ -836,6 +836,7 @@ class LegacyWebViewMigrator(
                     .put("language", settings.language)
                     .put("themeKey", settings.themeKey)
                     .put("customThemes350", JSONArray(com.example.ui.theme.CustomThemeCodec.encode(settings.customThemes())))
+                    .put("glassClarity350", settings.glassClarity)
                     .put("fontScaleMultiplier", settings.fontScaleMultiplier)
                     .put("compactPhoneMode", settings.compactPhoneMode)
                     .put("intervalRestSeconds", settings.intervalRestSeconds)
