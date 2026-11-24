@@ -37,7 +37,7 @@ internal data class CustomThemeDraft(
     val name: String,
     val style: CustomThemeStyle,
     val colors: Map<CustomThemeRole, String>,
-    // 100 = transparency disabled; 70..90 = opacity of the surface paint.
+    // Legacy v1 test records may contain 70..90. New custom themes are always opaque.
     val opacityPercent: Int = 100
 ) {
     val invalidRoles: Set<CustomThemeRole>
@@ -60,7 +60,7 @@ internal data class CustomThemeDraft(
         val normalized = CustomThemeRole.entries.associateWith {
             requireNotNull(normalizeCustomThemeHex(colors.getValue(it)))
         }
-        return CustomThemeDefinition(key, copy(name = name.trim(), colors = normalized))
+        return CustomThemeDefinition(key, copy(name = name.trim(), colors = normalized, opacityPercent = 100))
     }
 
     companion object {

@@ -1,3 +1,5 @@
+> **2026-11-24 készülékes visszajelzés:** az alábbi eredeti fedettségcsúszka kivezetve. A saját téma tömör; a tervezett Liquid Glass család külön dokumentumban: [LIQUID_GLASS_THEMES.md](LIQUID_GLASS_THEMES.md).
+
 # #350 – Saját téma szerkesztő (bővített wireframe, egyeztetési változat)
 
 A #350 jóváhagyott alsó paneljét bővíti az öt szerepre és a felületi fedettségre.

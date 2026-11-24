@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
@@ -92,15 +94,15 @@ fun ProgressTabScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.pageBrush)
+            .background(palette.pageBrush).trainPilotGlassScene(palette)
             .testTag("progress_tab_screen")
     ) {
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.cardPaint,
+            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp).trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
@@ -179,9 +181,9 @@ fun ProgressTabScreen(
                             photoBlock = {
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.cardPaint,
+                                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                                         .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenPhotos() }

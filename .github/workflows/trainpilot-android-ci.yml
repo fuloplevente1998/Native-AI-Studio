@@ -256,6 +256,7 @@ jobs:
         run: |
           gradle --no-daemon --stacktrace :app:testDebugUnitTest \
             --tests 'com.example.CustomTheme*350Test' \
+            --tests 'com.example.LiquidGlass350Test' \
             --tests 'com.example.ThemeSelection349Test' \
             --tests 'com.example.PhoneWearThemeRegressionTest' \
             --tests 'com.example.StudioAppearanceRegressionTest'

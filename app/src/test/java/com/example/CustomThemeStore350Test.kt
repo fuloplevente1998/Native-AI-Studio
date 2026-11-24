@@ -81,4 +81,25 @@ class CustomThemeStore350Test {
         assertEquals("graphite_gold", TrainPilotUserSettings(themeKey = definition.key,
             customThemesJson = "broken").themeJson().getString("key"))
     }
+    @Test fun glassClarityIsFamilyWideDurableAndPortable() = runBlocking {
+        val store = TrainPilotSettingsStore(context, publishTheme = {})
+        val p = TrainPilotPalettes.getById(35)
+        store.importPortableSettings(JSONObject().put("settings", JSONObject()
+            .put("themeKey", p.key).put("glassClarity350", 12)), replaceTrainingModesOnMissing = true)
+        assertEquals(p.key, store.current().themeKey)
+        assertEquals(12, store.current().glassClarity)
+        assertEquals(12, store.current().resolvedThemePalette().glassClarity)
+        assertEquals("contrast", store.current().themeJson().getString("family"))
+        store.setGlassClarityForDataset(93, ticket())
+        assertEquals(93, TrainPilotSettingsStore(context).current().glassClarity)
+        assertEquals(93, store.current().resolvedThemePalette().glassClarity)
+        store.importPortableSettings(JSONObject().put("settings", JSONObject()
+            .put("themeKey", TrainPilotPalettes.getById(1).key)), replaceTrainingModesOnMissing = false)
+        assertEquals(93, store.current().glassClarity)
+        assertEquals(TrainPilotPalettes.getById(1), store.current().resolvedThemePalette())
+        store.importPortableSettings(JSONObject().put("settings", JSONObject()
+            .put("themeKey", TrainPilotPalettes.getById(40).key)), replaceTrainingModesOnMissing = false)
+        assertEquals(93, store.current().resolvedThemePalette().glassClarity)
+    }
+
 }

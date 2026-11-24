@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotGlassMaterial
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,7 +66,8 @@ internal fun TrainPilotModalBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (customPaint) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
+                .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
+                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
                 .drawWithCache {
                     // Material moves and scales the sheet inside its caller modifier. Draw here
                     // so the stroke moves with the surface and extends around the drag handle.

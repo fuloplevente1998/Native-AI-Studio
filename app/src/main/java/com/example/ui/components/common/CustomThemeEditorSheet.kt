@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -13,8 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.*
@@ -38,13 +35,12 @@ internal fun CustomThemeEditorSheet(
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden || !currentSaving })
     val scope = rememberCoroutineScope()
-    var draft by remember(themeKey, initial) { mutableStateOf(initial) }
+    var draft by remember(themeKey, initial) { mutableStateOf(initial.copy(opacityPercent = 100)) }
     var role by remember(themeKey) { mutableStateOf(CustomThemeRole.PRIMARY) }
     var workoutPreview by remember(themeKey) { mutableStateOf(false) }
     val resolved = remember(draft, themeKey) { resolveCustomTheme(draft, themeKey) }
     val maxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
-    val opacityLabel = word("Felületi fedettség", "Surface opacity", "Flächendeckkraft", "Opacitatea suprafeței")
     val corrected = resolved?.correctedRoles.orEmpty()
     LaunchedEffect(saveCompleted) {
         if (saveCompleted) { sheet.hide(); onDismiss() }
@@ -80,7 +76,6 @@ internal fun CustomThemeEditorSheet(
                     CustomThemeStyle.entries.forEach { style ->
                         TrainPilotFilterChip(draft.style == style, {
                             if (style != draft.style) draft = CustomThemeDraft.fromStyle(style, draft.name)
-                                .copy(opacityPercent = draft.opacityPercent)
                         }, { Text(style.title(language)) }, enabled = !saving)
                     }
                 }
@@ -93,16 +88,6 @@ internal fun CustomThemeEditorSheet(
                 }
                 if (!saving) CustomThemeColorControls(role, draft.colors[role].orEmpty(), language) {
                     draft = draft.withColor(role, it)
-                }
-                TrainPilotFilterChip(draft.opacityPercent != 100, {
-                    draft = draft.copy(opacityPercent = if (draft.opacityPercent == 100) 80 else 100)
-                }, { Text(word("Áttetsző felületek", "Translucent surfaces", "Transparente Flächen", "Suprafețe translucide")) },
-                    enabled = !saving)
-                if (draft.opacityPercent != 100) {
-                    Text("$opacityLabel: ${draft.opacityPercent}%", color = palette.textPrimary)
-                    Slider(draft.opacityPercent.toFloat(), { draft = draft.copy(opacityPercent = it.toInt().coerceIn(70, 90)) },
-                        valueRange = 70f..90f, enabled = !saving,
-                        modifier = Modifier.semantics { contentDescription = opacityLabel }.testTag("custom_theme_opacity"))
                 }
                 if (corrected.isNotEmpty() && resolved != null) {
                     Text(word("Kontrasztjavítás szükséges. Az előnézet a javasolt színeket mutatja.",

@@ -3,7 +3,8 @@ package com.example.ui.components
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import com.repforge.app.ui.theme.TrainPilotNegativeButton
+import com.repforge.app.ui.theme.TrainPilotTextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -90,6 +91,7 @@ internal fun CustomThemeSection(language: AppLanguage) {
                             editing = theme
                         }, enabled = !busy)
                         TrainPilotSecondaryButton(word("Törlés", "Delete", "Löschen", "Șterge"), {
+                            failed = false
                             deleting = theme
                         }, enabled = !busy)
                     }
@@ -106,17 +108,26 @@ internal fun CustomThemeSection(language: AppLanguage) {
             saveFailed = failed, saveCompleted = saveCompleted)
     }
     deleting?.let { theme ->
-        AlertDialog(onDismissRequest = { if (!busy) deleting = null },
+        TrainPilotAlertDialog(onDismissRequest = { if (!busy) deleting = null },
+            modifier = Modifier.testTag("custom_theme_delete_dialog"),
             title = { Text(word("Téma törlése?", "Delete theme?", "Design löschen?", "Ștergi tema?")) },
-            text = { Text(theme.draft.name) },
-            confirmButton = { androidx.compose.material3.Button(onClick = {
+            text = { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(theme.draft.name, color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                Text(word("A saját téma végleg törlődik.", "This custom theme will be permanently deleted.",
+                    "Dieses Design wird dauerhaft gelöscht.", "Tema personalizată va fi ștearsă definitiv."))
+                if (theme.key == access.activeKey) Text(word("Az alapértelmezett téma lesz aktív.",
+                    "The default theme will become active.", "Das Standarddesign wird aktiv.", "Tema implicită va deveni activă."))
+                if (failed) Text(word("A törlés nem sikerült.", "Could not delete theme.",
+                    "Löschen fehlgeschlagen.", "Ștergerea a eșuat."), color = palette.danger)
+            } },
+            confirmButton = { TrainPilotNegativeButton(onClick = {
                 runOperation({ access.delete(theme.key) }) { deleting = null }
-            }, enabled = !busy, colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = palette.danger,
-                contentColor = com.repforge.app.ui.theme.NativeThemeTokens.onFill(palette.danger))) {
+            }, enabled = !busy, modifier = Modifier.testTag("custom_theme_confirm_delete")) {
                 Text(word("Törlés", "Delete", "Löschen", "Șterge"))
             } },
-            dismissButton = { TrainPilotSecondaryButton(word("Mégse", "Cancel", "Abbrechen", "Anulează"),
-                { deleting = null }, enabled = !busy) })
+            dismissButton = { TrainPilotTextButton(onClick = { deleting = null }, enabled = !busy,
+                modifier = Modifier.testTag("custom_theme_cancel_delete")) {
+                Text(word("Mégse", "Cancel", "Abbrechen", "Anulează"))
+            } })
     }
 }

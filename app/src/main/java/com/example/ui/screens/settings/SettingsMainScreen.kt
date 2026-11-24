@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.LocalGlassTopInset
+import com.example.ui.components.customThemeText
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -143,9 +147,10 @@ fun SettingsMainScreen(
             state = settingsListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.pageBrush)
+                .background(palette.pageBrush).trainPilotGlassScene(palette)
                 .testTag("settings_main_screen"),
-            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+                top = 6.dp + LocalGlassTopInset.current, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         item {
@@ -167,14 +172,14 @@ fun SettingsMainScreen(
         // One shared frame owns the compact header and the expanded category panels.
         item {
             val toggleThemesHint = if (expandedMainThemesSection) {
-                tr(uiState.language, "Koppints a 4 téma stílus becsukásához", "Tap to collapse 4 theme categories", "Tippen zum Einklappen der 4 Themenkategorien", "Atinge pentru a restrânge cele 4 categorii de teme")
+                tr(uiState.language, "Koppints a 5 téma stílus becsukásához", "Tap to collapse 5 theme categories", "Tippen zum Einklappen der 5 Themenkategorien", "Atinge pentru a restrânge cele 5 categorii de teme")
             } else {
-                tr(uiState.language, "Koppints a 4 téma stílus kinyitásához", "Tap to expand 4 theme categories", "Tippen zum Ausklappen der 4 Themenkategorien", "Atinge pentru a extinde cele 4 categorii de teme")
+                tr(uiState.language, "Koppints a 5 téma stílus kinyitásához", "Tap to expand 5 theme categories", "Tippen zum Ausklappen der 5 Themenkategorien", "Atinge pentru a extinde cele 5 categorii de teme")
             }
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.cardPaint,
-                modifier = Modifier.fillMaxWidth()
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
                     .trainPilotAnimatedExpansion()
                     .testTag("settings_themes_group")
@@ -193,7 +198,7 @@ fun SettingsMainScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(strings.themes32Title, style = MaterialTheme.typography.titleMedium,
+                                Text(customThemeText(uiState.language, "40 gyári téma", "40 built-in themes", "40 integrierte Designs", "40 de teme incluse"), style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text(toggleThemesHint, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }
@@ -219,9 +224,9 @@ fun SettingsMainScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.cardPaint,
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -257,8 +262,8 @@ fun SettingsMainScreen(
 
         item {
             Surface(
-                shape = RoundedCornerShape(22.dp), color = palette.cardPaint,
-                modifier = Modifier.fillMaxWidth().testTag("settings_workout_group")
+                shape = RoundedCornerShape(22.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp)).testTag("settings_workout_group")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
