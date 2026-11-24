@@ -63,6 +63,7 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
         }catch(error:Exception){pauseFailed(error)}
     }
 
+    private var backgroundStart=false
     private var destroyed=false
     private var watchdog: Runnable?=null
     private var sensorWatchdog: Runnable?=null
@@ -116,6 +117,7 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
         if(id.isBlank()) { stopSelf();return START_NOT_STICKY }
         if(summary?.optString("workoutId")==id){syncWorkoutPause();return START_STICKY}
         if(summary!=null) { end();return START_STICKY }
+        backgroundStart=intent?.getBooleanExtra("backgroundStart351",false)==true
         val oldId=WearHealthStore.active(this)
         val closePrevious=oldId.isNotBlank() && oldId!=id
         summary=WearHealthStore.begin(this,if(closePrevious)oldId else id)
@@ -137,7 +139,8 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                 .addAction(Notification.Action.Builder(android.R.drawable.ic_media_pause,"Mérés leállítása",stop).build()).build()
             val access=wearRecordingAccess(this,request.gps,WearHealthStore.providerRequiresLocation(this))
             if(access.locationBlocked && !session.stopRequested){fail("A méréshez helyhozzáférés szükséges.",access);return START_NOT_STICKY}
-            val location=access.foregroundLocation
+            // This request never elevates location access from the background.
+            val location=access.foregroundLocation && !backgroundStart
             if(Build.VERSION.SDK_INT>=34) startForeground(129,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH or if(location)ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
             else startForeground(129,notification,if(location)ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
             WearHealthStore.save(this,summary!!)
@@ -157,7 +160,14 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                 }
             }
             client.setUpdateCallback(executor,this)
-        } catch(error: Exception) { fail("A mérés nem indítható: ${error.message ?: "ellenőrizd az engedélyeket"}") }
+        } catch(error: Exception) {
+            if(backgroundStart && error is SecurityException && !registered && lifecycle?.owned!=true) {
+                // A rejected promotion is not a failed workout and must not poison the visible retry.
+                WearLiveHealth.publish(this,id,"foregroundRequired","Az órás méréshez nyisd meg a TrainPilotot.")
+                stopSelf();return START_NOT_STICKY
+            }
+            fail("A mérés nem indítható: ${error.message ?: "ellenőrizd az engedélyeket"}")
+        }
         return START_STICKY
     }
     private fun capabilities(requested: String?, gps: Boolean) {
@@ -165,7 +175,7 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
         await(client.getCapabilitiesAsync()) { capabilities ->
             if(lifecycle?.stopRequested==true){finishWithoutExercise();return@await}
             val wanted=when(requested) { "running" -> ExerciseType.RUNNING; "walking" -> ExerciseType.WALKING; "cycling" -> ExerciseType.BIKING; else -> ExerciseType.STRENGTH_TRAINING }
-            val location=wearRecordingAccess(this,gps,WearHealthStore.providerRequiresLocation(this)).locationAvailable
+            val location=!backgroundStart && wearRecordingAccess(this,gps,WearHealthStore.providerRequiresLocation(this)).locationAvailable
             val type=wearRecordingType(wanted,capabilities.supportedExerciseTypes,location)
             if(type==null) { fail("Ezen az órán ez az edzéstípus nem mérhető.");return@await }
             val supported=capabilities.getExerciseTypeCapabilities(type).supportedDataTypes
@@ -325,10 +335,10 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
             context.sendBroadcast(Intent(SYNC_PAUSE).setPackage(context.packageName))
         }
         const val STOP="com.repforge.app.wear.STOP_HEALTH"
-        fun start(context: Context, workout: WearWorkout) {
+        fun start(context: Context, workout: WearWorkout, background: Boolean=false) {
             if(workout.workoutPaused)return
             val request=wearRecordingRequestForWorkout(workout,WearHealthStore.gps(context))
-            context.startForegroundService(Intent(context,WearHealthService::class.java).putExtra("workoutId",workout.workoutId).putExtra("exerciseType",request.exerciseType).putExtra("gps",request.gps))
+            context.startForegroundService(Intent(context,WearHealthService::class.java).putExtra("workoutId",workout.workoutId).putExtra("exerciseType",request.exerciseType).putExtra("gps",request.gps).putExtra("backgroundStart351",background))
         }
         fun stop(context: Context) { context.sendBroadcast(Intent(STOP).setPackage(context.packageName)) }
     }

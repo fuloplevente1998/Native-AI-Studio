@@ -6,6 +6,7 @@ import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.NativeWearCompanion
 import com.repforge.app.WearLiveHealthStore
 import com.repforge.app.WearSyncRepository
+import com.repforge.shared.WearMeasurementRequest351
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -23,7 +24,7 @@ internal fun watchMeasurementEligible(frame: JSONObject?, workoutId: String): Bo
 
 internal fun watchMeasurementReply(health: JSONObject?, workoutId: String): String? =
     health?.takeIf { workoutId.isNotBlank() && it.optString("workoutId") == workoutId }
-        ?.optString("state")?.takeIf { it in setOf("active", "paused", "starting", "disabled", "permissionRequired", "error", "ended") }
+        ?.optString("state")?.takeIf { it in setOf("active", "paused", "starting", "disabled", "permissionRequired", "error", "ended", "foregroundRequired") }
 
 internal fun TrainPilotViewModel.queueWatchMeasurementStart(frame: JSONObject) {
     val id = frame.optString("workoutId")
@@ -59,13 +60,24 @@ internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity:
                 "TrainPilot-Uhr-App nicht verfügbar.", "Aplicația TrainPilot de pe ceas nu este disponibilă."))
             return
         }
-        // An already visible watch can start from the canonical snapshot without changing screens.
-        // Give its existing Health Services flow a chance to acknowledge first.
-        repeat(8) {
+        val frame=ActiveWorkoutStore.current(ctx)
+        if (!watchMeasurementEligible(frame,id)) return
+        val request=WearMeasurementRequest351.fromFrame(requireNotNull(frame),System.currentTimeMillis())
+        // Target the verified companion; message delivery is not a measurement acknowledgement.
+        if(request!=null)try {
+            withTimeout(3000) { Wearable.getMessageClient(ctx).sendMessage(nodes.single().id,
+                WearMeasurementRequest351.PATH,request.encode()).await() }
+        } catch (_: TimeoutCancellationException) {
+            // Older companions or failed delivery still use the existing visible fallback.
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { }
+        // Allow background promotion and an actual Health Services acknowledgement first.
+        repeat(20) {
             if (!eligible()) return
             if (reply() in setOf("active", "paused", "disabled", "permissionRequired", "error", "ended")) {
                 status(null); return
             }
+            if (reply()=="foregroundRequired") return@repeat
             delay(250)
         }
         if (!eligible()) return

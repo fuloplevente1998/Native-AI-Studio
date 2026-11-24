@@ -19,6 +19,13 @@ class WearDataListenerService : WearableListenerService() {
             return
         }
 
+        if(event.path==com.repforge.shared.WearMeasurementRequest351.PATH) {
+            val request=com.repforge.shared.WearMeasurementRequest351.parse(event.data)
+            if(request!=null)android.os.Handler(android.os.Looper.getMainLooper()).post {
+                WearBackgroundMeasurement.receive(applicationContext,request)
+            }
+            return
+        }
         if(event.path!=WearWorkoutHandoff.REPLY || event.data.size>100000)return
         if(WearWorkoutHandoff.accept(this,event.data.toString(Charsets.UTF_8)))WearSurfaces.refresh(this)
     }
