@@ -13,7 +13,7 @@ internal data class WearRestTarget367(
     val exerciseId: String, val setId: String,
 )
 internal fun wearPauseTarget367(workout: WearWorkout): WearPauseTarget367? =
-    if (workout.workoutId.isBlank() || workout.workoutPaused || workout.ownershipProtocol193 != 1 ||
+    if (workout.workoutId.isBlank() || workout.workoutPaused || workout.controlIntent367 != null || workout.ownershipProtocol193 != 1 ||
         workout.timerOwner !in setOf("watch", "phone") || WearOwnership193.pending(workout) || WearUndo188.blocked(workout)) null
     else WearPauseTarget367(workout.workoutId, workout.generation, workout.ownerEpoch193,
         workout.pauseRevision, workout.timerOwner, workout.revision)

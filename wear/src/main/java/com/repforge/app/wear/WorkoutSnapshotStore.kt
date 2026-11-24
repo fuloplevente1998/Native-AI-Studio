@@ -153,8 +153,21 @@ object WorkoutSnapshotStore {
     }
 
     @Synchronized
-    fun saveWorkout(context: Context, workout: WearWorkout): WearWorkout {
+    fun saveWorkout(context: Context, workout: WearWorkout): WearWorkout =
+        saveWorkoutInternal(context, workout, null)
+
+    @Synchronized
+    internal fun clearControlIntent367(context: Context, expected: String, sequence: Long): WearWorkout? {
+        val current = load(context) ?: return null
+        if (current.controlIntent367 != expected || sequence <= 0) return current
+        return saveWorkoutInternal(context, current.copy(localSequence = maxOf(current.localSequence, sequence),
+            controlIntent367 = null), expected)
+    }
+
+    private fun saveWorkoutInternal(context: Context, workout: WearWorkout, clearedIntent: String?): WearWorkout {
         val current=load(context)
+        if (current?.controlIntent367 != null && current.controlIntent367 != clearedIntent &&
+            workout.controlIntent367 != current.controlIntent367) return current
         val fenced193=current?.let { it.ownershipProtocol193==1||it.ownerEpoch193>0||it.handoff193!=null }==true||workout.ownershipProtocol193==1
         if(current!=null&&fenced193&&com.repforge.shared.WorkoutOwnership193.stale(encode(current),encode(workout)))return current
         val safe=if(current?.workoutId==workout.workoutId&&(workout.pauseRevision<current.pauseRevision||workout.pauseRevision==current.pauseRevision&&current.workoutPaused))preserveWorkoutPause(workout,current)else workout

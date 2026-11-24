@@ -62,8 +62,7 @@ internal object WearWatchControls367 {
                 current.ownerEpoch193 != command.optLong("ownerEpoch193") ||
                 current.pauseRevision != next.optLong("pauseRevision")) return
             val seq = WearCommandOutbox.enqueue(context, command)
-            if (seq > 0) WorkoutSnapshotStore.saveWorkout(context, current.copy(
-                localSequence = maxOf(current.localSequence, seq), controlIntent367 = null))
+            if (seq > 0) WorkoutSnapshotStore.clearControlIntent367(context, raw, seq)
         }}
     }
 }

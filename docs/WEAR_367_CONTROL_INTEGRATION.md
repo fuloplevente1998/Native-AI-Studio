@@ -1,30 +1,28 @@
-# #367 – Rest adjustment and workout pause integration boundary
+# #367 – Control integration status
 
-The #367 UI branch deliberately does not introduce a new ownership or timer wire command.
-The UI exposes optional onRestAdjust367 and onPauseWorkout367 callbacks on TrainPilotWearApp.
-Without a backend callback, the rest buttons remain disabled. Phone-owned sessions have an
-explicit phone-control shortcut; automatic timer pause remains a separate labeled action.
+## Implemented: watch-owned workout (protocol 367)
+- Phone home snapshot advertises controlProtocol367=1. Legacy phones do not enable these buttons.
+- Manual rest ±15 seconds, 0–600 seconds, absolute deadline on the existing owner clock.
+- Full pause reuses WearOwnership193.freeze, including active intervals, automatic timer,
+  stopwatch, health and GPS; resume uses existing durable resumeWorkout.
+- watchControl367 is a separately tracked, non-coalesced owner snapshot command. The watch
+  persists the mutation and exact command together in its local snapshot before outbox enqueue.
+  Local-only recovery marker never appears in a wire snapshot. The same ID is retried after
+  process death or reconnect; a pending marker blocks other edits until durable enqueue.
+- Phone accepts only the same active watch-owned workout, epoch, generation, valid transition,
+  sequence and target. New state is persisted before applied ACK; exact replay is recognized.
+  Tombstoned/saved drafts cannot be resurrected. No second timer is started.
+- Out-of-order obsolete commands are superseded, not reported as saved.
+- Only a matching canonical receipt counts as synced. New pure JVM tests cover deadlines,
+  invalid deltas, wrong owners/epochs, replay, and stale pause revisions.
 
-## Shared integration to coordinate with #351 / #359
-
-- Phone UI uses ±15 seconds, clamped to 0–600 seconds. Sources: StudioRestTimer.adjusted,
-  StudioCompactRestControls, StudioRestTimerDock, NativeWorkoutEditing.controlRest.
-- Rest target captures workout ID, generation, owner epoch, pause revision, owner,
-  base revision, deadline and current exercise/set. Backend must additionally resolve
-  the canonical timer key and phase where applicable, and reject stale targets.
-- Only current owner adjusts its existing timer; do not start an independent countdown.
-  A durable unique command ID, receipt, duplicate replay handling and offline recovery
-  must be defined before enabling callbacks. A delayed command must not restart an expired rest.
-- Existing watchAutomationState is a coalesced automatic snapshot, not a durable user
-  command; do not repurpose it as an acknowledged rest/pause command. Existing resumeWorkout
-  is not a pause action. WearOwnership193.freeze is used in handoff/closure, so a separate
-  safe pause entrypoint is necessary.
-- Phone-owned pause must update active intervals, pause revision, rest checkpoint, measurement,
-  GPS and automatic timing via the existing canonical pause mechanism; watch-owned pause must
-  preserve equivalent state and synchronize through the agreed transport. Resume uses existing path.
-- Pending handoff, undo conflict, invalid or expired target and touch lock must disable mutation.
-- Tests required: replay, out-of-order receipts, reconnect, paused/expired rest, epoch change,
-  simultaneous phone/watch actions, process death, rest zero/max, feedback and closure.
-
-UI tests in WearControlTargets367Test validate only UI target construction and numeric rules.
-They do not assert a connected transport or end-to-end synchronization.
+## Still open: phone-owned session
+- UI retains explicit phone-control shortcut. No watch-side local mutation is permitted.
+- To enable direct remote controls, route an idempotent command to the canonical phone
+  timer key/phase (NativeWorkoutEditing.controlRest / native engine) or full pause path.
+  Must preserve generation, pause revision, owner epoch, current target and durable
+  duplicate handling. Do not reuse watchControl367 to mutate a phone-owned snapshot.
+- Automatic active rest ± requires the automatic timer's own transition support; the
+  implemented ± is for manual rest only.
+- Device tests pending: offline replay, process death, reconnect, simultaneous phone/watch,
+  transferred ownership, 0/max, haptics and actual Health/GPS pause/resume.

@@ -314,6 +314,12 @@ internal fun TrainPilotWearApp(
                             onDismissClosure()
                             route = "home"
                         }
+                    active?.controlIntent367 != null && route in listOf("workout", "editor", "timer", "finish", "discard") ->
+                        RoundList(wearSaveTitle()) {
+                            centerItem { Label(wearSaveLabel(WearSavePhase.ERROR), lines = 2) }
+                            centerItem { Pill(wearSaveRetry()) { onRetrySync?.invoke(active.workoutId) } }
+                            centerItem { Pill(WearMenu216.text("back"), tone = Secondary) { route = "home" } }
+                        }
                     route == "discard" && active != null ->
                         ConfirmationScreen(true, active.completedSets) {
                             if (it) {

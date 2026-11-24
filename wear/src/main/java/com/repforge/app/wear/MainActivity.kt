@@ -417,6 +417,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onRetry = ::retryClosure,
                 onDismissClosure = { if (closure.value?.status in listOf("saved", "discarded")) { WearClosureStore.dismiss(this); closure.value = null } },
                 onResumeWorkout = {
+                    WearWatchControls367.recover(this)
                     val current=WorkoutSnapshotStore.load(this)
                     if(current?.ownershipProtocol193==1&&current.timerOwner=="watch") {
                         try {workout.value=WearOwnership193.resume(this);workout.value?.let { WearGps193.resumeIfArmed(this,it) };restoreRestFromSnapshot(workout.value)}
@@ -431,7 +432,11 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onAddQuick = ::addQuickExerciseFromWatch,
                 onChange = ::changeCurrentSet,
                 onComplete = ::completeCurrentSet,
-                onUndo = { id -> workout.value=WearUndo188.undo(this,id);restoreRestFromSnapshot(workout.value) },
+                onUndo = { id ->
+                    if (WorkoutSnapshotStore.load(this)?.controlIntent367 == null) {
+                        workout.value=WearUndo188.undo(this,id);restoreRestFromSnapshot(workout.value)
+                    }
+                },
                 onPrevious = { navigateExercise(-1) },
                 onNext = { navigateExercise(1) },
                 onSkipRest = ::skipRest,
@@ -439,7 +444,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onPauseWorkout367 = { target -> applyWatchControl367 { WearWatchControls367.pause(this, target) } },
                 onToggleAutomatic = {
                     val current=WorkoutSnapshotStore.load(this)
-                    if(current!=null){
+                    if(current!=null && current.controlIntent367 == null){
                         if(current.timerOwner=="phone")sendCommand("toggleAutomatic",value=current.automation?.enabled!=true)
                         else {workout.value=WearAutomaticController.toggle(this,current.automation?.enabled!=true);restoreRestFromSnapshot(workout.value)}
                     }
@@ -447,7 +452,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onEditorSave = ::saveEditorValue,
                 onAutomaticCommand = { action ->
                     val current=WorkoutSnapshotStore.load(this)
-                    if(current!=null){
+                    if(current!=null && current.controlIntent367 == null){
                         if(current.timerOwner=="phone")sendCommand("automaticControl",value=if(action=="resume"&&current.automation?.key?.startsWith("undo188:")==true)"resumeUndo" else action)
                         else {workout.value=WearAutomaticController.command(this,action,current.workoutId);restoreRestFromSnapshot(workout.value)}
                     }
@@ -623,6 +628,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private fun addQuickExerciseFromWatch(exercise: WatchHomeExercise) {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
         var current = WorkoutSnapshotStore.load(this) ?: return
+        if (current.controlIntent367 != null || current.workoutPaused) return
         val source = home.value ?: return
         if (!current.quickWorkout || current.exercises.size >= 20 ||
             current.exercises.any { it.id == exercise.id } ||
@@ -703,6 +709,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     private fun skipRest() {
+        if (WorkoutSnapshotStore.load(this)?.controlIntent367 != null) return
         val active=workout.value
         if(active?.automation?.enabled==true){
             if(active.automation.owner=="watch")workout.value=WearAutomaticController.command(this,"skipRest",active.workoutId)
@@ -718,7 +725,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private fun changeCurrentSet(field: String, delta: Double) {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
         val current = WorkoutSnapshotStore.load(this) ?: return
-        if(current.workoutPaused||WearUndo188.blocked(current))return
+        if(current.workoutPaused||WearUndo188.blocked(current)||current.controlIntent367!=null)return
         if(current.automation?.enabled==true && current.automation.owner=="watch" && current.automation.phase=="work" && field=="reps")return
         val exerciseIndex = current.currentExercise
         val exercise = current.exercise ?: return
@@ -757,7 +764,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private fun saveEditorValue(field: String,value: Double,expected: String): Boolean {
         synchronized(WearAutomaticController){synchronized(WorkoutSnapshotStore){
             val current=WorkoutSnapshotStore.load(this) ?: return false
-        if(current.workoutPaused||WearUndo188.blocked(current))return false
+        if(current.workoutPaused||WearUndo188.blocked(current)||current.controlIntent367!=null)return false
             if(!value.isFinite()||current.currentSet?.done!=false||WearRotaryEditor212.target(current)!=expected||
                 current.automation?.let { it.enabled&&it.phase=="work"&&field=="reps" }==true||
                 current.automation?.let { it.counting&&!it.paused }==true){Toast.makeText(this,"A sorozat közben változott. Nyisd meg újra.",Toast.LENGTH_SHORT).show();return false}
@@ -770,7 +777,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
         if (restRemaining.intValue > 0) return
         val current = WorkoutSnapshotStore.load(this) ?: return
-        if(current.workoutPaused||WearUndo188.blocked(current))return
+        if(current.workoutPaused||WearUndo188.blocked(current)||current.controlIntent367!=null)return
         if(current.automation?.awaitingPhone==true)return
         if(current.automation?.enabled==true && current.automation.owner=="watch" && current.automation.counting)return
         val exerciseIndex = current.currentExercise
@@ -883,7 +890,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private fun selectExercise(index: Int) {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
         val current = WorkoutSnapshotStore.load(this) ?: return
-        if (current.selectExercise(index) === current) return
+        if (current.controlIntent367 != null || current.workoutPaused || current.selectExercise(index) === current) return
         if(current.automation?.enabled==true&&current.automation.owner=="watch"&&current.automation.phase!="rest")workout.value=WearAutomaticController.command(this,"disable",current.workoutId)
         WearStopwatchStore.pause(this)
         // Navigation is preparation, not an explicit rest-skip command. Keep the
