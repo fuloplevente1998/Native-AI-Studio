@@ -54,10 +54,12 @@ internal fun WearV2Value(value: String, unit: String, modifier: Modifier, enable
 @Composable
 internal fun WearRestV2(workout: WearWorkout, remaining: Int, onSkip: () -> Unit, onMenu: () -> Unit,
     onAdjust: ((Int) -> Unit)? = null, onPhoneControl: (() -> Unit)? = null) {
-    val next = if (!workout.exerciseComplete) workout.currentSet?.takeUnless { it.done }
-        else workout.exercises.drop(workout.currentExercise + 1).firstOrNull()?.sets?.firstOrNull { !it.done }
-    val nextName = if (!workout.exerciseComplete) workout.exercise?.name
-        else workout.exercises.getOrNull(workout.currentExercise + 1)?.name
+    val automatic = workout.automation?.takeIf { it.enabled && it.owner == "watch" && it.phase == "rest" }
+    val nextExercise = if (automatic != null) workout.exercises.getOrNull(automatic.targetExercise)
+        else if (!workout.exerciseComplete) workout.exercise else workout.exercises.getOrNull(workout.currentExercise + 1)
+    val next = if (automatic != null) nextExercise?.sets?.getOrNull(automatic.targetSet)
+        else nextExercise?.sets?.firstOrNull { !it.done }
+    val nextName = nextExercise?.name
     val undo = LocalUndo.current
     val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout)
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("wear-rest-v2"),

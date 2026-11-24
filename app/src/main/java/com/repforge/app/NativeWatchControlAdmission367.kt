@@ -5,6 +5,25 @@ import org.json.JSONObject
 
 /** A watch-owner command is a durable absolute snapshot, not a relative phone-side timer edit. */
 internal object NativeWatchControlAdmission367 {
+    private fun validAutomaticRest(incoming: JSONObject, command: JSONObject, basePause: Long): Boolean {
+        if (incoming.optBoolean("workoutPaused") || incoming.optLong("pauseRevision") != basePause ||
+            incoming.has("timerCheckpoint193") || incoming.optLong("restEndAt") != 0L) return false
+        val a = incoming.optJSONObject("automation") ?: return false
+        val before = command.optLong("remainingBefore", -1)
+        val delta = command.optInt("delta")
+        val phase = command.optLong("phaseNumber", -1)
+        if (before !in 1L..3600000L || delta !in listOf(-15,15) || phase < 0 ||
+            delta > 0 && before >= 600000L || !a.optBoolean("enabled") ||
+            a.optString("owner") != "watch" || a.optString("key").isBlank() ||
+            a.optString("key") != command.optString("timerKey") || a.optBoolean("paused") ||
+            a.optBoolean("interrupted") || a.optInt("restSeconds") != command.optInt("configuredRest",-1)) return false
+        val expected = if (delta > 0) (before + 15000L).coerceAtMost(600000L) else (before - 15000L).coerceAtLeast(0L)
+        if (expected == 0L) return a.optLong("phaseNumber") == phase + 1 && a.optString("phase") in setOf("work","ready","complete")
+        return a.optString("phase") == "rest" && a.optLong("phaseNumber") == phase &&
+            a.optString("targetId") == command.optString("setId") && a.optLong("remainingMs") == expected &&
+            a.optLong("restPhaseDurationMs367") >= expected
+    }
+
     fun snapshot(current: JSONObject?, command: JSONObject): JSONObject? {
         val incoming = command.optJSONObject("finalSnapshot") ?: return null
         val live = current ?: return null
@@ -48,6 +67,7 @@ internal object NativeWatchControlAdmission367 {
                     exercise.optString("id") != command.optString("exerciseId") ||
                     (0 until sets.length()).none { sets.optJSONObject(it)?.optString("setId") == command.optString("setId") }) return null
             }
+            "automaticRest" -> if (!validAutomaticRest(incoming, command, basePause)) return null
             else -> return null
         }
         val next = NativeWatchSnapshotAdmission.snapshot(live, command) ?: return null

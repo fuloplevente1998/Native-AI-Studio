@@ -127,7 +127,8 @@ internal fun WorkoutPager(
     val canControlPhone = (home?.controlProtocol367 ?: 0) >= 2 && workout.timerOwner == "phone" && workout.nativeExecutionProtocol == 2 && workout.generation > 0
     val pauseAction: (() -> Unit)? = if ((canControlWatch || canControlPhone) && pauseTarget != null && onPauseWorkout367 != null && !blocked)
         ({ onPauseWorkout367(pauseTarget) }) else null
-    val adjustAction: ((Int) -> Unit)? = if ((canControlWatch || canControlPhone && (home?.controlProtocol367 ?: 0) >= 3) && restTarget != null && onRestAdjust367 != null && !blocked)
+    val canAdjustWatch = canControlWatch && (restTarget?.timerKey.isNullOrEmpty() || (home?.controlProtocol367 ?: 0) >= 4)
+    val adjustAction: ((Int) -> Unit)? = if ((canAdjustWatch || canControlPhone && (home?.controlProtocol367 ?: 0) >= 3) && restTarget != null && onRestAdjust367 != null && !blocked)
         ({ delta -> onRestAdjust367(restTarget, delta) }) else null
     val phoneControl = onPhoneControl?.takeIf { workout.timerOwner == "phone" && !blocked }
     val command = LocalAutomaticCommand.current
@@ -161,7 +162,8 @@ internal fun WorkoutPager(
                             controls = true
                             Unit
                         }
-                        if (restRemaining > 0 && (workout.automation?.enabled != true || workout.automation?.restOnly == true))
+                        if (restRemaining > 0 && (workout.automation?.enabled != true || workout.automation?.restOnly == true ||
+                            workout.timerOwner == "watch" && workout.automation?.phase == "rest" && adjustAction != null))
                             WearRestV2(workout, restRemaining, onSkipRest, onMenu, onAdjust = adjustAction, onPhoneControl = phoneControl)
                         else if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
                             AutomaticTimedSetScreen(workout,restRemaining,health,onPrevious,onNext,onSkipRest,onFinish,onMenu)

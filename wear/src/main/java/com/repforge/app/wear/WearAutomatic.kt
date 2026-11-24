@@ -31,12 +31,13 @@ data class WearAutomatic(
     val restMs: Long = 0,
     val pausedMs: Long = 0,
     val restOnly: Boolean = false,
+    val restPhaseDurationMs367: Long = 0,
 ) {
     val counting get() = enabled && phase in listOf("work", "rest")
     fun remaining(now: Long): Long = if(owner=="phone"&&counting&&!paused&&deadlineAt>0)(deadlineAt-System.currentTimeMillis()).coerceAtLeast(0)
         else (remainingMs - if (counting && !paused) (now-anchorMs).coerceAtLeast(0) else 0).coerceAtLeast(0)
     fun json() = JSONObject().put("enabled",enabled).put("owner",owner).put("phase",phase)
-        .put("restOnly",restOnly).put("paused",paused).put("workSeconds",workSeconds).put("restSeconds",restSeconds)
+        .put("restOnly",restOnly).put("restPhaseDurationMs367",restPhaseDurationMs367).put("paused",paused).put("workSeconds",workSeconds).put("restSeconds",restSeconds)
         .put("vibration",vibration).put("key",key).put("targetExercise",targetExercise)
         .put("targetSet",targetSet).put("targetId",targetId).put("remainingMs",remainingMs)
         .put("anchorMs",anchorMs).put("boot",boot).put("phaseNumber",phaseNumber)
@@ -53,7 +54,7 @@ data class WearAutomatic(
                 root.optInt("targetExercise"),root.optInt("targetSet"),root.optString("targetId"),
                 root.optLong("remainingMs").coerceIn(0,3600000),root.optLong("anchorMs"),root.optInt("boot",-1),
                 root.optLong("phaseNumber").coerceAtLeast(0),root.optInt("baseSeconds").coerceAtLeast(0),root.optBoolean("interrupted"),root.optLong("deadlineAt"),root.optInt("rounds",1).coerceIn(1,100),root.optInt("round",1).coerceIn(1,100),
-                root.optJSONArray("handledCommands")?.let { array -> (maxOf(0,array.length()-128) until array.length()).map { array.optString(it) } } ?: emptyList(),root.optBoolean("awaitingPhone"),root.optJSONObject("timeLog")?.optLong("workMs") ?: 0,root.optJSONObject("timeLog")?.optLong("restMs") ?: 0,root.optJSONObject("timeLog")?.optLong("pausedMs") ?: 0,root.optBoolean("restOnly"))
+                root.optJSONArray("handledCommands")?.let { array -> (maxOf(0,array.length()-128) until array.length()).map { array.optString(it) } } ?: emptyList(),root.optBoolean("awaitingPhone"),root.optJSONObject("timeLog")?.optLong("workMs") ?: 0,root.optJSONObject("timeLog")?.optLong("restMs") ?: 0,root.optJSONObject("timeLog")?.optLong("pausedMs") ?: 0,root.optBoolean("restOnly"),root.optLong("restPhaseDurationMs367").coerceAtLeast(0))
         }
     }
 }
@@ -82,6 +83,7 @@ object WearAutomaticEngine {
         return workout.copy(restEndAt=0,automation=a.copy(phase=phase,paused=false,interrupted=false,
             targetExercise=target.first,targetSet=target.second,targetId=targetId(workout,target.first,target.second),
             remainingMs=seconds*1000L,anchorMs=now,boot=boot,phaseNumber=a.phaseNumber+1,
+            restPhaseDurationMs367=if(phase=="rest")seconds*1000L else 0L,
             baseSeconds=if(phase=="work")current.reps.toIntOrNull()?.coerceAtLeast(0) ?: 0 else 0))
     }
     fun ready(workout: WearWorkout, now: Long, boot: Int): WearWorkout {
@@ -164,6 +166,27 @@ object WearAutomaticEngine {
         if(!a.enabled||a.owner!="watch")return workout
         return current.copy(automation=a.copy(paused=false,interrupted=false,anchorMs=now,boot=boot))
     }
+    /** Adjust the current local rest only. Real elapsed time is credited by tick, never by +/-.
+     * Transferred plans have a separate timeline and cannot use this path. */
+    internal fun adjustActiveRest367(workout: WearWorkout, now: Long, boot: Int, delta: Int): WearWorkout? {
+        val a = workout.automation ?: return null
+        if (workout.workoutPaused || workout.timerOwner != "watch" || workout.timerCheckpoint193 != null ||
+            !a.enabled || a.owner != "watch" || a.phase != "rest" || a.paused || a.interrupted ||
+            a.awaitingPhone || a.boot != boot || now < a.anchorMs || a.remaining(now) <= 0 ||
+            delta !in listOf(-15, 15)) return null
+        val current = tick(workout, now, boot).workout
+        val counted = current.automation ?: return null
+        if (counted.phase != "rest" || counted.phaseNumber != a.phaseNumber || counted.paused || counted.interrupted) return null
+        val remaining = counted.remainingMs
+        if (remaining <= 0 || delta > 0 && remaining >= 600000L) return null
+        val adjusted = if (delta > 0) (remaining + 15000L).coerceAtMost(600000L) else (remaining - 15000L).coerceAtLeast(0L)
+        if (adjusted == 0L) return skipRest(current, now, boot)
+        val duration = (counted.restPhaseDurationMs367.takeIf { it > 0 } ?: counted.restSeconds * 1000L)
+            .coerceAtLeast(remaining)
+        return current.copy(automation = counted.copy(remainingMs = adjusted, anchorMs = now,
+            restPhaseDurationMs367 = duration - remaining + adjusted))
+    }
+
     fun skipRest(workout: WearWorkout, now: Long, boot: Int): WearWorkout {
         if(workout.automation?.phase!="rest"||workout.automation.owner!="watch")return workout
         if(workout.timerCheckpoint193!=null)return WearTransferredTimer193.skipRest(workout,now,boot)

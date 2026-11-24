@@ -28,7 +28,16 @@ internal fun wearRestTarget367(workout: WearWorkout, now: Long): WearRestTarget3
             a.phase != "rest" || a.paused || a.interrupted || a.awaitingPhone || a.key.isBlank() || a.deadlineAt <= now) return null
         return WearRestTarget367(target, a.deadlineAt, "", "", a.key, a.phaseNumber, a.restSeconds)
     }
-    if (workout.restEndAt <= now || workout.automation?.enabled == true) return null
+    val automatic = workout.automation
+    if (automatic?.enabled == true) {
+        if (workout.timerCheckpoint193 != null || automatic.owner != "watch" || automatic.phase != "rest" ||
+            automatic.paused || automatic.interrupted || automatic.awaitingPhone || automatic.key.isBlank() ||
+            automatic.targetId.isBlank()) return null
+        val ex = workout.exercises.getOrNull(automatic.targetExercise) ?: return null
+        return WearRestTarget367(target, automatic.anchorMs + automatic.remainingMs, ex.id,
+            automatic.targetId, automatic.key, automatic.phaseNumber, automatic.restSeconds)
+    }
+    if (workout.restEndAt <= now) return null
     val exercise = workout.exercise ?: return null
     val set = workout.currentSet ?: return null
     if (exercise.id.isBlank() || set.setId.isBlank()) return null

@@ -30,3 +30,6 @@
 ## Native phone-owner controls
 - Protocol 2: explicit pause/resume on canonical PhoneWorkoutExecution, matching generation/epoch/pause revision, durable transaction proof, no optimistic watch mutation.
 - Protocol 3: phone-owned rest-only phase adjustment via existing IntervalTimerService.adjustRest, fenced by key, phase number and configured duration; durable checkpoint proof before ACK. No parallel timer. The watch queues a request and uses the phone mirror. Automatic multi-step rest adjustment remains unsupported. Physical device verification pending.
+
+## Protocol 4: native watch automatic rest
+- Current rest only, using the existing monotonic tick and absolute remaining time. Configured rest for later rounds stays unchanged. Actual elapsed rest is credited before adjustment. At zero, existing skip transition. Durable owner snapshot uses watchControl367/automaticRest with phase identity and remaining-time proof. Transferred timer checkpoints and multi-phase phone timelines stay disabled for this operation until their shared plan can represent per-phase overrides. Physical device test pending.

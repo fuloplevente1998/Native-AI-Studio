@@ -36,4 +36,17 @@ class NativeWatchControl367Test {
             .put("commandId","late").put("sequence",5)))
         assertNull(NativeWatchControlAdmission367.snapshot(current(),command("pause",current().put("workoutPaused",true).put("restEndAt",0))))
     }
+    @Test fun automaticRestUsesAbsoluteRemainingAndDoesNotChangeConfiguredRest() {
+        val frame = current().put("restEndAt",0).put("automation",JSONObject()
+            .put("enabled",true).put("owner","watch").put("phase","rest").put("key","k")
+            .put("phaseNumber",7).put("restSeconds",40).put("targetId","s")
+            .put("remainingMs",50000).put("restPhaseDurationMs367",55000))
+        val c = command("automaticRest",frame).put("timerKey","k").put("phaseNumber",7)
+            .put("configuredRest",40).put("remainingBefore",35000)
+        assertNotNull(NativeWatchControlAdmission367.snapshot(current(),c))
+        frame.getJSONObject("automation").put("remainingMs",65000)
+        assertNull(NativeWatchControlAdmission367.snapshot(current(),c))
+        frame.getJSONObject("automation").put("remainingMs",50000).put("restSeconds",55)
+        assertNull(NativeWatchControlAdmission367.snapshot(current(),c))
+    }
 }

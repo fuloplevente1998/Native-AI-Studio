@@ -989,7 +989,7 @@ object WearSyncRepository {
                 } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
                 .put("dailyStepsGoal", dailyStepsGoal)
-                .put("controlProtocol367", 3)
+                .put("controlProtocol367", 4)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
                 .put("calendarDays", allCalendarDaysArray)

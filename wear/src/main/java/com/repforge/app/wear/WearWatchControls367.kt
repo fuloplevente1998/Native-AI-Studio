@@ -29,6 +29,24 @@ internal object WearWatchControls367 {
             val current = WorkoutSnapshotStore.load(context) ?: return null
             val now = System.currentTimeMillis()
             if (!allowed(current, target.workout) || wearRestTarget367(current, now) != target) return null
+            if (target.timerKey.isNotEmpty()) {
+                val mono = android.os.SystemClock.elapsedRealtime()
+                val boot = WearAutomaticService.boot(context)
+                if (!WearAutomaticService.active(current.workoutId)) return null
+                val before = current.automation ?: return null
+                val remaining = before.remaining(mono)
+                val adjusted = WearAutomaticEngine.adjustActiveRest367(current, mono, boot, delta) ?: return null
+                val next = intent(adjusted, target.workout, "automaticRest", now, target.expectedDeadline, delta,
+                    target.exerciseId, target.setId)
+                val command = JSONObject(next.controlIntent367!!)
+                    .put("timerKey", target.timerKey).put("phaseNumber", target.phaseNumber)
+                    .put("configuredRest", before.restSeconds).put("remainingBefore", remaining)
+                WorkoutSnapshotStore.saveWorkout(context, next.copy(controlIntent367 = command.toString()))
+                recover(context)
+                WearAutomaticService.nudge()
+                WearSurfaces.refresh(context, true)
+                return WorkoutSnapshotStore.load(context)
+            }
             val deadline = wearRestDeadline367(current.restEndAt, now, delta) ?: return null
             val next = intent(current.copy(restEndAt = deadline), target.workout, "rest", now,
                 target.expectedDeadline, delta, target.exerciseId, target.setId)
