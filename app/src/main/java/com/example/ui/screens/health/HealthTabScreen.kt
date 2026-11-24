@@ -90,6 +90,7 @@ import com.example.ui.components.MockupHealthConnectBadge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -481,16 +482,16 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.primary.copy(alpha = 0.14f),
+                                color = palette.selectionColors().surface,
                                 modifier = Modifier
                                     .size(38.dp)
-                                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                    .trainPilotBorder(1.dp, palette.selectionColors().border, RoundedCornerShape(14.dp))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.Favorite,
                                         contentDescription = null,
-                                        tint = palette.primary,
+                                        tint = palette.selectionColors().foreground,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -589,7 +590,7 @@ fun HealthTabScreen(
                         .testTag("health_weight_card")
                         .trainPilotBorder(
                             width = 1.dp,
-                            color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
+                            color = if (uiState.expandedHealthWeightLog) palette.selectionColors().border else palette.cardBorder,
                             shape = RoundedCornerShape(20.dp)
                         )
                 ) {
@@ -607,14 +608,14 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = palette.primary.copy(alpha = 0.16f),
+                                color = palette.selectionColors().surface,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.MonitorWeight,
                                         contentDescription = null,
-                                        tint = palette.primary,
+                                        tint = palette.selectionColors().foreground,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
