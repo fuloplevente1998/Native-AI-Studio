@@ -168,9 +168,9 @@ fun SettingsMainScreen(
         // One shared frame owns the compact header and the expanded category panels.
         item {
             val toggleThemesHint = if (expandedMainThemesSection) {
-                tr(uiState.language, "Koppints a 4 téma stílus becsukásához", "Tap to collapse 4 theme categories", "Tippen zum Einklappen der 4 Themenkategorien", "Atinge pentru a restrânge cele 4 categorii de teme")
+                tr(uiState.language, "Koppints a 5 téma stílus becsukásához", "Tap to collapse 5 theme categories", "Tippen zum Einklappen der 5 Themenkategorien", "Atinge pentru a restrânge cele 5 categorii de teme")
             } else {
-                tr(uiState.language, "Koppints a 4 téma stílus kinyitásához", "Tap to expand 4 theme categories", "Tippen zum Ausklappen der 4 Themenkategorien", "Atinge pentru a extinde cele 4 categorii de teme")
+                tr(uiState.language, "Koppints a 5 téma stílus kinyitásához", "Tap to expand 5 theme categories", "Tippen zum Ausklappen der 5 Themenkategorien", "Atinge pentru a extinde cele 5 categorii de teme")
             }
             Surface(
                 shape = RoundedCornerShape(18.dp),
