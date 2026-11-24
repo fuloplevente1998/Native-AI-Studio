@@ -92,12 +92,12 @@ fun ProgressTabScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .background(palette.pageBrush)
             .testTag("progress_tab_screen")
     ) {
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceCard,
+            color = palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 2.dp)
@@ -179,7 +179,7 @@ fun ProgressTabScreen(
                             photoBlock = {
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
+                                    color = palette.cardPaint,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
