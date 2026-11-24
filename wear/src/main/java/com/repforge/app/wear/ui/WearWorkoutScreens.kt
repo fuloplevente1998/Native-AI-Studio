@@ -266,12 +266,13 @@ internal fun RestRing(workout: WearWorkout, seconds: Int) {
     val remainingFraction=wearRestProgress(workout,seconds)
     Canvas(Modifier.fillMaxSize().padding(8.dp).testTag("wear-rest-ring")
         .semantics { progressBarRangeInfo=ProgressBarRangeInfo(remainingFraction,0f..1f) }) {
+        drawArc(color.copy(alpha = .18f), -90f, 360f, false, style = Stroke(4.dp.toPx()))
         drawArc(
             color,
             -90f,
             360f * remainingFraction,
             false,
-            style = Stroke(2.dp.toPx()),
+            style = Stroke(4.dp.toPx()),
         )
     }
 }

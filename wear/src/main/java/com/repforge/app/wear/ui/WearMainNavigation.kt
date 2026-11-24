@@ -1,6 +1,15 @@
 package com.repforge.app.wear
 
+import android.view.ViewConfiguration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
@@ -38,6 +47,25 @@ internal fun WearMainNavigation(
     val index = wearMainRoutes.indexOf(route)
     val currentOnPage = rememberUpdatedState(onPage)
     val theme = LocalWearHomeTheme.current
+    val context = LocalContext.current
+    val windowFocused = LocalWindowInfo.current.isWindowFocused
+    val focus = remember { FocusRequester() }
+    val rotary = remember(route) { WearRotaryEditor212() }
+    val pixelsPerDetent = remember(context) { ViewConfiguration.get(context).scaledVerticalScrollFactor }
+    val rotaryModifier = if (index < 0) Modifier else Modifier
+        .focusRequester(focus)
+        .onPreRotaryScrollEvent { event ->
+            if (!windowFocused) false
+            else {
+                val steps = rotary.steps(event.verticalScrollPixels, pixelsPerDetent)
+                if (steps != 0) wearAdjacentMainRoute(route, if (steps > 0) 1 else -1)?.let { currentOnPage.value(it) }
+                true
+            }
+        }.focusable()
+    LaunchedEffect(route, windowFocused) {
+        rotary.reset()
+        if (index >= 0 && windowFocused) focus.requestFocus()
+    }
     val gesture = if (index < 0) Modifier else Modifier.pointerInput(route) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
@@ -62,7 +90,7 @@ internal fun WearMainNavigation(
             }
         }
     }
-    Box(Modifier.fillMaxSize().background(theme.backgroundColor).then(gesture)) {
+    Box(Modifier.fillMaxSize().background(theme.backgroundColor).then(rotaryModifier).then(gesture)) {
         Box(Modifier.fillMaxSize().padding(bottom = if (index >= 0) 10.dp else 0.dp)) {
             content()
         }

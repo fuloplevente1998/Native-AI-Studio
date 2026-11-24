@@ -1,6 +1,13 @@
 package com.repforge.app.wear
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material3.Text
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,11 +21,12 @@ internal fun MiniJournalScreen(
     onOpenPhone: () -> Unit,
     backLabel: String,
     onBack: () -> Unit,
+    mainPage: Boolean = false,
     onSelect: (MiniJournalWorkout) -> Unit,
 ) {
     val items = home?.recentWorkouts.orEmpty()
-    RoundList(wearText("Mini napló")) {
-        centerItem { JournalText(wearText("Mentett telefonos edzések · offline másolat"), size = 10) }
+    RoundList(if (mainPage) WearMenu216.text("journal") else wearText("Mini napló")) {
+        if (!mainPage) centerItem { JournalText(wearText("Mentett telefonos edzések · offline másolat"), size = 10) }
 
         if (items.isEmpty()) {
             val message =
@@ -32,12 +40,21 @@ internal fun MiniJournalScreen(
                 JournalText(message, size = 12)
             }
         }
-        if (home?.phoneVersion?.isNotBlank() == true) {
+        if (!mainPage && home?.phoneVersion?.isNotBlank() == true) {
             centerItem { JournalText("Telefon: ${home.phoneVersion}", size = 10) }
         }
         items.forEach { item ->
             centerItem {
-                Pill(
+                if (mainPage) {
+                    Column(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .background(Card, RoundedCornerShape(14.dp))
+                        .clickable(role = Role.Button) { onSelect(item) }
+                        .testTag("wear-journal-entry").padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        Text(item.dayName, color = White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        Text("${miniJournalDate(item.started)} · ${formatSeconds(item.durationSeconds)} · ${item.exercises.sumOf { it.sets.size }}",
+                            color = Muted, fontSize = 10.sp, maxLines = 2)
+                    }
+                } else Pill(
                     "${miniJournalDate(item.started)}\n${item.dayName}",
                     modifier = Modifier.fillMaxWidth(.84f).testTag("wear-journal-entry"),
                     tone = Card,

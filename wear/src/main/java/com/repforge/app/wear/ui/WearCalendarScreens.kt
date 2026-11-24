@@ -35,6 +35,8 @@ internal fun CalendarScreen(
     canStart: Boolean,
     onBack: () -> Unit,
     onDays: () -> Unit = {},
+    mainPage: Boolean = false,
+    onDetailChange: (Boolean) -> Unit = {},
     onStart: (WatchCalendarEntry) -> Unit,
 ) {
     val today = LocalDate.now()
@@ -43,6 +45,9 @@ internal fun CalendarScreen(
     var weekKey by rememberSaveable { mutableStateOf(wearCalendarMonday(today).toString()) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     val week = runCatching { LocalDate.parse(weekKey) }.getOrDefault(wearCalendarMonday(today))
+    val detailCallback by rememberUpdatedState(onDetailChange)
+    LaunchedEffect(selectedKey) { detailCallback(selectedKey != null) }
+    DisposableEffect(Unit) { onDispose { detailCallback(false) } }
     BackHandler(enabled = selectedKey != null) { selectedKey = null }
     selectedKey?.let { key ->
         val selected = LocalDate.parse(key)
@@ -54,6 +59,14 @@ internal fun CalendarScreen(
             onBack = { selectedKey = null },
             onStart = onStart,
         )
+        return
+    }
+    if (mainPage && home != null) {
+        // The main pager owns horizontal gestures. The detailed calendar from the menu
+        // still supports all cached weeks; the main page always presents this week.
+        CalendarWeekPage(wearCalendarMonday(today), entries, today, 1, 1, onBack, onDays) {
+            selectedKey = it.toString()
+        }
         return
     }
     if (home == null || entries.isEmpty()) {

@@ -97,6 +97,7 @@ internal fun TrainPilotWearApp(
     var miniJournalBackRoute by rememberSaveable { mutableStateOf("journal") }
     var journalBackRoute by rememberSaveable { mutableStateOf("menu") }
     var calendarBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var calendarDetail by remember { mutableStateOf(false) }
     var syncBackRoute by rememberSaveable { mutableStateOf("home") }
     var metricsBackRoute by rememberSaveable { mutableStateOf("menu") }
     var settingsBackRoute by rememberSaveable { mutableStateOf("home") }
@@ -165,7 +166,7 @@ internal fun TrainPilotWearApp(
                 route == "home" -> route
                 route == "journal" && journalBackRoute == "home" -> route
                 route == "metrics" && metricsBackRoute == "home" -> route
-                route == "calendar" && calendarBackRoute == "home" -> route
+                route == "calendar" && calendarBackRoute == "home" && !calendarDetail -> route
                 else -> null
             }
             WearMainNavigation(mainRoute, onPage = { destination ->
@@ -256,6 +257,7 @@ internal fun TrainPilotWearApp(
                                     else -> wearText("‹ Mérések")
                                 },
                             onBack = { route = journalBackRoute },
+                            mainPage = journalBackRoute == "home",
                         ) { selected ->
                             miniJournalId = selected.workoutId
                             miniJournalBackRoute = "journal"
@@ -291,6 +293,8 @@ internal fun TrainPilotWearApp(
                                 closure.value?.status !in listOf("pending", "error"),
                             onBack = { route = calendarBackRoute },
                             onDays = { daysBack216 = "calendar"; route = "days" },
+                            mainPage = calendarBackRoute == "home",
+                            onDetailChange = { calendarDetail = it },
                         ) { entry ->
                             entry.day?.let {
                                 startWithGps216(it.exercises.firstOrNull()) {onStart(it, entry.scheduleId)}
