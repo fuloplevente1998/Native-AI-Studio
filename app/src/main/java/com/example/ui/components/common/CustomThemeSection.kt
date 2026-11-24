@@ -36,6 +36,7 @@ internal fun CustomThemeSection(language: AppLanguage) {
     var deleting by remember { mutableStateOf<CustomThemeDefinition?>(null) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
+    var saveCompleted by remember { mutableStateOf(false) }
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
     fun runOperation(action: suspend () -> Unit, success: () -> Unit = {}) {
         if (busy) return
@@ -90,9 +91,9 @@ internal fun CustomThemeSection(language: AppLanguage) {
     }
     editing?.let { theme ->
         CustomThemeEditorSheet(theme.draft, theme.key, language,
-            onSave = { saved -> runOperation({ access.save(saved) }) { editing = null } },
-            onDismiss = { if (!busy) editing = null }, saving = busy,
-            saveFailed = failed)
+            onSave = { saved -> runOperation({ access.save(saved) }) { saveCompleted = true } },
+            onDismiss = { if (!busy) { editing = null; saveCompleted = false } }, saving = busy,
+            saveFailed = failed, saveCompleted = saveCompleted)
     }
     deleting?.let { theme ->
         AlertDialog(onDismissRequest = { if (!busy) deleting = null },
