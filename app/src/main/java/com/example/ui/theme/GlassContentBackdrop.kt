@@ -88,13 +88,15 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                     var hardware = false
                     drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
                     if (effect != null && hardware && backdrop.layer.size.width > 0 && backdrop.layer.size.height > 0) {
-                        lensLayer.record(this, layoutDirection, dimensions) {
-                            drawRect(palette.surface)
-                            translate(left = -relative.x, top = -relative.y) { drawLayer(backdrop.layer) }
-                        }
-                        drawLayer(lensLayer)
-                        // Older platform blur has no shader luminance guard.
-                        if (Build.VERSION.SDK_INT < 33) drawRect(palette.surface.copy(alpha = .84f))
+                        runCatching {
+                            lensLayer.record(this, layoutDirection, dimensions) {
+                                drawRect(palette.surface)
+                                translate(left = -relative.x, top = -relative.y) { drawLayer(backdrop.layer) }
+                            }
+                            drawLayer(lensLayer)
+                            // Older platform blur has no shader luminance guard.
+                            if (Build.VERSION.SDK_INT < 33) drawRect(palette.surface.copy(alpha = .84f))
+                        }.onFailure { drawRect(palette.surface) }
                     }
                 }
                 drawContent()
