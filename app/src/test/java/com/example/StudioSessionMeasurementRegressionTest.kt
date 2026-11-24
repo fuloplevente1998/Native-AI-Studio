@@ -30,6 +30,15 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.openExerciseDetail
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.returnToActiveWorkout
+import com.example.ui.viewmodel.saveEditorProgram
+import com.example.ui.viewmodel.selectPalette
+import com.example.ui.viewmodel.selectTab
+import com.example.ui.viewmodel.stopActiveWorkoutSession
+import com.example.ui.viewmodel.updateGoals
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

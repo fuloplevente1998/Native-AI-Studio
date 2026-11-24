@@ -69,7 +69,7 @@ class Collector2779RegressionTest {
 
     @Test fun quickWorkoutQueueNoLongerWritesIntoAProgramDay() {
         val main = java.io.File("src/main/java/com/example/MainActivity.kt").readText()
-        val vm = java.io.File("src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt").readText()
+        val vm = java.io.File("src/main/java/com/example/ui/viewmodel/VmProgramEditor.kt").readText()
         // Only the editor entry arms the program-day write; every other library entry is queue-only.
         assertEquals(2, Regex("openExerciseLibraryForProgramDay\\(\\)").findAll(main).count())
         assertTrue(vm.contains("if (_uiState.value.libraryMutationBusy || !libraryAddsToProgramDay) return"))

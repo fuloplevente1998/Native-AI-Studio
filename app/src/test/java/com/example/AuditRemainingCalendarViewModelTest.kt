@@ -8,6 +8,11 @@ import com.example.ui.viewmodel.TrainPilotViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.*
 import org.junit.Test
+import com.example.ui.viewmodel.addPlannedWorkoutOnDay
+import com.example.ui.viewmodel.deleteCalendarEvent
+import com.example.ui.viewmodel.modifyCalendarEvent
+import com.example.ui.viewmodel.moveCalendarEvent
+import com.example.ui.viewmodel.undoCalendarAction
 
 class AuditRemainingCalendarViewModelTest {
     private data class Expected(val modified: String, val moved: String, val deleted: String,

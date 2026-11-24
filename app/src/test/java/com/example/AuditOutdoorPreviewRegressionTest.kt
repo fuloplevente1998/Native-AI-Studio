@@ -22,6 +22,8 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.navigateBack
+import com.example.ui.viewmodel.navigateToSubScreen
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

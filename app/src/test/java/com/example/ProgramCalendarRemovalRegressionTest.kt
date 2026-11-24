@@ -22,6 +22,14 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.clearCalendarPlans
+import com.example.ui.viewmodel.deleteCalendarEvent
+import com.example.ui.viewmodel.deleteEditorDay
+import com.example.ui.viewmodel.deleteEditorProgram
+import com.example.ui.viewmodel.modifyCalendarEvent
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.requestCalendarClear
+import com.example.ui.viewmodel.updatePlanningParameters
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
