@@ -20,14 +20,13 @@ val LocalTrainPilotPalette = staticCompositionLocalOf {
 
 /** One mapping for Studio and embedded native editors, including light selection colors. */
 internal fun nativeStudioColors(palette: TrainPilotPalette): TrainPilotExtendedColors {
-    val separated = palette.id in 17..32
-    val selected = if (separated) palette.tintedSurface(0.16f) else Card2Color
+    val selection = palette.selectionColors()
     return TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
         line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
-        accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
-        accentText = if (separated) palette.primary else NativeThemeTokens.readableAccent(palette.primary),
-        selectedSurface = selected,
-        selectedBorder = if (separated) palette.primary else NativeThemeTokens.readableControlAccent(palette.primary, selected),
+        accent = palette.primary, accent2 = palette.secondary, onAccent = palette.readablePrimaryLabel(),
+        accentText = selection.foreground,
+        selectedSurface = selection.surface,
+        selectedBorder = selection.border,
         dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
 }
 
@@ -40,7 +39,7 @@ fun TrainPilotTheme(
     val colorScheme = if (palette.isDark) {
         darkColorScheme(
             primary = palette.primary,
-            onPrimary = palette.onPrimary,
+            onPrimary = palette.readablePrimaryLabel(),
             primaryContainer = palette.surfaceElevated,
             onPrimaryContainer = palette.primaryBright,
             secondary = palette.secondary,
@@ -60,7 +59,7 @@ fun TrainPilotTheme(
     } else {
         lightColorScheme(
             primary = palette.primary,
-            onPrimary = palette.onPrimary,
+            onPrimary = palette.readablePrimaryLabel(),
             primaryContainer = palette.surfaceElevated,
             onPrimaryContainer = palette.textPrimary,
             secondary = palette.secondary,
