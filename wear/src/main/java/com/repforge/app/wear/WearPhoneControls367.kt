@@ -6,6 +6,23 @@ import java.util.UUID
 
 /** A phone-owned session is never mutated locally. Only a durable, fenced request is queued. */
 internal object WearPhoneControls367 {
+    fun adjust(context: Context, target: WearRestTarget367, delta: Int): WearWorkout? {
+        synchronized(WorkoutSnapshotStore) {
+            val current = WorkoutSnapshotStore.load(context) ?: return null
+            val now = System.currentTimeMillis()
+            if (current.timerOwner != "phone" || wearRestTarget367(current, now) != target ||
+                delta !in listOf(-15,15) || (WearCommandOutbox.state(context,current.workoutId)?.pending ?: 0) > 0) return null
+            val command = JSONObject().put("schema",1).put("commandId",UUID.randomUUID().toString())
+                .put("action","phoneRest367").put("workoutId",current.workoutId)
+                .put("generation",current.generation).put("ownerEpoch193",current.ownerEpoch193)
+                .put("pauseRevision",current.pauseRevision).put("key",target.timerKey)
+                .put("phaseNumber",target.phaseNumber).put("duration",target.duration)
+                .put("delta",delta).put("watchSequence",current.localSequence).put("createdAt",now)
+            if (WearCommandOutbox.enqueue(context,command) <= 0L) return null
+            return WorkoutSnapshotStore.load(context)
+        }
+    }
+
     fun pause(context: Context, target: WearPauseTarget367, paused: Boolean): WearWorkout? {
         synchronized(WorkoutSnapshotStore) {
             val current = WorkoutSnapshotStore.load(context) ?: return null

@@ -12,6 +12,7 @@ internal data class WearPauseTarget367(
 internal data class WearRestTarget367(
     val workout: WearPauseTarget367, val expectedDeadline: Long,
     val exerciseId: String, val setId: String,
+    val timerKey: String = "", val phaseNumber: Long = 0, val duration: Int = 0,
 )
 internal fun wearPauseTarget367(workout: WearWorkout, allowPaused: Boolean = false): WearPauseTarget367? =
     if (workout.workoutId.isBlank() || (!allowPaused && workout.workoutPaused) || workout.controlIntent367 != null || workout.ownershipProtocol193 != 1 ||
@@ -21,6 +22,12 @@ internal fun wearPauseTarget367(workout: WearWorkout, allowPaused: Boolean = fal
 
 internal fun wearRestTarget367(workout: WearWorkout, now: Long): WearRestTarget367? {
     val target = wearPauseTarget367(workout) ?: return null
+    if (workout.timerOwner == "phone") {
+        val a = workout.automation ?: return null
+        if (workout.nativeExecutionProtocol != 2 || !a.restOnly || !a.enabled || a.owner != "phone" ||
+            a.phase != "rest" || a.paused || a.interrupted || a.awaitingPhone || a.key.isBlank() || a.deadlineAt <= now) return null
+        return WearRestTarget367(target, a.deadlineAt, "", "", a.key, a.phaseNumber, a.restSeconds)
+    }
     if (workout.restEndAt <= now || workout.automation?.enabled == true) return null
     val exercise = workout.exercise ?: return null
     val set = workout.currentSet ?: return null

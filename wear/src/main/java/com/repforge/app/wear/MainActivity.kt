@@ -442,7 +442,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onPrevious = { navigateExercise(-1) },
                 onNext = { navigateExercise(1) },
                 onSkipRest = ::skipRest,
-                onRestAdjust367 = { target, delta -> applyWatchControl367 { WearWatchControls367.adjust(this, target, delta) } },
+                onRestAdjust367 = { target, delta -> applyWatchControl367 {
+                    if(target.workout.timerOwner=="phone" && (home.value?.controlProtocol367 ?: 0)>=3) WearPhoneControls367.adjust(this,target,delta)
+                    else WearWatchControls367.adjust(this,target,delta)
+                } },
                 onPauseWorkout367 = { target -> applyWatchControl367 {
                     if(target.timerOwner=="phone") WearPhoneControls367.pause(this,target,true) else WearWatchControls367.pause(this, target)
                 } },

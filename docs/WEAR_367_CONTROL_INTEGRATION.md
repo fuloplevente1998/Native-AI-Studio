@@ -26,3 +26,7 @@
   implemented ± is for manual rest only.
 - Device tests pending: offline replay, process death, reconnect, simultaneous phone/watch,
   transferred ownership, 0/max, haptics and actual Health/GPS pause/resume.
+
+## Native phone-owner controls
+- Protocol 2: explicit pause/resume on canonical PhoneWorkoutExecution, matching generation/epoch/pause revision, durable transaction proof, no optimistic watch mutation.
+- Protocol 3: phone-owned rest-only phase adjustment via existing IntervalTimerService.adjustRest, fenced by key, phase number and configured duration; durable checkpoint proof before ACK. No parallel timer. The watch queues a request and uses the phone mirror. Automatic multi-step rest adjustment remains unsupported. Physical device verification pending.

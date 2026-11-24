@@ -298,7 +298,7 @@ class IntervalTimerService : Service() {
 
         /** Change this rest's duration without crediting skipped or added virtual seconds as actual rest. */
         @JvmStatic
-        fun adjustRest(context: Context, target: NativeTimerTarget, deltaSeconds: Int): JSONObject {
+        fun adjustRest(context: Context, target: NativeTimerTarget, deltaSeconds: Int, remoteProof: JSONObject? = null): JSONObject {
             require(deltaSeconds in setOf(-15, 15)) { "Invalid rest adjustment" }
             val s = instance ?: error("A pihenő időzítője már nem aktív.")
             val frame = PhoneWorkoutExecution.store(context).snapshot() ?: error("Nincs aktív natív edzés.")
@@ -312,9 +312,22 @@ class IntervalTimerService : Service() {
             s.update() // Account elapsed real time on the old timeline first.
             val phase = s.timeline!!.at(s.now())
             check(phase.phase == "rest" && s.running) { "A pihenő már véget ért." }
-            if (phase.remainingMs + deltaSeconds * 1000L <= 0L) return command(context, target.key, "skipRest")
             val old = s.steps.single()
-            val rest = (old.rest + deltaSeconds).coerceIn(0, 3600)
+            if (remoteProof != null) {
+                check(remoteProof.optString("key") == s.key && remoteProof.optLong("phaseNumber") == s.phaseNumber &&
+                    remoteProof.optInt("duration") == old.rest && s.initialRest == 0) { "Rest target changed" }
+            }
+            val change = if (remoteProof != null && deltaSeconds > 0)
+                minOf(deltaSeconds, ((600000L - phase.remainingMs).coerceAtLeast(0L) / 1000L).toInt())
+                else deltaSeconds
+            check(change != 0) { "Rest limit reached" }
+            val previousProof = s.remoteRestProof367
+            s.remoteRestProof367 = remoteProof ?: previousProof
+            if (phase.remainingMs + change * 1000L <= 0L) {
+                try { return command(context, target.key, "skipRest") }
+                catch (failure: Exception) { s.remoteRestProof367 = previousProof; throw failure }
+            }
+            val rest = (old.rest + change).coerceIn(0, 3600)
             val step = IntervalTimeline193.Step(old.exerciseId, old.setId, old.name, old.work, rest, old.rounds, old.gpsKey)
             val priorTimeline = s.timeline
             val priorRow = JSONObject(s.planSteps.getJSONObject(0).toString())
@@ -324,6 +337,7 @@ class IntervalTimerService : Service() {
             s.elapsed = phase.elapsedMs
             s.began = SystemClock.elapsedRealtime()
             try { s.save() } catch (failure: Exception) {
+                s.remoteRestProof367 = previousProof
                 s.steps[0] = old
                 s.planSteps.put(0, priorRow)
                 s.timeline = priorTimeline
@@ -373,6 +387,7 @@ class IntervalTimerService : Service() {
     private var stopwatchOwnerGeneration: Long = 0L
     private var planSteps = JSONArray()
     private var phaseNumber: Long = 0L
+    private var remoteRestProof367: JSONObject? = null
     private var running: Boolean = false
     private var advance: Boolean = false
     private var sound: Boolean = false
@@ -518,6 +533,7 @@ class IntervalTimerService : Service() {
         )
         planSteps = JSONArray(plan.getJSONArray("steps").toString())
         phaseNumber = 0L
+        remoteRestProof367 = null
         ownershipBaseLedger193 = plan.optJSONObject("ownershipBaseLedger193")
         timeline = validate(plan)
         timeLedger = IntervalTimeLedger(plan.getJSONArray("steps").length(), SystemClock.elapsedRealtime())
@@ -753,6 +769,7 @@ class IntervalTimerService : Service() {
                 .put("round", p.round)
                 .put("remainingMs", p.remainingMs)
                 .put("totalMs", p.totalMs)
+            remoteRestProof367?.let { out.put("remoteRestProof367", JSONObject(it.toString())) }
             if (ownershipBaseLedger193 != null) {
                 out.put("ownershipBaseLedger193", JSONObject(ownershipBaseLedger193.toString()))
             }

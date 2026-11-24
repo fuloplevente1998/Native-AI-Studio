@@ -251,6 +251,11 @@ object WearSyncRepository {
                             }
                         }
 
+                        "phoneRest367" -> withContext(Dispatchers.Main) {
+                            val applied = PhoneRemoteRest367.apply(appContext, command)
+                            check(WearCommandReceipts.complete(appContext, command, if (applied) "applied" else "superseded", uri))
+                        }
+
                         "phonePause367" -> withContext(Dispatchers.Main) {
                             val applied = PhoneRemotePause367.apply(appContext, command)
                             check(WearCommandReceipts.complete(appContext, command, if (applied) "applied" else "superseded", uri))
@@ -984,7 +989,7 @@ object WearSyncRepository {
                 } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
                 .put("dailyStepsGoal", dailyStepsGoal)
-                .put("controlProtocol367", 2)
+                .put("controlProtocol367", 3)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
                 .put("calendarDays", allCalendarDaysArray)

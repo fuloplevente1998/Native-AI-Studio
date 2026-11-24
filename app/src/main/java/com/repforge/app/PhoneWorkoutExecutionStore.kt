@@ -522,6 +522,7 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 .put("stopped", timer.optBoolean("stopped"))
             logs.put(key, log)
             frame.put("timeLogs162", logs).put("latestTimer162", timer)
+            timer.optJSONObject("remoteRestProof367")?.let { frame.put("remoteRest367", JSONObject(it.toString())) }
             val restPlan = frame.optJSONObject("transition")?.optJSONObject("plan")
             if (frame.optInt("nativeEditorProjection") == 1 && timer.optBoolean("restOnly") &&
                 restPlan != null && restPlan.optString("key") == key && restPlan.optBoolean("restOnly")) {
