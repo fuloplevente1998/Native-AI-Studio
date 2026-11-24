@@ -4,7 +4,6 @@ import android.graphics.Paint
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -18,6 +17,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 /** Independently authored material parameters. Blur is in normalized scene coordinates. */
+internal val LocalGlassOpticsEnabled = staticCompositionLocalOf { true }
+
 internal data class GlassOptics(val clarity: Float, val blur: Float, val bend: Float, val coat: Float) {
     companion object {
         fun from(value: Int): GlassOptics {
@@ -43,6 +44,7 @@ internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape:
 
 @Composable
 private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?): Modifier {
+    val effectsEnabled = LocalGlassOpticsEnabled.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val sceneWidth = with(density) { configuration.screenWidthDp.dp.toPx() }.coerceAtLeast(1f)
@@ -52,7 +54,7 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
         .drawWithCache {
             val path = shape?.let { Path().apply { addOutline(it.createOutline(size, layoutDirection, this@drawWithCache)) } }
             val optics = GlassOptics.from(palette.glassClarity)
-            val painter = if (Build.VERSION.SDK_INT >= 33) runCatching {
+            val painter = if (effectsEnabled && Build.VERSION.SDK_INT >= 33) runCatching {
                 GlassShader33(palette, optics, origin, sceneWidth, sceneHeight, size.width, size.height, shape != null)
             }.getOrNull() else null
             val fallback = Brush.verticalGradient(listOf(palette.background, palette.customPageEnd ?: palette.background))
@@ -154,3 +156,17 @@ private class GlassShader33(
         """
     }
 }
+
+/** A highlight over the painted control; its semantic color and text stay unchanged. */
+@Composable
+internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
+    if (!palette.isLiquidGlass) this else drawWithCache {
+        val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
+        val shine = Brush.verticalGradient(listOf(
+            Color.White.copy(alpha = .25f + palette.glassClarity / 200f),
+            Color.White.copy(alpha = .08f), palette.primary.copy(alpha = .25f)))
+        onDrawWithContent {
+            drawContent()
+            clipPath(path) { drawPath(path, shine, style = Stroke(2.dp.toPx())) }
+        }
+    }
