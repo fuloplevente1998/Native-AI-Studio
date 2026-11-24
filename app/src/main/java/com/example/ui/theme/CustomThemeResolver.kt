@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.toArgb
 import com.repforge.app.ui.theme.NativeThemeTokens
 
 /** #350: one pure resolver for editor preview and eventual applied theme.
- * The returned palette contains opaque effective colors for the chosen backdrop.
- * Actual translucent painting is a separate rendering concern.
+ * The palette carries opaque effective colors plus optional raw card paint and a
+ * monotonic page gradient; nested/unknown backdrops keep the effective colors.
  */
 internal data class ResolvedCustomTheme(
     val palette: TrainPilotPalette,
@@ -49,6 +49,11 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
     }
     corrected[CustomThemeRole.CARD] = rawCard
     val card = rawCard.copy(alpha = opacity).compositeOver(page)
+    // Each channel moves away from the chosen text luminance, so the second stop
+    // cannot reduce contrast relative to the first stop used for correction.
+    val pageEnd = Color(red = page.red * .78f + backdrop.red * .22f,
+        green = page.green * .78f + backdrop.green * .22f,
+        blue = page.blue * .78f + backdrop.blue * .22f)
     val inner = move(lerp(card, foreground, if (base.isHighContrast) 0.09f else 0.05f),
         backdrop, ::safeSurface)
     val surfaces = listOf(page, card, inner)
@@ -79,7 +84,9 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
         cardBorder = border,
         success = semantic(base.success), warning = semantic(base.warning), danger = semantic(base.danger),
         sleepAccent = semantic(base.sleepAccent), heartAccent = semantic(base.heartAccent),
-        stepsAccent = semantic(base.stepsAccent), energyAccent = semantic(base.energyAccent)
+        stepsAccent = semantic(base.stepsAccent), energyAccent = semantic(base.energyAccent),
+        customCardPaint = rawCard.copy(alpha = opacity).takeIf { opacity < 1f },
+        customPageEnd = pageEnd.takeIf { opacity < 1f }
     )
     val suggested = corrected.mapValues { it.value.customThemeHex() }
     val changed = CustomThemeRole.entries.filterTo(mutableSetOf()) {
