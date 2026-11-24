@@ -35,12 +35,16 @@ internal object WearWatchControls367 {
                 if (!WearAutomaticService.active(current.workoutId)) return null
                 val before = current.automation ?: return null
                 val remaining = before.remaining(mono)
-                val adjusted = WearAutomaticEngine.adjustActiveRest367(current, mono, boot, delta) ?: return null
-                val next = intent(adjusted, target.workout, "automaticRest", now, target.expectedDeadline, delta,
+                val transferred = if(current.timerCheckpoint193!=null)
+                    WearTransferredTimer193.adjustActiveRest367(current,mono,boot,delta) ?: return null
+                    else null
+                val adjusted = transferred?.workout ?: WearAutomaticEngine.adjustActiveRest367(current, mono, boot, delta) ?: return null
+                val next = intent(adjusted, target.workout, if(transferred!=null) "transferredRest" else "automaticRest", now, target.expectedDeadline, delta,
                     target.exerciseId, target.setId)
                 val command = JSONObject(next.controlIntent367!!)
                     .put("timerKey", target.timerKey).put("phaseNumber", target.phaseNumber)
                     .put("configuredRest", before.restSeconds).put("remainingBefore", remaining)
+                transferred?.let { command.put("transferRestProof367",it.proof) }
                 WorkoutSnapshotStore.saveWorkout(context, next.copy(controlIntent367 = command.toString()))
                 recover(context)
                 WearAutomaticService.nudge()

@@ -32,12 +32,13 @@ internal fun wearRestTarget367(workout: WearWorkout, now: Long): WearRestTarget3
     }
     val automatic = workout.automation
     if (automatic?.enabled == true) {
-        if (workout.timerCheckpoint193 != null || automatic.owner != "watch" || automatic.phase != "rest" ||
+        if (automatic.owner != "watch" || automatic.phase != "rest" ||
             automatic.paused || automatic.interrupted || automatic.awaitingPhone || automatic.key.isBlank() ||
             automatic.targetId.isBlank()) return null
         val ex = workout.exercises.getOrNull(automatic.targetExercise) ?: return null
         return WearRestTarget367(target, automatic.anchorMs + automatic.remainingMs, ex.id,
-            automatic.targetId, automatic.key, automatic.phaseNumber, automatic.restSeconds)
+            automatic.targetId, automatic.key, automatic.phaseNumber, automatic.restSeconds,
+            automatic.restPhaseDurationMs367, automatic.restChangeRevision367)
     }
     if (workout.restEndAt <= now) return null
     val exercise = workout.exercise ?: return null

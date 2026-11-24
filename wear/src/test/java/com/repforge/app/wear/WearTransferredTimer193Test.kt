@@ -79,4 +79,36 @@ class WearTransferredTimer193Test {
         val disabled=WearAutomaticEngine.disable(before,6000,3)
         assertNull(disabled.timerCheckpoint193);assertFalse(disabled.automation!!.enabled)
     }
+    @Test fun transferredRestAdjustmentPersistsOnlyThisPhaseAndActualLedger() {
+        val before=running(14000)
+        val result=WearTransferredTimer193.adjustActiveRest367(before,6000,3,15)!!
+        val changed=result.workout
+        assertEquals(18000L,changed.automation!!.remainingMs)
+        assertEquals(1000L,changed.automation.restMs)
+        assertEquals(5,changed.automation.restSeconds)
+        val timer=JSONObject(changed.timerCheckpoint193!!).getJSONObject("timer")
+        assertEquals(15000L,timer.getLong("elapsedMs"))
+        assertEquals(20000L,timer.getJSONObject("restOverridesMs367").getLong("0:1"))
+        assertEquals(1,timer.getJSONObject("restOverridesMs367").length())
+        val restored=WorkoutSnapshotStore.parse(WorkoutSnapshotStore.encode(changed).toString())!!
+        val shortened=WearTransferredTimer193.adjustActiveRest367(restored,7000,3,-15)!!.workout
+        assertEquals(2000L,shortened.automation!!.remainingMs)
+        val work=WearAutomaticEngine.tick(shortened,9000,3).workout
+        assertEquals("work",work.automation!!.phase)
+        assertEquals(2,work.automation.round)
+        assertEquals(4000L,work.automation.restMs)
+        val later=WearAutomaticEngine.tick(work,19000,3).workout
+        assertEquals("rest",later.automation!!.phase)
+        assertEquals(5000L,later.automation.remainingMs)
+    }
+    @Test fun transferredRestZeroAndInvalidStateDoNotInventTime() {
+        val before=running(14000)
+        val next=WearTransferredTimer193.adjustActiveRest367(before,6000,3,-15)!!.workout
+        assertEquals("work",next.automation!!.phase)
+        assertEquals(1000L,next.automation.restMs)
+        assertEquals(2,next.automation.round)
+        assertNull(WearTransferredTimer193.adjustActiveRest367(before,6000,4,15))
+        assertNull(WearTransferredTimer193.adjustActiveRest367(before.copy(workoutPaused=true),6000,3,15))
+        assertNull(WearTransferredTimer193.adjustActiveRest367(before,10000,3,15))
+    }
 }

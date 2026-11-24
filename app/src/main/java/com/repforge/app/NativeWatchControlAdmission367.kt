@@ -68,6 +68,7 @@ internal object NativeWatchControlAdmission367 {
                     (0 until sets.length()).none { sets.optJSONObject(it)?.optString("setId") == command.optString("setId") }) return null
             }
             "automaticRest" -> if (!validAutomaticRest(incoming, command, basePause)) return null
+            "transferredRest" -> if (!NativeTransferredRestAdmission367.valid(incoming,command,basePause)) return null
             else -> return null
         }
         val next = NativeWatchSnapshotAdmission.snapshot(live, command) ?: return null
