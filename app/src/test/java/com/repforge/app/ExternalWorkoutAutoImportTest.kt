@@ -51,6 +51,20 @@ class ExternalWorkoutAutoImportTest {
         assertEquals(HealthJournalStore.HC, rows.first().identity.provider)
     }
 
+    @Test fun oldObservedSessionsAreRefreshOnlyAndOptOutCannotCreate() {
+        val old = day.minusDays(40)
+        val record = row().put("start", "${old}T10:00:00Z").put("end", "${old}T10:15:00Z")
+        val f = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.HC, day, ZoneOffset.UTC)
+        f.observe(old, result(record))
+        assertFalse(f.allowsNew(f.candidates().single()))
+        val disabled = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.HC, day, ZoneOffset.UTC, false)
+        disabled.observe(day, result(row()))
+        assertFalse(disabled.allowsNew(disabled.candidates().single()))
+        val enabled = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.HC, day, ZoneOffset.UTC)
+        enabled.observe(day, result(row()))
+        assertTrue(enabled.allowsNew(enabled.candidates().single()))
+    }
+
     @Test fun budgetIsBoundedAndIdentityIsNotDroppedOnRepeat() {
         val f = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.SAMSUNG, day, ZoneOffset.UTC)
         f.observe(day, result(*(0..600).map { row(it.toString()) }.toTypedArray()))

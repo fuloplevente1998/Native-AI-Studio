@@ -35,6 +35,15 @@ internal object ExternalWorkoutAutoImport {
     fun admit(context: Context, provider: String, today: LocalDate, zone: ZoneId): Flight? =
         consent(context)?.let { Flight(it, provider, today, zone) }
 
+    /** Existing imported evidence is refreshed even with auto-creation disabled.
+     * Read the revision and choice together; changing the switch invalidates either flight.
+     */
+    @Synchronized fun admitRefresh(context: Context, provider: String, today: LocalDate, zone: ZoneId): Flight =
+        prefs(context).let { Flight(it.getLong(REV, 0), provider, today, zone, it.getBoolean(KEY, false)) }
+
+    @Synchronized private fun matches(context: Context, revision: Long, create: Boolean): Boolean =
+        prefs(context).let { it.getLong(REV, 0) == revision && it.getBoolean(KEY, false) == create }
+
     data class Observed(val identity: ExternalWorkoutIdentity, val modified: Long, val start: Long, val end: Long)
     data class Report(val saved: Int = 0, val overlap: Int = 0, val skipped: Int = 0,
                       val failed: Boolean = false, val limited: Boolean = false) {
@@ -43,16 +52,19 @@ internal object ExternalWorkoutAutoImport {
     }
 
     internal class Flight(private val revision: Long, private val provider: String,
-                          private val today: LocalDate, private val zone: ZoneId) {
+                          private val today: LocalDate, private val zone: ZoneId,
+                          private val create: Boolean = true) {
         private val observed = linkedMapOf<ExternalWorkoutIdentity, Observed>()
         private var limited = false
         internal fun candidates(): List<Observed> = observed.values.toList()
+        internal fun allowsNew(seen: Observed): Boolean = create &&
+            seen.start >= today.minusDays(29).atStartOfDay(zone).toInstant().toEpochMilli()
 
         /** Unrelated missing permissions do not prevent a successfully read exercise from being considered.
          * Exercise read failures never turn old cached rows into new auto-import candidates.
          */
         fun observe(day: LocalDate, result: JSONObject) {
-            if (day.isBefore(today.minusDays(29)) || day.isAfter(today)) return
+            if (day.isAfter(today)) return
             val warnings = result.optJSONArray("warnings")
             if (warnings != null && (0 until warnings.length()).any {
                     warnings.optString(it).startsWith("READ_EXERCISE:")
@@ -67,7 +79,12 @@ internal object ExternalWorkoutAutoImport {
                 if (source.isBlank() || id.isBlank() || !row.has("lastModifiedMs") || row.isNull("lastModifiedMs")) continue
                 val start = runCatching { Instant.parse(row.optString("start")).toEpochMilli() }.getOrNull() ?: continue
                 val end = runCatching { Instant.parse(row.optString("end")).toEpochMilli() }.getOrNull() ?: continue
-                if (end <= start || start < today.minusDays(29).atStartOfDay(zone).toInstant().toEpochMilli()) continue
+                if (end <= start) continue
+                // Ignore inconsistent dates returned by the provider. Cross-midnight
+                // sessions may overlap multiple day reads, so accept actual overlap.
+                val dayStart = day.atStartOfDay(zone).toInstant().toEpochMilli()
+                val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+                if (start >= dayEnd || end <= dayStart) continue
                 val identity = ExternalWorkoutIdentity(provider, source, id)
                 val modified = row.optLong("lastModifiedMs", -1)
                 if (modified < 0) continue
@@ -89,12 +106,12 @@ internal object ExternalWorkoutAutoImport {
                     coroutine.ensureActive()
                     syncGuard()
                     ticket.requireCurrent(app)
-                    check(consent(app) == revision) { "Automatic import consent changed" }
+                    check(matches(app, revision, create)) { "Automatic import consent changed" }
                     check(journal.generation() == generation && journal.pendingRestore().isEmpty())
                     check(NativeHealthBackupGate.available() && NativeHealthForegroundAdmission.safeOffMain(app))
                 }
                 try {
-                    if (consent(app) != revision || observed.isEmpty()) return@withContext Report(limited = limited)
+                    if (!matches(app, revision, create) || observed.isEmpty()) return@withContext Report(limited = limited)
                     val db = TrainPilotDatabase.getInstance(app)
                     for (batch in candidates().chunked(16)) {
                         guard()
@@ -115,7 +132,7 @@ internal object ExternalWorkoutAutoImport {
                                 if (row.modifiedMs != seen.modified || row.startMs != seen.start || row.endMs != seen.end)
                                     return@mutate ExternalWorkoutImport.Outcome.CHANGED
                                 val metrics = journal.externalWorkoutMetrics(row, generation, grants)
-                                ExternalWorkoutImport.persist(app, db, row, metrics) {
+                                ExternalWorkoutImport.persist(app, db, row, metrics, allowCreate = allowsNew(seen)) {
                                     guard()
                                     if (provider == HealthJournalStore.HC)
                                         check("READ_EXERCISE" in grants && grants.all { HealthConnectRepository.isAllowed(app, it) })

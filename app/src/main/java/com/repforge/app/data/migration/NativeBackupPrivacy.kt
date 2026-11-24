@@ -21,8 +21,34 @@ internal object NativeBackupPrivacy {
                     com.repforge.shared.LegacySyncIdentity18.canonical(candidate.optJSONArray("activeIntervals")) ==
                     com.repforge.shared.LegacySyncIdentity18.canonical(row.optJSONArray("activeIntervals"))
             } ?: continue
-            for (key in old.keys()) if (key.lowercase(Locale.ROOT) in healthKeys || key in setOf("nativeHealthWindowStale", "nativeOriginalHealthWindow"))
-                row.put(key, old.get(key))
+            for (key in old.keys()) {
+                if (key.lowercase(Locale.ROOT) !in healthKeys && key !in setOf("nativeHealthWindowStale", "nativeOriginalHealthWindow")) continue
+                // The imported source identity and link membership are authoritative in
+                // the incoming workout. Never reattach a removed link or overwrite newer
+                // evidence (including a source-deleted marker) from a local backup.
+                when (key) {
+                    "externalWorkout359" -> {
+                        if (!row.optBoolean("externalWorkoutImported359")) continue
+                        val saved = old.optJSONObject(key) ?: continue
+                        val incoming = row.optJSONObject(key)
+                        if (incoming == null) row.put(key, saved)
+                        // Incoming source metadata wins whenever present; never replace
+                        // a new source-deletion marker or same-version refreshed samples.
+                    }
+                    "externalLinkedSources359" -> {
+                        val oldLinks = old.optJSONObject(key) ?: continue
+                        val ids = row.optJSONArray("externalLinkedIds359") ?: continue
+                        val incoming = row.optJSONObject(key) ?: JSONObject()
+                        for (i in 0 until ids.length()) {
+                            val id = ids.optString(i)
+                            if (!Regex("tp359-[a-f0-9]{64}").matches(id) || incoming.has(id)) continue
+                            oldLinks.optJSONObject(id)?.let { incoming.put(id, it) }
+                        }
+                        if (incoming.length() > 0) row.put(key, incoming)
+                    }
+                    else -> row.put(key, old.get(key))
+                }
+            }
         }
     }
 

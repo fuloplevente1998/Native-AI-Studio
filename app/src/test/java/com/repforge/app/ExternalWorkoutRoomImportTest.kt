@@ -71,6 +71,55 @@ class ExternalWorkoutRoomImportTest {
         Unit
     }
 
+    @Test fun existingImportsRefreshWithoutConsentToCreateNewHistory() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        try {
+            val a = workout("existing")
+            val b = workout("unseen", start = a.endMs + 1000)
+            assertEquals(ExternalWorkoutImport.Outcome.UNAVAILABLE,
+                ExternalWorkoutImport.persist(context, db, a, allowCreate = false) {})
+            assertEquals(ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.persist(context, db, a) {})
+            val late = JSONObject().put("values", JSONObject().put("distanceMeters", 150))
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED,
+                ExternalWorkoutImport.persist(context, db, a, late, allowCreate = false) {})
+            assertEquals(ExternalWorkoutImport.Outcome.UNAVAILABLE,
+                ExternalWorkoutImport.persist(context, db, b, allowCreate = false) {})
+            val linked = workout("mirror", provider = HealthJournalStore.SAMSUNG)
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED,
+                ExternalWorkoutImport.persist(context, db, linked, targetId = ExternalWorkoutImport.localId(a.identity)) {})
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED,
+                ExternalWorkoutImport.persist(context, db, linked.copy(modifiedMs = linked.modifiedMs + 1,
+                    startMs = linked.startMs + 1000), late, allowCreate = false) {})
+            val row = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(ExternalWorkoutImport.localId(a.identity)))
+            val snapshot = ExternalWorkoutAssociation.snapshots(JSONObject(row.workout.rawJson)).single()
+            assertTrue(snapshot.optBoolean("windowChanged"))
+            assertFalse(snapshot.has("metrics"))
+            assertEquals(1, db.workoutHistoryDao().getAllWorkoutsWithDetails().size)
+        } finally { db.close() }
+        Unit
+    }
+
+    @Test fun backupRestoreKeepsIncomingDeletionAndOnlyExistingLinks() {
+        val row = ExternalWorkoutImport.raw(workout("a"))
+        val link = ExternalWorkoutImport.localId(workout("mirror").identity)
+        val unrelated = ExternalWorkoutImport.localId(workout("unrelated").identity)
+        val old = JSONObject(row.toString()).put("externalLinkedIds359", JSONArray().put(link).put(unrelated))
+            .put("externalLinkedSources359", JSONObject().put(link, workout("mirror").summary())
+                .put(unrelated, workout("unrelated").summary()))
+        val incoming = JSONObject(row.toString()).put("externalLinkedIds359", JSONArray().put(link))
+        incoming.getJSONObject("externalWorkout359").put("sourceDeleted", true)
+        val root = JSONObject().put("history", JSONArray().put(incoming))
+        NativeBackupPrivacy.preserveLocalWorkoutHealth(root, listOf(old))
+        assertTrue(incoming.getJSONObject("externalWorkout359").optBoolean("sourceDeleted"))
+        val restored = incoming.getJSONObject("externalLinkedSources359")
+        assertTrue(restored.has(link))
+        assertFalse(restored.has(unrelated))
+        val sanitized = NativeBackupPrivacy.sanitize(incoming, includeHealth = false)
+        assertFalse(sanitized.has("externalLinkedSources359"))
+        assertEquals(listOf(link), ExternalWorkoutAssociation.linkedIds(sanitized))
+    }
+
     @Test fun backupWithoutHealthConsentRemovesSourceDetailsButKeepsOpaqueIdentity() {
         val raw = ExternalWorkoutImport.raw(workout("record"))
         val sanitized = NativeBackupPrivacy.sanitize(raw, includeHealth = false)

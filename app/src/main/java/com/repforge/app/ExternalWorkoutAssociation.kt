@@ -30,7 +30,14 @@ internal object ExternalWorkoutAssociation {
         if (previous != null && previous.optLong("lastModifiedMs") > workout.modifiedMs)
             return ExternalWorkoutImport.Outcome.ALREADY_IMPORTED
         val next = workout.summary()
-        if (metrics != null) next.put("metrics", metrics)
+        // A linked session whose source window moved must not silently appear as the
+        // same measurement of the host workout. Keep the explicit link but flag review.
+        val changedWindow = previous != null &&
+            (previous.optString("start") != next.optString("start") || previous.optString("end") != next.optString("end"))
+        val outsideHost = row.startedEpochMs >= workout.endMs || row.finishedEpochMs <= workout.startMs
+        if (changedWindow || outsideHost || previous?.optBoolean("windowChanged") == true)
+            next.put("windowChanged", true)
+        else if (metrics != null) next.put("metrics", metrics)
         if (id in ids && previous?.toString() == next.toString()) return ExternalWorkoutImport.Outcome.ALREADY_IMPORTED
         sources.put(id, next)
         raw.put(IDS, JSONArray((ids + id).distinct())).put(SOURCES, sources)

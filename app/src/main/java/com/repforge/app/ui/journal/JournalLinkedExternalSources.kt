@@ -36,7 +36,15 @@ internal fun JournalLinkedExternalSources(raw: String, text: Resources, language
             if (source.optBoolean("sourceDeleted")) Text(when (language.lowercase(Locale.ROOT).take(2)) {
                 "hu" -> "A forrás törölve"; "de" -> "Quelle gelöscht"; "ro" -> "Sursă ștearsă"; else -> "Source deleted"
             }, color = colors.muted)
-            val values = source.optJSONObject("metrics")?.optJSONObject("values").takeUnless { source.optBoolean("sourceDeleted") }
+            if (source.optBoolean("windowChanged")) Text(when (language.lowercase(Locale.ROOT).take(2)) {
+                "hu" -> "A forrás időablaka megváltozott – ellenőrzés szükséges."
+                "de" -> "Quellzeitfenster geändert – Prüfung erforderlich."
+                "ro" -> "Intervalul sursei s-a modificat – necesită verificare."
+                else -> "Source window changed – review required."
+            }, color = colors.muted)
+            val values = source.optJSONObject("metrics")?.optJSONObject("values").takeUnless {
+                source.optBoolean("sourceDeleted") || source.optBoolean("windowChanged")
+            }
             val map = values?.let { v -> v.keys().asSequence().mapNotNull { k -> (v.opt(k) as? Number)?.toDouble()?.let { k to it } }.toMap() }.orEmpty()
             JournalHealthMetrics(map, "external_linked_$i", text, number)
         }

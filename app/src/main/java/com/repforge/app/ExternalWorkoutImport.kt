@@ -110,7 +110,7 @@ internal object ExternalWorkoutImport {
      */
     internal suspend fun persist(
         context: Context, db: TrainPilotDatabase, workout: ExternalWorkout, metrics: JSONObject? = null,
-        targetId: String? = null, keepSeparate: Boolean = false, guard: () -> Unit
+        targetId: String? = null, keepSeparate: Boolean = false, allowCreate: Boolean = true, guard: () -> Unit
     ): Outcome {
         if (workout.isOwnExport(context.packageName) || workout.elapsedMs <= 0 ||
             workout.endMs > System.currentTimeMillis()) return Outcome.UNAVAILABLE
@@ -149,6 +149,8 @@ internal object ExternalWorkoutImport {
                     if (targetId != null && targetId != row.id) return@withTransaction Outcome.REVIEW_OVERLAP
                     return@withTransaction ExternalWorkoutAssociation.attach(dao, row, id, workout, metrics, guard)
                 }
+                // Syncing an existing association/import does not imply consent to create new history.
+                if (!allowCreate) return@withTransaction Outcome.UNAVAILABLE
                 if (targetId != null) {
                     val row = dao.getWorkoutWithDetailsById(targetId)?.workout ?: return@withTransaction Outcome.CHANGED
                     if (row.id == id || row.startedEpochMs >= workout.endMs || row.finishedEpochMs <= workout.startMs ||

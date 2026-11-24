@@ -52,7 +52,7 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
             }.joinToString(" ")
             if (name.isNotBlank()) Text(name, color = colors.muted)
         }
-        source?.optJSONArray("laps")?.takeIf { it.length() > 0 }?.let { laps ->
+        source?.optJSONArray("laps")?.takeIf { matches && !deleted && it.length() > 0 }?.let { laps ->
             Text(local("Körök: ${laps.length()}", "Laps: ${laps.length()}", "Runden: ${laps.length()}", "Tururi: ${laps.length()}"), color = colors.muted)
             for (i in 0 until minOf(laps.length(), 100)) {
                 val lap = laps.optJSONObject(i) ?: continue
@@ -61,7 +61,7 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
                 Text("${i+1}. · ${seconds.coerceAtLeast(0)} s" + (length?.let { " · ${number.format(it)} m" } ?: ""), color = colors.muted)
             }
         }
-        source?.optJSONArray("segments")?.takeIf { it.length() > 0 }?.let { segments ->
+        source?.optJSONArray("segments")?.takeIf { matches && !deleted && it.length() > 0 }?.let { segments ->
             Text(local("Forrás szegmensek: ${segments.length()}", "Source segments: ${segments.length()}", "Quellsegmente: ${segments.length()}", "Segmente sursă: ${segments.length()}"), color = colors.muted)
             for (i in 0 until minOf(segments.length(), 100)) {
                 val segment = segments.optJSONObject(i) ?: continue
