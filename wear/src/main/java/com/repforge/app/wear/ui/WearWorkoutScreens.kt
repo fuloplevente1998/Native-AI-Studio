@@ -151,7 +151,9 @@ internal fun WorkoutPager(
                             controls = true
                             Unit
                         }
-                        if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
+                        if (restRemaining > 0 && workout.automation?.enabled != true)
+                            WearRestV2(workout, restRemaining, onSkipRest, onMenu)
+                        else if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
                             AutomaticTimedSetScreen(workout,restRemaining,health,onPrevious,onNext,onSkipRest,onFinish,onMenu)
                         else if (normalizeUnit(workout.exercise?.repUnit.orEmpty()).startsWith("mp"))
                             TimedSetScreen(
@@ -178,6 +180,7 @@ internal fun WorkoutPager(
                                 onSkipRest,
                                 onFinish,
                                 onMenu,
+                                home = home,
                             )
                     }
                 } else if (page == 2)
@@ -472,49 +475,71 @@ internal fun CurrentSetScreen(
     onSkipRest: () -> Unit,
     onFinish: () -> Unit,
     onMenu: () -> Unit,
+    home: WatchHomeSnapshot? = null,
 ) {
+    // Keep the specialized automatic/GPS controls intact; V2 strength layout only applies
+    // to an ordinary editable set.
     val set = workout.currentSet
-    WorkoutPanel(
-        workout,
-        onMenu,
-        actions = { layout ->
-            WorkoutControls(
-                workout,
-                restRemaining,
+    val automatic = workout.automation
+    val editable = set?.done == false && !WearUndo188.blocked(workout) &&
+        (automatic?.counting != true || automatic.paused) && automatic?.awaitingPhone != true
+    if (automatic?.enabled == true || WearGps193.distance(workout.exercise)) {
+        WorkoutPanel(workout, onMenu, actions = { layout ->
+            WorkoutControls(workout, restRemaining,
                 recordingEnabled = set != null && !set.done && (set.reps.toIntOrNull() ?: 0) > 0,
-                onRecord = onComplete,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                onSkipRest = onSkipRest,
-                onFinish = onFinish,
-                layout = layout,
-            )
-        },
-    ) {
-        run {
+                onRecord = onComplete, onPrevious = onPrevious, onNext = onNext,
+                onSkipRest = onSkipRest, onFinish = onFinish, layout = layout)
+        }) {
             SetHeading(workout, restRemaining)
             LiveWorkoutHealth(workout, health)
-        }
-
-        run {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (workout.exercise?.loadType != "bodyweight")
-                    ValueTile(
-                        set?.weight?.ifBlank { "0" } ?: "0",
-                        "kg",
-                        Modifier.weight(1f),
-                        enabled = set?.done == false && (workout.automation?.counting!=true||workout.automation.paused),
-                    ) {
-                        onEdit("weight")
-                    }
-                ValueTile(
-                    set?.reps?.ifBlank { "0" } ?: "0",
-                    wearText("ismétlés"),
-                    Modifier.weight(1f),
-                    enabled = set?.done == false && (workout.automation?.counting!=true||workout.automation.paused),
-                ) {
-                    onEdit("reps")
+                    ValueTile(set?.weight?.ifBlank { "0" } ?: "0", "kg", Modifier.weight(1f), editable) { onEdit("weight") }
+                ValueTile(set?.reps?.ifBlank { "0" } ?: "0", wearText("ismétlés"), Modifier.weight(1f), editable) { onEdit("reps") }
+            }
+        }
+        return
+    }
+    val previous = wearPreviousSetV2(home?.recentWorkouts.orEmpty(), workout.workoutId,
+        workout.exercise?.name.orEmpty(), set?.number ?: 0)
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(workout.workoutId) {
+        while (true) { now = System.currentTimeMillis(); delay(1000L) }
+    }
+    val pulse = wearHomeLivePulse(health, workout.workoutId, true, now)
+    val undo = LocalUndo.current
+    FixedRoundPanel(workout.exercise?.name.orEmpty(), count = 1, sweep = 140f,
+        headerColor = White, onTitleClick = onMenu,
+        footer = {
+            CompositionLocalProvider(LocalActionSize provides 56f) {
+                when {
+                    workout.exerciseComplete && workout.currentExercise < workout.exercises.lastIndex ->
+                        RoundControl("›", Gold, enabled = !WearUndo188.blocked(workout),
+                            caption = wearText("Következő"), description = wearText("Következő gyakorlat"), onClick = onNext)
+                    workout.exerciseComplete ->
+                        RoundControl("■", Gold, enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout),
+                            caption = wearText("Befejezés"), description = wearText("Edzés befejezése"), onClick = onFinish)
+                    else -> RoundControl("✓", SaveTone,
+                        enabled = editable && restRemaining == 0 && (set?.reps?.toIntOrNull() ?: 0) > 0,
+                        caption = wearText("Kész"), description = wearText("Sorozat rögzítése"), onClick = onComplete)
                 }
+            }
+        },
+    ) { compact ->
+        SetHeading(workout, restRemaining, compact = compact)
+        Row(Modifier.fillMaxWidth(.9f), horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            if (workout.exercise?.loadType != "bodyweight") {
+                WearV2Value(set?.weight?.ifBlank { "0" } ?: "0", "kg", Modifier.weight(1f), editable) { onEdit("weight") }
+                Text("×", color = Muted, fontSize = 18.sp)
+            }
+            WearV2Value(set?.reps?.ifBlank { "0" } ?: "0", wearText("ismétlés"), Modifier.weight(1f), editable) { onEdit("reps") }
+        }
+        Label(wearV2Text("last") + ": " + (previous ?: "–"), size = 10)
+        Label("♥ " + (pulse?.let { "$it bpm" } ?: "–"), color = LocalWearHomeTheme.current.secondaryColor, size = 11)
+        if (undo != null && WearUndo188.quick(workout, now)) {
+            Pill(wearText("Utolsó sorozat visszavonása"), tone = Secondary, size = 10) {
+                WearUndo188.record(workout)?.optString("recordId")?.let(undo)
             }
         }
     }
