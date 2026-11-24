@@ -12,7 +12,8 @@
   jóváhagyásra vár), #359 (külső órás edzésimport – a refaktor feltétele teljesült).
 
 ## #349 / #350 – témák (WIP)
-- Ág: `feature/349-350-themes`, draft PR #371; kódállapot: `3ec83d8b5d846b9d0fb35551d51fefe1b02dfa7e` (ezen átadót megelőző commit).
-- #349: a három jóváhagyott paletta már a mainben volt; az ID/kulcs megmaradt. Új `ThemeSelectionColors.kt`: tényleges felületre kompozitált közös kijelölés, olvasható előtér/keret és telt gomb felirat. Bekötve: natív mapping, szűrőchip, fő navigáció, közös fő gomb. Új `ThemeSelection349Test` a 32 témára és mentett kulcsokra.
-- Ellenőrzés: forrásból statikus WCAG-végpontszámítás, 32/32 palettán elérhető a szükséges kontraszt; JVM/Actions és fizikai/vizuális teszt még nincs. Nincs main-merge, nincs release.
-- Következő: #349 képernyőaudit, edzésjelvény/átadás (a #351 PR #370 ugyanazt a handover fájlt érinti, összehangolandó), sorozatmezők és állapotszínek, telefon/Wear regresszió. #350: a kibővített színválasztó mockup után tartós saját témamodell, UI, mentés/restore és Wear-szinkron; áttetszőség első kör, blur második kör. #350 implementációja még nem kezdődött.
+- Ág: `feature/349-350-themes`, draft PR #371; kódállapot: `9f73b7db2d15ebbecee87f9184abf7debc5ce6dd` (ezen átadót megelőző commit).
+- #349: 32 beépített téma, változatlan ID/kulcs; a közös kijelölési szín és a telt gombfelirat-kontraszt bekötve a natív mappingbe, fő/alsó navigációba, chipekbe, témaválasztóba, Kezdőlap, Fejlődés és Egészség kijelölt elemeibe. A mezők semleges, 3:1 célú keretet kapnak; aktív edzés értékválasztója és pihenővezérlője javítva (zöld indító tényleges kitöltéséhez illő ikon). A #351 PR #370 handover fájlja érintetlen.
+- #350: kibővített szerkesztő drótváz: `docs/CUSTOM_THEME_EDITOR_350.md` (nem végleges látványelfogadás). `CustomThemeDraft.kt`: négy stílus, öt szerep, szigorú HEX, szerepenkénti gyorsszínek, UUID-alapú saját kulcs, 70–90% vagy kikapcsolt (100%) fedettség. A modell még nincs bekötve a palettaválasztóba, DataStore-ba, backupba vagy Wearbe; a kontrasztfeloldó és Compose előnézet hátravan.
+- Tesztek: `ThemeSelection349Test` bővítve mezőkeret/zöld indító ellenőrzésével; `CustomThemeDraft350Test` négy teszt. JVM/Actions és fizikai/vizuális teszt nincs; nincs main-merge, release, verzióemelés. Korábbi statikus paletta-végpontszámítás: 32/32 elérhető kontraszt.
+- Következő: #349 teljes vizuális audit és handover összehangolás; #350 közös palettafeloldó és szerkesztő, majd a meglévő settings/backup/Wear szerződés integrációja. Blur külön második ütem.
