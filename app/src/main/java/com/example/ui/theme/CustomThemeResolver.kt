@@ -7,8 +7,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.repforge.app.ui.theme.NativeThemeTokens
 
 /** #350: one pure resolver for editor preview and eventual applied theme.
- * The palette carries opaque effective colors plus optional raw card paint and a
- * monotonic page gradient; nested/unknown backdrops keep the effective colors.
+ * Custom themes are opaque; glass treatment belongs to a separate built-in family.
  */
 internal data class ResolvedCustomTheme(
     val palette: TrainPilotPalette,
@@ -27,7 +26,7 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
         NativeThemeTokens.parseHex(draft.colors.getValue(it).trim(), Color.Unspecified)
     }
     val corrected = original.toMutableMap()
-    val opacity = draft.opacityPercent / 100f
+    val opacity = 1f
 
     fun contrast(a: Color, b: Color) = NativeThemeTokens.contrast(a, b)
     fun move(seed: Color, destination: Color, accepts: (Color) -> Boolean): Color {
@@ -49,11 +48,6 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
     }
     corrected[CustomThemeRole.CARD] = rawCard
     val card = rawCard.copy(alpha = opacity).compositeOver(page)
-    // Each channel moves away from the chosen text luminance, so the second stop
-    // cannot reduce contrast relative to the first stop used for correction.
-    val pageEnd = Color(red = page.red * .78f + backdrop.red * .22f,
-        green = page.green * .78f + backdrop.green * .22f,
-        blue = page.blue * .78f + backdrop.blue * .22f)
     val inner = move(lerp(card, foreground, if (base.isHighContrast) 0.09f else 0.05f),
         backdrop, ::safeSurface)
     val surfaces = listOf(page, card, inner)
@@ -85,12 +79,12 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
         success = semantic(base.success), warning = semantic(base.warning), danger = semantic(base.danger),
         sleepAccent = semantic(base.sleepAccent), heartAccent = semantic(base.heartAccent),
         stepsAccent = semantic(base.stepsAccent), energyAccent = semantic(base.energyAccent),
-        customCardPaint = rawCard.copy(alpha = opacity).takeIf { opacity < 1f },
-        customPageEnd = pageEnd.takeIf { opacity < 1f }
+        customCardPaint = null,
+        customPageEnd = null
     )
     val suggested = corrected.mapValues { it.value.customThemeHex() }
     val changed = CustomThemeRole.entries.filterTo(mutableSetOf()) {
         suggested.getValue(it) != normalizeCustomThemeHex(draft.colors.getValue(it))
     }
-    return ResolvedCustomTheme(palette, draft.copy(colors = suggested), changed, rawCard, opacity)
+    return ResolvedCustomTheme(palette, draft.copy(colors = suggested, opacityPercent = 100), changed, rawCard, opacity)
 }
