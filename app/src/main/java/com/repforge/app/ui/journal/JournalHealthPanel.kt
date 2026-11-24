@@ -48,6 +48,12 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     selectProvider: (String) -> Unit = {}, permissions: (@Composable (String) -> Unit)? = null,
     expandedState: MutableState<String?>? = null,
     refresh: () -> Unit) {
+    if (detail.workout.originDevice == "external") {
+        // The generic health-window refresh aggregates all origins; it is not a valid
+        // substitute for an imported session's own-source evidence.
+        JournalExternalWorkoutMetrics(detail, text, language)
+        return
+    }
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }

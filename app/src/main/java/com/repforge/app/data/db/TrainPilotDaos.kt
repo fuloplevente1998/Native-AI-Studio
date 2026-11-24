@@ -441,6 +441,9 @@ interface WorkoutHistoryDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertNewJournalPhoto(photo: WorkoutPhotoEntity)
 
+    @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected AND originDevice = 'external'")
+    suspend fun updateExternalWorkoutJson(id: String, expected: String, updated: String): Int
+
     // UPDATE keeps existing exercises, sets and photos: REPLACE cascades their deletion.
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected")
     suspend fun updateJournalPhotoJson(id: String, expected: String, updated: String): Int

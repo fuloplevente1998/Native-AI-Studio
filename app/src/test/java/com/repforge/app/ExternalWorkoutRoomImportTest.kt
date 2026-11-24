@@ -46,6 +46,18 @@ class ExternalWorkoutRoomImportTest {
             assertTrue(row.exercises.isEmpty())
             assertNull(row.workout.health240Json)
             assertEquals(1, db.workoutHistoryDao().getAllWorkoutsWithDetails().size)
+            val modified = a.copy(modifiedMs = a.modifiedMs + 1, title = "Updated")
+            val metrics = JSONObject().put("values", JSONObject().put("steps", 42))
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED, ExternalWorkoutImport.persist(context, db, modified, metrics) {})
+            val refreshed = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id)).workout
+            assertEquals(a.startMs, refreshed.startedEpochMs)
+            assertEquals(42, JSONObject(refreshed.rawJson).getJSONObject("externalWorkout359").getJSONObject("metrics").getJSONObject("values").getInt("steps"))
+            assertEquals(ExternalWorkoutImport.Outcome.ALREADY_IMPORTED, save(a))
+            val moved = modified.copy(modifiedMs = modified.modifiedMs + 1, startMs = a.startMs + 1000)
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED, save(moved))
+            val review = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id)).workout
+            assertEquals(a.startMs, review.startedEpochMs)
+            assertTrue(JSONObject(review.rawJson).getJSONObject("externalWorkout359").getBoolean("windowChanged"))
             db.workoutHistoryDao().upsertTombstone(HistoryTombstoneEntity(id, id, JSONArray().put(id).toString(), a.endMs))
             db.workoutHistoryDao().deleteWorkoutById(id)
             assertEquals(ExternalWorkoutImport.Outcome.LOCALLY_DELETED, save(a))

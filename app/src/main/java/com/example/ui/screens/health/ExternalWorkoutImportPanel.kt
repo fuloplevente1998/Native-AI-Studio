@@ -122,7 +122,7 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
                             val outcome = results[workout.identity]
                             if (outcome != null) Text(importOutcome(language, outcome))
                             TrainPilotOutlinedButton(enabled = !busy && outcome !in setOf(
-                                ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.Outcome.ALREADY_IMPORTED,
+                                ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.Outcome.UPDATED, ExternalWorkoutImport.Outcome.ALREADY_IMPORTED,
                                 ExternalWorkoutImport.Outcome.LOCALLY_DELETED, ExternalWorkoutImport.Outcome.REVIEW_OVERLAP),
                                 onClick = {
                                     busy = true
@@ -149,6 +149,7 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
 
 private fun importOutcome(language: AppLanguage, outcome: ExternalWorkoutImport.Outcome): String = when (outcome) {
     ExternalWorkoutImport.Outcome.IMPORTED -> tr(language, "Naplóba mentve", "Saved to journal", "Im Protokoll gespeichert", "Salvat în jurnal")
+    ExternalWorkoutImport.Outcome.UPDATED -> tr(language, "Forrásadat frissítve", "Source data updated", "Quelldaten aktualisiert", "Datele sursei actualizate")
     ExternalWorkoutImport.Outcome.ALREADY_IMPORTED -> tr(language, "Már importálva", "Already imported", "Bereits importiert", "Deja importat")
     ExternalWorkoutImport.Outcome.LOCALLY_DELETED -> tr(language, "Korábban törölve", "Previously deleted", "Zuvor gelöscht", "Șters anterior")
     ExternalWorkoutImport.Outcome.REVIEW_OVERLAP -> tr(language, "Átfedő edzés – nincs összevonás", "Overlapping workout – not merged", "Überlappendes Training – nicht zusammengeführt", "Antrenament suprapus – necombinat")

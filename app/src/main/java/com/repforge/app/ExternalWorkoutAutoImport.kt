@@ -101,6 +101,8 @@ internal object ExternalWorkoutAutoImport {
                         NativeHealthForegroundAdmission.requireMainAdmission(app)
                         if (!ExternalWorkoutImport.hasReadGrant(app, provider, guard))
                             return@withContext Report(saved, overlap, skipped, failed = true, limited = limited)
+                        val grants = if (provider == HealthJournalStore.HC)
+                            HealthConnectRepository.currentlyGrantedReadKeys(app) else emptySet()
                         for (seen in batch) {
                             guard()
                             // No provider IPC under the write lease. Verify the exact observed version.
@@ -110,14 +112,17 @@ internal object ExternalWorkoutAutoImport {
                                     ?: return@mutate ExternalWorkoutImport.Outcome.UNAVAILABLE
                                 if (row.modifiedMs != seen.modified || row.startMs != seen.start || row.endMs != seen.end)
                                     return@mutate ExternalWorkoutImport.Outcome.CHANGED
-                                ExternalWorkoutImport.persist(app, db, row) {
+                                val metrics = journal.externalWorkoutMetrics(row, generation, grants)
+                                ExternalWorkoutImport.persist(app, db, row, metrics) {
                                     guard()
+                                    if (provider == HealthJournalStore.HC)
+                                        check("READ_EXERCISE" in grants && grants.all { HealthConnectRepository.isAllowed(app, it) })
                                     val current = journal.externalWorkoutRecord(seen.identity, generation)
                                     check(current != null && current.summary().toString() == row.summary().toString())
                                 }
                             }
                             when (outcome) {
-                                ExternalWorkoutImport.Outcome.IMPORTED -> saved++
+                                ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.Outcome.UPDATED -> saved++
                                 ExternalWorkoutImport.Outcome.REVIEW_OVERLAP -> overlap++
                                 else -> skipped++
                             }

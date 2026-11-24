@@ -19,7 +19,7 @@ import java.time.Instant
  * The caller must have chosen an import candidate; no automatic association from time overlap.
  */
 internal object ExternalWorkoutImport {
-    enum class Outcome { IMPORTED, ALREADY_IMPORTED, LOCALLY_DELETED, REVIEW_OVERLAP, UNAVAILABLE, CHANGED }
+    enum class Outcome { IMPORTED, UPDATED, ALREADY_IMPORTED, LOCALLY_DELETED, REVIEW_OVERLAP, UNAVAILABLE, CHANGED }
 
     private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val imported = changes.asSharedFlow()
@@ -46,7 +46,7 @@ internal object ExternalWorkoutImport {
     /** The elapsed interval is real, but active time, weight, sets and other metrics are not inferred.
      * Private source metadata is covered by NativeBackupPrivacy, while the opaque ID survives backup.
      */
-    internal fun raw(workout: ExternalWorkout): JSONObject {
+    internal fun raw(workout: ExternalWorkout, metrics: JSONObject? = null): JSONObject {
         val id = localId(workout.identity)
         return JSONObject().put("id", id).put("key", id).put("syncId", id)
             .put("started", Instant.ofEpochMilli(workout.startMs).toString())
@@ -54,8 +54,11 @@ internal object ExternalWorkoutImport {
             .put("durationSeconds", (workout.elapsedMs / 1000).coerceAtMost(Int.MAX_VALUE.toLong()))
             .put("programName", "External workout").put("dayName", "")
             .put("originDevice", "external").put("exercises", JSONArray())
-            .put("externalWorkoutImported359", true).put("externalWorkout359", workout.summary())
+            .put("externalWorkoutImported359", true).put("externalWorkout359", sourceSnapshot(workout, metrics))
     }
+
+    private fun sourceSnapshot(workout: ExternalWorkout, metrics: JSONObject?): JSONObject =
+        workout.summary().apply { if (metrics != null) put("metrics", metrics) }
 
     /** Resolve and verify the current journal record under the existing replacement fence. */
     suspend fun importSelected(
@@ -67,7 +70,11 @@ internal object ExternalWorkoutImport {
         val generation = journal.generation()
         // Live provider grants, not only a cached health dashboard status.
         NativeHealthForegroundAdmission.requireMainAdmission(app)
-        val allowed = hasReadGrant(app, identity.provider) { ticket.requireCurrent(app) }
+        val grants = if (identity.provider == HealthJournalStore.HC &&
+            NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT))
+            HealthConnectRepository.currentlyGrantedReadKeys(app) else emptySet()
+        val allowed = if (identity.provider == HealthJournalStore.HC) "READ_EXERCISE" in grants
+            else hasReadGrant(app, identity.provider) { ticket.requireCurrent(app) }
         if (!allowed) return@withContext Outcome.UNAVAILABLE
         val db = TrainPilotDatabase.getInstance(app)
         val outcome = NativeDataReplacement.mutate(app) {
@@ -77,11 +84,12 @@ internal object ExternalWorkoutImport {
             val workout = journal.externalWorkoutRecord(identity, generation)
                 ?: return@mutate Outcome.UNAVAILABLE
             if (workout.modifiedMs != expectedModifiedMs) return@mutate Outcome.CHANGED
-            persist(app, db, workout) {
+            val metrics = journal.externalWorkoutMetrics(workout, generation, grants)
+            persist(app, db, workout, metrics) {
                 ticket.requireCurrent(app)
                 NativePrivacyControls.requireEnabled(app, identity.provider)
                 if (identity.provider == HealthJournalStore.HC)
-                    check(HealthConnectRepository.isAllowed(app, "READ_EXERCISE"))
+                    check(grants.all { HealthConnectRepository.isAllowed(app, it) })
                 val current = journal.externalWorkoutRecord(identity, generation)
                 check(current != null && current.summary().toString() == workout.summary().toString()) {
                     "External workout changed; refresh and retry"
@@ -90,15 +98,16 @@ internal object ExternalWorkoutImport {
                 check(NativeHealthForegroundAdmission.safeOffMain(app))
             }
         }
-        if (outcome == Outcome.IMPORTED) changes.tryEmit(Unit)
+        if (outcome in setOf(Outcome.IMPORTED, Outcome.UPDATED)) notifyImported()
         outcome
     }
 
     /** Internal transactional boundary, also exercised with an isolated Room DB in tests.
-     * Do not overwrite existing local edits, photos, or an existing same-source import.
+     * Update only the provider snapshot of the same identity, never local edits or children.
      */
     internal suspend fun persist(
-        context: Context, db: TrainPilotDatabase, workout: ExternalWorkout, guard: () -> Unit
+        context: Context, db: TrainPilotDatabase, workout: ExternalWorkout, metrics: JSONObject? = null,
+        guard: () -> Unit
     ): Outcome {
         if (workout.isOwnExport(context.packageName) || workout.elapsedMs <= 0 ||
             workout.endMs > System.currentTimeMillis()) return Outcome.UNAVAILABLE
@@ -108,11 +117,31 @@ internal object ExternalWorkoutImport {
             db.withTransaction {
                 guard()
                 if (dao.isTombstoned(id, JSONObject.quote(id))) return@withTransaction Outcome.LOCALLY_DELETED
-                if (dao.getWorkoutWithDetailsById(id) != null) return@withTransaction Outcome.ALREADY_IMPORTED
+                val existing = dao.getWorkoutWithDetailsById(id)
+                if (existing != null) {
+                    val w = existing.workout
+                    val raw = JSONObject(w.rawJson)
+                    if (w.originDevice != "external" || !raw.optBoolean("externalWorkoutImported359"))
+                        return@withTransaction Outcome.REVIEW_OVERLAP
+                    val previous = raw.optJSONObject("externalWorkout359")
+                    if (previous != null && previous.optLong("lastModifiedMs") > workout.modifiedMs)
+                        return@withTransaction Outcome.ALREADY_IMPORTED
+                    val next = sourceSnapshot(workout, metrics)
+                    // Keep the local timeline, including user edits. Changed source windows require review.
+                    if (w.startedEpochMs != workout.startMs || w.finishedEpochMs != workout.endMs) {
+                        next.put("windowChanged", true)
+                        next.remove("metrics")
+                    }
+                    if (previous?.toString() == next.toString()) return@withTransaction Outcome.ALREADY_IMPORTED
+                    raw.put("externalWorkout359", next)
+                    check(dao.updateExternalWorkoutJson(id, w.rawJson, raw.toString()) == 1)
+                    guard()
+                    return@withTransaction Outcome.UPDATED
+                }
                 if (dao.hasExternalImportOverlap(id, workout.startMs, workout.endMs))
                     return@withTransaction Outcome.REVIEW_OVERLAP
                 LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context))
-                    .saveWorkoutJsonToRoom(raw(workout))
+                    .saveWorkoutJsonToRoom(raw(workout, metrics))
                 check(dao.getWorkoutWithDetailsById(id) != null) { "External workout was not stored" }
                 guard()
                 Outcome.IMPORTED
