@@ -16,7 +16,6 @@ class SourceSizeGuardTest {
         "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt" to 5887,
         // One 990-line composable (R2 kept it whole: splitting needs a real refactor, not a move).
         "app/src/main/java/com/example/ui/screens/workout/CalendarPlannerScreen.kt" to 1100,
-        "app/src/main/java/com/example/ui/screens/ActiveMeasurementScreens.kt" to 3181,
         "wear/src/main/java/com/repforge/app/wear/WearScreens.kt" to 2949,
         "app/src/main/java/com/example/ui/screens/LogAndProgressScreens.kt" to 2355,
         "app/src/main/java/com/example/ui/components/TrainPilotCommonComponents.kt" to 2302,

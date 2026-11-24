@@ -40,13 +40,13 @@ nagy fájlok sorai frissülnek.
 ## Aktív edzés, mérés
 | Funkció | Fájl |
 |---|---|
-| Erő / időzített / kétoldalas / kültéri GPS képernyő | `ex/ui/screens/ActiveMeasurementScreens.kt` (`Active*WorkoutScreen`, `ActiveOutdoorGpsScreen`) (R3) |
+| Erő / időzített / kétoldalas / kültéri GPS képernyő | `ex/ui/screens/measure/Active{Strength,Timed,Bilateral}WorkoutScreen.kt`, `ex/ui/screens/measure/ActiveOutdoorGpsScreen.kt`, közös: `ex/ui/screens/measure/MeasurementShared.kt` |
 | Felső sáv, „Legutóbb” sor | `ex/ui/components/StudioActiveWorkoutTop.kt`, `StudioWorkoutHandoverBar.kt` |
 | Pihenő dokk / kompakt pihenő | `ex/ui/components/StudioRestTimerDock.kt`, `StudioCompactRestControls.kt`, `rf/StudioRestTimer.kt` |
 | Sorozatkártya | `ex/ui/components/StudioStrengthSetCard.kt` |
-| Intervallum | `ActiveMeasurementScreens.kt` (`IntervalSettingsScreen`), `rf/IntervalTimerService.kt` |
+| Intervallum | `ex/ui/screens/measure/IntervalSettingsScreen.kt`, `rf/IntervalTimerService.kt` |
 | GPS műszerfal, útvonal | `ex/ui/screens/OutdoorGpsDashboard.kt`, `rf/DistanceTrackingService.kt`, `rf/GpsRouteStore.kt` |
-| Edzésösszegzés | `ActiveMeasurementScreens.kt` (`WorkoutSummaryScreen`) |
+| Edzésösszegzés | `ex/ui/screens/measure/WorkoutSummaryScreen.kt` |
 | Motor, időzítő-tulajdonos, mentés/lezárás | `rf/PhoneWorkoutEngine.kt`, `rf/PhoneWorkoutExecutionStore.kt`, `rf/TrainPilotWorkoutFinalization.kt`, `rf/ActiveWorkoutStore.kt` |
 
 ## Napló, fejlődés, statisztika
