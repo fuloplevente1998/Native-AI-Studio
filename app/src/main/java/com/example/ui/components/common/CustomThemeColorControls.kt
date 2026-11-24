@@ -6,12 +6,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -42,7 +40,7 @@ internal fun CustomThemeStyle.title(language: AppLanguage): String = when (this)
     CustomThemeStyle.LIGHT -> customThemeText(language, "Világos", "Light", "Hell", "Deschis")
 }
 
-private data class ThemeHsv(val hue: Float, val saturation: Float, val value: Float) {
+internal data class ThemeHsv(val hue: Float, val saturation: Float, val value: Float) {
     fun hex(): String = Color.hsv(hue.coerceIn(0f, 359.999f), saturation, value).customThemeHex()
 }
 
@@ -81,9 +79,6 @@ internal fun CustomThemeColorControls(
         lastSliderHex = next.hex()
         onValueChange(next.hex())
     }
-    val hueLabel = customThemeText(language, "Árnyalat", "Hue", "Farbton", "Nuanță")
-    val saturationLabel = customThemeText(language, "Telítettség", "Saturation", "Sättigung", "Saturație")
-    val valueLabel = customThemeText(language, "Fényerő", "Brightness", "Helligkeit", "Luminozitate")
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TrainPilotTextField(value = value, onValueChange = { lastSliderHex = null; onValueChange(it) },
@@ -97,18 +92,7 @@ internal fun CustomThemeColorControls(
                 normalized?.let { NativeThemeTokens.parseHex(it, palette.surface) } ?: palette.surface,
                 RoundedCornerShape(10.dp)).border(1.dp, palette.fieldOutline(), RoundedCornerShape(10.dp)))
         }
-        Box(Modifier.fillMaxWidth().height(12.dp).background(Brush.horizontalGradient(
-            listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)),
-            RoundedCornerShape(6.dp)))
-        Text("$hueLabel: ${hsv.hue.toInt()}°", color = palette.textPrimary)
-        Slider(value = hsv.hue, onValueChange = { update(hsv.copy(hue = it)) }, valueRange = 0f..359.999f,
-            modifier = Modifier.semantics { contentDescription = hueLabel }.testTag("custom_theme_hue"))
-        Text("$saturationLabel: ${(hsv.saturation * 100).toInt()}%", color = palette.textPrimary)
-        Slider(value = hsv.saturation, onValueChange = { update(hsv.copy(saturation = it)) },
-            modifier = Modifier.semantics { contentDescription = saturationLabel }.testTag("custom_theme_saturation"))
-        Text("$valueLabel: ${(hsv.value * 100).toInt()}%", color = palette.textPrimary)
-        Slider(value = hsv.value, onValueChange = { update(hsv.copy(value = it)) },
-            modifier = Modifier.semantics { contentDescription = valueLabel }.testTag("custom_theme_brightness"))
+        CustomThemeColorWheel(hsv, language, ::update)
         Text(customThemeText(language, "Gyors színek", "Quick colors", "Schnellfarben", "Culori rapide"),
             color = palette.textPrimary)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
