@@ -23,5 +23,7 @@ class WearBackgroundMeasurement351Test {
         assertFalse(restored.matches("w",43,4,101000))
         assertFalse(restored.matches("w",43,3,116000))
         assertNull(WearMeasurementRequest351.parse(ByteArray(4097)))
+        assertFalse(restored.fresh(97000))
+        assertTrue(restored.fresh(115000))
     }
 }

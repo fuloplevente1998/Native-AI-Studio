@@ -126,6 +126,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 model.reloadHealthJournal()
             }
         }
+        com.repforge.app.WearLiveHealthStore.expectNode351(if(companion)nodes.singleOrNull()?.id else null)
         model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName }, companion)
     }
     suspend fun refreshSamsung() {

@@ -21,8 +21,9 @@ class WearDataListenerService : WearableListenerService() {
 
         if(event.path==com.repforge.shared.WearMeasurementRequest351.PATH) {
             val request=com.repforge.shared.WearMeasurementRequest351.parse(event.data)
+            val source=event.sourceNodeId
             if(request!=null)android.os.Handler(android.os.Looper.getMainLooper()).post {
-                WearBackgroundMeasurement.receive(applicationContext,request)
+                WearBackgroundMeasurement.receive(applicationContext,source,request)
             }
             return
         }
@@ -57,7 +58,13 @@ class WearDataListenerService : WearableListenerService() {
             val raw = if (item.uri.path == WATCH_HOME_PATH) com.repforge.shared.WatchHomePayload.read(data)
                 else data.getString("snapshot")
             when (item.uri.path) {
-                ACTIVE_WORKOUT_PATH -> WorkoutSnapshotStore.save(this, raw)
+                ACTIVE_WORKOUT_PATH -> {
+                    WorkoutSnapshotStore.save(this, raw)
+                    val source=item.uri.host
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        WearBackgroundMeasurement.snapshot(applicationContext,source,raw)
+                    }
+                }
                 WearPhoneAutomatic.PATH -> WearPhoneAutomatic.receive(this,DataMapItem.fromDataItem(item).dataMap.getString("automatic"))
                 WATCH_HOME_PATH -> WatchHomeStore.save(this, raw, DataMapItem.fromDataItem(item).dataMap.getLong("publishedAt"),item.uri.host)
             }

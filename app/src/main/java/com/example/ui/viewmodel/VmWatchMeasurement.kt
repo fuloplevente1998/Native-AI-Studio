@@ -19,6 +19,7 @@ import org.json.JSONObject
 internal fun watchMeasurementEligible(frame: JSONObject?, workoutId: String): Boolean =
     frame != null && workoutId.isNotBlank() && frame.optBoolean("active") &&
         frame.optString("workoutId") == workoutId && !frame.optBoolean("workoutPaused") &&
+        !frame.optBoolean("finalizationPending") && !frame.optBoolean("discardPending") &&
         frame.optString("timerOwner", "phone") == "phone" &&
         !com.repforge.shared.WorkoutOwnership193.pending(frame)
 
@@ -42,7 +43,12 @@ internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity:
         if (eligible() && pendingWatchMeasurementStart.value == id)
             _uiState.update { it.copy(watchMeasurementStatusId = id, watchMeasurementStatus = message) }
     }
-    fun reply() = watchMeasurementReply(WearLiveHealthStore.current(ctx), id)
+    fun reply(): String? {
+        val frame=ActiveWorkoutStore.current(ctx) ?: return null
+        return watchMeasurementReply(com.repforge.app.PhoneMeasurementReconnect351.freshReceipt(
+            WearLiveHealthStore.current(ctx),id,frame.optLong("ownerEpoch193"),
+            WearLiveHealthStore.expectedNode351.value,System.currentTimeMillis()),id)
+    }
     fun manual() = status(tr("Az órás mérés nincs visszaigazolva. Nyisd meg a TrainPilotot az órán.",
         "Watch recording not confirmed. Open TrainPilot on the watch.",
         "Uhrmessung nicht bestätigt. TrainPilot auf der Uhr öffnen.",
@@ -60,6 +66,7 @@ internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity:
                 "TrainPilot-Uhr-App nicht verfügbar.", "Aplicația TrainPilot de pe ceas nu este disponibilă."))
             return
         }
+        WearLiveHealthStore.expectNode351(nodes.single().id)
         val frame=ActiveWorkoutStore.current(ctx)
         if (!watchMeasurementEligible(frame,id)) return
         val request=WearMeasurementRequest351.fromFrame(requireNotNull(frame),System.currentTimeMillis())
@@ -72,12 +79,12 @@ internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity:
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { }
         // Allow background promotion and an actual Health Services acknowledgement first.
-        repeat(20) {
+        for (attempt in 0 until 20) {
             if (!eligible()) return
             if (reply() in setOf("active", "paused", "disabled", "permissionRequired", "error", "ended")) {
                 status(null); return
             }
-            if (reply()=="foregroundRequired") return@repeat
+            if (reply()=="foregroundRequired") break
             delay(250)
         }
         if (!eligible()) return

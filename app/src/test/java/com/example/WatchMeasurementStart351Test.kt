@@ -21,6 +21,8 @@ class WatchMeasurementStart351Test {
         assertFalse(watchMeasurementEligible(frame().put("workoutPaused", true), "w"))
         assertFalse(watchMeasurementEligible(frame().put("timerOwner", "watch"), "w"))
         assertFalse(watchMeasurementEligible(null, "w"))
+        assertFalse(watchMeasurementEligible(frame().put("finalizationPending",true),"w"))
+        assertFalse(watchMeasurementEligible(frame().put("discardPending",true),"w"))
     }
     @Test fun remoteLaunchOrStartingDoesNotConfirmActiveAndOldWorkoutReplyIsIgnored() {
         assertNull(watchMeasurementReply(null, "w"))

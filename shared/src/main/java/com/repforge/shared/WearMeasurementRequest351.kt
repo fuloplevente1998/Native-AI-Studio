@@ -4,9 +4,10 @@ import org.json.JSONObject
 
 /** A transient request is not an ownership transfer or a persisted start command. */
 data class WearMeasurementRequest351(val workoutId: String, val revision: Long, val epoch: Long, val sentAt: Long) {
+    fun fresh(now: Long): Boolean = now-sentAt in -2000L..15000L
+
     fun matches(id: String, currentRevision: Long, currentEpoch: Long, now: Long): Boolean =
-        workoutId==id && currentRevision>=revision && currentEpoch==epoch &&
-            now-sentAt in -2000L..15000L
+        workoutId==id && currentRevision>=revision && currentEpoch==epoch && fresh(now)
 
     fun encode(): ByteArray = JSONObject().put("schema",1).put("workoutId",workoutId)
         .put("revision",revision).put("epoch",epoch).put("sentAt",sentAt)
@@ -15,7 +16,11 @@ data class WearMeasurementRequest351(val workoutId: String, val revision: Long, 
     companion object {
         const val PATH="/trainpilot/measurement-start-351"
         fun fromFrame(frame: JSONObject, now: Long): WearMeasurementRequest351? =
-            validated(frame.optString("workoutId"),frame.optLong("revision"),frame.optLong("ownerEpoch193"),now)
+            if(frame.optBoolean("active") && !frame.optBoolean("workoutPaused") &&
+                !frame.optBoolean("finalizationPending") && !frame.optBoolean("discardPending") &&
+                frame.optString("timerOwner","phone")=="phone" && !WorkoutOwnership193.pending(frame))
+                validated(frame.optString("workoutId"),frame.optLong("revision"),frame.optLong("ownerEpoch193"),now)
+            else null
 
         fun parse(bytes: ByteArray): WearMeasurementRequest351? {
             if(bytes.isEmpty() || bytes.size>4096)return null

@@ -14,3 +14,5 @@
 - #351 első rész (`fix/351-wear-auto-measurement`): új telefonos canonical edzéshez külön mérésindítás, meglévő Wear távoli Activity útvonal, élő mérési állapot; ownership nincs átadva. Draft, CI és fizikai óra még ellenőrizendő. Háttér-FGS engedélyezési út és újracsatlakozás külön további vizsgálat; #359/#367 kód érintetlen.
 
 - #351 második rész (PR #370): API 33–35 / 36+ háttér-szenzorengedély deklaráció és külön, opcionális engedélykérés; célzott, 15 másodperces workout/revision/epoch üzenet; háttérből FGS-kísérlet csak illeszkedő élő snapshothoz, GPS nélkül, meglévő Health Services motorral. Rendszerblokkoláskor előtéri fallback, nem hamis ACK. Első CI 870 app teszt / 2 hiba (új JSON fixture NPE), Robolectric futtató javítva. Új CI és fizikai validáció függőben.
+
+- #351 harmadik rész: reconnect friss célzott kérés, sorrendfüggetlen snapshot/üzenet fogadás (egy memóriabeli slot, TTL, forrás/epoch/revision), duplikációgát, élő ACK frissesség/óraazonosság, lezárási verseny ellenőrzés. Új CI és fizikai próba szükséges; külön signed build nincs.
