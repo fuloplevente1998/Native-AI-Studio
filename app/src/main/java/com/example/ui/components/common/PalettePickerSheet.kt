@@ -33,6 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
+import com.example.ui.theme.readablePrimaryLabel
+import androidx.compose.runtime.remember
 import com.example.ui.theme.PaletteCategory
 import com.example.ui.theme.TrainPilotPalettes
 
@@ -59,6 +62,7 @@ fun PalettePickerBottomSheet(
     onDismiss: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val selection = remember(palette) { palette.selectionColors() }
     val strings = LocalTrainPilotStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var expandedFamily by androidx.compose.runtime.saveable.rememberSaveable {
@@ -136,7 +140,7 @@ fun PalettePickerBottomSheet(
                             Text(
                                 text = "${lang.flag} ${lang.code}",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = if (active) palette.onPrimary else palette.textPrimary
+                                color = if (active) palette.readablePrimaryLabel() else palette.textPrimary
                             )
                         }
                     }
@@ -151,12 +155,12 @@ fun PalettePickerBottomSheet(
                     val active = kotlin.math.abs(fontScaleMultiplier - scale) < 0.03f
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (active) palette.tintedSurface(0.22f) else palette.surfaceElevated,
+                        color = if (active) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                             .trainPilotBorder(
                                 width = 1.dp,
-                                color = if (active) palette.primary else palette.cardBorder,
+                                color = if (active) selection.border else palette.cardBorder,
                                 shape = RoundedCornerShape(10.dp)
                             )
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectFontScale(scale) }
@@ -168,7 +172,7 @@ fun PalettePickerBottomSheet(
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (active) palette.primary else palette.textSecondary
+                                color = if (active) selection.foreground else palette.textSecondary
                             )
                         }
                     }
@@ -176,12 +180,12 @@ fun PalettePickerBottomSheet(
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = if (compactPhoneMode) palette.tintedSurface(0.22f) else palette.surfaceElevated,
+                    color = if (compactPhoneMode) selection.surface else palette.surfaceElevated,
                     modifier = Modifier
                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                         .trainPilotBorder(
                             width = 1.dp,
-                            color = if (compactPhoneMode) palette.primary else palette.cardBorder,
+                            color = if (compactPhoneMode) selection.border else palette.cardBorder,
                             shape = RoundedCornerShape(10.dp)
                         )
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onToggleCompactMode(!compactPhoneMode) }
@@ -193,7 +197,7 @@ fun PalettePickerBottomSheet(
                         Text(
                             text = if (compactPhoneMode) "📱 320dp: ON" else "📱 320dp: OFF",
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (compactPhoneMode) palette.primary else palette.textSecondary
+                            color = if (compactPhoneMode) selection.foreground else palette.textSecondary
                         )
                     }
                 }
