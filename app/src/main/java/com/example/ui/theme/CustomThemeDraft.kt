@@ -26,7 +26,7 @@ internal enum class CustomThemeRole {
         TrainPilotPalettes.allPalettes.map { colorOf(it).customThemeHex() }.distinct()
 }
 
-private fun Color.customThemeHex(): String =
+internal fun Color.customThemeHex(): String =
     "#" + (toArgb() and 0xFFFFFF).toString(16).padStart(6, '0').uppercase(Locale.ROOT)
 
 /** Strict RGB input; do not accidentally accept Android ARGB or a partial HEX draft. */
