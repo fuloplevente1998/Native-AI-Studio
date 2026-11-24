@@ -3,7 +3,7 @@ name: TrainPilot Native Android Regression Tests
 on:
   # Main pushes run the full gate before an automatically signed release pair.
   push:
-    branches: [main]
+    branches: [main, 'test/349-350-theme-apk']
     paths:
       - 'app/**'
       - 'wear/**'
@@ -47,6 +47,7 @@ permissions:
 
 jobs:
   android-build:
+    if: github.ref != 'refs/heads/test/349-350-theme-apk'
     name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -162,6 +163,7 @@ jobs:
           retention-days: 7
 
   release-r8:
+    if: github.ref != 'refs/heads/test/349-350-theme-apk'
     # Same release R8/shrink check as before, on its own runner so it no longer
     # competes for CPU with debug compilation and Robolectric tests.
     name: Release R8 minification check
@@ -211,3 +213,82 @@ jobs:
           path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
+
+  theme-test-apk:
+    # Disposable, phone-only visual testing. Never a release gate or signing run.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test/349-350-theme-apk'
+    name: Isolated phone theme test APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: true
+      - name: Generate disposable debug signer
+        shell: bash
+        run: |
+          key="$RUNNER_TEMP/theme-test.jks"
+          keytool -genkeypair -keystore "$key" -storetype JKS -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 365 -dname "CN=TrainPilot Theme Test"
+          echo "THEME_TEST_KEYSTORE=$key" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
+      - name: Fetch Robolectric SDK
+        run: python3 scripts/prefetch_robolectric_sdk.py
+      - name: Run theme-specific phone regressions
+        run: |
+          gradle --no-daemon --stacktrace :app:testDebugUnitTest \
+            --tests 'com.example.CustomTheme*350Test' \
+            --tests 'com.example.ThemeSelection349Test' \
+            --tests 'com.example.PhoneWearThemeRegressionTest' \
+            --tests 'com.example.StudioAppearanceRegressionTest'
+      - name: Build isolated phone debug APK
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+      - name: Verify test package and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p theme-test-output
+          apk=theme-test-output/TrainPilot-Theme-Test.apk
+          cp app/build/outputs/apk/debug/app-debug.apk "$apk"
+          aapt="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$aapt" dump badging "$apk" > theme-test-output/apk-metadata.txt
+          grep -F "package: name='com.TrainPilot.com.themetest'" theme-test-output/apk-metadata.txt
+          grep -F "application-label:'TrainPilot Theme Test'" theme-test-output/apk-metadata.txt
+          "$apksigner" verify --print-certs "$apk" >> theme-test-output/apk-metadata.txt
+          echo "$GITHUB_SHA" > theme-test-output/source-sha.txt
+          (cd theme-test-output && sha256sum TrainPilot-Theme-Test.apk > SHA256SUMS)
+      - name: Upload isolated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrainPilot-Theme-Test
+          path: theme-test-output/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload targeted test XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-test-junit
+          path: app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove disposable signing key
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/theme-test.jks"
