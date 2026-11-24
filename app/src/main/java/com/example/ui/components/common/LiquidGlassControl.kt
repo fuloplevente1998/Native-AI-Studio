@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -58,20 +59,30 @@ internal fun LiquidGlassControl(language: AppLanguage, selectedId: Int) {
 @Composable
 private fun LiquidGlassMaterialPreview(p: TrainPilotPalette, language: AppLanguage) {
     val shape = RoundedCornerShape(18.dp)
-    Box(Modifier.fillMaxWidth().clip(shape).trainPilotGlassScene(p)
-        .padding(8.dp).testTag("liquid_glass_preview")) {
-        Column(Modifier.fillMaxWidth().clip(shape).trainPilotGlassMaterial(p, shape).padding(12.dp),
+    val backdrop = rememberGlassBackdrop()
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    Box(Modifier.fillMaxWidth().height(164.dp).clip(shape).testTag("liquid_glass_preview")) {
+        Row(Modifier.fillMaxSize().captureGlassBackdrop(backdrop)
+            .background(p.background)
+            .horizontalScroll(scroll).padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            repeat(12) { i ->
+                Box(Modifier.width(34.dp).height((44 + (i * 37 % 104)).dp)
+                    .background(if (i % 2 == 0) p.primary else p.secondary.copy(alpha = .65f), RoundedCornerShape(12.dp)))
+            }
+        }
+        Column(Modifier.align(Alignment.Center).fillMaxWidth(.82f).clip(shape)
+            .liveGlassLens(backdrop, p, shape).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(customThemeText(language, "Élő üvegelőnézet", "Live glass preview",
-                "Live-Glasvorschau", "Previzualizare sticlă"), color = p.textSecondary,
+                "Live-Glasvorschau", "Previzualizare sticlă"), color = Color.White,
                 style = MaterialTheme.typography.labelMedium)
             Text(customThemeText(language, "Aktív program", "Active program", "Aktives Programm", "Program activ"),
                 color = Color.White, style = MaterialTheme.typography.titleMedium)
-            Box(Modifier.fillMaxWidth().clip(shape).trainPilotGlassMaterial(p, shape).padding(12.dp),
-                contentAlignment = Alignment.Center) {
-                Text(customThemeText(language, "Edzés indítása", "Start workout", "Training starten",
-                    "Începe antrenamentul"), color = p.primary)
-            }
+            Text(customThemeText(language, "Húzd oldalra a hátteret", "Drag the background sideways",
+                "Hintergrund seitlich ziehen", "Trage fundalul lateral"), color = Color.White,
+                style = MaterialTheme.typography.labelSmall)
         }
     }
 }
