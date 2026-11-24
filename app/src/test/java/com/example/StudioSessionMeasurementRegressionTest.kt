@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException
 import com.example.ui.viewmodel.addSet
 import com.example.ui.viewmodel.adjustRestTimer
 import com.example.ui.viewmodel.adjustSetValues
+import com.example.ui.viewmodel.clearBannerMessage
 import com.example.ui.viewmodel.deleteSet
 import com.example.ui.viewmodel.navigateToSubScreen
 import com.example.ui.viewmodel.nextActiveExercise

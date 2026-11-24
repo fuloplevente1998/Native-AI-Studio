@@ -22,6 +22,7 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.clearBannerMessage
 import com.example.ui.viewmodel.clearCalendarPlans
 import com.example.ui.viewmodel.deleteCalendarEvent
 import com.example.ui.viewmodel.deleteEditorDay

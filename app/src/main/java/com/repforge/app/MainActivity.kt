@@ -53,6 +53,7 @@ import androidx.activity.viewModels
 import com.example.TrainPilotAppRoot
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.syncNativeSettings
 
 class MainActivity : ComponentActivity() {
     private lateinit var startupScreen: StartupScreen

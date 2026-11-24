@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.ConcurrentLinkedQueue
 import com.example.ui.viewmodel.addCustomExercise
+import com.example.ui.viewmodel.clearBannerMessage
 import com.example.ui.viewmodel.createNewCustomProgram
 import com.example.ui.viewmodel.customExerciseProgramTargetLabel
 import com.example.ui.viewmodel.deleteStudioCustomExercise

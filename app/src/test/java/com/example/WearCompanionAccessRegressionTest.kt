@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.updatePlatformAccess
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test

@@ -7,6 +7,7 @@ import com.example.ui.components.StudioPlatformAccess
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.example.ui.viewmodel.StudioPermissionAccess
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.updatePlatformAccess
 import com.repforge.app.NativePrivacyControls
 import org.json.JSONObject
 import org.junit.Assert.*

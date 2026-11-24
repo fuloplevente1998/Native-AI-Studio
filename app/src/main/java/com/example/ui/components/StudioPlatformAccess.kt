@@ -18,6 +18,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.reloadHealthJournal
+import com.example.ui.viewmodel.showBannerMessage
+import com.example.ui.viewmodel.updateHealthSyncStatus
+import com.example.ui.viewmodel.updatePlatformAccess
+import com.example.ui.viewmodel.updatePrivacyChoice
+import com.example.ui.viewmodel.updateSamsungAccess
 import com.repforge.app.HealthConnectSyncRecovery
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.HealthJournalStore
