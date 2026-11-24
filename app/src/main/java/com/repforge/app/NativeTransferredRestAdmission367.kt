@@ -39,19 +39,34 @@ internal object NativeTransferredRestAdmission367 {
             row.optString("setId")==command.optString("setId") &&
             row.optInt("rest")==command.optInt("configuredRest",-1))
         val ledger=timer.getJSONObject("ledger")
-        require(ledger.getLong("positionMs")==position &&
-            ledger.getLong("workMs")>=0 && ledger.getLong("restMs")>=0 &&
-            ledger.getLong("workMs")+ledger.getLong("restMs")<=position)
+        val rows=timer.getJSONArray("steps")
+        val parts=ledger.getJSONArray("steps")
+        require(parts.length()==rows.length() && ledger.getLong("positionMs")==position)
+        var work=0L; var rest=0L; var paused=0L
+        for(i in 0 until rows.length()) {
+            val owner=rows.getJSONObject(i)
+            val part=parts.getJSONObject(i)
+            require(owner.getString("exerciseId")==part.getString("exerciseId") &&
+                owner.getString("setId")==part.getString("setId"))
+            val w=IntervalTimeline193.version(part,"workMs")
+            val r=IntervalTimeline193.version(part,"restMs")
+            val p=IntervalTimeline193.version(part,"pausedMs")
+            require(w<=IntervalTimeline193.MAX_MS && r<=IntervalTimeline193.MAX_MS && p<=IntervalTimeline193.MAX_PAUSE_MS)
+            work+=w; rest+=r; paused+=p
+        }
+        require(work==ledger.getLong("workMs") && rest==ledger.getLong("restMs") &&
+            paused==ledger.getLong("pausedMs") && work+rest<=position && paused<=IntervalTimeline193.MAX_PAUSE_MS)
         val a=incoming.getJSONObject("automation")
         require(a.optString("owner")=="watch" && a.optString("key")==command.optString("timerKey") &&
             !a.optBoolean("paused") && !a.optBoolean("interrupted") &&
             timer.getLong("restChangeRevision367")==proof.getLong("restRevision") &&
             a.optLong("restChangeRevision367")==proof.getLong("restRevision"))
         val basePhase=command.getLong("phaseNumber")
+        require(basePhase>=0 && proof.getLong("restRevision")>0)
         if(checkpoint!=null) {
             require(phase.phase!="complete" && a.optString("phase")==phase.phase &&
                 a.optLong("remainingMs")==phase.remainingMs &&
-                a.optLong("phaseNumber")==basePhase+if(phase.token!=before.token)1 else 0)
+                a.optLong("phaseNumber")==basePhase+(if(phase.token!=before.token)1 else 0))
         } else require(phase.phase=="complete" && a.optLong("phaseNumber")>=basePhase+1)
         true
     }.getOrDefault(false)
