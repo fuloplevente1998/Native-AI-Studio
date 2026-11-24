@@ -5,8 +5,6 @@ import android.graphics.RuntimeShader
 import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -32,6 +30,16 @@ internal class GlassBackdrop internal constructor(internal val layer: GraphicsLa
     internal var origin by mutableStateOf(Offset.Zero)
 }
 
+internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?> { null }
+internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
+
+@Composable
+internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape): Modifier {
+    val backdrop = LocalGlassHeaderBackdrop.current
+    return if (backdrop != null) liveGlassLens(backdrop, palette, shape)
+    else trainPilotGlassMaterial(palette, shape)
+}
+
 @Composable
 internal fun rememberGlassBackdrop(): GlassBackdrop {
     val layer = rememberGraphicsLayer()
@@ -42,6 +50,9 @@ internal fun rememberGlassBackdrop(): GlassBackdrop {
 internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
     onGloballyPositioned { backdrop.origin = it.positionInRoot() }
         .drawWithContent {
+            var hardware = false
+            drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
+            if (!hardware) { drawContent(); return@drawWithContent }
             val parent = this
             backdrop.layer.record(this, layoutDirection, IntSize(
                 size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))) {
