@@ -1,7 +1,12 @@
 package com.example
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.lifecycle.ViewModelProvider
+import com.repforge.app.GoogleSyncRepository
+import com.repforge.app.GoogleSyncUiState
+import com.repforge.app.ui.settings.SettingsViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.SettingsMainScreen
@@ -27,7 +32,7 @@ import java.time.LocalDate
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class Collector2806RegressionTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private fun file(n: Int) = JSONObject().put("id", "f$n").put("name", "repforge-sync-x-$n.json")
         .put("createdTime", "2026-11-%02dT10:00:00Z".format(n))
@@ -69,8 +74,15 @@ class Collector2806RegressionTest {
                     onToggleProgressionModal = {}, onToggleVibration = {}, onNavigateToSubScreen = {}, onShowBanner = {})
             }
         }
+        // Connected state without credentials or network, as in BackupCompactViewportRegressionTest.
+        compose.runOnIdle {
+            val model = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]
+            val field = GoogleSyncRepository::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
+            @Suppress("UNCHECKED_CAST")
+            (field.get(model.googleRepo) as MutableStateFlow<GoogleSyncUiState>).value =
+                GoogleSyncUiState(connectedEmail = "a@example.test", connectedName = "Fiók neve", connectedSub = "s")
+        }
         compose.onNodeWithTag("settings_google_expand").performScrollTo().performClick()
-        // The account state reaches the card asynchronously from the repository flow.
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("settings_google_sync_now_btn").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
         compose.onNodeWithTag("settings_google_auto_sync").assertExists()
