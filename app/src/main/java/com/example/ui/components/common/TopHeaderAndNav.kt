@@ -113,6 +113,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
     onOpenSettings: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val selection = remember(palette) { palette.selectionColors() }
     var showLangMenu by remember { mutableStateOf(false) }
 
     Surface(
@@ -191,12 +192,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
 
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
+                        color = if (isCalendarActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
-                            .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
@@ -206,7 +207,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             Icon(
                                 imageVector = Icons.Default.CalendarMonth,
                                 contentDescription = strings.navCalendar,
-                                tint = if (isCalendarActive) palette.onPrimary else palette.textPrimary,
+                                tint = if (isCalendarActive) selection.foreground else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -215,12 +216,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     // 3. Beállítások (Settings) Icon Button
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
+                        color = if (isSettingsActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
-                            .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
@@ -230,7 +231,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = strings.settingsTitle,
-                                tint = if (isSettingsActive) palette.onPrimary else palette.textPrimary,
+                                tint = if (isSettingsActive) selection.foreground else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -471,11 +472,13 @@ fun TrainPilotBottomNavigationBar(
 
             items.forEach { (tab, label, icon) ->
                 val isSelected = currentTab == tab
-                val tint = if (isSelected) palette.primary else palette.textSecondary
+                val selection = remember(palette) { palette.selectionColors() }
+                val tint = if (isSelected) selection.foreground else palette.textSecondary
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectTab(tab) }
+                        .background(if (isSelected) selection.surface else Color.Transparent, RoundedCornerShape(12.dp))
+                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelectTab(tab) })
                         .padding(vertical = 6.dp)
                         .testTag("bottom_nav_${tab.name.lowercase()}"),
                     horizontalAlignment = Alignment.CenterHorizontally,
