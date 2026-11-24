@@ -35,6 +35,8 @@ internal fun CalendarScreen(
     canStart: Boolean,
     onBack: () -> Unit,
     onDays: () -> Unit = {},
+    mainPage: Boolean = false,
+    onDetailChange: (Boolean) -> Unit = {},
     onStart: (WatchCalendarEntry) -> Unit,
 ) {
     val today = LocalDate.now()
@@ -43,6 +45,9 @@ internal fun CalendarScreen(
     var weekKey by rememberSaveable { mutableStateOf(wearCalendarMonday(today).toString()) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     val week = runCatching { LocalDate.parse(weekKey) }.getOrDefault(wearCalendarMonday(today))
+    val detailCallback by rememberUpdatedState(onDetailChange)
+    LaunchedEffect(selectedKey) { detailCallback(selectedKey != null) }
+    DisposableEffect(Unit) { onDispose { detailCallback(false) } }
     BackHandler(enabled = selectedKey != null) { selectedKey = null }
     selectedKey?.let { key ->
         val selected = LocalDate.parse(key)
@@ -54,6 +59,43 @@ internal fun CalendarScreen(
             onBack = { selectedKey = null },
             onStart = onStart,
         )
+        return
+    }
+    if (mainPage && home != null) {
+        // The main pager owns horizontal gestures. The detailed calendar from the menu
+        // still supports all cached weeks; the main page always presents this week.
+        // Readable today-first main page, with full-sized touch targets on small watches.
+        val currentWeek=wearCalendarMonday(today)
+        val locale=java.util.Locale.getDefault()
+        val caption=wearCalendarCaption(currentWeek,today,locale)
+        val todayEntries=wearCalendarTodayEntries(entries,today)
+        RoundList(wearText("Naptár")) {
+            centerItem { Title(caption.month,18); Label(caption.dates) }
+            centerItem { Title(wearText("Ma") + " · " + today.format(DateTimeFormatter.ofPattern("MMM d.",locale)),16) }
+            if(todayEntries.isEmpty()) centerItem { Label(wearText("Mára nincs átvett naptáradat"),lines=2) }
+            todayEntries.forEach { entry ->
+                centerItem {
+                    Label(entry.day?.programName.orEmpty(),lines=1)
+                    Pill(entry.day?.name?.takeIf { it.isNotBlank() } ?: wearCalendarStatus367(entry.status),tone=Secondary) {
+                        selectedKey=today.toString()
+                    }
+                    Label(wearCalendarStatus367(entry.status))
+                }
+            }
+            centerItem { Pill(wearText("Mai nap"),tone=Secondary) { selectedKey=today.toString() } }
+            for(index in 0..6) {
+                val date=currentWeek.plusDays(index.toLong())
+                if(date!=today) {
+                    val records=entries.filter { wearCalendarDate(it)==date }
+                    centerItem {
+                        Pill(wearCalendarDayLabel(index,locale.language)+" · "+date.dayOfMonth+
+                            if(records.isNotEmpty()) " · "+records.size else "",tone=Card) { selectedKey=date.toString() }
+                    }
+                }
+            }
+            centerItem { Pill(WearMenu216.text("days"),tone=Secondary,onClick=onDays) }
+            centerItem { Pill(WearMenu216.text("home"),tone=Secondary,onClick=onBack) }
+        }
         return
     }
     if (home == null || entries.isEmpty()) {
@@ -113,10 +155,10 @@ internal fun CalendarWeekPage(
     val fontScale = LocalDensity.current.fontScale
     val captionScale = fontScale.coerceAtMost(1.25f)
     fun textSize(size: Float) = (size * captionScale / fontScale).sp
-    val locale = java.util.Locale.forLanguageTag("hu")
+    val locale = java.util.Locale.getDefault()
     BoxWithConstraints(Modifier.fillMaxSize().testTag("wear-calendar-week")) {
         val layout = wearCalendarLayout(maxWidth.value, maxHeight.value)
-        val caption = wearCalendarCaption(week, today)
+        val caption = wearCalendarCaption(week, today, locale)
         Text(
             caption.month,
             modifier =
@@ -141,12 +183,12 @@ internal fun CalendarWeekPage(
                     .width(minOf(maxWidth, maxHeight) * .76f)
                     .semantics {
                         contentDescription =
-                            "${caption.dates}. Átvett hét: $pageNumber / $pageCount. Hétváltás balra vagy jobbra csúsztatással."
+                            "${caption.dates} · $pageNumber / $pageCount"
                     },
             maxLines = 1,
         )
         val dayScale = minOf(1f, layout.buttonSize / 40f)
-        val labels = listOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
+        val labels = (0..6).map { wearCalendarDayLabel(it,locale.language) }
         layout.days.forEachIndexed { dayIndex, point ->
             val date = week.plusDays(dayIndex.toLong())
             val records = entries.filter { wearCalendarDate(it) == date }
@@ -166,7 +208,7 @@ internal fun CalendarWeekPage(
                     .semantics {
                         contentDescription =
                             date.format(DateTimeFormatter.ofPattern("MMMM d., EEEE", locale)) +
-                                if (current) ", ma" else ""
+                                if (current) ", " + wearText("Ma") else ""
                     },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -228,6 +270,14 @@ internal fun CalendarWeekPage(
     }
 }
 
+internal fun wearCalendarStatus367(status: String): String = when(status) {
+    "completed" -> wearText("✓ Teljesítve")
+    "skipped" -> wearText("Kihagyva")
+    "rest" -> wearText("Pihenőnap")
+    "planned" -> wearText("Tervezett")
+    else -> "–"
+}
+
 @Composable
 internal fun CalendarDayScreen(
     date: LocalDate,
@@ -239,7 +289,7 @@ internal fun CalendarDayScreen(
 ) {
     RoundList(
         date.format(
-            DateTimeFormatter.ofPattern("MMM d., EEEE", java.util.Locale.forLanguageTag("hu"))
+            DateTimeFormatter.ofPattern("MMM d., EEEE", java.util.Locale.getDefault())
         )
     ) {
         if (entries.isEmpty()) {
@@ -263,15 +313,10 @@ internal fun CalendarDayScreen(
                     entry.day?.let { day ->
                         Label(day.programName)
                         Title(day.name, 16)
-                        Label("${day.exercises.size} gyakorlat", size = 10)
+                        Label(wearText("${day.exercises.size} gyakorlat"), size = 10)
                     }
                     Label(
-                        when (entry.status) {
-                            "completed" -> wearText("✓ Teljesítve")
-                            "skipped" -> "Kihagyva"
-                            "rest" -> wearText("Pihenőnap")
-                            else -> "Tervezett"
-                        },
+                        wearCalendarStatus367(entry.status),
                         size = 11,
                     )
                     val time =

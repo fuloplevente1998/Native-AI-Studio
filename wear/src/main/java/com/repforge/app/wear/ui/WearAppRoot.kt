@@ -60,9 +60,12 @@ internal fun TrainPilotWearApp(
     touchClock189: ()->Long = { android.os.SystemClock.uptimeMillis() },
     /** Start route; only the screen audit passes another one (production always starts at "home"). */
     initialRoute: String = "home",
+    onRestAdjust367: ((WearRestTarget367, Int) -> Unit)? = null,
+    onPauseWorkout367: ((WearPauseTarget367) -> Unit)? = null,
 ) {
     var route by rememberSaveable { mutableStateOf(initialRoute) }
     val context = LocalContext.current
+    val daily = rememberWearDailyHealth()
     var pendingGps216 by remember { mutableStateOf<GpsLaunch216?>(null) }
     var gpsBack216 by rememberSaveable { mutableStateOf("menu") }
     var daysBack216 by rememberSaveable { mutableStateOf("home") }
@@ -95,11 +98,14 @@ internal fun TrainPilotWearApp(
     var editorField by rememberSaveable { mutableStateOf("reps") }
     var miniJournalId by rememberSaveable { mutableStateOf("") }
     var miniJournalBackRoute by rememberSaveable { mutableStateOf("journal") }
-    var journalBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var journalBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="journal") "home" else "menu") }
+    var calendarBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="calendar") "home" else "menu") }
+    var calendarDetail by remember { mutableStateOf(false) }
     var syncBackRoute by rememberSaveable { mutableStateOf("home") }
-    var metricsBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var metricsBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="metrics") "home" else "menu") }
     var settingsBackRoute by rememberSaveable { mutableStateOf("home") }
     var returnWorkoutPage by rememberSaveable { mutableStateOf(0) }
+    var discardBackRoute by rememberSaveable { mutableStateOf("home") }
     val touchIdentity=WearTouchLock189.identity(workout.value)
     var touchLocked by remember(touchIdentity) { mutableStateOf(WearTouchLock189.locked(context,workout.value)) }
     val touchCopy=WearTouchCopy189.language(java.util.Locale.getDefault().language)
@@ -134,14 +140,15 @@ internal fun TrainPilotWearApp(
                 "gpsStart216" -> { pendingGps216=null;gpsBack216 }
                 "gpsRoute193" -> "workout"
                 "planned216", "quick", "ownership193" -> "menu"
-                "calendar" -> "menu"
+                "calendar" -> calendarBackRoute
                 "days" -> daysBack216
                 "save-sync" -> syncBackRoute
                 "journal-detail" -> miniJournalBackRoute
                 "journal" -> journalBackRoute
                 "metrics" -> metricsBackRoute
+                "daily-details" -> "metrics"
                 "settings" -> settingsBackRoute
-                "discard" -> "home"
+                "discard" -> discardBackRoute
                 else -> "home"
             }
     }
@@ -159,7 +166,21 @@ internal fun TrainPilotWearApp(
     ) {
         val syncedTheme = LocalWearHomeTheme.current
         MaterialTheme(colorScheme = syncedTheme.materialColors(MaterialTheme.colorScheme)) {
-            Box(Modifier.fillMaxSize().background(Black)) {
+            val mainRoute = if (workout.value != null || touchLocked) null else when {
+                route == "home" -> route
+                route == "journal" && journalBackRoute == "home" -> route
+                route == "metrics" && metricsBackRoute == "home" -> route
+                route == "calendar" && calendarBackRoute == "home" && !calendarDetail -> route
+                else -> null
+            }
+            WearMainNavigation(mainRoute, onPage = { destination ->
+                when (destination) {
+                    "journal" -> journalBackRoute = "home"
+                    "metrics" -> metricsBackRoute = "home"
+                    "calendar" -> calendarBackRoute = "home"
+                }
+                route = destination
+            }) {
                 val active = workout.value
                 when {
                     touchLocked && active != null -> WearTouchLockedScreen189(active,restRemaining.value,health.value,touchCopy,onUnlock={
@@ -186,7 +207,7 @@ internal fun TrainPilotWearApp(
                             backLabel = if (settingsBackRoute == "home") wearText("‹ Kezdőlap") else wearText("‹ Főmenü"),
                             onBack = { route = settingsBackRoute },
                         )
-                    route == "metrics" ->
+                    route == "daily-details" ->
                         HealthScreen(
                             health.value,
                             measuring.value,
@@ -197,10 +218,14 @@ internal fun TrainPilotWearApp(
                             onToggleGps,
                             home.value,
                             onRefreshJournal,
-                            onOpenJournal = { openJournal("metrics") },
-                            onSelectMeasurement = { openMeasurement(it, "metrics") },
-                            onBack = { route = metricsBackRoute },
+                            onOpenJournal = { openJournal(route) },
+                            onSelectMeasurement = { openMeasurement(it, route) },
+                            onBack = { route = "metrics" },
                         )
+                    route == "metrics" ->
+                        WearDailyHealthScreen(daily, home.value?.dailyStepsGoal, health.value, active,
+                            onDetails = { route = "daily-details" },
+                            onBack = { route = metricsBackRoute })
                     route == "save-sync" -> SaveSyncScreen(saveSync?.value,
                         onRetry = { saveSync?.value?.let { onRetrySync?.invoke(it.workoutId) } },
                         onBack = { route=syncBackRoute })
@@ -213,7 +238,7 @@ internal fun TrainPilotWearApp(
                         onStart={ val request=pendingGps216;pendingGps216=null;request?.start?.invoke();route=if(workout.value!=null)"workout" else gpsBack216 },
                         onCancel={pendingGps216=null;route=gpsBack216})
                     route == "planned216" -> RoundList(WearMenu216.text("planned")) {
-                        centerItem { Pill(WearMenu216.text("calendar")) {route="calendar"} }
+                        centerItem { Pill(WearMenu216.text("calendar")) {calendarBackRoute="menu";route="calendar"} }
                         centerItem { Pill(WearMenu216.text("days"),tone=Card) {daysBack216="planned216";route="days"} }
                         centerItem { Pill(WearMenu216.text("back"),tone=Secondary) {route="menu"} }
                     }
@@ -222,7 +247,9 @@ internal fun TrainPilotWearApp(
                             if (it == "journal") openJournal("menu")
                             else {
                                 if (it == "metrics") metricsBackRoute = "menu"
+                                if (it == "calendar") calendarBackRoute = "menu"
                                 if (it == "settings") settingsBackRoute = "menu"
+                                if (it == "discard") discardBackRoute = "menu"
                                 route = it
                             }
                         }
@@ -238,6 +265,7 @@ internal fun TrainPilotWearApp(
                                     else -> wearText("‹ Mérések")
                                 },
                             onBack = { route = journalBackRoute },
+                            mainPage = journalBackRoute == "home",
                         ) { selected ->
                             miniJournalId = selected.workoutId
                             miniJournalBackRoute = "journal"
@@ -271,8 +299,10 @@ internal fun TrainPilotWearApp(
                             active == null &&
                                 home.value?.hasDraft == false &&
                                 closure.value?.status !in listOf("pending", "error"),
-                            onBack = { route = "menu" },
+                            onBack = { route = calendarBackRoute },
                             onDays = { daysBack216 = "calendar"; route = "days" },
+                            mainPage = calendarBackRoute == "home",
+                            onDetailChange = { calendarDetail = it },
                         ) { entry ->
                             entry.day?.let {
                                 startWithGps216(it.exercises.firstOrNull()) {onStart(it, entry.scheduleId)}
@@ -284,19 +314,28 @@ internal fun TrainPilotWearApp(
                             onDismissClosure()
                             route = "home"
                         }
+                    active?.controlIntent367 != null && route in listOf("workout", "editor", "timer", "finish", "discard") ->
+                        RoundList(wearSaveTitle()) {
+                            centerItem { Label(wearSaveLabel(WearSavePhase.ERROR), lines = 2) }
+                            centerItem { Pill(wearSaveRetry()) { onRetrySync?.invoke(active.workoutId) } }
+                            centerItem { Pill(WearMenu216.text("back"), tone = Secondary) { route = "home" } }
+                        }
                     route == "discard" && active != null ->
                         ConfirmationScreen(true, active.completedSets) {
                             if (it) {
                                 onDiscard()
-                                route = "summary"
-                            } else route = "home"
+                                if (workout.value == null || closure.value?.let { it.workoutId == active.workoutId && it.status == "error" } == true)
+                                    route = "summary"
+                            } else route = discardBackRoute
                         }
                     route == "finish" && active != null ->
-                        ConfirmationScreen(false, active.completedSets) {
-                            if (it) {
-                                onFinish()
+                        WearFinishPreview(active, health.value, onBack = { route = "workout" }) {
+                            onFinish()
+                            // A rejected close (for example pending ownership) must not navigate to success.
+                            if (workout.value == null)
                                 route = if (onWorkoutFeedback != null) "feedback" else "summary"
-                            } else route = "workout"
+                            else if (closure.value?.let { it.workoutId == active.workoutId && it.status == "error" } == true)
+                                route = "summary"
                         }
                     route == "editor" && active != null ->
                         ValueEditor(active, editorField, onChange) { route = "workout" }
@@ -324,9 +363,11 @@ internal fun TrainPilotWearApp(
                             if(active.ownershipProtocol193==1&&WearOwnership193.pending(active)) {
                                 centerItem { Text(WearOwnershipText193.text("pending"),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
                                 centerItem { Pill(WearOwnershipText193.text("retry"),tone=Secondary) { onRetryOwnership193?.invoke() } }
-                            }else if(active.ownershipProtocol193==1&&active.timerOwner=="watch") {
+                            }else if(active.ownershipProtocol193==1&&(active.timerOwner=="watch" || active.timerOwner=="phone" && active.nativeExecutionProtocol==2 && (home.value?.controlProtocol367 ?: 0)>=2)) {
                                 centerItem { Pill(WearOwnershipText193.text("resume"),tone=Gold) { onResumeWorkout() } }
                             }else centerItem { Pill(wearText("Folytatás telefonon"),tone=Gold) { onOpenPhone() } }
+                            centerItem { Pill(wearText("Edzés befejezése"), enabled = active.completedSets > 0 && !WearUndo188.blocked(active) && !WearOwnership193.pending(active)) { route="finish" } }
+                            centerItem { Pill(WearMenu216.text("discard"), tone = Danger, enabled = !WearUndo188.blocked(active) && !WearOwnership193.pending(active)) { discardBackRoute="workout"; route="discard" } }
                             centerItem { Pill(if(active.ownershipProtocol193==1)WearOwnershipText193.text("home")else wearText("Kezdőlap"),tone=Secondary) { route="home" } }
                         }
                     route == "workout" && active != null ->
@@ -358,6 +399,10 @@ internal fun TrainPilotWearApp(
                             onTimerTools = { route = "timer" },
                             onFinish = { route = "finish" },
                             onHome = { route = "home" },
+                            onDiscard = { discardBackRoute = "workout"; route = "discard" },
+                            onRestAdjust367 = onRestAdjust367,
+                            onPauseWorkout367 = onPauseWorkout367,
+                            onPhoneControl = onOpenPhone,
                         )
                     else ->
                         WearHomeDashboard(
@@ -373,19 +418,21 @@ internal fun TrainPilotWearApp(
                                 if (workout.value != null) route = "workout"
                             },
                             onResume = {
-                                if(active?.workoutPaused==true&&!(active.ownershipProtocol193==1&&active.timerOwner=="watch"))onOpenPhone()else onResumeWorkout()
+                                if(active?.workoutPaused==true&&!(active.ownershipProtocol193==1&&(active.timerOwner=="watch" || active.timerOwner=="phone" && active.nativeExecutionProtocol==2 && (home.value?.controlProtocol367 ?: 0)>=2)))onOpenPhone()else onResumeWorkout()
                                 route = "workout"
                             },
                             onDays = { daysBack216="home";route = "days" },
                             onResult = { route = "summary" },
                             onJournal = { openJournal("home") },
-                            onDiscard = { route = "discard" },
+                            onDiscard = { discardBackRoute = "home"; route = "discard" },
                             onSettings = {
                                 settingsBackRoute = "home"
                                 route = "settings"
                             },
                             onMenu = { route = "menu" },
                             onOpenPhone = onOpenPhone,
+                            dailyHealth = daily.data,
+                            dailyPulse = daily.pulse,
                         )
                 }
             }

@@ -1,5 +1,6 @@
 package com.repforge.app.wear
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -109,13 +110,44 @@ internal fun WorkoutPager(
     onReturnPageConsumed: () -> Unit,
     onFinish: () -> Unit,
     onHome: () -> Unit,
+    onDiscard: () -> Unit = {},
+    onRestAdjust367: ((WearRestTarget367, Int) -> Unit)? = null,
+    onPauseWorkout367: ((WearPauseTarget367) -> Unit)? = null,
+    onPhoneControl: (() -> Unit)? = null,
 ) {
     val pager = rememberPagerState(initialPage = initialPage, pageCount = { 3 })
     LaunchedEffect(Unit) { onReturnPageConsumed() }
     LaunchedEffect(pager.currentPage) { if (pager.currentPage == 2) onRefreshJournal() }
     val scope = rememberCoroutineScope()
-    Box(Modifier.fillMaxSize()) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
+    var controls by remember(workout.workoutId) { mutableStateOf(false) }
+    val pauseTarget = wearPauseTarget367(workout)
+    val restTarget = wearRestTarget367(workout, System.currentTimeMillis())
+    val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout) || workout.controlIntent367 != null
+    val canControlWatch = (home?.controlProtocol367 ?: 0) >= 1 && workout.timerOwner == "watch"
+    val canControlPhone = (home?.controlProtocol367 ?: 0) >= 2 && workout.timerOwner == "phone" && workout.nativeExecutionProtocol == 2 && workout.generation > 0
+    val pauseAction: (() -> Unit)? = if ((canControlWatch || canControlPhone) && pauseTarget != null && onPauseWorkout367 != null && !blocked)
+        ({ onPauseWorkout367(pauseTarget) }) else null
+    val canAdjustWatch = canControlWatch && (restTarget?.timerKey.isNullOrEmpty() ||
+        (home?.controlProtocol367 ?: 0) >= if(workout.timerCheckpoint193!=null) 6 else 4)
+    val adjustAction: ((Int) -> Unit)? = if ((canAdjustWatch || canControlPhone && ((home?.controlProtocol367 ?: 0) >= 5 || workout.automation?.restOnly == true && (home?.controlProtocol367 ?: 0) >= 3)) && restTarget != null && onRestAdjust367 != null && !blocked)
+        ({ delta -> onRestAdjust367(restTarget, delta) }) else null
+    val phoneControl = onPhoneControl?.takeIf { workout.timerOwner == "phone" && !blocked }
+    val command = LocalAutomaticCommand.current
+    // Only automatic timer pause is currently exposed to this UI; never pretend it pauses the whole workout.
+    val automatic = workout.automation
+    val timerPause: (() -> Unit)? = if (automatic?.enabled == true && automatic.counting && command != null)
+        ({ command(if (automatic.paused) "resume" else "pause") }) else null
+    BackHandler(enabled = controls || pager.currentPage != 0) {
+        if (controls) controls = false else scope.launch { pager.scrollToPage(0) }
+    }
+    val gesture = wearWorkoutGesture(
+        enabled = !controls,
+        page = pager.currentPage,
+        onTap = { controls = true },
+        onPage = { page -> scope.launch { pager.scrollToPage(page) } },
+    )
+    Box(Modifier.fillMaxSize().then(gesture)) {
+        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), userScrollEnabled = false) { page ->
             Box(
                 Modifier.fillMaxSize()
                     .hierarchicalFocusGroup(active = pager.currentPage == page)
@@ -128,10 +160,13 @@ internal fun WorkoutPager(
                     Box(Modifier.fillMaxSize()) {
                         if (restRemaining > 0) RestRing(workout, restRemaining)
                         val onMenu = {
-                            scope.launch { pager.animateScrollToPage(1) }
+                            controls = true
                             Unit
                         }
-                        if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
+                        if (restRemaining > 0 && (workout.automation?.enabled != true || workout.automation?.restOnly == true ||
+                            workout.automation?.phase == "rest" && adjustAction != null))
+                            WearRestV2(workout, restRemaining, onSkipRest, onMenu, onAdjust = adjustAction, onPhoneControl = phoneControl)
+                        else if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
                             AutomaticTimedSetScreen(workout,restRemaining,health,onPrevious,onNext,onSkipRest,onFinish,onMenu)
                         else if (normalizeUnit(workout.exercise?.repUnit.orEmpty()).startsWith("mp"))
                             TimedSetScreen(
@@ -158,6 +193,7 @@ internal fun WorkoutPager(
                                 onSkipRest,
                                 onFinish,
                                 onMenu,
+                                home = home,
                             )
                     }
                 } else if (page == 2)
@@ -196,6 +232,11 @@ internal fun WorkoutPager(
                         restRemaining,
                         onFinish,
                         onHome,
+                        onDiscard = onDiscard,
+                        onBack = { scope.launch { pager.scrollToPage(0) } },
+                        onHealth = { scope.launch { pager.scrollToPage(2) } },
+                        onPauseWorkout = pauseAction,
+                        onPhoneControl = phoneControl,
                     )
             }
         }
@@ -219,6 +260,20 @@ internal fun WorkoutPager(
                 }
             }
         }
+        if (controls && pager.currentPage == 0) {
+            WearWorkoutControlOverlay(
+                workout = workout,
+                timerPause = timerPause,
+                workoutPause = pauseAction,
+                onPhoneControl = phoneControl,
+                onPrevious = { controls = false; onPrevious() },
+                onNext = { controls = false; onNext() },
+                onFinish = { controls = false; onFinish() },
+                onDiscard = { controls = false; onDiscard() },
+                onMore = { controls = false; scope.launch { pager.scrollToPage(1) } },
+                onDismiss = { controls = false },
+            )
+        }
     }
 }
 
@@ -228,12 +283,13 @@ internal fun RestRing(workout: WearWorkout, seconds: Int) {
     val remainingFraction=wearRestProgress(workout,seconds)
     Canvas(Modifier.fillMaxSize().padding(8.dp).testTag("wear-rest-ring")
         .semantics { progressBarRangeInfo=ProgressBarRangeInfo(remainingFraction,0f..1f) }) {
+        drawArc(color.copy(alpha = .18f), -90f, 360f, false, style = Stroke(4.dp.toPx()))
         drawArc(
             color,
             -90f,
             360f * remainingFraction,
             false,
-            style = Stroke(2.dp.toPx()),
+            style = Stroke(4.dp.toPx()),
         )
     }
 }
@@ -437,49 +493,71 @@ internal fun CurrentSetScreen(
     onSkipRest: () -> Unit,
     onFinish: () -> Unit,
     onMenu: () -> Unit,
+    home: WatchHomeSnapshot? = null,
 ) {
+    // Keep the specialized automatic/GPS controls intact; V2 strength layout only applies
+    // to an ordinary editable set.
     val set = workout.currentSet
-    WorkoutPanel(
-        workout,
-        onMenu,
-        actions = { layout ->
-            WorkoutControls(
-                workout,
-                restRemaining,
+    val automatic = workout.automation
+    val editable = set?.done == false && !WearUndo188.blocked(workout) &&
+        (automatic?.counting != true || automatic.paused) && automatic?.awaitingPhone != true
+    if (automatic?.enabled == true || WearGps193.distance(workout.exercise)) {
+        WorkoutPanel(workout, onMenu, actions = { layout ->
+            WorkoutControls(workout, restRemaining,
                 recordingEnabled = set != null && !set.done && (set.reps.toIntOrNull() ?: 0) > 0,
-                onRecord = onComplete,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                onSkipRest = onSkipRest,
-                onFinish = onFinish,
-                layout = layout,
-            )
-        },
-    ) {
-        run {
+                onRecord = onComplete, onPrevious = onPrevious, onNext = onNext,
+                onSkipRest = onSkipRest, onFinish = onFinish, layout = layout)
+        }) {
             SetHeading(workout, restRemaining)
             LiveWorkoutHealth(workout, health)
-        }
-
-        run {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (workout.exercise?.loadType != "bodyweight")
-                    ValueTile(
-                        set?.weight?.ifBlank { "0" } ?: "0",
-                        "kg",
-                        Modifier.weight(1f),
-                        enabled = set?.done == false && (workout.automation?.counting!=true||workout.automation.paused),
-                    ) {
-                        onEdit("weight")
-                    }
-                ValueTile(
-                    set?.reps?.ifBlank { "0" } ?: "0",
-                    wearText("ismétlés"),
-                    Modifier.weight(1f),
-                    enabled = set?.done == false && (workout.automation?.counting!=true||workout.automation.paused),
-                ) {
-                    onEdit("reps")
+                    ValueTile(set?.weight?.ifBlank { "0" } ?: "0", "kg", Modifier.weight(1f), editable) { onEdit("weight") }
+                ValueTile(set?.reps?.ifBlank { "0" } ?: "0", wearText("ismétlés"), Modifier.weight(1f), editable) { onEdit("reps") }
+            }
+        }
+        return
+    }
+    val previous = wearPreviousSetV2(home?.recentWorkouts.orEmpty(), workout.workoutId,
+        workout.exercise?.name.orEmpty(), set?.number ?: 0)
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(workout.workoutId) {
+        while (true) { now = System.currentTimeMillis(); delay(1000L) }
+    }
+    val pulse = wearHomeLivePulse(health, workout.workoutId, true, now)
+    val undo = LocalUndo.current
+    FixedRoundPanel(workout.exercise?.name.orEmpty(), count = 1, sweep = 140f,
+        headerColor = White, onTitleClick = onMenu,
+        footer = {
+            CompositionLocalProvider(LocalActionSize provides 56f) {
+                when {
+                    workout.exerciseComplete && workout.currentExercise < workout.exercises.lastIndex ->
+                        RoundControl("›", Gold, enabled = !WearUndo188.blocked(workout),
+                            caption = wearText("Következő"), description = wearText("Következő gyakorlat"), onClick = onNext)
+                    workout.exerciseComplete ->
+                        RoundControl("■", Gold, enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout),
+                            caption = wearText("Befejezés"), description = wearText("Edzés befejezése"), onClick = onFinish)
+                    else -> RoundControl("✓", SaveTone,
+                        enabled = editable && restRemaining == 0 && (set?.reps?.toIntOrNull() ?: 0) > 0,
+                        caption = wearText("Kész"), description = wearText("Sorozat rögzítése"), onClick = onComplete)
                 }
+            }
+        },
+    ) { compact ->
+        SetHeading(workout, restRemaining, compact = compact)
+        Row(Modifier.fillMaxWidth(.9f), horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            if (workout.exercise?.loadType != "bodyweight") {
+                WearV2Value(set?.weight?.ifBlank { "0" } ?: "0", "kg", Modifier.weight(1f), editable) { onEdit("weight") }
+                Text("×", color = Muted, fontSize = 18.sp)
+            }
+            WearV2Value(set?.reps?.ifBlank { "0" } ?: "0", wearText("ismétlés"), Modifier.weight(1f), editable) { onEdit("reps") }
+        }
+        Label(wearV2Text("last") + ": " + (previous ?: "–"), size = 10)
+        Label("♥ " + (pulse?.let { "$it bpm" } ?: "–"), color = LocalWearHomeTheme.current.secondaryColor, size = 11)
+        if (undo != null && WearUndo188.quick(workout, now)) {
+            Pill(wearText("Utolsó sorozat visszavonása"), tone = Secondary, size = 10) {
+                WearUndo188.record(workout)?.optString("recordId")?.let(undo)
             }
         }
     }

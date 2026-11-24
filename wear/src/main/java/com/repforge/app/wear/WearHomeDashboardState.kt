@@ -181,3 +181,14 @@ internal fun wearHomeDashboardState(
             "Telefon",
         )
 }
+
+/** A home pulse is live only for the active, matching workout and a fresh available sample. */
+internal fun wearHomeLivePulse(data: JSONObject?, workoutId: String?, enabled: Boolean, now: Long): Int? {
+    if (!enabled || workoutId.isNullOrBlank() || data == null ||
+        data.optString("workoutId") != workoutId || data.optString("source") != "wear_health_services" ||
+        data.optString("state") != "active" || data.optString("heartRateAvailability") in listOf("acquiring", "unavailable")) return null
+    val sample = data.optLong("lastSampleAt", data.optLong("updatedAt"))
+    if (sample <= 0L || now - sample !in 0L..15000L || now - data.optLong("updatedAt") !in 0L..20000L) return null
+    val pulse = data.optDouble("heartRate")
+    return pulse.takeIf { it.isFinite() && it in 20.0..250.0 }?.toInt()
+}

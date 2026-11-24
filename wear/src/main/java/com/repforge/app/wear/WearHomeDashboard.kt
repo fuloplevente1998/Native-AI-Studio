@@ -65,6 +65,8 @@ internal fun WearHomeDashboard(
     onSettings: () -> Unit,
     onMenu: () -> Unit,
     onOpenPhone: () -> Unit,
+    dailyHealth: WearDailyHealth = WearDailyHealth(),
+    dailyPulse: WearDailyPulse? = null,
 ) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(active?.workoutId) {
@@ -93,300 +95,103 @@ internal fun WearHomeDashboard(
         when (model.action) {
             HomeAction.START -> wearText("Edzés indítása")
             HomeAction.RESUME -> wearText("Edzés folytatása")
-            HomeAction.DAYS -> "Program napjai"
+            HomeAction.DAYS -> WearMenu216.text("days")
             HomeAction.RESULT -> wearText("Edzés mentésének állapota")
             HomeAction.PHONE -> wearText("Telefon megnyitása a folytatáshoz")
         }
+    val pulse = wearHomeLivePulse(health, active?.workoutId, enabled, now)
+    val lastPulse = dailyPulse?.takeIf { now - it.at in 0L..300000L }
+    val clock = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+        .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(now))
+    val language = java.util.Locale.getDefault().language
+    val phoneCaption = when (language) { "hu" -> "Telefon"; "de" -> "Telefon"; "ro" -> "Telefon"; else -> "Phone" }
+    val settingsCaption = when (language) { "hu" -> "Beáll."; "de" -> "Einst."; "ro" -> "Setări"; else -> "Settings" }
+    val connection = when (phoneConnected) { true -> "●"; false -> "○"; null -> "…" }
+    val stepPercent = wearDailyStepPercent(dailyHealth.steps, home?.dailyStepsGoal)
+    val batteryColor = if (battery != null && battery <= 15) Color(0xFFEF5350) else theme.accentColor
+    val status = saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.source)
     BoxWithConstraints(
-        Modifier.fillMaxSize()
-            .background(theme.backgroundColor)
-            .testTag("wear-round-list")
-            .pointerInput(onMenu) {
-                var distance = 0f
-                var fromBottom = false
-                detectVerticalDragGestures(
-                    onDragStart = {
-                        distance = 0f
-                        fromBottom = it.y >= size.height * .6f
-                    },
-                    onVerticalDrag = { change, amount ->
-                        distance += amount
-                        if (fromBottom) change.consume()
-                    },
-                    onDragEnd = { if (fromBottom && distance <= -40.dp.toPx()) onMenu() },
-                )
-            }
+        Modifier.fillMaxSize().background(theme.backgroundColor).testTag("wear-round-list")
     ) {
         val diameter = minOf(maxWidth, maxHeight)
         val origin = (maxHeight - diameter) / 2
-        val tiny = diameter < 180.dp
-        val large = diameter >= 210.dp
-        val arc = wearArcLayout(maxWidth.value, maxHeight.value)
-        val base = wearFixedPageLayout(maxWidth.value, maxHeight.value, true)
-        val footerTop = base.footerTop - 16f
-        val bodyTop = origin + if (tiny) 24.dp else 32.dp
-        val bodyHeight = (footerTop.dp - bodyTop - 4.dp).coerceAtLeast(1.dp)
-        val connectedLabel =
-            when (phoneConnected) {
-                true -> wearText("Telefon elérhető")
-                false -> "Telefon nincs kapcsolatban"
-                null -> wearText("Kapcsolat ellenőrzése")
-            }
-        val connectionColor =
-            when (phoneConnected) {
-                true -> Color(0xFF62D08A)
-                false -> HomeMuted
-                null -> theme.secondaryColor
-            }
-        val curveSize = diameter - 12.dp
-        val fontScale = LocalDensity.current.fontScale
-        val sideLabel =
-            if (large) wearText(model.measurement)
-            else
-                when (wearText(model.measurement)) {
-                    wearText("Mérés folyamatban") -> wearText("Mérés aktív")
-                    wearText("Mérés bekapcsolva") -> wearText("Mérés be")
-                    wearText("Mérés kikapcsolva") -> wearText("Mérés ki")
-                    wearText("Legutóbbi mérés") -> wearText("Korábbi adat")
-                    wearText("Mérés lezárása") -> wearText("Lezárás")
-                    wearText("Mérés lezárva") -> wearText("Lezárva")
-                    else -> wearText(model.measurement)
-                }
-        CurvedLayout(Modifier.align(Alignment.Center).size(curveSize)) {
-            curvedComposable {
-                Image(
-                    painterResource(R.drawable.ic_tp_phone),
-                    null,
-                    Modifier.size(11.dp),
-                    colorFilter = ColorFilter.tint(HomeWhite),
-                )
-            }
-            basicCurvedText(
-                "  ● ",
-                style = CurvedTextStyle(color = connectionColor, fontSize = (9f / fontScale).sp),
-            )
-            basicCurvedText(
-                when (phoneConnected) {
-                    true -> "Telefon ↗"
-                    false -> "Telefon ↗ · nincs"
-                    null -> "Telefon ↗ · …"
-                },
-                style = CurvedTextStyle(color = HomeWhite, fontSize = (10f / fontScale).sp),
-            )
-        }
-        Box(
-            Modifier.align(Alignment.TopCenter)
-                .offset(y = origin)
-                .width(diameter * .65f)
-                .height(if (tiny) 24.dp else 32.dp)
-                .clickable(role = Role.Button, onClick = onOpenPhone)
-                .semantics {
-                    contentDescription = wearText("Megnyitás telefonon")
-                    stateDescription = "$connectedLabel · ${wearText(model.source)}"
-                }
-        )
+        val compact = diameter < 190.dp
+        val tiny = diameter < 176.dp
+        val lineHeight = if (tiny) 9.dp else 12.dp
+        val primarySize = if (diameter >= 172.dp) 56.dp else 48.dp
+        val side = 48.dp
+        val gap = if (diameter >= 190.dp) 5.dp else 2.dp
+        val actionsWidth = side * 2 + primarySize + gap * 2
+        val actionsTop = origin + (diameter - primarySize - 48.dp).coerceAtLeast(40.dp)
+        val bodyTop = origin + diameter * if (tiny) .055f else .095f
+        val bodyHeight = (actionsTop - bodyTop - 2.dp).coerceAtLeast(1.dp)
         Canvas(Modifier.align(Alignment.Center).size(diameter)) {
             val inset = 7.dp.toPx()
-            for (i in 0 until 12) drawArc(
-                if (battery != null && i < battery.coerceIn(0, 100) * 12 / 100f) theme.accentColor
-                else HomeLine,
-                145f + i * 6f,
-                3.5f,
-                false,
-                Offset(inset, inset),
-                androidx.compose.ui.geometry.Size(size.width - 2 * inset, size.height - 2 * inset),
-                style = Stroke(3.dp.toPx(), cap = StrokeCap.Round),
-            )
-        }
-        CurvedLayout(
-            Modifier.align(Alignment.Center).size(diameter - 30.dp),
-            anchor = 146f,
-            angularDirection = CurvedDirection.Angular.Reversed,
-        ) {
-            basicCurvedText(
-                battery?.let { "$it%" } ?: "—",
-                style = CurvedTextStyle(color = HomeWhite, fontSize = (8f / fontScale).sp),
-            )
-        }
-        // 2777: on small/medium watches the curved status ran off the right edge; it moves into the body.
-        if (large) CurvedLayout(
-            Modifier.align(Alignment.Center).size(diameter - 18.dp),
-            anchor = 0f,
-        ) {
-            curvedComposable {
-                Image(
-                    painterResource(R.drawable.ic_tp_heart),
-                    null,
-                    Modifier.size(if (tiny) 7.dp else 9.dp),
-                    colorFilter = ColorFilter.tint(theme.secondaryColor),
-                )
+            val topLeft = Offset(inset, inset)
+            val arcSize = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2)
+            val stroke = Stroke(4.dp.toPx(), cap = StrokeCap.Round)
+            drawArc(HomeLine, 135f, 90f, false, topLeft, arcSize, style = stroke)
+            drawArc(HomeLine, -45f, 90f, false, topLeft, arcSize, style = stroke)
+            val fraction = (battery?.coerceIn(0, 100) ?: 0) / 100f
+            if (fraction > 0f) drawArc(batteryColor, 135f, 90f * fraction, false, topLeft, arcSize, style = stroke)
+            if (stepPercent != null && stepPercent > 0) {
+                val sweep = 90f * (stepPercent.coerceAtMost(100) / 100f)
+                drawArc(theme.secondaryColor, 45f - sweep, sweep, false, topLeft, arcSize, style = stroke)
             }
-            basicCurvedText(
-                " $sideLabel",
-                modifier = CurvedModifier.sizeIn(maxSweepDegrees = if (large) 72f else 60f),
-                style =
-                    CurvedTextStyle(
-                        color = theme.secondaryColor,
-                        fontSize = ((if (tiny) 6.5f else 8f) / fontScale).sp,
-                    ),
-                overflow = TextOverflow.Ellipsis,
-            )
         }
         Column(
-            Modifier.align(Alignment.TopCenter)
-                .offset(y = bodyTop)
-                .width(diameter - 50.dp)
-                .height(bodyHeight)
-                .testTag("wear-fixed-body"),
+            Modifier.align(Alignment.TopCenter).offset(y = bodyTop)
+                .width(diameter * .72f).height(bodyHeight).testTag("wear-fixed-body"),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(if (tiny) 0.dp else 1.dp),
         ) {
-            if (large)
-                HomeFitText(
-                    if (model.active) "${wearText(model.phase)} · ${wearText(model.detail)}"
-                    else {
-                        val date = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())
-                        "${listOf(wearText("HÉT"),wearText("KEDD"),wearText("SZE"),wearText("CSÜT"),wearText("PÉN"),wearText("SZO"),wearText("VAS"))[date.dayOfWeek.value-1]} ${date.dayOfMonth} · ${wearText(model.phase)}"
-                    },
-                    Modifier.fillMaxWidth().height(9.dp),
-                    7.5f,
-                    theme.accentColor,
-                )
+            HomeFitText("$connection $phoneCaption ↗", Modifier.fillMaxWidth().height(lineHeight),
+                if (tiny) 8f else 10f, if (phoneConnected == true) theme.secondaryColor else HomeMuted)
+            HomeFitText(clock, Modifier.fillMaxWidth().weight(1f).testTag("wear-home-clock"),
+                if (tiny) 24f else if (compact) 30f else 38f, HomeWhite, weight = FontWeight.Bold, mono = true)
+            HomeFitText("${wearText(model.title)} · $status", Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-title"),
+                10f, HomeMuted)
             HomeFitText(
-                model.clock,
-                Modifier.fillMaxWidth().weight(1f).testTag("wear-home-clock"),
-                if (large) 32f else if (tiny) 16f else 24f,
-                HomeWhite,
-                weight = FontWeight.SemiBold,
-                mono = true,
+                if (pulse != null) "♥ $pulse bpm · ${wearText("Mérés aktív")}" else if (lastPulse != null) "♥ ${lastPulse.bpm} bpm · ${wearText("Korábbi adat")}" else "♥ – · ${wearText(model.measurement)}",
+                Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-measurement"),
+                10f, theme.secondaryColor, weight = FontWeight.SemiBold,
             )
-            HomeFitText(
-                if (model.phase == "PIHENŐ" && !large) "${wearText("Pihenő")} · ${wearText(model.title)}" else wearText(model.title),
-                Modifier.fillMaxWidth()
-                    .height(
-                        if (model.active) {
-                            if (large) 32.dp else if (tiny) 16.dp else 24.dp
-                        } else if (large) 16.dp else if (tiny) 8.dp else 12.dp
-                    )
-                    .testTag("wear-home-title"),
-                if (model.active) {
-                    if (large) 17f else if (tiny) 10f else 13f
-                } else if (large) 14f else if (tiny) 7f else 10.5f,
-                HomeWhite,
-                weight = FontWeight.SemiBold,
-                maxLines = if (model.active) 2 else 1,
-            )
-            if (!tiny) {
-                if (model.active) {
-                    if (large)
-                        HomeProgress(
-                            model.completed,
-                            model.total,
-                            theme,
-                            Modifier.fillMaxWidth().height(3.dp),
-                        )
-                } else {
-                    HomeFitText(
-                        saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.subtitle),
-                        Modifier.fillMaxWidth().height(10.dp),
-                        8f,
-                        HomeMuted,
-                    )
-                    if (!large)
-                        HomeFitText(
-                            "♥ $sideLabel",
-                            Modifier.fillMaxWidth().height(10.dp).testTag("wear-home-measurement"),
-                            8f,
-                            theme.secondaryColor,
-                        )
-                    if (large)
-                        HomeFitText(
-                            "${wearText(model.detail)} · ${wearText(model.source)}",
-                            Modifier.fillMaxWidth().height(9.dp),
-                            7.5f,
-                            HomeMuted,
-                        )
-                }
-            }
-            if (model.active) {
-                val rows = model.metrics.take(if (large) 2 else 1)
-                if (rows.isEmpty())
-                    HomeFitText(
-                        model.measurement,
-                        Modifier.fillMaxWidth().height(if (tiny) 8.dp else 10.dp),
-                        if (tiny) 6.5f else 8f,
-                        theme.secondaryColor,
-                    )
-                rows.forEach {
-                    HomeFitText(
-                        it,
-                        Modifier.fillMaxWidth().height(if (tiny) 8.dp else 10.dp),
-                        if (tiny) 6.5f else 8f,
-                        theme.secondaryColor,
-                    )
-                }
-            } else if (large) {
-                if (model.total > 0)
-                    HomeProgress(0, model.total, theme, Modifier.fillMaxWidth().height(3.dp))
-            }
         }
-        // Same circular targets as the accepted short-page layout; the menu has its own rim strip.
-        Box(
-            Modifier.align(Alignment.TopCenter)
-                .offset(y = footerTop.dp)
-                .width(arc.width.dp)
-                .height(arc.height.dp)
-                .testTag("wear-fixed-actions")
+        Row(
+            Modifier.align(Alignment.TopCenter).offset(y = actionsTop).width(actionsWidth)
+                .height(primarySize).testTag("wear-fixed-actions"),
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            HomeQuickButton(R.drawable.ic_tp_phone, phoneCaption, WearMenu216.text("phone"), theme, false, onOpenPhone)
             HomeQuickButton(
-                if (model.active) R.drawable.ic_tp_delete else R.drawable.ic_tp_journal,
-                if (model.active) wearText("Törlés") else wearText("Napló"),
-                if (model.active) wearText("Megkezdett edzés törlése") else wearText("Edzésnapló"),
-                theme,
-                false,
-                if (model.active) onDiscard else onJournal,
-                danger = model.active,
+                if (model.action == HomeAction.PHONE) R.drawable.ic_tp_phone else R.drawable.ic_tp_workout,
+                wearText(model.actionLabel), primaryDescription, theme, true, onPrimary, size = primarySize,
             )
-            Box(Modifier.offset(x = arc.sideOffset.dp, y = arc.centerTop.dp)) {
-                HomeQuickButton(
-                    if (model.action == HomeAction.PHONE) R.drawable.ic_tp_phone
-                    else R.drawable.ic_tp_workout,
-                    wearText(model.actionLabel),
-                    primaryDescription,
-                    theme,
-                    true,
-                    onPrimary,
-                )
-            }
-            Box(Modifier.offset(x = (2 * arc.sideOffset).dp)) {
-                HomeQuickButton(
-                    R.drawable.ic_tp_settings,
-                    wearText("Beállítás"),
-                    wearText("Beállítások"),
-                    theme,
-                    false,
-                    onSettings,
-                )
-            }
-        }
-        CurvedLayout(
-            Modifier.align(Alignment.Center).size(diameter - 12.dp),
-            anchor = 90f,
-            angularDirection = CurvedDirection.Angular.Reversed,
-        ) {
-            basicCurvedText(
-                wearText("··· Menü"),
-                style = CurvedTextStyle(color = HomeWhite, fontSize = (10f / fontScale).sp),
-            )
+            HomeQuickButton(R.drawable.ic_tp_settings, settingsCaption, WearMenu216.text("settings"), theme, false, onSettings)
         }
         Box(
-            Modifier.align(Alignment.BottomCenter)
-                .offset(y = -origin)
-                .width(diameter * .6f)
-                .height(24.dp)
+            Modifier.align(Alignment.TopCenter).offset(y = actionsTop + primarySize)
+                .width(diameter * .42f).height(48.dp)
                 .clickable(role = Role.Button, onClick = onMenu)
-                .semantics { contentDescription = wearText("Főmenü") }
-        )
+                .semantics { contentDescription = wearText("Főmenü") },
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            HomeFitText(wearText("··· Menü"), Modifier.fillMaxWidth().height(20.dp), 11f, HomeWhite)
+        }
+        Row(
+            Modifier.align(Alignment.Center).offset(x = -diameter * .29f, y = diameter * .31f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(painterResource(R.drawable.ic_tp_battery), null, Modifier.size(11.dp), colorFilter = ColorFilter.tint(batteryColor))
+            Text(battery?.let { "${it.coerceIn(0, 100)}%" } ?: "–", color = batteryColor, fontSize = 9.sp)
+        }
+        Row(
+            Modifier.align(Alignment.Center).offset(x = diameter * .29f, y = diameter * .31f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(painterResource(R.drawable.ic_tp_steps), null, Modifier.size(11.dp), colorFilter = ColorFilter.tint(HomeMuted))
+            Text(stepPercent?.let { "$it%" } ?: "–", color = if (stepPercent != null) theme.secondaryColor else HomeMuted, fontSize = 9.sp)
+        }
     }
 }
 
@@ -399,16 +204,17 @@ private fun HomeQuickButton(
     primary: Boolean,
     onClick: () -> Unit,
     danger: Boolean = false,
+    size: androidx.compose.ui.unit.Dp = 48.dp,
 ) {
     Column(
-        Modifier.size(48.dp)
+        Modifier.size(size)
             .background(
-                if (danger) Color(0xFF3B232A) else if (primary) theme.button else theme.elevatedColor,
+                if (danger) Color(0xFF3B232A) else if (primary) theme.accentColor.copy(alpha = .24f) else theme.elevatedColor,
                 CircleShape,
             )
             .border(
                 1.dp,
-                if (danger) Color(0xFF7D4653) else if (primary) theme.frame else theme.outlineColor,
+                if (danger) Color(0xFF7D4653) else if (primary) theme.accentColor else theme.outlineColor,
                 CircleShape,
             )
             .clickable(role = Role.Button, onClick = onClick)
@@ -419,40 +225,12 @@ private fun HomeQuickButton(
         Image(
             painterResource(icon),
             null,
-            Modifier.size(22.dp),
+            Modifier.size(if (primary) 27.dp else 22.dp),
             colorFilter = ColorFilter.tint(
                 if (danger) Color(0xFFEFBCC3) else theme.textColor
             ),
         )
-        HomeFitText(caption, Modifier.width(44.dp).height(13.dp), 8.5f, theme.textColor)
-    }
-}
-
-@Composable
-private fun HomeProgress(completed: Int, total: Int, theme: WearHomeTheme, modifier: Modifier) {
-    val HomeLine = theme.outlineColor
-    Canvas(modifier) {
-        val count = total.coerceIn(1, 12)
-        val gap = 2.dp.toPx()
-        val width = (size.width - (count - 1) * gap) / count
-        val fraction = completed.toFloat() / total.coerceAtLeast(1)
-        repeat(count) { i ->
-            val left = i * (width + gap)
-            drawRoundRect(
-                HomeLine,
-                Offset(left, 0f),
-                androidx.compose.ui.geometry.Size(width, size.height),
-                androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
-            )
-            val amount = (fraction * count - i).coerceIn(0f, 1f)
-            if (amount > 0)
-                drawRoundRect(
-                    theme.accentColor,
-                    Offset(left, 0f),
-                    androidx.compose.ui.geometry.Size(width * amount, size.height),
-                    androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
-                )
-        }
+        HomeFitText(caption, Modifier.width(size - 4.dp).height(13.dp), if (primary) 10f else 8.5f, theme.textColor, weight = FontWeight.SemiBold)
     }
 }
 

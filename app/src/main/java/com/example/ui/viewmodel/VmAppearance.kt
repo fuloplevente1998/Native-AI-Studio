@@ -187,6 +187,7 @@ fun TrainPilotViewModel.updateGoals(
                     }
                 }
             }
+            com.repforge.app.WearSyncRepository.refreshWatchHomeAsync(context)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { withContext(Dispatchers.Main.immediate) { failed() } }
     }

@@ -8,6 +8,7 @@ import android.os.SystemClock
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import com.repforge.shared.IntervalTimeline193
 import java.util.UUID
 import kotlin.math.floor
 import kotlin.math.max
@@ -522,7 +523,12 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 .put("stopped", timer.optBoolean("stopped"))
             logs.put(key, log)
             frame.put("timeLogs162", logs).put("latestTimer162", timer)
+            timer.optJSONObject("remoteRestProof367")?.let { frame.put("remoteRest367", JSONObject(it.toString())) }
             val restPlan = frame.optJSONObject("transition")?.optJSONObject("plan")
+            if (restPlan?.optString("key") == key && timer.has("restOverridesMs367")) {
+                IntervalTimeline193.readRestOverrides(timer)
+                restPlan.put("restOverridesMs367", JSONObject(timer.getJSONObject("restOverridesMs367").toString()))
+            }
             if (frame.optInt("nativeEditorProjection") == 1 && timer.optBoolean("restOnly") &&
                 restPlan != null && restPlan.optString("key") == key && restPlan.optBoolean("restOnly")) {
                 val rows = timer.getJSONArray("steps")
@@ -948,6 +954,7 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 }
                 if (paused) NativeSetStopwatch.pause(frame, monotonic)
                 frame.put("workoutPaused", paused).put("pauseRevision", revision)
+                input.optJSONObject("remotePause367")?.let { frame.put("remotePause367", JSONObject(it.toString())) }
                 if (input.optJSONArray("activeIntervals") != null) {
                     frame.put("activeIntervals", JSONArray(input.getJSONArray("activeIntervals").toString()))
                 }

@@ -102,4 +102,43 @@ class WearAutomaticTest {
         val interrupted=WearAutomaticEngine.tick(work,999999,2).workout
         assertEquals(2000,interrupted.automation!!.remainingMs);assertEquals(0,interrupted.completedSets)
     }
+    @Test fun activeAutomaticRestAdjustmentOnlyChangesCurrentPhaseAndCreditsRealElapsedTime() {
+        val rest = WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=40)),1000,1)
+        val added = WearAutomaticEngine.adjustActiveRest367(rest,6000,1,15)!!
+        assertEquals(50000L,added.automation!!.remainingMs)
+        assertEquals(5000L,added.automation.restMs)
+        assertEquals(40,added.automation.restSeconds)
+        assertEquals(55000L,added.automation.restPhaseDurationMs367)
+        assertEquals(rest.exercises,added.exercises)
+        val reduced = WearAutomaticEngine.adjustActiveRest367(added,7000,1,-15)!!
+        assertEquals(34000L,reduced.automation!!.remainingMs)
+        assertEquals(6000L,reduced.automation.restMs)
+        val next = WearAutomaticEngine.tick(reduced,41000,1).workout
+        assertEquals("ready",next.automation!!.phase)
+        assertEquals(40,next.automation.restSeconds)
+        assertEquals(40000L,next.automation.restMs)
+    }
+    @Test fun automaticRestClampSkipAndStaleTarget() {
+        val rest = WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=5)),1000,1)
+        val next = WearAutomaticEngine.adjustActiveRest367(rest,2000,1,-15)!!
+        assertEquals("ready",next.automation!!.phase)
+        assertEquals(1000L,next.automation.restMs)
+        assertEquals(1,next.completedSets)
+        assertNull(WearAutomaticEngine.adjustActiveRest367(rest,6000,1,15))
+        assertNull(WearAutomaticEngine.adjustActiveRest367(rest.copy(workoutPaused=true),2000,1,15))
+        assertNull(WearAutomaticEngine.adjustActiveRest367(rest.copy(timerCheckpoint193="{}"),2000,1,15))
+        val long = rest.copy(automation=rest.automation!!.copy(remainingMs=595000))
+        assertEquals(600000L,WearAutomaticEngine.adjustActiveRest367(long,1000,1,15)!!.automation!!.remainingMs)
+    }
+    @Test fun automaticRestWarnsAtTenSecondsWithoutReplay() {
+        val rest=WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=30)),1000,1).automation!!
+        val h=WearAutomaticHaptics()
+        assertEquals(0L,h.next(rest,1000))
+        assertEquals(0L,h.next(rest,19000))
+        assertEquals(160L,h.next(rest,21000))
+        assertEquals(0L,h.next(rest,21100))
+        assertEquals(0L,h.next(rest,22000))
+        val fresh=WearAutomaticHaptics()
+        assertEquals(0L,fresh.next(rest,22000))
+    }
 }

@@ -52,3 +52,8 @@ Ez a bejegyzés kizárólag dokumentáció; a fent megadott SHA a ténylegesen t
 - #351 második rész (PR #370): API 33–35 / 36+ háttér-szenzorengedély deklaráció és külön, opcionális engedélykérés; célzott, 15 másodperces workout/revision/epoch üzenet; háttérből FGS-kísérlet csak illeszkedő élő snapshothoz, GPS nélkül, meglévő Health Services motorral. Rendszerblokkoláskor előtéri fallback, nem hamis ACK. Első CI 870 app teszt / 2 hiba (új JSON fixture NPE), Robolectric futtató javítva. Új CI és fizikai validáció függőben.
 
 - #351 harmadik rész: reconnect friss célzott kérés, sorrendfüggetlen snapshot/üzenet fogadás (egy memóriabeli slot, TTL, forrás/epoch/revision), duplikációgát, élő ACK frissesség/óraazonosság, lezárási verseny ellenőrzés. Új CI és fizikai próba szükséges; külön signed build nincs.
+## #367 – Wear OS átadás az integrátornak (PR #368)
+- Ág: `feature/367-wear-redesign`, utolsó kódcommit `55900fadec9aed1e7f6b3aa871d8d64c4c26e7d8`. A main ágat nem módosítottuk; az integrátor fésüli össze a négy PR-t.
+- Utolsó teljes zöld kapu: `534197e68cb8cd7235f6a1b61df703e27d9abe2d`, Actions 45478730820: app 881, wear 227, összesen 1108 teszt, 0 failure/error/skipped; R8 sikeres. Az utána hozzáadott 10 mp-es rezgésjelzés CI-je még ellenőrizendő.
+- A jelenlegi szerződések, közös fájlok, visszafelé kompatibilitás, fennmaradó készülékes ellenőrzés: [#367 integrációs átadó](docs/WEAR_367_CONTROL_INTEGRATION.md).
+- A PR draft; az integrátor a saját ellenőrzése után dönt a ready/merge sorrendről. Nincs verzióemelés, signed build, merge vagy issue-lezárás.
