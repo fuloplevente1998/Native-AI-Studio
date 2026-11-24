@@ -85,7 +85,7 @@ fun SettingsMainScreen(
     onUndoProgression: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
+    val currentPaletteObj = palette
 
     var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var expandedThemeFamily by rememberSaveable {
@@ -202,13 +202,16 @@ fun SettingsMainScreen(
                         }
                     }
 
-                    if (expandedMainThemesSection) com.example.ui.components.StudioPaletteCategories(
-                        language = uiState.language,
-                        selectedId = uiState.selectedPaletteId,
-                        expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
-                        onExpand = { expandedThemeFamily = it?.name.orEmpty() },
-                        onSelect = onSelectPalette
-                    )
+                    if (expandedMainThemesSection) {
+                        com.example.ui.components.StudioPaletteCategories(
+                            language = uiState.language,
+                            selectedId = if (palette.id == -1) -1 else uiState.selectedPaletteId,
+                            expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
+                            onExpand = { expandedThemeFamily = it?.name.orEmpty() },
+                            onSelect = onSelectPalette
+                        )
+                        com.example.ui.components.CustomThemeSection(uiState.language)
+                    }
                 }
             }
         }
