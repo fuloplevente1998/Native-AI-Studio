@@ -18,12 +18,14 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
 import java.time.LocalDate
 
 /** 2806: simpler Google sync – last 3 Drive snapshots, 30-day calendar, one disconnect sheet; palettes 12/15. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w480dp-h960dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
+@LooperMode(LooperMode.Mode.PAUSED)
 class Collector2806RegressionTest {
     @get:Rule val compose = createComposeRule()
 
@@ -68,7 +70,9 @@ class Collector2806RegressionTest {
             }
         }
         compose.onNodeWithTag("settings_google_expand").performScrollTo().performClick()
-        compose.onNodeWithTag("settings_google_sync_now_btn").assertExists()
+        // The account state reaches the card asynchronously from the repository flow.
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("settings_google_sync_now_btn").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
         compose.onNodeWithTag("settings_google_auto_sync").assertExists()
         for (gone in listOf("settings_google_maintenance_toggle", "settings_google_drive_sync_btn",
                 "settings_google_calendar_sync_btn", "settings_google_recover_earlier", "settings_google_auto_drive"))

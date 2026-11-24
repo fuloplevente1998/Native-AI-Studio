@@ -611,7 +611,7 @@ class GoogleSyncRepository internal constructor(
             lastCalendarSyncCount = liveEvents,
             errorMessage = null
         )
-        return liveEvents
+        return count
     }
 
     suspend fun deleteAllDriveAppData(accessToken: String): Result<Int> = withContext(Dispatchers.IO) {
