@@ -202,6 +202,15 @@ internal object HealthConnectJournal {
                 d.put("value", Duration.between(r.startTime, r.endTime).toMillis() / 60_000.0)
                     .put("unit", "min")
                     .put("exerciseType", r.exerciseType)
+                    .put("title", r.title?.toString() ?: JSONObject.NULL)
+                    .put("clientRecordId", r.metadata.clientRecordId ?: JSONObject.NULL)
+                d.put("segments", JSONArray().apply {
+                    for (segment in r.segments) put(externalWorkoutSegment(
+                        segment.startTime, segment.endTime, segment.segmentType, segment.repetitionsCount))
+                })
+                d.put("laps", JSONArray().apply {
+                    for (lap in r.laps) put(externalWorkoutLap(lap.startTime, lap.endTime, lap.length?.inMeters))
+                })
             }
             else -> throw IllegalArgumentException("Unsupported HC record type")
         }

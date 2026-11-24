@@ -10,3 +10,6 @@
   paletta 12/15 kiemelőszín ≥4,5:1 (#349 része).
 - Nyitott issue-k: #349 (32 téma közös kiemelés), #350 (saját témák + áttetszőség, leírás bővítve), #351 (óra mérés auto-indítás,
   jóváhagyásra vár), #359 (külső órás edzésimport – a refaktor feltétele teljesült).
+
+## #359 – külső edzésimport (részleges, draft ág)
+- `feature/359-external-workout-import`, base `0affd420`: egységes HC session modell és lapozott, meglévő health-journal alapú olvasás; metadata, körök, szegmensek. Nem kész funkció: Room edzésnapló, Samsung közvetlen session import, társítás, deduplikáció, opt-in és metrikák bekötése hátra van. A PR CI ellenőrzendő; fizikai eszközteszt nem történt. #367/#351 változatlan.
