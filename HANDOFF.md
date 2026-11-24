@@ -4,7 +4,7 @@
   Méretőr `SourceSizeGuardTest`; áthelyezés `scripts/split_kotlin.py`, `scripts/verify_move.py`. ViewModel: állapot + mag, funkciók `Vm*.kt`.
 - **Integrációs jelölt:** `integration/wear-health-themes` = main `0affd420` + #369 → #370 → #368 → #371 (ebben a sorrendben).
   Szöveges ütközés csak a HANDOFF.md-ben volt; a 10 közös kódfájl automatikusan összefésülődött. Ellenőrizve: dupla deklaráció nincs
-  (1 dupla import törölve), MainActivity 1388/1393 sor, méretőr-plafonok rendben, verzió változatlan 1.5.0. A teljes közös CI dönt.
+  (1 dupla import törölve), MainActivity 1388/1393 sor, méretőr-plafonok rendben, verzió 1.5.1 · 280700/280702. A teljes közös CI dönt.
 - **#369 külső edzésimport** (#359): HC + Samsung Room-import (kézi/opt-in auto), stabil forrásazonosító, duplikáció/tombstone, késői metrikák,
   privát GPS (`noBackupFilesDir`). Egyetlen health sync út, nincs új worker. Korlát: Samsung törlésfeed, gyártói export, HC route-consent készüléken.
 - **#370 automatikus órás mérés** (#351): célzott kérés (workout ID/revision/epoch/15 s TTL), source node ellenőrzés, ACK csak valós HS start után,
