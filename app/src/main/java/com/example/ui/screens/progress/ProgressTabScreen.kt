@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.BarChart
 import com.example.localization.LocalizedStrings
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
+import androidx.compose.runtime.remember
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -75,6 +77,7 @@ fun ProgressTabScreen(
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
     val sections = listOf(0 to strings.navProgress, 2 to statisticsLabel)
     val activeSection = if (uiState.progressMainSection == 2) 2 else 0
+    val selection = remember(palette) { palette.selectionColors() }
 
     val layoutBlocks = listOf(
         PageLayoutBlock("photos", trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto")),
@@ -120,13 +123,13 @@ fun ProgressTabScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                            color = if (selected) selection.surface else Color.Transparent,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(42.dp)
                                 .trainPilotBorder(
                                     width = if (selected) 1.dp else 0.dp,
-                                    color = if (selected) palette.primary else Color.Transparent,
+                                    color = if (selected) selection.border else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .testTag("progress_section_visual_$idx")
@@ -139,14 +142,14 @@ fun ProgressTabScreen(
                                 Icon(
                                     imageVector = if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
                                     contentDescription = null,
-                                    tint = if (selected) palette.primary else palette.textSecondary,
+                                    tint = if (selected) selection.foreground else palette.textSecondary,
                                     modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
                                 )
                                 com.example.ui.components.TrainPilotFitText(
                                     text = label,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) palette.primary else palette.textSecondary,
+                                    color = if (selected) selection.foreground else palette.textSecondary,
                                     modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
                                 )
                             }
