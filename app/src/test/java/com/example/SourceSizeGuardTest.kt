@@ -18,8 +18,6 @@ class SourceSizeGuardTest {
         "app/src/main/java/com/example/ui/screens/workout/CalendarPlannerScreen.kt" to 1100,
         // One 954-line composable (R5 kept it whole: splitting needs a real refactor, not a move).
         "app/src/main/java/com/example/ui/components/common/PersonalPlannerModal.kt" to 1050,
-        "app/src/main/java/com/repforge/app/GoogleSyncRepository.kt" to 1751,
-        "app/src/main/java/com/repforge/app/HealthJournalStore.kt" to 1492,
         "app/src/main/java/com/example/MainActivity.kt" to 1393,
         "app/src/main/java/com/repforge/app/ui/workout/ActiveWorkoutViewModel.kt" to 1384,
         "app/src/main/java/com/repforge/app/ui/workout/ActiveWorkoutScreen.kt" to 1361,

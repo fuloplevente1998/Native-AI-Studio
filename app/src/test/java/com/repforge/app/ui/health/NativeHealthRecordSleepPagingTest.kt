@@ -14,6 +14,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.repforge.app.erase
+import com.repforge.app.importRecords
+import com.repforge.app.page
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

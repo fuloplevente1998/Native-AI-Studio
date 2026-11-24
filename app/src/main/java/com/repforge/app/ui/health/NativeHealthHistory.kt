@@ -4,6 +4,7 @@ import com.repforge.app.HealthJournalStore
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.YearMonth
+import com.repforge.app.page
 
 internal data class NativeHealthQuery(val day: LocalDate = LocalDate.now(),
     val month: YearMonth = YearMonth.from(day), val channel: String = "journal") {

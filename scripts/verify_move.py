@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Prove a refactor only MOVED Kotlin code (REFACTOR_PLAN.md).
 
-Usage: python3 scripts/verify_move.py [--dedup N] <base-ref> <dir> [<dir> ...]
+Usage: python3 scripts/verify_move.py [--dedup N] [--receiver Cls ...] <base-ref> <dir> [<dir> ...]
 --dedup N: accept exactly N missing lines whose identical copy still exists (a removed duplicate
 private helper, e.g. a second `tr`); NEW lines are never accepted.
+--receiver Cls: a member moved to an extension (`fun Cls.name(` -> `fun name(`) counts as unchanged.
 Compares every non-blank, non-package/import line of the *.kt files under the dirs at <base-ref>
 with the working tree, as a multiset. Visibility changes private/internal are ignored, as are
 file header KDoc lines starting with "// Moved from". Exit 1 and list lines on any difference.
@@ -11,12 +12,16 @@ file header KDoc lines starting with "// Moved from". Exit 1 and list lines on a
 import collections, pathlib, re, subprocess, sys
 
 VIS = re.compile(r"\b(private|internal)\s+")
+RECEIVERS = []
 
 def norm(line: str):
     s = line.strip()
     if not s or s.startswith(("package ", "import ", "// Moved from")) or s.startswith("@file:"):
         return None
-    return VIS.sub("", s)
+    s = VIS.sub("", s)
+    for r in RECEIVERS:
+        s = re.sub(r"\bfun (<[^>]*> )?" + re.escape(r) + r"\.", lambda m: "fun " + (m.group(1) or ""), s)
+    return s
 
 def count(texts):
     c = collections.Counter()
@@ -34,6 +39,8 @@ def main():
     dedup = 0
     if args[0] == "--dedup":
         dedup, args = int(args[1]), args[2:]
+    while args and args[0] == "--receiver":
+        RECEIVERS.append(args[1]); args = args[2:]
     base, dirs = args[0], args[1:]
     files = subprocess.run(["git", "ls-tree", "-r", "--name-only", base, "--", *dirs],
                            capture_output=True, text=True, check=True).stdout.split()

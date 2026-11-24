@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import com.repforge.app.mergeSync18
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w480dp-h960dp-mdpi")

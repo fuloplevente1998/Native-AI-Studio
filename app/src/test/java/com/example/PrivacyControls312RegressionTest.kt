@@ -15,6 +15,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import com.repforge.app.exportSnapshot
+import com.repforge.app.healthDay
 
 /** #312/13: a system permission is not an app opt-in; OFF never erases health history. */
 @RunWith(RobolectricTestRunner::class)
