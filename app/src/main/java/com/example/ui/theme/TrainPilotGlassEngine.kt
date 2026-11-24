@@ -23,7 +23,7 @@ internal data class GlassOptics(val clarity: Float, val blur: Float, val bend: F
     companion object {
         fun from(value: Int): GlassOptics {
             val t = value.coerceIn(0, 100) / 100f
-            return GlassOptics(t, .085f * (1f - t) + .002f, .035f * t, .74f - .50f * t)
+            return GlassOptics(t, .095f * (1f - t) + .0015f, .018f + .112f * t, .80f - .70f * t)
         }
     }
 }
@@ -55,10 +55,12 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
     }
     return onGloballyPositioned { coordinates -> origin = coordinates.positionInRoot() }
         .drawWithCache {
-            val path = shape?.let { Path().apply { addOutline(it.createOutline(size, layoutDirection, this@drawWithCache)) } }
+            val outline = shape?.createOutline(size, layoutDirection, this)
+            val path = outline?.let { Path().apply { addOutline(it) } }
+            val corner = (outline as? Outline.Rounded)?.roundRect?.topLeftCornerRadius?.x ?: 0f
             val optics = GlassOptics.from(palette.glassClarity)
             val configured = painter != null && Build.VERSION.SDK_INT >= 33 && runCatching {
-                painter.configure(palette, optics, origin, sceneWidth, sceneHeight, size.width, size.height)
+                painter.configure(palette, optics, origin, sceneWidth, sceneHeight, size.width, size.height, corner)
             }.isSuccess
             val fallback = Brush.verticalGradient(listOf(palette.background, palette.customPageEnd ?: palette.background))
             val rim = Brush.verticalGradient(listOf(Color.White.copy(alpha = .7f),
@@ -93,7 +95,7 @@ private class GlassShader33(lens: Boolean) {
     private var w = 0f
     private var h = 0f
     fun configure(palette: TrainPilotPalette, optics: GlassOptics, origin: Offset,
-        sceneWidth: Float, sceneHeight: Float, width: Float, height: Float) {
+        sceneWidth: Float, sceneHeight: Float, width: Float, height: Float, corner: Float) {
         w = width
         h = height
         scene.setFloatUniform("screen", sceneWidth, sceneHeight)
@@ -105,6 +107,7 @@ private class GlassShader33(lens: Boolean) {
             setFloatUniform("screen", sceneWidth, sceneHeight)
             setFloatUniform("spread", optics.blur)
             setFloatUniform("bend", optics.bend)
+            setFloatUniform("corner", corner)
             setFloatUniform("coat", optics.coat)
             setFloatUniform("clarity", optics.clarity)
             setColorUniform("tint", palette.surface.toArgb())
@@ -126,7 +129,7 @@ private class GlassShader33(lens: Boolean) {
                 float2 uv = clamp((pos + origin) / screen, 0.0, 1.0);
                 float ribbon = 0.5 + 0.5 * sin(uv.y * 12.0 + sin(uv.x * 5.0) * 1.7);
                 float pool = exp(-5.0 * dot(uv - float2(0.72, 0.24), uv - float2(0.72, 0.24)));
-                float amount = 0.045 * ribbon + 0.045 * pool;
+                float amount = 0.075 * ribbon + 0.080 * pool;
                 half3 color = mix(base.rgb * half(0.70 + 0.30 * (1.0 - uv.y)), accent.rgb, half(amount));
                 return half4(color, 1.0);
             }
@@ -139,13 +142,21 @@ private class GlassShader33(lens: Boolean) {
             uniform float bend;
             uniform float coat;
             uniform float clarity;
+            uniform float corner;
             layout(color) uniform half4 tint;
 
             half4 main(float2 pos) {
-                float2 uv = pos / extent;
-                float2 centered = uv * 2.0 - 1.0;
-                float edge = pow(clamp(max(abs(centered.x), abs(centered.y)), 0.0, 1.0), 4.0);
-                float2 samplePos = pos - centered * edge * bend * min(extent.x, extent.y);
+                float2 h = extent * 0.5;
+                float2 p = pos - h;
+                float radius = clamp(corner, 0.0, min(h.x, h.y));
+                float2 q = abs(p) - (h - float2(radius));
+                float2 o = max(q, float2(0.0));
+                float sd = length(o) + min(max(q.x, q.y), 0.0) - radius;
+                float2 n = length(o) > 0.001 ? normalize(o) * sign(p) :
+                    (q.x > q.y ? float2(sign(p.x), 0.0) : float2(0.0, sign(p.y)));
+                float edge = clamp(1.0 + sd / max(2.0, min(h.x, h.y) * 0.44), 0.0, 1.0);
+                float curve = edge * edge * (3.0 - 2.0 * edge);
+                float2 samplePos = pos - n * curve * bend * min(extent.x, extent.y);
                 float2 d = min(screen * spread, extent * 0.45);
                 half3 color = scene.eval(samplePos).rgb * 0.24;
                 color += (scene.eval(samplePos + float2(d.x, 0)).rgb +
@@ -155,8 +166,12 @@ private class GlassShader33(lens: Boolean) {
                 color += (scene.eval(samplePos + d).rgb + scene.eval(samplePos - d).rgb +
                           scene.eval(samplePos + float2(d.x, -d.y)).rgb +
                           scene.eval(samplePos + float2(-d.x, d.y)).rgb) * 0.07;
+                color = mix(color, scene.eval(samplePos).rgb, half(clarity * clarity * 0.88));
                 color = mix(color, tint.rgb, half(coat));
-                float glint = pow(1.0 - clamp(uv.y, 0.0, 1.0), 10.0) * (0.03 + clarity * 0.06);
+                half peak = max(max(color.r, color.g), color.b);
+                color *= half(0.42) / max(half(0.42), peak);
+                float reflection = max(dot(n, normalize(float2(-0.65, -1.0))), 0.0);
+                float glint = pow(edge, 8.0) * (0.06 + clarity * 0.24) * reflection;
                 return half4(mix(color, half3(1.0), half(glint)), 1.0);
             }
         """
