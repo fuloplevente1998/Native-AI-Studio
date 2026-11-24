@@ -24,11 +24,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -38,7 +36,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -96,15 +93,8 @@ import com.example.ui.screens.WatchAndSyncScreen
 import com.example.ui.screens.WorkoutSummaryScreen
 import com.example.ui.screens.WorkoutTabScreen
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.example.ui.theme.LocalGlassHeaderBackdrop
+import com.example.ui.theme.GlassAwareScaffold
 import com.example.ui.theme.LocalGlassTopInset
-import com.example.ui.theme.LocalGlassOpticsEnabled
-import com.example.ui.theme.rememberGlassBackdrop
-import com.example.ui.theme.captureGlassBackdrop
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.ui.platform.LocalLayoutDirection
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotViewModel
@@ -537,22 +527,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             )
         }
 
-        // Only routes with an explicit in-scroll safe-area spacer can extend under glass navigation.
-        val glassHost = uiState.sheetHostState()
-        val glassUnderlap = palette.isLiquidGlass && LocalGlassOpticsEnabled.current &&
-            android.os.Build.VERSION.SDK_INT >= 31 &&
-            (glassHost.currentSubScreen == SubScreen.SETTINGS_MAIN ||
-                (glassHost.currentSubScreen == SubScreen.NONE && glassHost.currentTab in setOf(MainTab.HOME, MainTab.HEALTH)))
-        val headerBackdrop = if (glassUnderlap) rememberGlassBackdrop() else null
-        Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(palette.background),
-            containerColor = palette.background,
-            contentWindowInsets = WindowInsets.safeDrawing,
+        GlassAwareScaffold(uiState, palette,
             topBar = {
                 Column {
-                CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop) {
                 TrainPilotGlobalTopHeaderAndNav(
                     currentTab = uiState.currentTab,
                     currentSubScreen = uiState.sheetHostState().currentSubScreen,
@@ -565,7 +542,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) }
                 )
-                }
                     // #347: decided by the screen under an open sheet (e.g. the exercise library during a
                     // swap), so the workout bar stays in place instead of disappearing and jumping back.
                     if (com.example.ui.components.isActiveMeasurementScreen(uiState.sheetHostState().currentSubScreen)) {
@@ -575,18 +551,13 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
                 }
             }
-        ) { innerPadding ->
-        val direction = LocalLayoutDirection.current
-        val bodyPadding = if (glassUnderlap) PaddingValues(
-            start = innerPadding.calculateStartPadding(direction), end = innerPadding.calculateEndPadding(direction),
-            bottom = innerPadding.calculateBottomPadding()
-        ) else innerPadding
+        ) { bodyPadding, glassCapture, glassTopInset ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(palette.background)
                 .padding(bodyPadding)
-                .then(if (headerBackdrop != null) Modifier.captureGlassBackdrop(headerBackdrop) else Modifier),
+                .then(glassCapture),
             contentAlignment = Alignment.TopCenter
         ) {
             val contentMaxWidth = if (uiState.compactPhoneMode) 360.dp else 600.dp
@@ -1302,8 +1273,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
                 }
                 }
-                CompositionLocalProvider(LocalGlassTopInset provides
-                    (if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)) {
+                CompositionLocalProvider(LocalGlassTopInset provides glassTopInset) {
                     com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
                 }
                 if (sheetRouteActive) {

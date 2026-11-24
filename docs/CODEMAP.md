@@ -24,7 +24,7 @@ nagy fájlok sorai frissülnek.
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
 | Közös kijelölés és telt gomb feliratkontraszt (#349) | `ex/ui/theme/ThemeSelectionColors.kt`, teszt `app/src/test/java/com/example/ThemeSelection349Test.kt` |
 | Saját téma (#350): modell, kontrasztfeloldás, hordozható JSON | `ex/ui/theme/CustomThemeDraft.kt`, `CustomThemeResolver.kt`, `CustomThemeCodec.kt` |
-| Ötödik Liquid Glass család (#350) | `ex/ui/theme/LiquidGlassPalettes.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `ex/ui/components/common/LiquidGlassControl.kt`, `StudioPaletteCategories.kt`; terv és aktuális hatókör: `docs/LIQUID_GLASS_THEMES.md` |
+| Ötödik Liquid Glass család (#350) | `ex/ui/theme/LiquidGlassPalettes.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `GlassAwareScaffold.kt`, `ex/ui/components/common/LiquidGlassControl.kt`, `StudioPaletteCategories.kt`; terv és aktuális hatókör: `docs/LIQUID_GLASS_THEMES.md` |
 | Saját téma lista / szerkesztő / előnézet / színvezérlők | `ex/ui/components/common/CustomThemeSection.kt`, `CustomThemeEditorSheet.kt`, `CustomThemePreview.kt`, `CustomThemeColorControls.kt`, `CustomThemeColorWheel.kt`; wireframe `docs/CUSTOM_THEME_EDITOR_350.md` |
 | Saját téma tartós CRUD / alkalmazás / Wear színek / backup | `rf/data/store/TrainPilotSettingsStore.kt`, `rf/MainActivity.kt`, `rf/data/migration/LegacyWebViewMigrator.kt`, `wear/.../WearHomeTheme.kt` |
 | Saját téma teszt | `app/src/test/java/com/example/CustomTheme{Draft,Resolver,Store,Editor}350Test.kt`, `LiquidGlass350Test.kt`, `wear/src/test/java/com/repforge/app/wear/WearThemePersistenceRegressionTest.kt` |
