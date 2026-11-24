@@ -1,7 +1,6 @@
 package com.example
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import com.example.ui.theme.*
 import com.repforge.app.ui.theme.NativeThemeTokens
 import org.junit.Assert.*
@@ -44,22 +43,18 @@ class CustomThemeResolver350Test {
         }
     }
 
-    @Test fun translucentPaintPreservesContrastAtBothGradientStops() {
+    @Test fun oldOpacityRecordsStayReadableButRenderAsOpaqueCustomThemes() {
         for (style in CustomThemeStyle.entries) {
             val key = newCustomThemeKey()
-            val draft = CustomThemeDraft.fromStyle(style, "Glass").copy(opacityPercent = 70)
-            val p = requireNotNull(resolveCustomTheme(draft, key)).palette
-            val end = requireNotNull(p.customPageEnd)
-            assertEquals(0.70f, p.cardPaint.alpha, 0.01f)
-            for (page in listOf(p.background, end)) {
-                val actualCard = p.cardPaint.compositeOver(page)
-                assertTrue(NativeThemeTokens.contrast(p.textPrimary, actualCard) >= 4.5f)
-                assertTrue(NativeThemeTokens.contrast(p.textSecondary, actualCard) >= 4.5f)
-                assertTrue(NativeThemeTokens.contrast(p.primary, actualCard) >= 4.5f)
-            }
-            val opaque = requireNotNull(resolveCustomTheme(draft.copy(opacityPercent = 100), key)).palette
-            assertNull(opaque.customPageEnd)
-            assertEquals(1f, opaque.cardPaint.alpha)
+            val draft = CustomThemeDraft.fromStyle(style, "Legacy").copy(opacityPercent = 70)
+            val resolved = requireNotNull(resolveCustomTheme(draft, key))
+            val opaque = requireNotNull(resolveCustomTheme(draft.copy(opacityPercent = 100), key))
+            assertEquals(opaque.palette, resolved.palette)
+            assertNull(resolved.palette.customPageEnd)
+            assertNull(resolved.palette.customCardPaint)
+            assertEquals(1f, resolved.palette.cardPaint.alpha)
+            assertEquals(100, resolved.suggestedDraft.opacityPercent)
+            assertEquals(100, requireNotNull(draft.toDefinition(key)).draft.opacityPercent)
         }
     }
 
