@@ -15,7 +15,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = 280502 // Play scheme: release 2805, Wear suffix 02
-        versionName = "1.4.3"
+        versionName = "1.4.4"
     }
     signingConfigs {
         create("phoneDebug") { initWith(phoneAndroid.signingConfigs.getByName("debugConfig")) }
