@@ -8,6 +8,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,14 @@ internal fun CustomThemeSection(language: AppLanguage) {
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     var saveCompleted by remember { mutableStateOf(false) }
+    val newThemeFocus = remember { FocusRequester() }
+    var restoreFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(editing, restoreFocus) {
+        if (editing == null && restoreFocus) {
+            newThemeFocus.requestFocus()
+            restoreFocus = false
+        }
+    }
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
     fun runOperation(action: suspend () -> Unit, success: () -> Unit = {}) {
         if (busy) return
@@ -60,7 +71,7 @@ internal fun CustomThemeSection(language: AppLanguage) {
         TrainPilotPrimaryButton(word("+ Új téma", "+ New theme", "+ Neues Design", "+ Temă nouă"), {
             failed = false
             editing = CustomThemeDefinition(newCustomThemeKey(), CustomThemeDraft.fromStyle(CustomThemeStyle.MATTE))
-        }, Modifier.fillMaxWidth().testTag("custom_theme_new"), enabled = !busy)
+        }, Modifier.fillMaxWidth().focusRequester(newThemeFocus).focusable().testTag("custom_theme_new"), enabled = !busy)
         access.themes.forEach { theme ->
             key(theme.key) {
                 val active = theme.key == access.activeKey
@@ -92,16 +103,20 @@ internal fun CustomThemeSection(language: AppLanguage) {
     editing?.let { theme ->
         CustomThemeEditorSheet(theme.draft, theme.key, language,
             onSave = { saved -> runOperation({ access.save(saved) }) { saveCompleted = true } },
-            onDismiss = { if (!busy) { editing = null; saveCompleted = false } }, saving = busy,
+            onDismiss = { if (!busy) { editing = null; saveCompleted = false; restoreFocus = true } }, saving = busy,
             saveFailed = failed, saveCompleted = saveCompleted)
     }
     deleting?.let { theme ->
         AlertDialog(onDismissRequest = { if (!busy) deleting = null },
             title = { Text(word("Téma törlése?", "Delete theme?", "Design löschen?", "Ștergi tema?")) },
             text = { Text(theme.draft.name) },
-            confirmButton = { TrainPilotPrimaryButton(word("Törlés", "Delete", "Löschen", "Șterge"), {
+            confirmButton = { androidx.compose.material3.Button(onClick = {
                 runOperation({ access.delete(theme.key) }) { deleting = null }
-            }, enabled = !busy) },
+            }, enabled = !busy, colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = palette.danger,
+                contentColor = com.repforge.app.ui.theme.NativeThemeTokens.onFill(palette.danger))) {
+                Text(word("Törlés", "Delete", "Löschen", "Șterge"))
+            } },
             dismissButton = { TrainPilotSecondaryButton(word("Mégse", "Cancel", "Abbrechen", "Anulează"),
                 { deleting = null }, enabled = !busy) })
     }
