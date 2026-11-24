@@ -9,6 +9,6 @@
 | 5 | #348 | „Legutóbb” sor | Csak ha a korábbi súly vagy ismétlés eltér a mezőben láthatótól (2 tizedesig) | kódolva (CI) |
 | 6 | #349 | Kontrasztos paletták 9/13/16 | Grafit & Arany, Kobaltkék & Lime, Petrol & Menta a táblázat színeivel; mentett kulcsok változatlanok; állapotszínek (piros, szív, alvás) olvashatóságra világosítva (≥4,5:1) | kódolva (CI) |
 | 7 | #349 | Közös kiemelési szabályok (32 téma) | Külön lépés, képernyőnkénti átnézéssel és mockuppal | tervezés |
-| 8 | #352 | Google Cloud Szinkron kártya | Mockup → jóváhagyás után kód | mockup |
+| 8 | #352 | Google Cloud Szinkron kártya | Mockup: [`2804_352_cloud_sync_card.png`](mockups/2804_352_cloud_sync_card.png) → jóváhagyás után kód | mockup jóváhagyásra vár |
 | 9 | #351 | Óra automatikus mérésindítás | Elemzés és javaslat (telefon ↔ óra szerződés érintett) | tervezés |
 | 10 | #350 | Saját témák | A keret (#349) után | később |
