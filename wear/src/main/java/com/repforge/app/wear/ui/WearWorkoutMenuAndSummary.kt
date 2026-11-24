@@ -31,6 +31,8 @@ internal fun WorkoutMenu(
     onDiscard: () -> Unit = {},
     onBack: () -> Unit = onHome,
     onHealth: (() -> Unit)? = null,
+    onPauseWorkout: (() -> Unit)? = null,
+    onPhoneControl: (() -> Unit)? = null,
 ) {
     val automaticToggle=LocalAutomaticToggle.current
     val automaticCommand=LocalAutomaticCommand.current
@@ -40,7 +42,9 @@ internal fun WorkoutMenu(
     RoundList(wearText("Edzésmenü")) {
         centerItem { Pill(WearMenu216.text("back"), tone = Secondary, onClick = onBack) }
         if (onHealth != null) centerItem { Pill(WearMenu216.text("metrics"), tone = Card, onClick = onHealth) }
-        centerItem { Pill(WearMenu216.text("discard"), tone = Danger, onClick = onDiscard) }
+        if (onPauseWorkout != null) centerItem { Pill(wearV2Text("pauseWorkout"), onClick = onPauseWorkout) }
+        else if (onPhoneControl != null) centerItem { Pill(wearV2Text("phoneControl"), tone = Secondary, onClick = onPhoneControl) }
+        centerItem { Pill(WearMenu216.text("discard"), tone = Danger, enabled = !WearUndo188.blocked(workout) && !WearOwnership193.pending(workout), onClick = onDiscard) }
         touchLock?.let { lock -> centerItem { Pill(WearTouchCopy189.language(java.util.Locale.getDefault().language).lock,tone=Secondary,onClick=lock) } }
         if(undo!=null&&WearUndo188.available(workout))centerItem {
             Pill(wearText("Utolsó sorozat visszavonása"),tone=Gold) { WearUndo188.record(workout)?.optString("recordId")?.let(undo) }

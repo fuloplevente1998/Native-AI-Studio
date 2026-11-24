@@ -111,15 +111,23 @@ internal fun WorkoutPager(
     onFinish: () -> Unit,
     onHome: () -> Unit,
     onDiscard: () -> Unit = {},
+    onRestAdjust367: ((WearRestTarget367, Int) -> Unit)? = null,
+    onPauseWorkout367: ((WearPauseTarget367) -> Unit)? = null,
+    onPhoneControl: (() -> Unit)? = null,
 ) {
     val pager = rememberPagerState(initialPage = initialPage, pageCount = { 3 })
     LaunchedEffect(Unit) { onReturnPageConsumed() }
     LaunchedEffect(pager.currentPage) { if (pager.currentPage == 2) onRefreshJournal() }
     val scope = rememberCoroutineScope()
     var controls by remember(workout.workoutId) { mutableStateOf(false) }
-    LaunchedEffect(controls, workout.workoutId) {
-        if (controls) { delay(3000L); controls = false }
-    }
+    val pauseTarget = wearPauseTarget367(workout)
+    val restTarget = wearRestTarget367(workout, System.currentTimeMillis())
+    val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout)
+    val pauseAction: (() -> Unit)? = if (pauseTarget != null && onPauseWorkout367 != null && !blocked)
+        ({ onPauseWorkout367(pauseTarget) }) else null
+    val adjustAction: ((Int) -> Unit)? = if (restTarget != null && onRestAdjust367 != null && !blocked)
+        ({ delta -> onRestAdjust367(restTarget, delta) }) else null
+    val phoneControl = onPhoneControl?.takeIf { workout.timerOwner == "phone" && !blocked }
     val command = LocalAutomaticCommand.current
     // Only automatic timer pause is currently exposed to this UI; never pretend it pauses the whole workout.
     val automatic = workout.automation
@@ -152,7 +160,7 @@ internal fun WorkoutPager(
                             Unit
                         }
                         if (restRemaining > 0 && workout.automation?.enabled != true)
-                            WearRestV2(workout, restRemaining, onSkipRest, onMenu)
+                            WearRestV2(workout, restRemaining, onSkipRest, onMenu, onAdjust = adjustAction, onPhoneControl = phoneControl)
                         else if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
                             AutomaticTimedSetScreen(workout,restRemaining,health,onPrevious,onNext,onSkipRest,onFinish,onMenu)
                         else if (normalizeUnit(workout.exercise?.repUnit.orEmpty()).startsWith("mp"))
@@ -222,6 +230,8 @@ internal fun WorkoutPager(
                         onDiscard = onDiscard,
                         onBack = { scope.launch { pager.scrollToPage(0) } },
                         onHealth = { scope.launch { pager.scrollToPage(2) } },
+                        onPauseWorkout = pauseAction,
+                        onPhoneControl = phoneControl,
                     )
             }
         }
@@ -249,6 +259,8 @@ internal fun WorkoutPager(
             WearWorkoutControlOverlay(
                 workout = workout,
                 timerPause = timerPause,
+                workoutPause = pauseAction,
+                onPhoneControl = phoneControl,
                 onPrevious = { controls = false; onPrevious() },
                 onNext = { controls = false; onNext() },
                 onFinish = { controls = false; onFinish() },

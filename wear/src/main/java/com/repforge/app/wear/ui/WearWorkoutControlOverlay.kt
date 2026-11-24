@@ -5,8 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
+import androidx.compose.ui.input.pointer.PointerEventPass
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -70,6 +71,8 @@ internal fun wearWorkoutGesture(
 internal fun WearWorkoutControlOverlay(
     workout: WearWorkout,
     timerPause: (() -> Unit)?,
+    workoutPause: (() -> Unit)? = null,
+    onPhoneControl: (() -> Unit)? = null,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onFinish: () -> Unit,
@@ -78,8 +81,24 @@ internal fun WearWorkoutControlOverlay(
     onDismiss: () -> Unit,
 ) {
     val theme = LocalWearHomeTheme.current
+    val dismiss by rememberUpdatedState(onDismiss)
+    var pressed by remember { mutableStateOf(false) }
+    var activity by remember { mutableIntStateOf(0) }
+    LaunchedEffect(pressed, activity) {
+        if (!pressed) { delay(3000L); dismiss() }
+    }
+    val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout)
     Box(
         Modifier.fillMaxSize().background(theme.backgroundColor.copy(alpha = .96f))
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        pressed = event.changes.any { it.pressed }
+                        activity++
+                    }
+                }
+            }
             .clickable(onClick = onDismiss).testTag("wear-workout-controls-overlay"),
         contentAlignment = Alignment.Center,
     ) {
@@ -89,18 +108,24 @@ internal fun WearWorkoutControlOverlay(
         ) {
             Label(workout.exercise?.name.orEmpty(), size = 11)
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                RoundControl("‹", enabled = workout.currentExercise > 0, description = wearText("Előző gyakorlat"), onClick = onPrevious)
-                RoundControl(if (workout.automation?.paused == true) "▶" else "Ⅱ",
-                    enabled = timerPause != null,
-                    description = if (workout.automation?.paused == true) wearText("Automata folytatása") else wearText("Automata szüneteltetése"),
-                    onClick = { timerPause?.invoke(); onDismiss() })
-                RoundControl("›", enabled = workout.currentExercise < workout.exercises.lastIndex,
+                RoundControl("‹", enabled = !blocked && workout.currentExercise > 0, description = wearText("Előző gyakorlat"), onClick = onPrevious)
+                RoundControl(if (workoutPause == null && timerPause == null && onPhoneControl != null) "↗" else if (workoutPause == null && workout.automation?.paused == true) "▶" else "Ⅱ",
+                    enabled = !blocked && (workoutPause != null || timerPause != null || onPhoneControl != null),
+                    description = when {
+                        workoutPause != null -> wearV2Text("pauseWorkout")
+                        timerPause != null && workout.automation?.paused == true -> wearText("Automata folytatása")
+                        timerPause != null -> wearText("Automata szüneteltetése")
+                        onPhoneControl != null -> wearV2Text("phoneControl")
+                        else -> wearV2Text("pauseWorkout")
+                    },
+                    onClick = { (workoutPause ?: timerPause ?: onPhoneControl)?.invoke(); onDismiss() })
+                RoundControl("›", enabled = !blocked && workout.currentExercise < workout.exercises.lastIndex,
                     description = wearText("Következő gyakorlat"), onClick = onNext)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                RoundControl("■", Gold, enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout),
+                RoundControl("■", Gold, enabled = workout.completedSets > 0 && !blocked,
                     description = wearText("Edzés befejezése"), onClick = onFinish)
-                RoundControl("×", Danger, description = WearMenu216.text("discard"), onClick = onDiscard)
+                RoundControl("×", Danger, enabled = !blocked, description = WearMenu216.text("discard"), onClick = onDiscard)
                 RoundControl("···", description = wearText("Edzésmenü"), onClick = onMore)
             }
             Label("3 s", size = 10)

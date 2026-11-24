@@ -60,6 +60,8 @@ internal fun TrainPilotWearApp(
     touchClock189: ()->Long = { android.os.SystemClock.uptimeMillis() },
     /** Start route; only the screen audit passes another one (production always starts at "home"). */
     initialRoute: String = "home",
+    onRestAdjust367: ((WearRestTarget367, Int) -> Unit)? = null,
+    onPauseWorkout367: ((WearPauseTarget367) -> Unit)? = null,
 ) {
     var route by rememberSaveable { mutableStateOf(initialRoute) }
     val context = LocalContext.current
@@ -316,7 +318,8 @@ internal fun TrainPilotWearApp(
                         ConfirmationScreen(true, active.completedSets) {
                             if (it) {
                                 onDiscard()
-                                route = "summary"
+                                if (workout.value == null || closure.value?.let { it.workoutId == active.workoutId && it.status == "error" } == true)
+                                    route = "summary"
                             } else route = discardBackRoute
                         }
                     route == "finish" && active != null ->
@@ -357,6 +360,8 @@ internal fun TrainPilotWearApp(
                             }else if(active.ownershipProtocol193==1&&active.timerOwner=="watch") {
                                 centerItem { Pill(WearOwnershipText193.text("resume"),tone=Gold) { onResumeWorkout() } }
                             }else centerItem { Pill(wearText("Folytatás telefonon"),tone=Gold) { onOpenPhone() } }
+                            centerItem { Pill(wearText("Edzés befejezése"), enabled = active.completedSets > 0 && !WearUndo188.blocked(active) && !WearOwnership193.pending(active)) { route="finish" } }
+                            centerItem { Pill(WearMenu216.text("discard"), tone = Danger, enabled = !WearUndo188.blocked(active) && !WearOwnership193.pending(active)) { discardBackRoute="workout"; route="discard" } }
                             centerItem { Pill(if(active.ownershipProtocol193==1)WearOwnershipText193.text("home")else wearText("Kezdőlap"),tone=Secondary) { route="home" } }
                         }
                     route == "workout" && active != null ->
@@ -389,6 +394,9 @@ internal fun TrainPilotWearApp(
                             onFinish = { route = "finish" },
                             onHome = { route = "home" },
                             onDiscard = { discardBackRoute = "workout"; route = "discard" },
+                            onRestAdjust367 = onRestAdjust367,
+                            onPauseWorkout367 = onPauseWorkout367,
+                            onPhoneControl = onOpenPhone,
                         )
                     else ->
                         WearHomeDashboard(
