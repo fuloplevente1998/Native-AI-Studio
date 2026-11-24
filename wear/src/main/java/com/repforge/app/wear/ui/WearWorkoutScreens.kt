@@ -123,8 +123,9 @@ internal fun WorkoutPager(
     val pauseTarget = wearPauseTarget367(workout)
     val restTarget = wearRestTarget367(workout, System.currentTimeMillis())
     val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout) || workout.controlIntent367 != null
-    val canControlWatch = home?.controlProtocol367 == 1 && workout.timerOwner == "watch"
-    val pauseAction: (() -> Unit)? = if (canControlWatch && pauseTarget != null && onPauseWorkout367 != null && !blocked)
+    val canControlWatch = (home?.controlProtocol367 ?: 0) >= 1 && workout.timerOwner == "watch"
+    val canControlPhone = (home?.controlProtocol367 ?: 0) >= 2 && workout.timerOwner == "phone" && workout.nativeExecutionProtocol == 2 && workout.generation > 0
+    val pauseAction: (() -> Unit)? = if ((canControlWatch || canControlPhone) && pauseTarget != null && onPauseWorkout367 != null && !blocked)
         ({ onPauseWorkout367(pauseTarget) }) else null
     val adjustAction: ((Int) -> Unit)? = if (canControlWatch && restTarget != null && onRestAdjust367 != null && !blocked)
         ({ delta -> onRestAdjust367(restTarget, delta) }) else null

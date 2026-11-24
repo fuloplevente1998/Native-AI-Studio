@@ -422,6 +422,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                     if(current?.ownershipProtocol193==1&&current.timerOwner=="watch") {
                         try {workout.value=WearOwnership193.resume(this);workout.value?.let { WearGps193.resumeIfArmed(this,it) };restoreRestFromSnapshot(workout.value)}
                         catch(_:Exception){workout.value=WorkoutSnapshotStore.load(this);android.widget.Toast.makeText(this,WearOwnershipText193.text("failed"),android.widget.Toast.LENGTH_LONG).show()}
+                    }else if(current?.workoutPaused==true && current.timerOwner=="phone" && current.nativeExecutionProtocol==2 && (home.value?.controlProtocol367 ?: 0)>=2) {
+                        wearPauseTarget367(current, allowPaused=true)?.let { target -> applyWatchControl367 { WearPhoneControls367.pause(this,target,false) } }
                     }else if(current?.workoutPaused==true)sendCommand("resumeWorkout")
                 },
                 onRequestOwnership193 = { WearOwnership193.request(this) },
@@ -441,7 +443,9 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onNext = { navigateExercise(1) },
                 onSkipRest = ::skipRest,
                 onRestAdjust367 = { target, delta -> applyWatchControl367 { WearWatchControls367.adjust(this, target, delta) } },
-                onPauseWorkout367 = { target -> applyWatchControl367 { WearWatchControls367.pause(this, target) } },
+                onPauseWorkout367 = { target -> applyWatchControl367 {
+                    if(target.timerOwner=="phone") WearPhoneControls367.pause(this,target,true) else WearWatchControls367.pause(this, target)
+                } },
                 onToggleAutomatic = {
                     val current=WorkoutSnapshotStore.load(this)
                     if(current!=null && current.controlIntent367 == null){
@@ -664,7 +668,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     private fun applyWatchControl367(action: () -> WearWorkout?) {
-        if (home.value?.controlProtocol367 != 1) return
+        if ((home.value?.controlProtocol367 ?: 0) < 1) return
         try {
             val updated = action()
             if (updated == null) {

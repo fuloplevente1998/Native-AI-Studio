@@ -363,7 +363,7 @@ internal fun TrainPilotWearApp(
                             if(active.ownershipProtocol193==1&&WearOwnership193.pending(active)) {
                                 centerItem { Text(WearOwnershipText193.text("pending"),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
                                 centerItem { Pill(WearOwnershipText193.text("retry"),tone=Secondary) { onRetryOwnership193?.invoke() } }
-                            }else if(active.ownershipProtocol193==1&&active.timerOwner=="watch") {
+                            }else if(active.ownershipProtocol193==1&&(active.timerOwner=="watch" || active.timerOwner=="phone" && active.nativeExecutionProtocol==2 && (home.value?.controlProtocol367 ?: 0)>=2)) {
                                 centerItem { Pill(WearOwnershipText193.text("resume"),tone=Gold) { onResumeWorkout() } }
                             }else centerItem { Pill(wearText("Folytatás telefonon"),tone=Gold) { onOpenPhone() } }
                             centerItem { Pill(wearText("Edzés befejezése"), enabled = active.completedSets > 0 && !WearUndo188.blocked(active) && !WearOwnership193.pending(active)) { route="finish" } }
@@ -418,7 +418,7 @@ internal fun TrainPilotWearApp(
                                 if (workout.value != null) route = "workout"
                             },
                             onResume = {
-                                if(active?.workoutPaused==true&&!(active.ownershipProtocol193==1&&active.timerOwner=="watch"))onOpenPhone()else onResumeWorkout()
+                                if(active?.workoutPaused==true&&!(active.ownershipProtocol193==1&&(active.timerOwner=="watch" || active.timerOwner=="phone" && active.nativeExecutionProtocol==2 && (home.value?.controlProtocol367 ?: 0)>=2)))onOpenPhone()else onResumeWorkout()
                                 route = "workout"
                             },
                             onDays = { daysBack216="home";route = "days" },

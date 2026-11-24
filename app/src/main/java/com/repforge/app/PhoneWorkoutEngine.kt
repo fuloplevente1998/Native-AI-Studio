@@ -755,6 +755,7 @@ internal object PhoneWorkoutExecution {
         val frame = store(context).snapshot()
         if (frame == null || !frame.optBoolean("active")) return null
         val value = JSONObject(frame.toString())
+        value.remove("remotePause367")
         value.remove("retiredTimers188")
         value.remove("timeLogs162")
         value.remove("latestTimer162")

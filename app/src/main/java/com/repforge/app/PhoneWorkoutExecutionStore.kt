@@ -948,6 +948,7 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 }
                 if (paused) NativeSetStopwatch.pause(frame, monotonic)
                 frame.put("workoutPaused", paused).put("pauseRevision", revision)
+                input.optJSONObject("remotePause367")?.let { frame.put("remotePause367", JSONObject(it.toString())) }
                 if (input.optJSONArray("activeIntervals") != null) {
                     frame.put("activeIntervals", JSONArray(input.getJSONArray("activeIntervals").toString()))
                 }
