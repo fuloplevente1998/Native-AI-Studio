@@ -1,9 +1,14 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.example.ui.components.sheetHostState
 import kotlin.math.pow
 
-/** False while a workout session runs: every glass surface falls back to its opaque paint. */
+/**
+ * False only on the active measurement screens (2808/10): there the expensive passes (AGSL lens,
+ * platform blur, live capture) fall back to the opaque paint with the cheap vector rim. Every other
+ * screen keeps full glass, also while a workout session runs in the background.
+ */
 internal val LocalGlassOpticsEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /**
@@ -42,7 +47,7 @@ internal data class GlassOptics(
         /** Upper bound of the accent mixed into the procedural page scene. */
         const val SCENE_ACCENT_MAX = .16f
         const val FROSTED_BLUR_DP = 24f
-        const val CLEAR_BLUR_DP = 1f
+        const val CLEAR_BLUR_DP = .5f
 
         fun from(value: Int): GlassOptics = from(value.toFloat())
 
@@ -57,19 +62,21 @@ internal data class GlassOptics(
 
         fun from(value: Float): GlassOptics {
             val t = (if (value.isNaN()) 0f else value.coerceIn(0f, 100f)) / 100f
+            // 2808/12: the Clear end lets more backdrop through (thinner tint and veil, almost no
+            // diffusion); readability stays with LENS_PEAK and the palette's lifted text colors.
             return GlassOptics(
                 clarity = t,
-                blur = .095f * (1f - t) + .0015f,
+                blur = .095f * (1f - t) + .0005f,
                 // Exponential: equal slider steps read as equal perceived blur steps.
                 blurDp = FROSTED_BLUR_DP * (CLEAR_BLUR_DP / FROSTED_BLUR_DP).pow(t),
                 bend = .018f + .112f * t,
                 bevel = .30f + .25f * t,
                 dispersion = .004f + .056f * t * t,
-                coat = .62f - .52f * t,
+                coat = .62f - .58f * t,
                 saturation = 1.08f + .22f * t,
                 specular = .18f + .34f * t,
                 shadow = .14f + .16f * t,
-                veil = .94f - .04f * t,
+                veil = .94f - .10f * t,
             )
         }
     }
@@ -78,8 +85,19 @@ internal data class GlassOptics(
 /** The single gate: glass only for the Liquid Glass family (33–40) and only while optics are allowed. */
 internal fun TrainPilotPalette.glassEffectsActive(opticsEnabled: Boolean): Boolean = isLiquidGlass && opticsEnabled
 
-/** Optics are off for the whole app while a workout session runs (timer screens stay opaque and cheap). */
-internal fun glassOpticsEnabledFor(workoutSessionActive: Boolean): Boolean = !workoutSessionActive
+/**
+ * 2808/10: full optics everywhere except the active measurement screen itself (strength, timed,
+ * bilateral, outdoor GPS) – also while a sheet is open over it. Home, Progress, Health, Settings
+ * and the workout tab keep glass while a session runs in the background.
+ */
+internal fun glassOpticsEnabledFor(hostScreen: com.example.model.SubScreen): Boolean =
+    !com.example.ui.components.isActiveMeasurementScreen(hostScreen)
+
+internal fun glassOpticsEnabledFor(state: com.example.ui.viewmodel.TrainPilotUiState): Boolean =
+    glassOpticsEnabledFor(state.sheetHostState().currentSubScreen)
+
+/** Cheap vector rim/sheen (no shader, blur or capture): stays on the measurement screens too. */
+internal fun TrainPilotPalette.glassRimActive(): Boolean = isLiquidGlass
 
 /** Slider position (any float, including in-between drag positions) to the stored 0..100 step. */
 internal fun glassClarityStep(position: Float): Int =

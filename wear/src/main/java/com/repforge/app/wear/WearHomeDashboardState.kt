@@ -188,7 +188,75 @@ internal fun wearHomeLivePulse(data: JSONObject?, workoutId: String?, enabled: B
         data.optString("workoutId") != workoutId || data.optString("source") != "wear_health_services" ||
         data.optString("state") != "active" || data.optString("heartRateAvailability") in listOf("acquiring", "unavailable")) return null
     val sample = data.optLong("lastSampleAt", data.optLong("updatedAt"))
-    if (sample <= 0L || now - sample !in 0L..15000L || now - data.optLong("updatedAt") !in 0L..20000L) return null
+    // 2808: the UI clock ticks once per second while samples arrive in between, so a sample can
+    // be a few hundred ms "newer" than the tick. That is not stale; only a real skew is rejected.
+    if (sample <= 0L || now - sample !in -WEAR_PULSE_SKEW_MS..15000L ||
+        now - data.optLong("updatedAt") !in -WEAR_PULSE_SKEW_MS..20000L) return null
     val pulse = data.optDouble("heartRate")
     return pulse.takeIf { it.isFinite() && it in 20.0..250.0 }?.toInt()
+}
+
+internal const val WEAR_PULSE_SKEW_MS = 5000L
+internal const val WEAR_PULSE_FRESH_MS = 120000L
+internal const val WEAR_PULSE_KEEP_MS = 30L * 60L * 1000L
+
+internal enum class WearPulseFreshness { LIVE, RECENT, PREVIOUS, NONE }
+
+/** One stable heart-rate line: the number never alternates with a measurement status text. */
+internal data class WearHomePulse(val bpm: Int?, val freshness: WearPulseFreshness, val at: Long?)
+
+/**
+ * 2808: a single presentation for the home heart-rate line. A live workout sample wins; else the
+ * last passive sample is shown, fresh or marked as earlier with its time. Whether recording is on
+ * is shown separately (heart colour), so it can never replace the value. Samples up to
+ * [WEAR_PULSE_SKEW_MS] ahead of the once-per-second UI tick count as just measured.
+ */
+internal fun wearHomePulse(live: Int?, passive: WearDailyPulse?, now: Long): WearHomePulse {
+    if (live != null) return WearHomePulse(live, WearPulseFreshness.LIVE, now)
+    val sample = passive?.takeIf { it.bpm in 20..250 && it.at > 0L } ?: return WearHomePulse(null, WearPulseFreshness.NONE, null)
+    val age = now - sample.at
+    return when {
+        age < -WEAR_PULSE_SKEW_MS -> WearHomePulse(null, WearPulseFreshness.NONE, null)
+        age <= WEAR_PULSE_FRESH_MS -> WearHomePulse(sample.bpm, WearPulseFreshness.RECENT, sample.at)
+        age <= WEAR_PULSE_KEEP_MS -> WearHomePulse(sample.bpm, WearPulseFreshness.PREVIOUS, sample.at)
+        else -> WearHomePulse(null, WearPulseFreshness.NONE, null)
+    }
+}
+
+internal fun wearHomePulseText(pulse: WearHomePulse, zone: ZoneId = ZoneId.systemDefault(), language: String = java.util.Locale.getDefault().language): String {
+    val bpm = pulse.bpm ?: return "–"
+    if (pulse.freshness != WearPulseFreshness.PREVIOUS || pulse.at == null) return "$bpm bpm"
+    val time = DateTimeFormatter.ofPattern("HH:mm").withZone(zone).format(Instant.ofEpochMilli(pulse.at))
+    return "$bpm bpm · ${wearText("korábbi", language)} $time"
+}
+
+/**
+ * 2808: bezel arcs of the home page, in drawArc degrees (0° = 3 o'clock, clockwise). Both arcs
+ * are concentric with the round screen a few dp from its edge; each % label sits on the same
+ * ring just past the lower arc end, so it never overlaps an arc, the clock or the buttons.
+ */
+internal data class WearHomeArcLayout(
+    val inset: Float,
+    val stroke: Float,
+    val sweep: Float,
+    val batteryStart: Float,
+    val stepsStart: Float,
+    val batteryLabel: Float,
+    val stepsLabel: Float,
+    val labelSweep: Float,
+)
+
+internal fun wearHomeArcLayout(diameter: Float): WearHomeArcLayout {
+    val sweep = 103f
+    val batteryStart = 147f // lower-left end, filling clockwise up to 250°
+    return WearHomeArcLayout(
+        inset = 2.5f,
+        stroke = if (diameter < 180f) 3.5f else 4f,
+        sweep = sweep,
+        batteryStart = batteryStart,
+        stepsStart = 180f - batteryStart - sweep, // mirrored: -70° … 33°
+        batteryLabel = 131f,
+        stepsLabel = 49f,
+        labelSweep = 28f,
+    )
 }

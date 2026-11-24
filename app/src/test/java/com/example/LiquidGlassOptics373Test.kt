@@ -11,7 +11,7 @@ import kotlin.math.abs
 /**
  * PR #373 Liquid Glass finish. Robolectric cannot run AGSL, so these protect the parameter and
  * selection logic the renderer consumes: continuous slider mapping, readability against the
- * rendered worst cases, the glass gate (family + workout) and reduced-motion rules.
+ * rendered worst cases, the glass gate (family + measurement screen) and reduced-motion rules.
  */
 class LiquidGlassOptics373Test {
     private fun GlassOptics.values() = listOf(blur, blurDp, bend, bevel, dispersion, coat, saturation, specular, shadow, veil)
@@ -82,16 +82,22 @@ class LiquidGlassOptics373Test {
         }
     }
 
-    @Test fun glassOnlyForGlassFamilyAndNeverDuringWorkout() {
+    @Test fun glassOnlyForGlassFamilyAndNeverOnTheActiveMeasurementScreen() {
         for (legacy in TrainPilotPalettes.allPalettes) {
             assertFalse(legacy.glassEffectsActive(true))
+            assertFalse(legacy.glassRimActive())
             assertSame(legacy, legacy.withGlassClarity(37))
         }
         val glass = LiquidGlassPalettes.all
         assertEquals((33..40).toList(), glass.map { it.id })
+        // 2808/10: the expensive optics are off only on the measurement screen itself.
         for (p in glass) {
-            assertTrue(p.glassEffectsActive(glassOpticsEnabledFor(workoutSessionActive = false)))
-            assertFalse(p.glassEffectsActive(glassOpticsEnabledFor(workoutSessionActive = true)))
+            assertTrue(p.glassEffectsActive(glassOpticsEnabledFor(com.example.model.SubScreen.NONE)))
+            for (measuring in listOf(com.example.model.SubScreen.ACTIVE_STRENGTH, com.example.model.SubScreen.ACTIVE_TIMED,
+                com.example.model.SubScreen.ACTIVE_BILATERAL, com.example.model.SubScreen.ACTIVE_OUTDOOR_GPS)) {
+                assertFalse(p.glassEffectsActive(glassOpticsEnabledFor(measuring)))
+            }
+            assertTrue("cheap rim stays (light glass)", p.glassRimActive())
         }
     }
 

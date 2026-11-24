@@ -1,5 +1,6 @@
 package com.repforge.app.ui.theme
 
+import com.example.ui.theme.glassTouchBubble
 import androidx.compose.foundation.BorderStroke
 import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -91,6 +92,6 @@ fun TrainPilotTextButton(
     content: @Composable RowScope.() -> Unit,
 ) {
     TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        TextButton(onClick, modifier, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+        TextButton(onClick, modifier.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
     }
 }

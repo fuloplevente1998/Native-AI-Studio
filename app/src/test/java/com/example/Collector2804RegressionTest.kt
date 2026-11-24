@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.model.ExerciseSetItem
 import com.example.model.MainTab
 import com.example.model.SubScreen
+import com.example.ui.components.RestDockScrollSizing
 import com.example.ui.components.StudioRestTimerDock
 import com.example.ui.components.isActiveMeasurementScreen
 import com.example.ui.components.lastSetDiffers
@@ -74,6 +75,45 @@ class Collector2804RegressionTest {
         assertFalse(strength.contains("restTimerManualOverride ?: isScrolledDown"))
         assertTrue(strength.contains("NestedScrollSource.UserInput"))
         assertTrue(strength.contains("showIdle = false"))
+        // 2808/9: the strength list sizes the dock only through the user-scroll hook, which gates on UserInput.
+        assertTrue(strength.contains("rememberRestDockScrollConnection("))
+        assertTrue(strength.contains(".nestedScroll(userScrollSizesRest)"))
+        val hook = java.io.File("src/main/java/com/example/ui/components/RestDockScrollSizing.kt").readText()
+        assertTrue(hook.contains("source == NestedScrollSource.UserInput) userGesture = true"))
+        // A scroll that is not the user's (ticking a set, layout shift) never opens large, at any position.
+        assertFalse(RestDockScrollSizing.afterScroll(false, userDriven = false, scrolledToSetRows = true, deltaY = -400f))
+        assertFalse(RestDockScrollSizing.afterScroll(false, userDriven = false, scrolledToSetRows = true, deltaY = 400f))
+    }
+
+    @Test fun userScrollOntoTheSetRowsOpensLargeAndScrollingBackUpReturnsCompact() {
+        val top = RestDockScrollSizing.scrolledToSetRows(0, 0)
+        val inHeader = RestDockScrollSizing.scrolledToSetRows(0, RestDockScrollSizing.HEADER_SCROLL_PX)
+        val onSets = RestDockScrollSizing.scrolledToSetRows(0, RestDockScrollSizing.HEADER_SCROLL_PX + 1)
+        val further = RestDockScrollSizing.scrolledToSetRows(3, 0)
+        assertFalse(top); assertFalse(inHeader); assertTrue(onSets); assertTrue(further)
+        // Down within the header: still compact; down onto the set rows: large.
+        var large = RestDockScrollSizing.afterScroll(false, true, inHeader, -30f)
+        assertFalse(large)
+        large = RestDockScrollSizing.afterScroll(large, true, further, -30f)
+        assertTrue(large)
+        // Up while still on the set rows keeps large (no flicker mid-list) ...
+        large = RestDockScrollSizing.afterScroll(large, true, onSets, 30f)
+        assertTrue(large)
+        // ... and back up above them returns compact (the 2808 bug: it stayed large).
+        large = RestDockScrollSizing.afterScroll(large, true, inHeader, 30f)
+        assertFalse("scrolling back up must return compact", large)
+        // The arrow opened it at the top: a downward drag at the top keeps it, an upward one closes it.
+        assertTrue(RestDockScrollSizing.afterScroll(true, true, top, -30f))
+        assertFalse(RestDockScrollSizing.afterScroll(true, true, top, 30f))
+        // The arrow closed it on the set rows: an upward drag there keeps it compact.
+        assertFalse(RestDockScrollSizing.afterScroll(false, true, further, 30f))
+    }
+
+    @Test fun bilateralListUsesTheSameUserScrollSizing() {
+        val source = java.io.File("src/main/java/com/example/ui/screens/measure/ActiveBilateralWorkoutScreen.kt").readText()
+        assertTrue(source.contains("rememberRestDockScrollConnection(bilateralListState"))
+        assertTrue(source.contains("state = bilateralListState"))
+        assertTrue(source.contains(".nestedScroll(userScrollSizesRest)"))
     }
 
     // ---- #348 ----

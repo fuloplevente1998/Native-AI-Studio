@@ -69,11 +69,12 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     drawn
                 }
                 if (!painted) {
-                    // Opaque fallback: API < 33, software rendering, compile failure or an active workout.
+                    // Opaque fallback: API < 33, software rendering, compile failure or an active measurement
+                    // screen. 2808/10: the cheap vector rim/sheen stays there too (light glass, no shader/blur).
                     if (path == null) drawRect(fallback) else clipPath(path) {
                         drawRect(fallback)
                         drawRect(palette.cardPaint)
-                        if (effectsEnabled) drawGlassHighlights(path, palette, optics, 0f)
+                        drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
                 drawContent()
@@ -114,10 +115,13 @@ internal fun DrawScope.drawGlassHighlights(path: Path, palette: TrainPilotPalett
     drawPath(path, rim, style = Stroke(1.2.dp.toPx()))
 }
 
-/** A highlight over a painted control; its semantic color and text stay unchanged. */
+/**
+ * A highlight over a painted control; its semantic color and text stay unchanged. Vector only, so it
+ * also stays on the active measurement screens (2808/10 light glass).
+ */
 @Composable
 internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (!palette.glassEffectsActive(LocalGlassOpticsEnabled.current)) this else drawWithCache {
+    if (!palette.glassRimActive()) this else drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         val strength = GlassOptics.from(palette.glassClarity).specular
         val shine = Brush.linearGradient(

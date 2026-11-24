@@ -106,7 +106,7 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                     } else if (!live) {
                         drawRect(fallback)
                         drawRect(palette.cardPaint)
-                        if (enabled) drawGlassHighlights(path, palette, optics, 0f)
+                        drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
                 drawContent()
