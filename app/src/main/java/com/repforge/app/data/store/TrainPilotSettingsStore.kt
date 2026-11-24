@@ -17,6 +17,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.toArgb
+import com.example.ui.theme.CustomThemeCodec
+import com.example.ui.theme.CustomThemeDefinition
+import com.example.ui.theme.PaletteCategory
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.TrainPilotPalettes
+import com.example.ui.theme.resolveCustomTheme
 import org.json.JSONObject
 import java.util.UUID
 
@@ -73,23 +79,29 @@ data class TrainPilotUserSettings(
     val migrationV1371Complete: Boolean = false,
     val gpsStartChoices216: Map<String, Boolean> = emptyMap(),
     /** Unmodified settings.trainingModes197 JSON, including unknown portable extensions. */
-    val trainingModes197Json: String? = null
+    val trainingModes197Json: String? = null,
+    val customThemesJson: String = "[]"
 ) {
     fun timerConfiguration(): JSONObject = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
         .put("work", workSeconds).put("rest", intervalRestSeconds).put("rounds", rounds)
         .put("sound", soundEnabled).put("vibration", vibrationEnabled).put("autoAdvance", intervalAutoAdvance))
 
+    internal fun customThemes(): List<CustomThemeDefinition> = CustomThemeCodec.decode(customThemesJson)
+
+    internal fun resolvedThemePalette(): TrainPilotPalette = customThemes().firstOrNull { it.key == themeKey }
+        ?.let { resolveCustomTheme(it.draft, it.key)?.palette }
+        ?: TrainPilotPalettes.getByKey(themeKey) ?: TrainPilotPalettes.getById(1)
+
     fun themeJson(): JSONObject {
-        val palette = com.example.ui.theme.TrainPilotPalettes.getByKey(themeKey)
-            ?: com.example.ui.theme.TrainPilotPalettes.getById(1)
+        val palette = resolvedThemePalette()
         fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
         val result = JSONObject().put("key", palette.key)
             .put("accent", hex(palette.primary))
             .put("accent2", hex(palette.secondary))
-            .put("family", when (palette.id) {
-                in 9..16 -> "contrast"
-                in 17..24 -> "glow"
-                in 25..32 -> "light"
+            .put("family", when (palette.subGroup) {
+                PaletteCategory.CONTRAST -> "contrast"
+                PaletteCategory.GLOW -> "glow"
+                PaletteCategory.LIGHT -> "light"
                 else -> "matte"
             })
         palette.let {
@@ -114,6 +126,7 @@ class TrainPilotSettingsStore(private val context: Context,
         val KEY_THEME_ACCENT = stringPreferencesKey("themeAccent")
         val KEY_THEME_ACCENT2 = stringPreferencesKey("themeAccent2")
         val KEY_THEME_FAMILY = stringPreferencesKey("themeFamily")
+        internal val KEY_CUSTOM_THEMES = stringPreferencesKey("customThemes350")
         val KEY_REST_SECONDS = intPreferencesKey("restSeconds")
         val KEY_INTERVAL_REST_SECONDS = intPreferencesKey("intervalRestSeconds")
         val KEY_WORK_SECONDS = intPreferencesKey("workSeconds")
@@ -225,7 +238,8 @@ class TrainPilotSettingsStore(private val context: Context,
                 json.keys().asSequence().filter { com.repforge.app.NativeOutdoorStart.eligible(it, "distance", "km") }
                     .associateWith { json.opt(it) == true }
             }.getOrDefault(emptyMap()),
-            trainingModes197Json = prefs[KEY_TRAINING_MODES_197]
+            trainingModes197Json = prefs[KEY_TRAINING_MODES_197],
+            customThemesJson = prefs[KEY_CUSTOM_THEMES] ?: "[]"
         )
     }
 
@@ -341,11 +355,77 @@ class TrainPilotSettingsStore(private val context: Context,
             prefs[KEY_THEME_FAMILY] = option.family
         }
         }
+        publishThemeAfterCommit()
+    }
+
+    private suspend fun publishThemeAfterCommit() {
         // Commit first; Data Layer keeps the last snapshot for reconnect/restart.
         // A transport failure never rolls back the selected palette.
         try { publishTheme(context) }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (_: Exception) { /* Normal reconnect/home refresh retries the persisted palette. */ }
+    }
+
+    /** Save alone does not apply a new theme. Editing the active theme refreshes it atomically. */
+    internal suspend fun saveCustomThemeForDataset(definition: CustomThemeDefinition,
+        ticket: NativeDataReplacement.Continuation) {
+        val checked = requireNotNull(definition.draft.toDefinition(definition.key))
+        val resolved = requireNotNull(resolveCustomTheme(checked.draft, checked.key))
+        require(resolved.correctedRoles.isEmpty()) { "Custom theme needs contrast correction" }
+        var active = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val themes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]").toMutableList()
+                val index = themes.indexOfFirst { it.key == checked.key }
+                if (index < 0) themes.add(checked) else themes[index] = checked
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(themes)
+                active = prefs[KEY_THEME_KEY] == checked.key
+                if (active) writePaletteSelection(prefs, resolved.palette)
+            }
+        }
+        if (active) publishThemeAfterCommit()
+    }
+
+    internal suspend fun applyCustomThemeForDataset(key: String, ticket: NativeDataReplacement.Continuation) {
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val theme = requireNotNull(CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+                    .firstOrNull { it.key == key }) { "Custom theme missing" }
+                val resolved = requireNotNull(resolveCustomTheme(theme.draft, theme.key))
+                writePaletteSelection(prefs, resolved.palette)
+            }
+        }
+        publishThemeAfterCommit()
+    }
+
+    internal suspend fun deleteCustomThemeForDataset(key: String, ticket: NativeDataReplacement.Continuation) {
+        require(com.example.ui.theme.isCustomThemeKey(key))
+        var active = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val themes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(themes.filterNot { it.key == key })
+                active = prefs[KEY_THEME_KEY] == key
+                if (active) writePaletteSelection(prefs, TrainPilotPalettes.getById(1))
+            }
+        }
+        if (active) publishThemeAfterCommit()
+    }
+
+    private fun writePaletteSelection(prefs: androidx.datastore.preferences.core.MutablePreferences, palette: TrainPilotPalette) {
+        fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
+        prefs[KEY_THEME_KEY] = palette.key
+        prefs[KEY_THEME_ACCENT] = hex(palette.primary)
+        prefs[KEY_THEME_ACCENT2] = hex(palette.secondary)
+        prefs[KEY_THEME_FAMILY] = when (palette.subGroup) {
+            PaletteCategory.CONTRAST -> "contrast"
+            PaletteCategory.GLOW -> "glow"
+            PaletteCategory.LIGHT -> "light"
+            else -> "matte"
+        }
     }
 
     suspend fun setTimerDefaults(workSeconds: Int, restSeconds: Int, rounds: Int, sound: Boolean, vibration: Boolean,
