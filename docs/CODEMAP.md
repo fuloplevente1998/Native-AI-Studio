@@ -52,8 +52,8 @@ nagy fájlok sorai frissülnek.
 ## Napló, fejlődés, statisztika
 | Funkció | Fájl |
 |---|---|
-| Napló lista, edzés részletei, térkép | `ex/ui/screens/LogAndProgressScreens.kt` (`LogTabScreen`, `LogWorkoutDetailScreen`, `LogRouteMapScreen`) (R4) |
-| Fejlődés, volumen, izomtérkép | `LogAndProgressScreens.kt` (`ProgressTabScreen`, `MainProgressVolumeAndMuscleSection`), `ex/ui/components/AnatomicalBodyAndMapComponents.kt`, `ex/ui/screens/StudioVolumeChart.kt` |
+| Napló lista, edzés részletei, térkép | `ex/ui/screens/log/LogTabScreen.kt`, `ex/ui/screens/log/LogWorkoutDetailScreen.kt`, `ex/ui/screens/log/LogRouteMapScreen.kt` |
+| Fejlődés, volumen, izomtérkép | `ex/ui/screens/progress/ProgressTabScreen.kt`, `ex/ui/screens/progress/ProgressVolumeAndMuscle.kt`, `ex/ui/components/AnatomicalBodyAndMapComponents.kt`, `ex/ui/screens/StudioVolumeChart.kt` |
 | Statisztikák, kardió | `ex/ui/screens/StudioStatisticsScreen.kt`, `rf/ui/progress/NativeCardio*` |
 | PR rekordok | `ex/ui/screens/LoggedPrRecords.kt`, `rf/PersonalRecordCalculator226.kt` |
 | Diagram koppintás/kijelölés | `ex/ui/components/TrainPilotChartSelection.kt` |
