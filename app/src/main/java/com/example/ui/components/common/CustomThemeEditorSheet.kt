@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
@@ -29,10 +30,13 @@ internal fun CustomThemeEditorSheet(
     onSave: (CustomThemeDefinition) -> Unit,
     onDismiss: () -> Unit,
     saving: Boolean = false,
-    saveFailed: Boolean = false
+    saveFailed: Boolean = false,
+    saveCompleted: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val currentSaving by rememberUpdatedState(saving)
+    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+        confirmValueChange = { it != SheetValue.Hidden || !currentSaving })
     val scope = rememberCoroutineScope()
     var draft by remember(themeKey, initial) { mutableStateOf(initial) }
     var role by remember(themeKey) { mutableStateOf(CustomThemeRole.PRIMARY) }
@@ -42,6 +46,9 @@ internal fun CustomThemeEditorSheet(
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
     val opacityLabel = word("Felületi fedettség", "Surface opacity", "Flächendeckkraft", "Opacitatea suprafeței")
     val corrected = resolved?.correctedRoles.orEmpty()
+    LaunchedEffect(saveCompleted) {
+        if (saveCompleted) { sheet.hide(); onDismiss() }
+    }
     fun cancel() {
         if (!saving) scope.launch { sheet.hide(); onDismiss() }
     }
@@ -119,7 +126,7 @@ internal fun CustomThemeEditorSheet(
                 TrainPilotPrimaryButton(word("Mentés", "Save", "Speichern", "Salvează"), {
                     draft.toDefinition(themeKey)?.let(onSave)
                 }, Modifier.weight(1f).testTag("custom_theme_save"),
-                    enabled = !saving && draft.isInputValid && resolved != null && corrected.isEmpty())
+                    enabled = !saving && !saveCompleted && draft.isInputValid && resolved != null && corrected.isEmpty())
             }
         }
     }
