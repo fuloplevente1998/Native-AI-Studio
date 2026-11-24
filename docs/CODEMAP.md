@@ -82,7 +82,7 @@ nagy fájlok sorai frissülnek.
 |---|---|
 | Beállítások főoldal | `ex/ui/screens/settings/SettingsMainScreen.kt` |
 | Óra és szinkron oldal | `ex/ui/screens/settings/WatchAndSyncScreen.kt` |
-| Google Cloud kártya (állapot, auto, kézi, karbantartás) | `ex/ui/screens/settings/GoogleCloudSyncCard.kt` |
+| Google Cloud kártya (állapot, auto, „Szinkron most”, leválasztás lap) | `ex/ui/screens/settings/GoogleCloudSyncCard.kt` (`GoogleDisconnectSheet`) |
 | Google szinkron motor, Drive-összefésülés | `rf/GoogleSyncRepository.kt` (auth, Drive/Naptár szinkron, karbantartás), `rf/GoogleSyncMerge18.kt` (#18 összefésülő motor `*18`), `rf/GoogleSyncTransport.kt` (HTTP, Drive-fájl/fotó, naptár, hibaüzenet), `rf/GoogleAutoSyncWorker.kt`, `rf/ui/settings/SettingsViewModel.kt`, `rf/ui/settings/NativeGoogleMaintenance*.kt` |
 | Mentés / visszaállítás | `ex/ui/screens/settings/BackupRestoreScreen.kt`, `rf/BackupRestoreManager.kt`, `rf/BackupJsonIO.kt` |
 | Engedélyek, privát fotók | `ex/ui/screens/settings/PermissionsScreen.kt`, `rf/NativePrivacyControls.kt` |

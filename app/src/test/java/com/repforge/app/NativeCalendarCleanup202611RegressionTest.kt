@@ -131,7 +131,7 @@ class NativeCalendarCleanup202611RegressionTest {
             row("c", "2026-11-08", "18:00", updatedAt = 3, dayName = "Alap A")
         )
 
-        val operations = NativeCalendarSyncPlan.operations(entries).toList()
+        val operations = NativeCalendarSyncPlan.operations(entries, java.time.LocalDate.parse("2026-11-01")).toList()
 
         assertEquals(2, operations.size)
         assertEquals(
@@ -148,7 +148,7 @@ class NativeCalendarCleanup202611RegressionTest {
             row("live-evening", "2026-11-08", "18:00", status = "planned", updatedAt = 3)
         )
 
-        val operations = NativeCalendarSyncPlan.operations(entries).toList()
+        val operations = NativeCalendarSyncPlan.operations(entries, java.time.LocalDate.parse("2026-11-01")).toList()
         assertEquals(3, operations.size)
         assertEquals(1, operations.count { it.delete })
         assertEquals(2, operations.count { !it.delete })

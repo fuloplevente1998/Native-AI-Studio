@@ -328,7 +328,7 @@ object TrainPilotPalettes {
             background = Color(0xFF030203),
             surface = Color(0xFF30212A),
             surfaceElevated = Color(0xFF4A3440),
-            primary = Color(0xFFFF4769),
+            primary = Color(0xFFFF8299), // 2806: ≥4.5:1 on its elevated surface (was FF4769, 3.4:1)
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF38BDF8),
             textPrimary = Color(0xFFFFFFFF),
@@ -383,7 +383,7 @@ object TrainPilotPalettes {
             background = Color(0xFF020106),
             surface = Color(0xFF282138),
             surfaceElevated = Color(0xFF403456),
-            primary = Color(0xFFC084FC),
+            primary = Color(0xFFC894FC), // 2806: ≥4.5:1 on its elevated surface (was C084FC, 4.3:1)
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF2DD4BF),
             textPrimary = Color(0xFFFFFFFF),

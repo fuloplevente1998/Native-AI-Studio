@@ -127,7 +127,7 @@ class ProgramCalendarRemovalRegressionTest {
         assertEquals(2,JSONObject(document.json).getJSONArray("events").length())
         assertEquals("{\"keep\":true}",native { db.keyValueDocumentDao().getDocument("sentinel")!!.json })
         assertFalse(JSONObject(native { db.keyValueDocumentDao().getDocument("plannerSettings")!!.json }).has("nativePlannerReceipt"))
-        val operations=NativeCalendarSyncPlan.operations(after).toList()
+        val operations=NativeCalendarSyncPlan.operations(after, java.time.LocalDate.parse("2026-12-01")).toList()
         assertTrue(operations.single { it.id==rows[0].googleEventId }.delete)
         assertFalse(operations.single { it.id==rows[2].googleEventId }.delete)
         val local=JSONObject().put("scheduled",JSONArray(after.map { JSONObject(it.rawJson).put("id",it.id).put("status",it.status).put("updatedAt",it.updatedAt) }))

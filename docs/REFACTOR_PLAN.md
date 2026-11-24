@@ -38,3 +38,10 @@ ha a képernyők már kicsik (kisebb ütközésfelület).
 ## Várható eredmény
 - Legnagyobb fájl ≤ 900 sor (ma 5737); kb. 60 új, funkció nevű fájl.
 - Tipikus javítás: CODEMAP (≈100 sor) + 1–2 fájl (300–600 sor) olvasása.
+
+## Lezárás (2026-11-24)
+- R0–R8 kész, mind zöld CI-vel a mainen (#356, #358, #360, #362, #363, #364, #365, #366). Működésváltozás nincs.
+- **Később, fejlesztéssel együtt (valódi átírás, nem áthelyezés):** `MainActivity.TrainPilotAppRoot` (~1090 soros egy függvény, R7b),
+  `CalendarPlannerScreen` (990), `PersonalPlannerModal` (954). Akkor bontjuk, amikor egy feature (pl. #359, #350) érinti őket.
+- További >900 soros, még nem bontott fájlok (ActiveWorkoutViewModel/Screen, PhoneWorkoutExecutionStore, TrainPilotModels,
+  HealthConnectRepository, TrainPilotStrings, WearSyncRepository…) plafonnal védve; érintéskor bontandók.

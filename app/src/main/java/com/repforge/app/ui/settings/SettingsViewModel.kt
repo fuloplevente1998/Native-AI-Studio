@@ -244,13 +244,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun syncDriveCloud(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.DRIVE)
     fun syncCalendarCloud(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.CALENDAR)
 
-    private fun runGoogleAction(activity: Activity, action: GoogleSyncAction) {
+    /** 2806: one "Sync now" – Drive first, then Calendar; stops at the first failure and reports that service. */
+    fun syncAllCloud(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.DRIVE, GoogleSyncAction.CALENDAR)
+
+    private fun runGoogleAction(activity: Activity, vararg actions: GoogleSyncAction) {
         if (_uiState.value.replacementBusy || googleRequestRunning || _uiState.value.maintenanceBusy) return
         googleRequestRunning = true
         _uiState.value = _uiState.value.copy(statusMessage = null, googleActionFeedback = null)
         val recoverEarlier = _uiState.value.recoverEarlierBackupsChecked
         viewModelScope.launch {
             try {
+              for (action in actions) {
                 val result = googleRepo.authorizeAndRun(activity, action, googleConsentBridge::resolve, recoverEarlier)
                 val strings = nativeResources(context, _uiState.value.settings.language)
                 val message = result.fold(onSuccess = { completion ->
@@ -262,7 +266,51 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }, onFailure = { it.message ?: strings.getString(R.string.native_google_failed) })
                 _uiState.value = _uiState.value.copy(statusMessage = message,
                     googleActionFeedback = GoogleActionFeedback(action.key, message, result.isFailure))
+                if (result.isFailure) break
+              }
             } finally { googleRequestRunning = false }
+        }
+    }
+
+    /**
+     * 2806: one disconnect sheet. Optional steps run in a safe order – delete TrainPilot data from the Google account
+     * (Drive, then managed calendars), revoke the grant, forget the account locally. Any incomplete step stops the
+     * chain and keeps the account connected, so nothing is half-removed silently. Local workouts are never touched.
+     */
+    internal fun disconnectGoogleWith(activity: Activity, revoke: Boolean, deleteData: Boolean) {
+        if (googleRequestRunning || _uiState.value.replacementBusy || _uiState.value.maintenanceBusy) return
+        if (!revoke && !deleteData) { disconnectGoogle(); return }
+        googleRequestRunning = true
+        _uiState.value = _uiState.value.copy(maintenanceBusy = true, maintenanceOutcome = "")
+        viewModelScope.launch {
+            var completed = 0
+            try {
+                val steps = buildList {
+                    if (deleteData) { add(NativeGoogleMaintenance.Kind.DRIVE); add(NativeGoogleMaintenance.Kind.CALENDAR) }
+                    if (revoke) add(NativeGoogleMaintenance.Kind.REVOKE)
+                }
+                for (kind in steps) {
+                    val request = googleRepo.previewMaintenance(kind)
+                    val action = when (kind) {
+                        NativeGoogleMaintenance.Kind.REVOKE -> GoogleSyncAction.CONNECT
+                        NativeGoogleMaintenance.Kind.DRIVE -> GoogleSyncAction.DRIVE
+                        NativeGoogleMaintenance.Kind.CALENDAR -> GoogleSyncAction.CALENDAR
+                    }
+                    val report = googleRepo.authorizeAndRun(activity, action, googleConsentBridge::resolve, maintenance = request)
+                        .getOrNull()?.maintenance
+                    completed += report?.completed ?: 0
+                    if (report?.complete != true) {
+                        _uiState.value = _uiState.value.copy(maintenanceCompleted = completed,
+                            maintenanceOutcome = if (report != null) "partial" else "failed")
+                        return@launch
+                    }
+                }
+                if (!revoke) googleRepo.disconnect() // Revoke already forgot the account.
+                _uiState.value = _uiState.value.copy(maintenanceCompleted = completed, maintenanceOutcome = "done",
+                    googleActionFeedback = null)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { _uiState.value = _uiState.value.copy(maintenanceCompleted = completed, maintenanceOutcome = "failed") }
+            finally { googleRequestRunning = false; _uiState.value = _uiState.value.copy(maintenanceBusy = false) }
         }
     }
 

@@ -84,15 +84,14 @@ fun StudioGoogleCloudSyncCard(
     val gs = settingsState.googleSyncState
     val activity = LocalActivity.current
     var cloudExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var showMaintenanceOptions by remember { mutableStateOf(false) }
-
-    val maintenancePreview by settingsViewModel.maintenancePreview.collectAsStateWithLifecycle()
-    NativeGoogleMaintenanceConfirmation(
-        request = maintenancePreview,
-        language = settingsState.settings.language,
-        busy = settingsState.maintenanceBusy,
-        cancel = settingsViewModel::cancelGoogleMaintenance,
-        confirm = { activity?.let(settingsViewModel::confirmGoogleMaintenance) }
+    var showDisconnectSheet by remember { mutableStateOf(false) }
+    if (showDisconnectSheet) GoogleDisconnectSheet(
+        language = lang,
+        onDismiss = { showDisconnectSheet = false },
+        onConfirm = { revoke, deleteData ->
+            showDisconnectSheet = false
+            activity?.let { settingsViewModel.disconnectGoogleWith(it, revoke, deleteData) }
+        }
     )
 
     LaunchedEffect(settingsState.statusMessage, compact) {
@@ -220,10 +219,10 @@ fun StudioGoogleCloudSyncCard(
                     style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = palette.textPrimary
                 )
                 ServiceBox(tr(lang, "Google Drive mentés", "Google Drive backup", "Google Drive-Sicherung", "Backup Google Drive"),
-                    driveStatus, gs.lastDriveSyncIso, "", "settings_google_drive_status", driveFailMessage)
+                    driveStatus, gs.lastDriveSyncIso, " • " + tr(lang, "utolsó 3 mentés marad", "last 3 backups kept", "letzte 3 Sicherungen bleiben", "rămân ultimele 3 backup-uri"), "settings_google_drive_status", driveFailMessage)
                 val countSuffix = gs.lastCalendarSyncCount?.let { cnt ->
                     " • " + tr(lang, "$cnt esemény", "$cnt events", "$cnt Termine", "$cnt evenimente")
-                }.orEmpty()
+                }.orEmpty() + " • " + tr(lang, "következő 30 nap", "next 30 days", "nächste 30 Tage", "următoarele 30 de zile")
                 ServiceBox(tr(lang, "Google Naptár", "Google Calendar", "Google Kalender", "Google Calendar"),
                     calendarStatus, gs.lastCalendarSyncIso, countSuffix, "settings_google_last_calendar_sync", calendarFailMessage)
 
@@ -239,10 +238,7 @@ fun StudioGoogleCloudSyncCard(
                         color = palette.danger, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                 }
 
-                // 2805: opt-in daily automatic sync; the manual actions below stay unchanged.
-                Text(tr(lang, "Automatikus szinkron", "Automatic sync", "Automatische Synchronisierung", "Sincronizare automată"),
-                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.textSecondary,
-                    modifier = Modifier.padding(top = 2.dp))
+                // 2806: simplified – one automatic switch (Drive + Calendar), Wi-Fi option, one sync button, one disconnect.
                 @Composable fun AutoRow(label: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onChange(!checked) }
@@ -252,96 +248,31 @@ fun StudioGoogleCloudSyncCard(
                         Switch(checked = checked, onCheckedChange = onChange)
                     }
                 }
-                AutoRow(tr(lang, "Napi Drive-mentés", "Daily Drive backup", "Tägliche Drive-Sicherung", "Backup Drive zilnic"),
-                    autoSync.drive, "settings_google_auto_drive") { saveAutoSync(autoSync.copy(drive = it)) }
-                AutoRow(tr(lang, "Naptár automatikus frissítése", "Refresh calendar automatically", "Kalender automatisch aktualisieren", "Actualizare automată calendar"),
-                    autoSync.calendar, "settings_google_auto_calendar") { saveAutoSync(autoSync.copy(calendar = it)) }
+                AutoRow(tr(lang, "Automatikus napi szinkron", "Automatic daily sync", "Automatische tägliche Synchronisierung", "Sincronizare zilnică automată"),
+                    autoSync.any, "settings_google_auto_sync") { saveAutoSync(autoSync.copy(drive = it, calendar = it)) }
                 if (autoSync.any) AutoRow(tr(lang, "Csak Wi-Fi-n", "Wi-Fi only", "Nur über WLAN", "Doar pe Wi-Fi"),
                     autoSync.wifiOnly, "settings_google_auto_wifi") { saveAutoSync(autoSync.copy(wifiOnly = it)) }
-                if (autoSync.any) Text(tr(lang,
-                    "Naponta egyszer, töltöttségkímélően; az Android választja ki a pontos időt. Aktív edzés közben kimarad.",
-                    "Once a day, battery-friendly; Android picks the exact time. Skipped during an active workout.",
-                    "Einmal täglich, akkuschonend; Android wählt die genaue Zeit. Während eines Trainings ausgelassen.",
-                    "O dată pe zi, economic; Android alege ora exactă. Omisă în timpul unui antrenament activ."),
-                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-
-                // Everyday actions, one under the other (#352).
-                Text(tr(lang, "Kézi műveletek", "Manual actions", "Manuelle Aktionen", "Acțiuni manuale"),
-                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.textSecondary,
-                    modifier = Modifier.padding(top = 2.dp))
                 Button(
-                    onClick = { activity?.let { settingsViewModel.syncDriveCloud(it) } },
+                    onClick = { activity?.let { settingsViewModel.syncAllCloud(it) } },
                     enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_drive_sync_btn")
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_sync_now_btn")
                 ) {
                     Icon(Icons.Default.CloudSync, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(tr(lang, "Drive szinkron", "Drive Sync", "Drive-Sync", "Sincronizare Drive"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
-                }
-                // The merge option belongs to the Drive sync above (it is not a separate action).
-                Row(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                        .trainPilotClickable(RoundedCornerShape(10.dp)) { settingsViewModel.setRecoverEarlierBackups(!settingsState.recoverEarlierBackupsChecked) }
-                        .testTag("settings_google_recover_earlier"),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = settingsState.recoverEarlierBackupsChecked,
-                        onCheckedChange = { settingsViewModel.setRecoverEarlierBackups(it) },
-                        colors = CheckboxDefaults.colors(checkedColor = palette.primary)
-                    )
-                    Text(
-                        text = tr(lang, "Szinkronnál korábbi mentések összefésülése is", "Also merge earlier backups when syncing", "Beim Sync auch frühere Sicherungen zusammenführen", "La sincronizare îmbină și backup-urile anterioare"),
-                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary
-                    )
+                    Text(tr(lang, "Szinkron most", "Sync now", "Jetzt synchronisieren", "Sincronizează acum"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                 }
                 TrainPilotOutlinedButton(
-                    onClick = { activity?.let { settingsViewModel.syncCalendarCloud(it) } },
-                    enabled = !busyAny && activity != null,
+                    onClick = { showDisconnectSheet = true },
+                    enabled = !busyAny,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
-                    border = BorderStroke(1.dp, palette.cardBorder),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_calendar_sync_btn")
+                    border = BorderStroke(1.dp, palette.danger),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_disconnect_btn")
                 ) {
-                    Icon(Icons.Default.CalendarMonth, null, tint = palette.primary, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(tr(lang, "Naptár szinkron", "Calendar Sync", "Kalender-Sync", "Sincronizare Calendar"),
-                        color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
-                }
-                TrainPilotOutlinedButton(
-                    onClick = { showMaintenanceOptions = !showMaintenanceOptions },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
-                    border = BorderStroke(1.dp, palette.cardBorder),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_maintenance_toggle")
-                ) {
-                    Text(tr(lang, "Felhő karbantartás", "Cloud Maintenance", "Cloud-Wartung", "Mentenanță cloud"),
-                        color = palette.textPrimary, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                    Icon(if (showMaintenanceOptions) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.textSecondary)
-                }
-
-                // Rarely used, destructive actions live here, each with its own confirmation.
-                if (showMaintenanceOptions) {
-                    Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.danger.copy(alpha = 0.4f), RoundedCornerShape(12.dp))) {
-                        Column(Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
-                            com.repforge.app.ui.theme.TrainPilotTextButton(
-                                onClick = { settingsViewModel.disconnectGoogle() },
-                                enabled = !busyAny,
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_disconnect_btn")
-                            ) {
-                                Text(tr(lang, "Google-fiók lekapcsolása", "Disconnect Google Account", "Google-Konto trennen", "Deconectează contul Google"),
-                                    color = palette.danger, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                            }
-                            NativeGoogleMaintenanceControls(
-                                language = settingsState.settings.language,
-                                busy = busyAny,
-                                open = settingsViewModel::openGoogleMaintenance
-                            )
-                        }
-                    }
+                    Text(tr(lang, "Google-fiók leválasztása", "Disconnect Google account", "Google-Konto trennen", "Deconectează contul Google"),
+                        color = palette.danger, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                 }
             } else {
                 Text(
@@ -430,3 +361,59 @@ internal fun driveHealthBackupSummary(language: AppLanguage) = tr(language,
     "When enabled, Drive includes workout health summaries. Daily steps can be included in local JSON/ZIP backups.",
     "Bei Zustimmung sichert Drive Trainings-Gesundheitsdaten. Tagesschritte können lokal als JSON/ZIP gesichert werden.",
     "La activare, Drive include rezumatele de sănătate ale antrenamentelor. Pașii zilnici pot fi salvați local în JSON/ZIP.")
+
+/** 2806: the single disconnect sheet – two optional, unticked extras; local data is never touched. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun GoogleDisconnectSheet(language: AppLanguage, onDismiss: () -> Unit, onConfirm: (revoke: Boolean, deleteData: Boolean) -> Unit) {
+    val palette = LocalTrainPilotPalette.current
+    var revoke by remember { mutableStateOf(false) }
+    var deleteData by remember { mutableStateOf(false) }
+    com.example.ui.components.TrainPilotModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = palette.surfaceCard
+    ) {
+        Column(Modifier.padding(horizontal = 18.dp).padding(bottom = 18.dp).testTag("settings_google_disconnect_sheet"),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(tr(language, "Google-fiók leválasztása", "Disconnect Google account", "Google-Konto trennen", "Deconectează contul Google"),
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+            Text(tr(language, "A mentett edzéseid a telefonon megmaradnak.", "Your saved workouts stay on this phone.",
+                "Deine gespeicherten Trainings bleiben auf dem Telefon.", "Antrenamentele salvate rămân pe telefon."),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            @Composable fun Option(title: String, detail: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(10.dp)) { onChange(!checked) }
+                    .testTag(tag), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = checked, onCheckedChange = onChange, colors = CheckboxDefaults.colors(checkedColor = palette.primary))
+                    Column(Modifier.weight(1f)) {
+                        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(detail, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                    }
+                }
+            }
+            Option(tr(language, "Google-hozzáférés visszavonása", "Revoke Google access", "Google-Zugriff widerrufen", "Revocă accesul Google"),
+                tr(language, "A Google-nál is megszűnik a TrainPilot engedélye.", "TrainPilot's permission is removed at Google too.",
+                    "Die TrainPilot-Berechtigung wird auch bei Google entfernt.", "Permisiunea TrainPilot este eliminată și la Google."),
+                revoke, "settings_google_disconnect_revoke") { revoke = it }
+            Option(tr(language, "TrainPilot adatainak törlése a Google-fiókból", "Delete TrainPilot data from the Google account",
+                    "TrainPilot-Daten aus dem Google-Konto löschen", "Șterge datele TrainPilot din contul Google"),
+                tr(language, "Drive-mentések és a TrainPilot edzésnaptár törlése. Nem visszavonható.",
+                    "Deletes Drive backups and the TrainPilot workout calendar. Cannot be undone.",
+                    "Löscht Drive-Sicherungen und den TrainPilot-Trainingskalender. Nicht umkehrbar.",
+                    "Șterge backup-urile Drive și calendarul TrainPilot. Ireversibil."),
+                deleteData, "settings_google_disconnect_delete") { deleteData = it }
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TrainPilotOutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("settings_google_disconnect_cancel")) {
+                    Text(tr(language, "Mégse", "Cancel", "Abbrechen", "Anulează"), color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                }
+                TrainPilotOutlinedButton(onClick = { onConfirm(revoke, deleteData) }, shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, palette.danger),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("settings_google_disconnect_confirm")) {
+                    Text(tr(language, "Leválasztás", "Disconnect", "Trennen", "Deconectează"), color = palette.danger, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}

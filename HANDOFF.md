@@ -1,10 +1,12 @@
 # Aktuális átadó
 
-- Kiadás: 1.4.4 · telefon 280500 · Wear 280502 · main `1994d09` (#353 + #354). Aláírt APK/AAB pár: signing run 45393952281,
-  signer `cd2da9ea…`, nyers JUnit XML: telefon 863 / Wear 204, 0 hiba. TrainPilot.io verziósor frissítve (#12).
-- 2804 (#353): pihenő-dokk és edzéssáv (#347), „Legutóbb” sor (#348), kontrasztpaletta 9/13/16 (#349), kompakt Google-kártya (#352).
-- 2805 (#354): opt-in napi Google Drive/naptár szinkron (`GoogleAutoSyncWorker`, `NativeSyncSchedule`); Health: tartós HC háttérjob
-  (15/30/60 perc), előtér 2/5/15 perc, visszatérés 2 perces fojtással, edzésmentés utáni olvasás. Élő Google-próba hátravan.
-- Nyitott: #349 közös kiemelési szabályok (paletta 12/15 accent <4,5:1), #350 saját témák, #351 óra-mérés automatikus indítása
-  (javaslat kész, jóváhagyásra vár), heti lépés% egy forrásból.
-- Következő: kód-szétszedés a `docs/REFACTOR_PLAN.md` szerint (R0–R8), jóváhagyásra vár. Szint: R1–R5 low, R0/R7 medium, R6/R8 high.
+- Main: 1.4.4 kódja, teljes szerkezeti refaktor után (R0–R8, #356–#366, mind zöld CI). Működésváltozás nincs.
+  Előbb `docs/CODEMAP.md`, utána csak a megnevezett fájl. Méretőr: `SourceSizeGuardTest`; áthelyezés: `scripts/split_kotlin.py`,
+  `scripts/verify_move.py` (`--receiver Cls` kiterjesztésekhez). ViewModel: osztály = állapot + mag, funkciók `Vm*.kt` kiterjesztések;
+  csomagon kívüli hívóhoz explicit `import com.example.ui.viewmodel.<név>`.
+- Később bontandó (valódi átírás): `MainActivity.TrainPilotAppRoot`, `CalendarPlannerScreen`, `PersonalPlannerModal` – lásd REFACTOR_PLAN.
+- Kiadás: 1.4.4 · 280500/280502 aláírt, ellenőrzött. Következő: **1.5.0 · 280600/280602** (2806 gyűjtő, #361).
+- 2806 tervezett: Google-fiók leválasztás egy látható gombbal + választó lap (mockup kész, jóváhagyásra vár);
+  paletta 12/15 kiemelőszín ≥4,5:1 (#349 része).
+- Nyitott issue-k: #349 (32 téma közös kiemelés), #350 (saját témák + áttetszőség, leírás bővítve), #351 (óra mérés auto-indítás,
+  jóváhagyásra vár), #359 (külső órás edzésimport – a refaktor feltétele teljesült).
