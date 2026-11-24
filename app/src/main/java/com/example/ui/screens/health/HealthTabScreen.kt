@@ -1,6 +1,7 @@
 package com.example.ui.screens
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.LocalGlassTopInset
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -719,7 +720,7 @@ fun HealthTabScreen(
                 .fillMaxSize()
                 .background(palette.pageBrush).trainPilotGlassScene(palette)
                 .testTag("health_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         if (layout.draft == null) {
