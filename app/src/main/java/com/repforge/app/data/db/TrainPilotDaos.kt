@@ -441,6 +441,13 @@ interface WorkoutHistoryDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertNewJournalPhoto(photo: WorkoutPhotoEntity)
 
+    @Query("SELECT * FROM workout_history WHERE id <> :id AND instr(rawJson, :quotedId) > 0 LIMIT 64")
+    suspend fun externalLinkCandidates(id: String, quotedId: String): List<WorkoutHistoryEntity>
+
+    @Query("""SELECT * FROM workout_history WHERE id <> :id AND startedEpochMs < :end AND finishedEpochMs > :start
+        ORDER BY startedEpochMs DESC, id LIMIT 32""")
+    suspend fun externalOverlapCandidates(id: String, start: Long, end: Long): List<WorkoutHistoryEntity>
+
     @Query("SELECT id FROM workout_history WHERE originDevice = 'external' AND id > :after ORDER BY id LIMIT :limit")
     suspend fun pageExternalWorkoutIds(after: String, limit: Int): List<String>
 

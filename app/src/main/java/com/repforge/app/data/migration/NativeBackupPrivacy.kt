@@ -7,7 +7,7 @@ import java.util.Locale
 /** Portable backups keep route references and measurements, but never private coordinate samples. */
 internal object NativeBackupPrivacy {
     private val healthKeys = setOf("health240", "healthconnect", "wear", "healthsummary", "healthwear129",
-        "nativehealthjournal", "healthledger", "healthjournal", "wellnesslatest", "recoveryhistory", "externalworkout359")
+        "nativehealthjournal", "healthledger", "healthjournal", "wellnesslatest", "recoveryhistory", "externalworkout359", "externallinkedsources359")
     fun sanitize(root: JSONObject, includeHealth: Boolean = true): JSONObject = copy(root, includeHealth) as JSONObject
     /** Restore only same-workout, same-window local health into a local install copy, never an upload. */
     fun preserveLocalWorkoutHealth(incoming: JSONObject, local: List<JSONObject>) {

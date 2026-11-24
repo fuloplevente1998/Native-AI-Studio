@@ -62,7 +62,8 @@ internal object ExternalWorkoutImport {
 
     /** Resolve and verify the current journal record under the existing replacement fence. */
     suspend fun importSelected(
-        context: Context, identity: ExternalWorkoutIdentity, expectedModifiedMs: Long
+        context: Context, identity: ExternalWorkoutIdentity, expectedModifiedMs: Long,
+        targetId: String? = null, keepSeparate: Boolean = false
     ): Outcome = withContext(Dispatchers.IO) {
         val app = context.applicationContext
         val ticket = NativeDataReplacement.continuationForCurrentData(app)
@@ -85,7 +86,7 @@ internal object ExternalWorkoutImport {
                 ?: return@mutate Outcome.UNAVAILABLE
             if (workout.modifiedMs != expectedModifiedMs) return@mutate Outcome.CHANGED
             val metrics = journal.externalWorkoutMetrics(workout, generation, grants)
-            persist(app, db, workout, metrics) {
+            persist(app, db, workout, metrics, targetId, keepSeparate) {
                 ticket.requireCurrent(app)
                 NativePrivacyControls.requireEnabled(app, identity.provider)
                 if (identity.provider == HealthJournalStore.HC)
@@ -107,7 +108,7 @@ internal object ExternalWorkoutImport {
      */
     internal suspend fun persist(
         context: Context, db: TrainPilotDatabase, workout: ExternalWorkout, metrics: JSONObject? = null,
-        guard: () -> Unit
+        targetId: String? = null, keepSeparate: Boolean = false, guard: () -> Unit
     ): Outcome {
         if (workout.isOwnExport(context.packageName) || workout.elapsedMs <= 0 ||
             workout.endMs > System.currentTimeMillis()) return Outcome.UNAVAILABLE
@@ -138,7 +139,21 @@ internal object ExternalWorkoutImport {
                     guard()
                     return@withTransaction Outcome.UPDATED
                 }
-                if (dao.hasExternalImportOverlap(id, workout.startMs, workout.endMs))
+                val linked = dao.externalLinkCandidates(id, JSONObject.quote(id))
+                    .filter { id in ExternalWorkoutAssociation.linkedIds(JSONObject(it.rawJson)) }
+                if (linked.size > 1) return@withTransaction Outcome.REVIEW_OVERLAP
+                if (linked.isNotEmpty()) {
+                    val row = linked.single()
+                    if (targetId != null && targetId != row.id) return@withTransaction Outcome.REVIEW_OVERLAP
+                    return@withTransaction ExternalWorkoutAssociation.attach(dao, row, id, workout, metrics, guard)
+                }
+                if (targetId != null) {
+                    val row = dao.getWorkoutWithDetailsById(targetId)?.workout ?: return@withTransaction Outcome.CHANGED
+                    if (row.id == id || row.startedEpochMs >= workout.endMs || row.finishedEpochMs <= workout.startMs ||
+                        dao.isTombstoned(row.id, JSONObject.quote(row.id))) return@withTransaction Outcome.CHANGED
+                    return@withTransaction ExternalWorkoutAssociation.attach(dao, row, id, workout, metrics, guard)
+                }
+                if (!keepSeparate && dao.hasExternalImportOverlap(id, workout.startMs, workout.endMs))
                     return@withTransaction Outcome.REVIEW_OVERLAP
                 LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context))
                     .saveWorkoutJsonToRoom(raw(workout, metrics))

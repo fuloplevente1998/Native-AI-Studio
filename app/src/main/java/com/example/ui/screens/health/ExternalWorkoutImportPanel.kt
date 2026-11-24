@@ -65,6 +65,8 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
     var busy by remember { mutableStateOf(true) }
     var message by remember { mutableStateOf("") }
     var results by remember { mutableStateOf(emptyMap<ExternalWorkoutIdentity, ExternalWorkoutImport.Outcome>()) }
+    var review by remember { mutableStateOf<ExternalWorkout?>(null) }
+    var targets by remember { mutableStateOf(emptyList<com.repforge.app.data.db.WorkoutHistoryEntity>()) }
     val error = tr(language, "Nem olvasható. Ellenőrizd az engedélyeket, majd szinkronizálj.", "Cannot read. Check permissions, then sync.", "Nicht lesbar. Berechtigungen prüfen und synchronisieren.", "Nu se poate citi. Verifică permisiunile, apoi sincronizează.")
     LaunchedEffect(provider, days, before, beforeTime) {
         busy = true
@@ -121,6 +123,22 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
                             Text("$date · ${workout.elapsedMs / 60_000} min · ${workout.identity.source}")
                             val outcome = results[workout.identity]
                             if (outcome != null) Text(importOutcome(language, outcome))
+                            if (outcome == ExternalWorkoutImport.Outcome.REVIEW_OVERLAP) {
+                                TextButton(enabled = !busy, onClick = {
+                                    busy = true
+                                    scope.launch {
+                                        try {
+                                            targets = withContext(Dispatchers.IO) {
+                                                com.repforge.app.data.db.TrainPilotDatabase.getInstance(context).workoutHistoryDao()
+                                                    .externalOverlapCandidates(ExternalWorkoutImport.localId(workout.identity), workout.startMs, workout.endMs)
+                                            }
+                                            review = workout
+                                        } catch (cancelled: CancellationException) { throw cancelled }
+                                        catch (_: Exception) { message = error }
+                                        finally { busy = false }
+                                    }
+                                }) { Text(tr(language, "Átfedés feloldása", "Resolve overlap", "Überschneidung klären", "Rezolvă suprapunerea")) }
+                            }
                             TrainPilotOutlinedButton(enabled = !busy && outcome !in setOf(
                                 ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.Outcome.UPDATED, ExternalWorkoutImport.Outcome.ALREADY_IMPORTED,
                                 ExternalWorkoutImport.Outcome.LOCALLY_DELETED, ExternalWorkoutImport.Outcome.REVIEW_OVERLAP),
@@ -145,6 +163,43 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
             }
         },
         confirmButton = { TextButton(enabled = !busy, onClick = close) { Text(tr(language, "Bezárás", "Close", "Schließen", "Închide")) } })
+    review?.let { workout ->
+        fun resolve(target: String?, separate: Boolean) {
+            busy = true
+            scope.launch {
+                try {
+                    results = results + (workout.identity to ExternalWorkoutImport.importSelected(
+                        context, workout.identity, workout.modifiedMs, target, separate))
+                    review = null
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { message = error; review = null }
+                finally { busy = false }
+            }
+        }
+        AlertDialog(onDismissRequest = { if (!busy) review = null },
+            title = { Text(tr(language, "Ugyanaz az edzés?", "Same workout?", "Dasselbe Training?", "Același antrenament?")) },
+            text = {
+                Column {
+                    Text(tr(language, "Csak akkor társítsd, ha biztosan ugyanaz az edzés. Külön edzésként is menthető.",
+                        "Link only if you know this is the same workout. You can also keep it separate.",
+                        "Nur bei sicherer Übereinstimmung verknüpfen. Separates Training ist möglich.",
+                        "Asociază doar dacă ești sigur că este același antrenament. Poți salva separat."))
+                    LazyColumn(Modifier.heightIn(max = 240.dp)) {
+                        items(targets, key = { it.id }) { target ->
+                            TextButton(enabled = !busy, onClick = { resolve(target.id, false) }) {
+                                Text("${target.programName.ifBlank { target.dayName }} · ${target.started.take(16).replace('T', ' ')}")
+                            }
+                        }
+                    }
+                    TextButton(enabled = !busy, onClick = { resolve(null, true) }) {
+                        Text(tr(language, "Külön edzésként mentés", "Save separately", "Separat speichern", "Salvează separat"))
+                    }
+                }
+            },
+            confirmButton = { TextButton(enabled = !busy, onClick = { review = null }) {
+                Text(tr(language, "Mégse", "Cancel", "Abbrechen", "Anulează"))
+            } })
+    }
 }
 
 private fun importOutcome(language: AppLanguage, outcome: ExternalWorkoutImport.Outcome): String = when (outcome) {

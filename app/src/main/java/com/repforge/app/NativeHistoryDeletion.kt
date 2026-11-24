@@ -21,7 +21,8 @@ internal object NativeHistoryDeletion {
         ticket: NativeDataReplacement.Continuation) = NativeDataReplacement.mutate(context) {
         ticket.requireCurrent(context)
         val w = target.workout
-        val aliases = listOf(w.id, w.syncId, w.workoutKey).filter(String::isNotBlank).distinct()
+        val aliases = (listOf(w.id, w.syncId, w.workoutKey) +
+            ExternalWorkoutAssociation.linkedIds(JSONObject(w.rawJson))).filter(String::isNotBlank).distinct()
         NativeJournalEditor.requireNotActive(context, aliases.toSet())
         val key = PREFIX + w.id
         db.withTransaction {

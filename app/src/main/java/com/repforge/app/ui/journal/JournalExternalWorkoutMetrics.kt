@@ -52,6 +52,7 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         if (source != null && !matches) Text(local("A forrás és a helyi edzés időablaka eltér. Ellenőrzés szükséges.",
             "Source and local workout windows differ. Review required.", "Quell- und lokales Zeitfenster unterscheiden sich. Prüfung erforderlich.",
             "Intervalele sursei și antrenamentului local diferă. Necesită verificare."), color = colors.muted)
+        JournalLinkedExternalSources(workout.rawJson, text, language)
         if (metrics.isEmpty()) Text(text.getString(com.repforge.app.R.string.journal_no_data), color = colors.muted)
         else {
             JournalHealthMetrics(metrics, "external", text, number)

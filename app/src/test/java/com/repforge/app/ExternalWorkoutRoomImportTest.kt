@@ -39,7 +39,12 @@ class ExternalWorkoutRoomImportTest {
             suspend fun save(w: ExternalWorkout) = ExternalWorkoutImport.persist(context, db, w) {}
             assertEquals(ExternalWorkoutImport.Outcome.IMPORTED, save(a))
             assertEquals(ExternalWorkoutImport.Outcome.ALREADY_IMPORTED, save(a))
-            assertEquals(ExternalWorkoutImport.Outcome.REVIEW_OVERLAP, save(workout("other", provider = HealthJournalStore.SAMSUNG)))
+            val mirror = workout("other", provider = HealthJournalStore.SAMSUNG)
+            assertEquals(ExternalWorkoutImport.Outcome.REVIEW_OVERLAP, save(mirror))
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED, ExternalWorkoutImport.persist(context, db, mirror, targetId = id) {})
+            assertEquals(ExternalWorkoutImport.Outcome.ALREADY_IMPORTED, save(mirror))
+            assertTrue(ExternalWorkoutImport.localId(mirror.identity) in ExternalWorkoutAssociation.linkedIds(
+                JSONObject(requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id)).workout.rawJson)))
             assertEquals(ExternalWorkoutImport.Outcome.UNAVAILABLE, save(workout("self", clientId = "trainpilot:example")))
             val row = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id))
             assertEquals("external", row.workout.originDevice)

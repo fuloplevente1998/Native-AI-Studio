@@ -77,6 +77,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
                 HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect")) {
