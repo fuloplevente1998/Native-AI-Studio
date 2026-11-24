@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import com.repforge.app.ui.theme.trainPilotClickable
 
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -117,9 +118,10 @@ fun TrainPilotGlobalTopHeaderAndNav(
     var showLangMenu by remember { mutableStateOf(false) }
 
     Surface(
-        color = palette.customCardPaint ?: palette.background,
+        color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
@@ -444,10 +446,11 @@ fun TrainPilotBottomNavigationBar(
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
-        color = palette.cardPaint,
-        tonalElevation = 8.dp,
+        color = if (palette.isLiquidGlass) Color.Transparent else palette.cardPaint,
+        tonalElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 1.dp, color = palette.cardBorder.copy(alpha = 0.6f))
     ) {
         Row(
