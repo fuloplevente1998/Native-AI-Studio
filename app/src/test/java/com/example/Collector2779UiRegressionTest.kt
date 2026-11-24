@@ -93,8 +93,8 @@ class Collector2779UiRegressionTest {
             .map { compose.onNodeWithTag("${it}_graphic", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.top }
         assertEquals(tops.toString(), 1, tops.distinct().size)
         // The old "scroll for more" chevron lived in TrainPilotScrollableBox; the tab no longer uses it.
-        val source = java.io.File("src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt").readText()
-        val tab = source.substringAfter("fun WorkoutTabScreen(").substringBefore("private fun ShortcutSquareCard")
+        val source = java.io.File("src/main/java/com/example/ui/screens/workout/WorkoutTabScreen.kt").readText()
+        val tab = source.substringAfter("fun WorkoutTabScreen(").substringBefore("fun ShortcutSquareCard")
         assertFalse(tab.contains("TrainPilotScrollableBox"))
     }
 

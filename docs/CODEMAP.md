@@ -31,10 +31,10 @@ nagy fájlok sorai frissülnek.
 ## Edzés fül, programok, naptár, könyvtár
 | Funkció | Fájl |
 |---|---|
-| Edzés fül, módcsempék, napkártyák | `ex/ui/screens/WorkoutAndPlanningScreens.kt` (`WorkoutTabScreen`), `WorkoutTabDayCards.kt` |
-| Programlista, programkártya, szerkesztő | `WorkoutAndPlanningScreens.kt` (`ProgramsListScreen`, `ProgramEditorScreen`); mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
-| Naptár tervező | `WorkoutAndPlanningScreens.kt` (`CalendarPlannerScreen`); logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
-| Gyakorlatkönyvtár, részletek, saját gyakorlat | `WorkoutAndPlanningScreens.kt` (`ExerciseLibraryScreen`, `ExerciseDetailScreen`, `AddCustomExerciseModalDialog`) |
+| Edzés fül, módcsempék, napkártyák | `ex/ui/screens/workout/WorkoutTabScreen.kt`, `ex/ui/screens/WorkoutTabDayCards.kt` |
+| Programlista, programkártya, szerkesztő | `ex/ui/screens/workout/ProgramsListScreen.kt`, `ex/ui/screens/workout/ProgramCard.kt`, `ex/ui/screens/workout/ProgramEditorScreen.kt`; mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
+| Naptár tervező | `ex/ui/screens/workout/CalendarPlannerScreen.kt`, `ex/ui/screens/workout/PlannerControls.kt`; logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
+| Gyakorlatkönyvtár, részletek, saját gyakorlat | `ex/ui/screens/workout/ExerciseLibraryScreen.kt`, `ex/ui/screens/workout/ExerciseDetailScreen.kt`, `ex/ui/screens/workout/AddCustomExerciseDialog.kt`; `trW` a `ex/ui/screens/workout/WorkoutScreenText.kt` |
 | Személyes tervező (első profil) | `ex/ui/components/StudioPersonalPlannerDialog.kt`, `TrainPilotCommonComponents.kt` (`PersonalPlannerModalDialog`) |
 
 ## Aktív edzés, mérés
