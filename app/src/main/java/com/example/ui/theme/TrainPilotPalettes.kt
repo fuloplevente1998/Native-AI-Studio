@@ -1,6 +1,8 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -63,7 +65,9 @@ data class TrainPilotPalette(
     val sleepAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF818CF8) else Color(0xFF4F46E5), id, background, surface, surfaceElevated, primary),
     val heartAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFB7185) else Color(0xFFE11D48), id, background, surface, surfaceElevated, primary),
     val stepsAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF34D399) else Color(0xFF059669), id, background, surface, surfaceElevated, primary),
-    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706), id, background, surface, surfaceElevated, primary)
+    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706), id, background, surface, surfaceElevated, primary),
+    val customCardPaint: Color? = null,
+    val customPageEnd: Color? = null
 ) {
     // 4 distinct theme families requested by user:
     // 1..8   = Matt témák (valódi matt, alacsony telítettségű, bársonyos felületek)
@@ -88,6 +92,9 @@ data class TrainPilotPalette(
 
     val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary.copy(alpha = 0.50f), 0.50f)
     val surfaceCard: Color get() = surface
+    /** Only top-level cards over a known page backdrop should use the raw paint. */
+    val cardPaint: Color get() = customCardPaint ?: surfaceCard
+    val pageBrush: Brush get() = customPageEnd?.let { Brush.verticalGradient(listOf(background, it)) } ?: SolidColor(background)
 
     /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
     fun tintedSurface(alpha: Float): Color = primary.copy(alpha = alpha).let {
