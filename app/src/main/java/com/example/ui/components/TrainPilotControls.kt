@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.selectionColors
+import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
 import androidx.compose.runtime.remember
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -88,25 +89,28 @@ fun TrainPilotFilterChip(
 
 /** 2785: text field colours taken only from the palette (no white Material outline). */
 @Composable
-fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current): TextFieldColors =
-    OutlinedTextFieldDefaults.colors(
+fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current): TextFieldColors {
+    val selection = remember(p) { p.selectionColors() }
+    val outline = remember(p) { p.fieldOutline() }
+    return OutlinedTextFieldDefaults.colors(
         focusedTextColor = p.textPrimary, unfocusedTextColor = p.textPrimary,
         disabledTextColor = p.textSecondary, errorTextColor = p.textPrimary,
         focusedContainerColor = p.surfaceCard, unfocusedContainerColor = p.surfaceCard,
         disabledContainerColor = p.surfaceCard, errorContainerColor = p.surfaceCard,
         cursorColor = p.primary, errorCursorColor = p.danger,
-        focusedBorderColor = p.primary, unfocusedBorderColor = p.cardBorder,
+        focusedBorderColor = selection.border, unfocusedBorderColor = outline,
         disabledBorderColor = p.cardBorder.copy(alpha = 0.5f), errorBorderColor = p.danger,
-        focusedLabelColor = p.primary, unfocusedLabelColor = p.textSecondary,
+        focusedLabelColor = selection.foreground, unfocusedLabelColor = p.textSecondary,
         disabledLabelColor = p.textSecondary, errorLabelColor = p.danger,
         focusedPlaceholderColor = p.textSecondary, unfocusedPlaceholderColor = p.textSecondary,
-        focusedLeadingIconColor = p.primary, unfocusedLeadingIconColor = p.textSecondary,
-        focusedTrailingIconColor = p.primary, unfocusedTrailingIconColor = p.textSecondary,
+        focusedLeadingIconColor = selection.foreground, unfocusedLeadingIconColor = p.textSecondary,
+        focusedTrailingIconColor = selection.foreground, unfocusedTrailingIconColor = p.textSecondary,
         focusedSupportingTextColor = p.textSecondary, unfocusedSupportingTextColor = p.textSecondary,
         errorSupportingTextColor = p.danger,
         focusedPrefixColor = p.textSecondary, unfocusedPrefixColor = p.textSecondary,
         focusedSuffixColor = p.textSecondary, unfocusedSuffixColor = p.textSecondary
     )
+}
 
 /** 2785: the app's own text field (rounded, palette colours). Same parameters as OutlinedTextField. */
 @Composable
