@@ -1,48 +1,38 @@
-# #367 – Control integration status
+# #367 – Wear OS integrációs átadó
 
-## Implemented: watch-owned workout (protocol 367)
-- Phone home snapshot advertises controlProtocol367=1. Legacy phones do not enable these buttons.
-- Manual rest ±15 seconds, 0–600 seconds, absolute deadline on the existing owner clock.
-- Full pause reuses WearOwnership193.freeze, including active intervals, automatic timer,
-  stopwatch, health and GPS; resume uses existing durable resumeWorkout.
-- watchControl367 is a separately tracked, non-coalesced owner snapshot command. The watch
-  persists the mutation and exact command together in its local snapshot before outbox enqueue.
-  Local-only recovery marker never appears in a wire snapshot. The same ID is retried after
-  process death or reconnect; a pending marker blocks other edits until durable enqueue.
-- Phone accepts only the same active watch-owned workout, epoch, generation, valid transition,
-  sequence and target. New state is persisted before applied ACK; exact replay is recognized.
-  Tombstoned/saved drafts cannot be resurrected. No second timer is started.
-- Out-of-order obsolete commands are superseded, not reported as saved.
-- Only a matching canonical receipt counts as synced. New pure JVM tests cover deadlines,
-  invalid deltas, wrong owners/epochs, replay, and stale pause revisions.
+**PR:** https://github.com/fuloplevente1998/Native-AI-Studio/pull/368  
+**Ág:** feature/367-wear-redesign  
+**Kiinduló main:** 0affd4204a33cc308d7389ac84feb3feca4ae28a  
+**Utolsó kódcommit:** 55900fadec9aed1e7f6b3aa871d8d64c4c26e7d8  
+**Átadási határ:** a négy párhuzamos PR összeillesztése és a közös teszt/build az integrátor feladata.
 
-## Still open: phone-owned session
-- UI retains explicit phone-control shortcut. No watch-side local mutation is permitted.
-- To enable direct remote controls, route an idempotent command to the canonical phone
-  timer key/phase (NativeWorkoutEditing.controlRest / native engine) or full pause path.
-  Must preserve generation, pause revision, owner epoch, current target and durable
-  duplicate handling. Do not reuse watchControl367 to mutate a phone-owned snapshot.
-- Automatic active rest ± requires the automatic timer's own transition support; the
-  implemented ± is for manual rest only.
-- Device tests pending: offline replay, process death, reconnect, simultaneous phone/watch,
-  transferred ownership, 0/max, haptics and actual Health/GPS pause/resume.
+## Megvalósított elemek
+- V3 kezdőlap: óra, telefon, akku/steps ív, napi cél, valós mérés/szinkron, kiemelt indítás, beállítás, menü.
+- Főoldali lapozás Home → Journal → Health → Calendar, koronával is; peremvédett gesztus. Napló tényleges helyi tükörből, mai napot kiemelő naptár, napi órás passzív adatok.
+- Edzés: nagy értékek, meglévő szerkesztő/korona, előző teljesítmény, Kész, 3 mp inaktivitás után eltűnő vezérlő-overlay és külön vezérlőlap, külön befejezés/elvetés megerősítés. Meglévő érintészár és hosszan tartott feloldás megőrizve; a fizikai gomb/korona feloldási viselkedését készüléken ellenőrizni kell.
+- Összegzés: lezárás előtti előnézet, tényleges completed set és súlyvolumen, mérési adatok, külön aktív/összes energia; lezárás után csak valódi receipt jelzi a szinkront.
+- Pihenő: ±15 mp a telefon meglévő lépésköze szerint (a korai mockup +30 mp-ét nem dupláztuk), 0–600 mp hátralévő idő növelési határ; egyetlen időzítő-tulajdonos; 10 mp előjelzés + meglévő végjelzés és utolsó három másodperc automatikus jelzése. Automatikus jelzés a meglévő vibration beállítást követi; manuális pihenő korábbi alapértelmezett rezgése megmarad.
+- Napi adatok: Health Services PassiveMonitoringClient, helyi cache, explicit opt-in, ACTIVITY_RECOGNITION; lépés/kcal/táv az óráról, lépéscél a telefonról. Pulzus foreground passzív callback csak megfelelő szenzorengedéllyel; alvás utolsó megfigyelt intervallum, nem teljes Samsung Health alvási összesítő. Nem támogatott/hiányzó adat „–”, nincs becsült adat vagy napi cache feltöltése.
 
-## Native phone-owner controls
-- Protocol 2: explicit pause/resume on canonical PhoneWorkoutExecution, matching generation/epoch/pause revision, durable transaction proof, no optimistic watch mutation.
-- Protocol 3: phone-owned rest-only phase adjustment via existing IntervalTimerService.adjustRest, fenced by key, phase number and configured duration; durable checkpoint proof before ACK. No parallel timer. The watch queues a request and uses the phone mirror. Automatic multi-step rest adjustment remains unsupported. Physical device verification pending.
+## Szerződés és integrációs pontok
+- Telefonos home snapshot: opcionális dailyStepsGoal, controlProtocol367=6. Régi telefon esetén a nem támogatott vezérlőgombok tiltva/fallback. A telefon továbbra is a cél egyetlen forrása.
+- Protocol 1: watch-owned manual rest/pause, watchControl367. Mutáció + pontos parancs helyben tartósan együtt mentve; controlIntent367 helyi, nem wire mező. Outbox egyedi ID/sequence, nem összevonható; csak kanonikus receipt ACK. Freeze/resume meglévő út; owner epoch/generation/pauseRevision védelem.
+- Protocol 2: phonePause367 explicit pause/resume, PhoneWorkoutExecution.setWorkoutPause, tranzakcióban remotePause367 proof.
+- Protocol 3: phoneRest367 legacy rest-only; IntervalTimerService.adjustRest, key/phase/duration guard.
+- Protocol 4: watch-owned automaticRest; aktuális remaining módosítása, elapsed elszámolása előbb; későbbi konfiguráció változatlan.
+- Protocol 5: telefonos többlépcsős pihenő; phoneRest367 exact phaseDurationMs/restRevision, adjustPhaseRest367; restOverridesMs367 a közös idővonal opcionális mezője (initial, only, step:round), 24h összkorlát; timer checkpoint proof a mentés előtt nem ACK-olható. Régi clock projection és régi rest-only út megőrizve.
+- Protocol 6: transferredRest watchControl367, átadott checkpoint helyi módosítása ugyanazon idővonalon, valós ledger és pozíció megőrzése; NativeTransferredRestAdmission367 rekonstruálja a fázist és validálja a proof/ledger értékeket. A telefon/óra olvasói a felülírásokat továbbadják.
+- Kötelező megőrizni az epoch/generation/receipt, tombstone, replacement lease, undo és finalization guardokat. Ne írjuk újra az ownership journal vagy aktív mérési motort.
 
-## Protocol 4: native watch automatic rest
-- Current rest only, using the existing monotonic tick and absolute remaining time. Configured rest for later rounds stays unchanged. Actual elapsed rest is credited before adjustment. At zero, existing skip transition. Durable owner snapshot uses watchControl367/automaticRest with phase identity and remaining-time proof. Transferred timer checkpoints and multi-phase phone timelines stay disabled for this operation until their shared plan can represent per-phase overrides. Physical device test pending.
+### Célzottan egyeztetendő közös fájlok
+- Wear: MainActivity.kt, WorkoutSnapshotStore.kt, WearOwnership193.kt, WearAutomatic.kt, WearAutomaticService.kt, WearTransferredTimer193.kt, WearDataListenerService.kt, WatchHomeStore.kt, WearSaveSyncState.kt, AndroidManifest.xml, ui/WearAppRoot.kt. A #351 méréshez tartozó integrációval a meglévő Health/GPS lifecycle megtartandó.
+- Telefon: WearSyncRepository.kt (home snapshot és új command dispatch), VmAppearance.kt (lépéscél frissítés), PhoneWorkoutExecutionStore.kt, PhoneWorkoutEngine.kt, IntervalTimerService.kt, PhoneSharedBridges.kt, NativeWatchDiscardAdmission.kt, NativeWatchControlAdmission367.kt, NativeTransferredRestAdmission367.kt, PhoneRemotePause367.kt, PhoneRemoteRest367.kt. A #359 import és a témák módosításaival a már létező felelősségek megőrzendők.
+- Shared: IntervalTimeline193.kt (opcionális phase override és haptic cue). Handoff/CODEMAP dokumentációt egyesítse az integrátor, ne felülírja a másik három PR információit.
+- A lista integrációs hotspot, nem párhuzamos PR diff-ellenőrzés; más ágakhoz nem nyúltunk.
 
-## Shared per-phase override groundwork
-- Optional restOverridesMs367 map in native interval checkpoints; `initial`, `only`, or step-index:round keys identify one rest, not all rounds. Shared timeline validates identities, integral durations and total <=24h. No change to existing schedules with absent map. Both phone and transferred-watch readers reconstruct the same timeline; phone persists the map in checkpoints and matching plan. Actual multi-phase mutation remains disabled pending owner command integration and CI. Tests cover initial-vs-round, independent later rounds, 0, 600, ledger accounting and JSON round-trip.
-
-## Protocol 5: phone multi-phase native rest
-- Phone remote rest now carries exact current phase duration and revision. Existing timeline clock samples actual elapsed time, changes only one rest override, commits checkpoint and proof, then advances normally at zero. Wear reads the new clock with phase/revision fencing. Legacy rest-only requests remain supported without overrides. Transferred plans can read the persisted override map; watch-side mutation of transferred plans is still disabled. Device and CI verification required.
-
-## Protocol 6: transferred timer on watch
-- Watch owner adjusts the current shared timeline override at a sampled monotonic position, preserves measured ledger, then uses the existing advance path at zero. Absolute checkpoint + proof is persisted in the existing durable watch control intent. Phone validates the exact before/after phase override by reconstructing the old timeline. Future rests and original plan unchanged. Both checkpoint readers preserve overrides for subsequent handoff. Device verification and CI pending.
-
-## UI audit round
-- Main calendar opens today-first weekly list with 48dp Pill controls and real cached schedule; detailed calendar remains available through existing navigation. HU/EN/DE/RO weekday and week labels use watch locale. Daily health is reachable from menu/settings as well as the main pager; detail/journal return route retained. Distance shown from local daily cache. Finish preview differentiates active and total measured energy, never substitutes missing data. Small home label slots compacted and menu bounds adjusted.
-- Screen audit expanded to 176/192/216dp, HU/EN/DE/RO and 1.3 font scale, main pages and actual rest fixture. These are generated render smoke tests, not completed manual visual/physical acceptance. Existing dense calendar grid outside main page still uses smaller controls; physical touch audit remains open.
+## Ellenőrzési állapot
+- 534197e / Actions 45478730820: teljes JVM és R8 siker; 881 app + 227 Wear = 1108 teszt, 0 failure/error/skipped; shared jelentés 0 teszt. Korábbi telefonos PaletteSystemBarsTest timeout ebben a futásban nem ismétlődött; tesztet nem gyengítettünk.
+- 55900fa: 10 mp haptic kiegészítés, új WearAutomaticTest; utolsó kódcommit ellenőrzése még nyitott. A dokumentációs commit nem módosít futtatható kódot.
+- Render smoke test: 176/192/216dp, HU/EN/DE/RO, 130% font. Vizuális screenshot-inspekció és fizikai Galaxy Watch nincs igazolva. A másodlagos sűrű naptárrács kisebb gombjai és a legkisebb kerek kijelzőn a valódi érintési terület ellenőrzendők.
+- Készülékes checklist az integrátornak: fő navigáció és edge-back, korona, overlay tap/3s és érintészár; napi engedély és valódi adatok; phone/watch-owned pause/resume, rest ± minden ownership úton, 0/600 határ, haptics, hálózatvesztés + replay, process death, visszaátadás, mentés/elvetés/receipt, téma/nyelv, fizikai méretek.
+- A CI zöldsége nem fizikai elfogadás. Az integrátor a négy PR összeillesztése után közös teljes CI-vel ellenőrizze a végső main-jelöltet. Nincs main merge, release, verzióemelés vagy issue-close ezen az ágon.
