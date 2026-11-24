@@ -46,6 +46,7 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.startQuickTimedWithExercise
 
 /** Exercises the real elapsedRealtime -> native model -> Studio readout path before Stop. */
 @RunWith(RobolectricTestRunner::class)

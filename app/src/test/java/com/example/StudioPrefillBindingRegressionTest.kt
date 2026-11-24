@@ -30,11 +30,18 @@ import com.example.ui.viewmodel.addEditorDay
 import com.example.ui.viewmodel.copyEditorProgram
 import com.example.ui.viewmodel.deleteEditorDay
 import com.example.ui.viewmodel.deleteEditorProgram
+import com.example.ui.viewmodel.finishAndSaveWorkout
 import com.example.ui.viewmodel.openProgramEditor
 import com.example.ui.viewmodel.removeEditorExercise
 import com.example.ui.viewmodel.renameEditorProgram
 import com.example.ui.viewmodel.selectEditingDayIndex
+import com.example.ui.viewmodel.startCoachWorkout
+import com.example.ui.viewmodel.startPlannedWorkout
+import com.example.ui.viewmodel.startWorkoutWithExercises
 import com.example.ui.viewmodel.toggleExerciseFavorite
+import com.example.ui.viewmodel.toggleSetCompleted
+import com.example.ui.viewmodel.updateExerciseFeedback
+import com.example.ui.viewmodel.updateSetValuesExact
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

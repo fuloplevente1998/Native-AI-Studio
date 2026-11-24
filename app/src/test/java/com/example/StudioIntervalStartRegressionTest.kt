@@ -41,8 +41,12 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.consumeIntervalStart
 import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.saveAndStartIntervals
+import com.example.ui.viewmodel.startQuickStrengthWithExercise
+import com.example.ui.viewmodel.startQuickTimedWithExercise
 import com.example.ui.viewmodel.toggleCompactPhoneMode
 
 @RunWith(RobolectricTestRunner::class)
