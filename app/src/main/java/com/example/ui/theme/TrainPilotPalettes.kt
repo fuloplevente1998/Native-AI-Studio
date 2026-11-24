@@ -76,7 +76,9 @@ data class TrainPilotPalette(
             in 9..16 -> PaletteCategory.CONTRAST
             in 17..24 -> PaletteCategory.GLOW
             in 25..32 -> PaletteCategory.LIGHT
-            else -> PaletteCategory.MATTE
+            else -> if (id == -1 && key.startsWith("custom:") && category in setOf(
+                PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT
+            )) category else PaletteCategory.MATTE
         }
 
     val hasGlow: Boolean get() = subGroup == PaletteCategory.GLOW
@@ -89,7 +91,7 @@ data class TrainPilotPalette(
 
     /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
     fun tintedSurface(alpha: Float): Color = primary.copy(alpha = alpha).let {
-        if (isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
+        if (id == -1 || isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
     }
     val textMuted: Color = textSecondary.copy(alpha = 0.90f)
 
