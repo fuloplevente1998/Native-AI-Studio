@@ -11,12 +11,25 @@ open class IntervalTimeline193 @JvmOverloads constructor(
     steps: List<Step>?,
     private val advance: Boolean,
     initialRestSeconds: Int = 0,
-    private val restOnly: Boolean = false
+    private val restOnly: Boolean = false,
+    restOverridesMs: Map<String, Long> = emptyMap(),
 ) {
     companion object {
         const val MAX_MS: Long = 86_400_000L
         const val MAX_PAUSE_MS: Long = 604_800_000L
         const val MAX_REVISION: Long = 9_007_199_254_740_991L
+
+        /** Optional checkpoint field; absent means the original unmodified schedule. */
+        @JvmStatic fun readRestOverrides(plan: JSONObject): Map<String, Long> {
+            if (!plan.has("restOverridesMs367")) return emptyMap()
+            val rows = plan.getJSONObject("restOverridesMs367")
+            require(rows.length() <= 10000)
+            return rows.keys().asSequence().associateWith { key ->
+                val value = version(rows, key)
+                require(value <= MAX_MS)
+                value
+            }
+        }
 
         @JvmStatic
         @Throws(JSONException::class)
@@ -75,6 +88,7 @@ open class IntervalTimeline193 @JvmOverloads constructor(
     private val steps: List<Step>
     private val initialRest: Long
     private val total: Long
+    private val overrides = restOverridesMs.toMap()
 
     init {
         if (steps == null || steps.isEmpty() || steps.size > 100) {
@@ -86,8 +100,19 @@ open class IntervalTimeline193 @JvmOverloads constructor(
         ) {
             throw IllegalArgumentException("Invalid rest plan")
         }
-        this.steps = steps
-        this.initialRest = initialRestSeconds * 1000L
+        this.steps = steps.toList()
+        require(overrides.size <= 10000) { "Too many rest overrides" }
+        val allowed = mutableSetOf<String>()
+        if (restOnly) allowed.add("only")
+        else {
+            if (initialRestSeconds > 0) allowed.add("initial")
+            for (i in steps.indices) for (round in 1..steps[i].rounds) {
+                if (round < steps[i].rounds || (advance && i < steps.lastIndex))
+                    allowed.add("$i:$round")
+            }
+        }
+        require(overrides.all { (key, value) -> key in allowed && value in 0L..MAX_MS }) { "Invalid rest override" }
+        this.initialRest = overrides["initial"] ?: initialRestSeconds * 1000L
         var sum = this.initialRest
         for (i in steps.indices) {
             sum += duration(i)
@@ -98,19 +123,53 @@ open class IntervalTimeline193 @JvmOverloads constructor(
         this.total = sum
     }
 
+    private fun restDuration(i: Int, round: Int): Long =
+        overrides["$i:$round"] ?: steps[i].rest * 1000L
+
     fun duration(i: Int): Long {
-        return if (restOnly) {
-            steps[i].rest * 1000L
-        } else {
-            steps[i].duration() + if (advance && i < steps.size - 1) steps[i].rest * 1000L else 0L
-        }
+        if (restOnly) return overrides["only"] ?: steps[i].rest * 1000L
+        val s = steps[i]
+        var duration = s.work.toLong() * s.rounds * 1000L
+        for (round in 1..s.rounds)
+            if (round < s.rounds || (advance && i < steps.lastIndex)) duration += restDuration(i, round)
+        return duration
+    }
+
+    /** Initial rest is distinct from the first round's later rest. */
+    fun restKey(p: Phase): String? = when {
+        p.phase != "rest" -> null
+        restOnly -> "only"
+        p.elapsedMs < initialRest -> "initial"
+        else -> "${p.step}:${p.round}"
     }
 
     fun phaseDurationMs(p: Phase): Long {
         if ("work" == p.phase) return steps[p.step].work * 1000L
-        if ("rest" != p.phase) return 0L
-        if (!restOnly && p.elapsedMs < initialRest) return initialRest
-        return steps[p.step].rest * 1000L
+        return when (restKey(p)) {
+            "initial" -> initialRest
+            "only" -> duration(0)
+            null -> 0L
+            else -> restDuration(p.step, p.round)
+        }
+    }
+
+    /** The caller samples the old timeline first. The virtual position and measured ledger
+     * remain unchanged; at zero remaining, that same position becomes the next phase. */
+    fun adjustedRestOverrides(position: Long, deltaSeconds: Int): Map<String, Long>? {
+        if (position < 0 || deltaSeconds !in listOf(-15, 15)) return null
+        val p = at(position)
+        val key = restKey(p) ?: return null
+        if (p.elapsedMs != position || p.remainingMs <= 0 ||
+            deltaSeconds > 0 && p.remainingMs >= 600000L) return null
+        val remaining = if (deltaSeconds > 0) (p.remainingMs + 15000L).coerceAtMost(600000L)
+            else (p.remainingMs - 15000L).coerceAtLeast(0L)
+        val change = remaining - p.remainingMs
+        if (p.totalMs + change !in 0L..MAX_MS) return null
+        return overrides + (key to (phaseDurationMs(p) + change))
+    }
+
+    fun restOverridesJson(): JSONObject = JSONObject().also { result ->
+        overrides.toSortedMap().forEach { (key, value) -> result.put(key, value) }
     }
 
     fun at(milliseconds: Long): Phase {
@@ -160,7 +219,7 @@ open class IntervalTimeline193 @JvmOverloads constructor(
                 }
                 left -= work
                 if (round < s.rounds || (advance && i < steps.size - 1)) {
-                    val rest = s.rest * 1000L
+                    val rest = restDuration(i, round)
                     if (left < rest) {
                         return Phase(i, round, i, elapsed, offset, rest - left, total, "rest")
                     }

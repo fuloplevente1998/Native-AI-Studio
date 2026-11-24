@@ -87,7 +87,8 @@ class IntervalTimerService : Service() {
                 parsed,
                 plan.optBoolean("autoAdvance"),
                 plan.optInt("initialRest", 0),
-                plan.optBoolean("restOnly")
+                plan.optBoolean("restOnly"),
+                IntervalTimeline193.readRestOverrides(plan)
             )
         }
 
@@ -557,7 +558,8 @@ class IntervalTimerService : Service() {
         }
         initialRest = plan.optInt("initialRest", 0)
         restOnly = plan.optBoolean("restOnly")
-        timeline = IntervalTimeline(steps, plan.optBoolean("autoAdvance"), initialRest, restOnly)
+        timeline = IntervalTimeline(steps, plan.optBoolean("autoAdvance"), initialRest, restOnly,
+            IntervalTimeline193.readRestOverrides(plan))
         key = plan.getString("key")
         language = plan.optString("language", "en")
         advance = plan.optBoolean("autoAdvance")
@@ -769,6 +771,8 @@ class IntervalTimerService : Service() {
                 .put("round", p.round)
                 .put("remainingMs", p.remainingMs)
                 .put("totalMs", p.totalMs)
+            val overrides = tl.restOverridesJson()
+            if (overrides.length() > 0) out.put("restOverridesMs367", overrides)
             remoteRestProof367?.let { out.put("remoteRestProof367", JSONObject(it.toString())) }
             if (ownershipBaseLedger193 != null) {
                 out.put("ownershipBaseLedger193", JSONObject(ownershipBaseLedger193.toString()))

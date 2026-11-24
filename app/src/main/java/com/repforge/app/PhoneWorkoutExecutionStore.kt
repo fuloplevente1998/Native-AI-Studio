@@ -8,6 +8,7 @@ import android.os.SystemClock
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import com.repforge.shared.IntervalTimeline193
 import java.util.UUID
 import kotlin.math.floor
 import kotlin.math.max
@@ -524,6 +525,10 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
             frame.put("timeLogs162", logs).put("latestTimer162", timer)
             timer.optJSONObject("remoteRestProof367")?.let { frame.put("remoteRest367", JSONObject(it.toString())) }
             val restPlan = frame.optJSONObject("transition")?.optJSONObject("plan")
+            if (restPlan?.optString("key") == key && timer.has("restOverridesMs367")) {
+                IntervalTimeline193.readRestOverrides(timer)
+                restPlan.put("restOverridesMs367", JSONObject(timer.getJSONObject("restOverridesMs367").toString()))
+            }
             if (frame.optInt("nativeEditorProjection") == 1 && timer.optBoolean("restOnly") &&
                 restPlan != null && restPlan.optString("key") == key && restPlan.optBoolean("restOnly")) {
                 val rows = timer.getJSONArray("steps")

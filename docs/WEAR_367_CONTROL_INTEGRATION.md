@@ -33,3 +33,6 @@
 
 ## Protocol 4: native watch automatic rest
 - Current rest only, using the existing monotonic tick and absolute remaining time. Configured rest for later rounds stays unchanged. Actual elapsed rest is credited before adjustment. At zero, existing skip transition. Durable owner snapshot uses watchControl367/automaticRest with phase identity and remaining-time proof. Transferred timer checkpoints and multi-phase phone timelines stay disabled for this operation until their shared plan can represent per-phase overrides. Physical device test pending.
+
+## Shared per-phase override groundwork
+- Optional restOverridesMs367 map in native interval checkpoints; `initial`, `only`, or step-index:round keys identify one rest, not all rounds. Shared timeline validates identities, integral durations and total <=24h. No change to existing schedules with absent map. Both phone and transferred-watch readers reconstruct the same timeline; phone persists the map in checkpoints and matching plan. Actual multi-phase mutation remains disabled pending owner command integration and CI. Tests cover initial-vs-round, independent later rounds, 0, 600, ledger accounting and JSON round-trip.

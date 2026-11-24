@@ -20,7 +20,7 @@ internal object WearTransferredTimer193 {
             require(row.optString("gpsKey").isEmpty())
             IntervalTimeline193.Step(row.getString("exerciseId"),row.getString("setId"),row.optString("name"),row.getInt("work"),row.getInt("rest"),row.getInt("rounds"),"")
         }
-        val timeline=IntervalTimeline193(steps,t.getBoolean("autoAdvance"),t.optInt("initialRest"),t.getBoolean("restOnly"))
+        val timeline=IntervalTimeline193(steps,t.getBoolean("autoAdvance"),t.optInt("initialRest"),t.getBoolean("restOnly"),IntervalTimeline193.readRestOverrides(t))
         val position=t.getLong("elapsedMs");val p=timeline.at(position)
         require(position==p.elapsedMs&&t.getString("phase")==p.phase&&t.getLong("remainingMs")==p.remainingMs&&t.getInt("round")==p.round&&t.getInt("stepIndex")==p.step)
         val ledger=t.getJSONObject("ledger");val parts=ledger.getJSONArray("steps")
@@ -47,7 +47,8 @@ internal object WearTransferredTimer193 {
         val automatic=WearAutomatic(enabled=true,owner="watch",key=key,phase=p.phase,paused=true,
             workSeconds=row.getInt("work"),restSeconds=row.getInt("rest"),rounds=row.getInt("rounds"),round=p.round,
             vibration=t.optBoolean("vibration",true),targetExercise=e,targetSet=s,targetId=row.getString("setId"),remainingMs=p.remainingMs,
-            anchorMs=now,boot=boot,phaseNumber=t.optLong("phaseNumber")+1)
+            anchorMs=now,boot=boot,phaseNumber=t.optLong("phaseNumber")+1,
+            restPhaseDurationMs367=if(p.phase=="rest")plan.timeline.phaseDurationMs(p)else 0)
         return workout.copy(automation=automatic,timerCheckpoint193=plan.checkpoint.toString(),restEndAt=0)
     }
     private fun project(plan: Plan,position: Long) {
@@ -89,7 +90,8 @@ internal object WearTransferredTimer193 {
         val e=workout.exercises.indexOfFirst { it.id==row.getString("exerciseId") };val s=workout.exercises[e].sets.indexOfFirst { it.setId==row.getString("setId") }
         var automatic=a.copy(phase=p.phase,remainingMs=p.remainingMs,anchorMs=now,round=p.round,workSeconds=row.getInt("work"),
             restSeconds=row.getInt("rest"),rounds=row.getInt("rounds"),targetExercise=e,targetSet=s,targetId=row.getString("setId"),
-            phaseNumber=a.phaseNumber+if(p.token!=before.token)1 else 0,workMs=a.workMs+work,restMs=a.restMs+rest,pausedMs=a.pausedMs+paused)
+            phaseNumber=a.phaseNumber+if(p.token!=before.token)1 else 0,
+            restPhaseDurationMs367=if(p.phase=="rest")plan.timeline.phaseDurationMs(p)else 0,workMs=a.workMs+work,restMs=a.restMs+rest,pausedMs=a.pausedMs+paused)
         val logs=plan.checkpoint.getJSONObject("timeLogs193");logs.put(a.key,automatic.json().getJSONObject("timeLog"))
         var current=workout.copy(automation=automatic,timerCheckpoint193=plan.checkpoint.toString(),currentExercise=e)
         var completedExercise: Int?=null;var completedSet: Int?=null
