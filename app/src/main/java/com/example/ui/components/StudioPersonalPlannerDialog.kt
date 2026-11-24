@@ -12,6 +12,8 @@ import com.example.localization.LocalTrainPilotStrings
 import com.example.localization.TrainPilotStrings
 import com.example.ui.viewmodel.TrainPilotViewModel
 import kotlinx.coroutines.launch
+import com.example.ui.viewmodel.recommendStarterProgram
+import com.example.ui.viewmodel.saveInitialProfileAndPlan
 
 /** One planner and persistence path for first run and Home's Profile and new plan. */
 @Composable

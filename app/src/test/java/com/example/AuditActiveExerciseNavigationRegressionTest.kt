@@ -32,6 +32,11 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.nextActiveExercise
+import com.example.ui.viewmodel.previousActiveExercise
+import com.example.ui.viewmodel.startQuickTimedWithExercise
+import com.example.ui.viewmodel.startWorkoutWithExercises
+import com.example.ui.viewmodel.updateSetValuesExact
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

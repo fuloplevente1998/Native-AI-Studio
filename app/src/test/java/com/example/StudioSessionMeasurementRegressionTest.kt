@@ -30,15 +30,33 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.addSet
+import com.example.ui.viewmodel.adjustRestTimer
+import com.example.ui.viewmodel.adjustSetValues
+import com.example.ui.viewmodel.deleteSet
 import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.nextActiveExercise
+import com.example.ui.viewmodel.openActiveExerciseLibrary
 import com.example.ui.viewmodel.openExerciseDetail
 import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.recordBilateralSideStop
 import com.example.ui.viewmodel.returnToActiveWorkout
 import com.example.ui.viewmodel.saveEditorProgram
+import com.example.ui.viewmodel.selectLibraryExercise
 import com.example.ui.viewmodel.selectPalette
 import com.example.ui.viewmodel.selectTab
+import com.example.ui.viewmodel.skipRestTimer
+import com.example.ui.viewmodel.startQuickStrengthWithExercise
+import com.example.ui.viewmodel.startQuickTimedWithExercise
+import com.example.ui.viewmodel.startWorkoutWithExercises
 import com.example.ui.viewmodel.stopActiveWorkoutSession
+import com.example.ui.viewmodel.switchCurrentActiveExercise
+import com.example.ui.viewmodel.toggleRestTimerRunning
+import com.example.ui.viewmodel.toggleSetCompleted
+import com.example.ui.viewmodel.undoLastCompletedSet
+import com.example.ui.viewmodel.updateBilateralSetExact
 import com.example.ui.viewmodel.updateGoals
+import com.example.ui.viewmodel.updateSetValuesExact
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

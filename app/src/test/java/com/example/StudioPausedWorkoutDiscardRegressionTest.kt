@@ -22,6 +22,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import com.example.ui.viewmodel.activateProgram
+import com.example.ui.viewmodel.startGpsTrackingSession
 import com.example.ui.viewmodel.stopActiveWorkoutSession
 
 @RunWith(RobolectricTestRunner::class)
