@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
@@ -77,7 +78,7 @@ internal fun WearHomeDashboard(
     }
     val saveStatus=LocalSaveSync.current
     val model = wearHomeDashboardState(home, active, closure, health, enabled, now)
-    val theme = home?.theme ?: LocalWearHomeTheme.current
+    val theme = LocalWearHomeTheme.current
     val HomeWhite = theme.textColor
     val HomeMuted = theme.mutedColor
     val HomeLine = theme.outlineColor
@@ -99,8 +100,8 @@ internal fun WearHomeDashboard(
             HomeAction.RESULT -> wearText("Edzés mentésének állapota")
             HomeAction.PHONE -> wearText("Telefon megnyitása a folytatáshoz")
         }
-    val pulse = wearHomeLivePulse(health, active?.workoutId, enabled, now)
-    val lastPulse = dailyPulse?.takeIf { now - it.at in 0L..300000L }
+    // 2808: one stable presentation; the measurement state colours the heart, never replaces the number.
+    val pulse = wearHomePulse(wearHomeLivePulse(health, active?.workoutId, enabled, now), dailyPulse, now)
     val clock = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
         .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(now))
     val language = java.util.Locale.getDefault().language
@@ -108,12 +109,15 @@ internal fun WearHomeDashboard(
     val settingsCaption = when (language) { "hu" -> "Beáll."; "de" -> "Einst."; "ro" -> "Setări"; else -> "Settings" }
     val connection = when (phoneConnected) { true -> "●"; false -> "○"; null -> "…" }
     val stepPercent = wearDailyStepPercent(dailyHealth.steps, home?.dailyStepsGoal)
+    val stepsCurrent = wearDailyStepsFresh(dailyHealth.stepsAt, now)
+    val workoutLocked = active != null && (WearUndo188.blocked(active) || WearOwnership193.pending(active))
     val batteryColor = if (battery != null && battery <= 15) Color(0xFFEF5350) else theme.accentColor
     val status = saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.source)
     BoxWithConstraints(
         Modifier.fillMaxSize().background(theme.backgroundColor).testTag("wear-round-list")
     ) {
         val diameter = minOf(maxWidth, maxHeight)
+        val fontScale = LocalDensity.current.fontScale
         val origin = (maxHeight - diameter) / 2
         val compact = diameter < 190.dp
         val tiny = diameter < 176.dp
@@ -125,18 +129,20 @@ internal fun WearHomeDashboard(
         val actionsTop = origin + (diameter - primarySize - 48.dp).coerceAtLeast(40.dp)
         val bodyTop = origin + diameter * if (tiny) .055f else .095f
         val bodyHeight = (actionsTop - bodyTop - 2.dp).coerceAtLeast(1.dp)
-        Canvas(Modifier.align(Alignment.Center).size(diameter)) {
-            val inset = 7.dp.toPx()
+        val arcs = wearHomeArcLayout(diameter.value)
+        Canvas(Modifier.align(Alignment.Center).size(diameter).testTag("wear-home-arcs")) {
+            val inset = (arcs.inset + arcs.stroke / 2f).dp.toPx()
             val topLeft = Offset(inset, inset)
             val arcSize = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2)
-            val stroke = Stroke(4.dp.toPx(), cap = StrokeCap.Round)
-            drawArc(HomeLine, 135f, 90f, false, topLeft, arcSize, style = stroke)
-            drawArc(HomeLine, -45f, 90f, false, topLeft, arcSize, style = stroke)
+            val stroke = Stroke(arcs.stroke.dp.toPx(), cap = StrokeCap.Round)
+            drawArc(HomeLine, arcs.batteryStart, arcs.sweep, false, topLeft, arcSize, style = stroke)
+            drawArc(HomeLine, arcs.stepsStart, arcs.sweep, false, topLeft, arcSize, style = stroke)
             val fraction = (battery?.coerceIn(0, 100) ?: 0) / 100f
-            if (fraction > 0f) drawArc(batteryColor, 135f, 90f * fraction, false, topLeft, arcSize, style = stroke)
+            if (fraction > 0f) drawArc(batteryColor, arcs.batteryStart, arcs.sweep * fraction, false, topLeft, arcSize, style = stroke)
             if (stepPercent != null && stepPercent > 0) {
-                val sweep = 90f * (stepPercent.coerceAtMost(100) / 100f)
-                drawArc(theme.secondaryColor, 45f - sweep, sweep, false, topLeft, arcSize, style = stroke)
+                val sweep = arcs.sweep * (stepPercent.coerceAtMost(100) / 100f)
+                drawArc(if (stepsCurrent) theme.secondaryColor else HomeMuted,
+                    arcs.stepsStart + arcs.sweep - sweep, sweep, false, topLeft, arcSize, style = stroke)
             }
         }
         Column(
@@ -144,17 +150,28 @@ internal fun WearHomeDashboard(
                 .width(diameter * .72f).height(bodyHeight).testTag("wear-fixed-body"),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            HomeFitText("$connection $phoneCaption ↗", Modifier.fillMaxWidth().height(lineHeight),
+            HomeFitText("$connection $phoneCaption ↗", Modifier.fillMaxWidth().height(lineHeight)
+                .clickable(role = Role.Button, onClick = onOpenPhone)
+                .semantics { contentDescription = WearMenu216.text("phone") }.testTag("wear-home-phone-line"),
                 if (tiny) 8f else 10f, if (phoneConnected == true) theme.secondaryColor else HomeMuted)
             HomeFitText(clock, Modifier.fillMaxWidth().weight(1f).testTag("wear-home-clock"),
                 if (tiny) 24f else if (compact) 30f else 38f, HomeWhite, weight = FontWeight.Bold, mono = true)
             HomeFitText("${wearText(model.title)} · $status", Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-title"),
                 10f, HomeMuted)
-            HomeFitText(
-                if (pulse != null) "♥ $pulse bpm · ${wearText("Mérés aktív")}" else if (lastPulse != null) "♥ ${lastPulse.bpm} bpm · ${wearText("Korábbi adat")}" else "♥ – · ${wearText(model.measurement)}",
-                Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-measurement"),
-                10f, theme.secondaryColor, weight = FontWeight.SemiBold,
-            )
+            val measurementOn = enabled && model.measurement != "Mérés kikapcsolva"
+            Row(
+                Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-measurement").semantics(mergeDescendants = true) {
+                    stateDescription = wearText(model.measurement)
+                },
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(painterResource(R.drawable.ic_tp_heart), null, Modifier.size(if (tiny) 8.dp else 10.dp),
+                    colorFilter = ColorFilter.tint(if (measurementOn) theme.secondaryColor else HomeMuted))
+                HomeFitText(" " + wearHomePulseText(pulse), Modifier.weight(1f, fill = false).fillMaxHeight(),
+                    10f, if (pulse.freshness == WearPulseFreshness.PREVIOUS || pulse.bpm == null) HomeMuted else HomeWhite,
+                    weight = FontWeight.SemiBold)
+            }
         }
         Row(
             Modifier.align(Alignment.TopCenter).offset(y = actionsTop).width(actionsWidth)
@@ -162,7 +179,10 @@ internal fun WearHomeDashboard(
             horizontalArrangement = Arrangement.spacedBy(gap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            HomeQuickButton(R.drawable.ic_tp_phone, phoneCaption, WearMenu216.text("phone"), theme, false, onOpenPhone)
+            // 2808: the pre-#368 home kept "Törlés" for a started workout; the phone stays on the top line.
+            if (model.active) HomeQuickButton(R.drawable.ic_tp_delete, wearText("Törlés"), wearText("Megkezdett edzés törlése"),
+                theme, false, onDiscard, danger = true, enabled = !workoutLocked)
+            else HomeQuickButton(R.drawable.ic_tp_phone, phoneCaption, WearMenu216.text("phone"), theme, false, onOpenPhone)
             HomeQuickButton(
                 if (model.action == HomeAction.PHONE) R.drawable.ic_tp_phone else R.drawable.ic_tp_workout,
                 wearText(model.actionLabel), primaryDescription, theme, true, onPrimary, size = primarySize,
@@ -178,19 +198,22 @@ internal fun WearHomeDashboard(
         ) {
             HomeFitText(wearText("··· Menü"), Modifier.fillMaxWidth().height(20.dp), 11f, HomeWhite)
         }
-        Row(
-            Modifier.align(Alignment.Center).offset(x = -diameter * .29f, y = diameter * .31f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(painterResource(R.drawable.ic_tp_battery), null, Modifier.size(11.dp), colorFilter = ColorFilter.tint(batteryColor))
-            Text(battery?.let { "${it.coerceIn(0, 100)}%" } ?: "–", color = batteryColor, fontSize = 9.sp)
+        val labelSize = (9f * fontScale.coerceAtMost(1.15f) / fontScale).sp
+        val labelIcon = if (tiny) 8.dp else 9.dp
+        CurvedLayout(Modifier.align(Alignment.Center).size(diameter - (arcs.inset * 2).dp).testTag("wear-home-battery-label"),
+            anchor = arcs.batteryLabel, angularDirection = CurvedDirection.Angular.Reversed) {
+            curvedComposable { Image(painterResource(R.drawable.ic_tp_battery), null, Modifier.size(labelIcon), colorFilter = ColorFilter.tint(batteryColor)) }
+            basicCurvedText(" " + (battery?.let { "${it.coerceIn(0, 100)}%" } ?: "–"),
+                modifier = CurvedModifier.sizeIn(maxSweepDegrees = arcs.labelSweep),
+                style = CurvedTextStyle(color = batteryColor, fontSize = labelSize), overflow = TextOverflow.Ellipsis)
         }
-        Row(
-            Modifier.align(Alignment.Center).offset(x = diameter * .29f, y = diameter * .31f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(painterResource(R.drawable.ic_tp_steps), null, Modifier.size(11.dp), colorFilter = ColorFilter.tint(HomeMuted))
-            Text(stepPercent?.let { "$it%" } ?: "–", color = if (stepPercent != null) theme.secondaryColor else HomeMuted, fontSize = 9.sp)
+        CurvedLayout(Modifier.align(Alignment.Center).size(diameter - (arcs.inset * 2).dp).testTag("wear-home-steps-label"),
+            anchor = arcs.stepsLabel, angularDirection = CurvedDirection.Angular.Reversed) {
+            curvedComposable { Image(painterResource(R.drawable.ic_tp_steps), null, Modifier.size(labelIcon), colorFilter = ColorFilter.tint(HomeMuted)) }
+            basicCurvedText(" " + (stepPercent?.let { "$it%" } ?: "–"),
+                modifier = CurvedModifier.sizeIn(maxSweepDegrees = arcs.labelSweep),
+                style = CurvedTextStyle(color = if (stepPercent != null && stepsCurrent) theme.secondaryColor else HomeMuted, fontSize = labelSize),
+                overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -205,9 +228,10 @@ private fun HomeQuickButton(
     onClick: () -> Unit,
     danger: Boolean = false,
     size: androidx.compose.ui.unit.Dp = 48.dp,
+    enabled: Boolean = true,
 ) {
     Column(
-        Modifier.size(size)
+        Modifier.size(size).alpha(if (enabled) 1f else .45f)
             .background(
                 if (danger) Color(0xFF3B232A) else if (primary) theme.accentColor.copy(alpha = .24f) else theme.elevatedColor,
                 CircleShape,
@@ -217,7 +241,7 @@ private fun HomeQuickButton(
                 if (danger) Color(0xFF7D4653) else if (primary) theme.accentColor else theme.outlineColor,
                 CircleShape,
             )
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

@@ -15,7 +15,21 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
-internal data class WearDailyHealth(val steps: Long? = null, val calories: Double? = null, val distanceMeters: Double? = null, val sleepIntervalMinutes: Long? = null)
+internal data class WearDailyHealth(val steps: Long? = null, val calories: Double? = null, val distanceMeters: Double? = null, val sleepIntervalMinutes: Long? = null,
+    /** Time of the cumulative daily step total; lets the UI tell an old total from a current one. */
+    val stepsAt: Long? = null)
+
+/** 2808: a same-day total older than this is shown as earlier data, never as the current progress. */
+internal const val WEAR_DAILY_STEPS_FRESH_MS = 3L * 60L * 60L * 1000L
+/** Cross-process clock rounding tolerance for Health Services interval ends. */
+internal const val WEAR_DAILY_SKEW_MS = 2L * 60L * 1000L
+
+internal fun wearDailyStepsFresh(stepsAt: Long?, now: Long): Boolean =
+    stepsAt != null && stepsAt > 0 && now - stepsAt in 0L..WEAR_DAILY_STEPS_FRESH_MS
+
+/** A sample end slightly ahead of this process clock is "now"; a real future timestamp is rejected. */
+internal fun wearDailySampleTime(end: Long, now: Long): Long? =
+    if (end <= 0L || end - now > WEAR_DAILY_SKEW_MS) null else minOf(end, now)
 
 internal fun wearDailyStepPercent(steps: Long?, goal: Int?): Int? =
     if (steps == null || steps < 0 || goal == null || goal <= 0) null
@@ -52,8 +66,26 @@ internal object WearDailyHealthStore {
         val prefs = prefs(context)
         fun value(key: String): Double? = if (wearDailyAccept(0, prefs.getLong(key + "At", 0), now, ZoneId.systemDefault()))
             prefs.getString(key, null)?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } else null
-        return WearDailyHealth(value("steps")?.toLong(), value("calories"), value("distance"), value("sleep")?.toLong())
+        val steps = value("steps")?.toLong()
+        return WearDailyHealth(steps, value("calories"), value("distance"), value("sleep")?.toLong(),
+            stepsAt = prefs.getLong("stepsAt", 0L).takeIf { steps != null && it > 0L })
     }
+
+    /** Shared by the background service and the foreground callback: cumulative totals, never added. */
+    fun accept(context: Context, dataPoints: DataPointContainer, now: Long = System.currentTimeMillis()) {
+        val boot = Instant.ofEpochMilli(now - SystemClock.elapsedRealtime())
+        dataPoints.getData(DataType.STEPS_DAILY).forEach { point ->
+            wearDailySampleTime(point.getEndInstant(boot).toEpochMilli(), now)?.let { write(context, "steps", point.value.toDouble(), it, now) }
+        }
+        dataPoints.getData(DataType.CALORIES_DAILY).forEach { point ->
+            wearDailySampleTime(point.getEndInstant(boot).toEpochMilli(), now)?.let { write(context, "calories", point.value, it, now) }
+        }
+        dataPoints.getData(DataType.DISTANCE_DAILY).forEach { point ->
+            wearDailySampleTime(point.getEndInstant(boot).toEpochMilli(), now)?.let { write(context, "distance", point.value, it, now) }
+        }
+    }
+
+    internal val dailyTypes: Set<DataType<*, *>> = setOf(DataType.STEPS_DAILY, DataType.CALORIES_DAILY, DataType.DISTANCE_DAILY)
 
     @Synchronized fun activity(context: Context, state: UserActivityState, at: Long, now: Long) {
         if (!enabled(context) || !permitted(context)) return
@@ -84,7 +116,7 @@ internal object WearDailyHealthStore {
             return false
         }
         val capabilities = client.getCapabilitiesAsync().get(20, TimeUnit.SECONDS)
-        val types = setOf(DataType.STEPS_DAILY, DataType.CALORIES_DAILY, DataType.DISTANCE_DAILY)
+        val types = dailyTypes
             .filter { it in capabilities.supportedDataTypesPassiveMonitoring }.toSet()
         val sleepSupported = UserActivityState.USER_ACTIVITY_ASLEEP in capabilities.supportedUserActivityStates
         if (types.isEmpty() && !sleepSupported) return false
@@ -105,16 +137,23 @@ class WearDailyHealthService : PassiveListenerService() {
     }
 
     override fun onNewDataPointsReceived(dataPoints: DataPointContainer) {
-        val now = System.currentTimeMillis()
-        val boot = Instant.ofEpochMilli(now - SystemClock.elapsedRealtime())
-        dataPoints.getData(DataType.STEPS_DAILY).forEach {
-            WearDailyHealthStore.write(this, "steps", it.value.toDouble(), it.getEndInstant(boot).toEpochMilli(), now)
-        }
-        dataPoints.getData(DataType.CALORIES_DAILY).forEach {
-            WearDailyHealthStore.write(this, "calories", it.value, it.getEndInstant(boot).toEpochMilli(), now)
-        }
-        dataPoints.getData(DataType.DISTANCE_DAILY).forEach {
-            WearDailyHealthStore.write(this, "distance", it.value, it.getEndInstant(boot).toEpochMilli(), now)
-        }
+        WearDailyHealthStore.accept(this, dataPoints)
+    }
+}
+
+/**
+ * 2808: Health Services passive registrations do not survive a reboot (and are not renewed by an
+ * app update). Before, they were only renewed when the TrainPilot UI was resumed, so the watch
+ * kept a same-day morning total (shown as 0% in the evening). Restore the user's opt-in here.
+ */
+class WearDailyHealthRestoreReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: android.content.Intent) {
+        if (intent.action !in setOf(android.content.Intent.ACTION_BOOT_COMPLETED, android.content.Intent.ACTION_MY_PACKAGE_REPLACED)) return
+        val app = context.applicationContext
+        if (!WearDailyHealthStore.enabled(app) || !WearDailyHealthStore.permitted(app)) return
+        val pending = goAsync()
+        Thread {
+            try { runCatching { WearDailyHealthStore.register(app) } } finally { pending.finish() }
+        }.start()
     }
 }

@@ -154,7 +154,8 @@ internal fun TrainPilotWearApp(
     }
     CompositionLocalProvider(
         LocalGpsShortcut216 provides GpsShortcut216(gpsRoute193?.value?.optString("state","idle") ?: "idle",restRemaining.value) { route="gpsRoute193" },
-        LocalWearHomeTheme provides (home.value?.theme ?: WearHomeTheme.DEFAULT),
+        // 2808: stored phone palette stays as received; the watch renders its contrast-guarded dark copy.
+        LocalWearHomeTheme provides remember(home.value?.theme) { (home.value?.theme ?: WearHomeTheme.DEFAULT).forWatch() },
         LocalAutomaticToggle provides onToggleAutomatic,
         LocalAutomaticCommand provides onAutomaticCommand,
         LocalEditorSave provides onEditorSave,

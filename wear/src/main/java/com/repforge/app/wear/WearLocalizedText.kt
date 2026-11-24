@@ -122,6 +122,8 @@ private val wearTranslations = mapOf(
     "Mérés ki" to listOf("Recording off", "Messung aus", "Măsurare oprită"),
     "Legutóbbi mérés" to listOf("Latest recording", "Letzte Messung", "Ultima măsurare"),
     "Korábbi adat" to listOf("Previous data", "Frühere Daten", "Date anterioare"),
+    "korábbi" to listOf("earlier", "früher", "anterior"),
+    "frissítve" to listOf("updated", "aktualisiert", "actualizat"),
     "Mérés lezárása" to listOf("End recording", "Messung beenden", "Încheie măsurarea"),
     "Lezárás" to listOf("End", "Beenden", "Încheie"),
     "Mérés lezárva" to listOf("Recording ended", "Messung beendet", "Măsurare încheiată"),

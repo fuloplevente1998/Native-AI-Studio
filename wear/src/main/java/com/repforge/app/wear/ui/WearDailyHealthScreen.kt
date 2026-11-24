@@ -64,12 +64,18 @@ private fun dailyText(hu: String, en: String, de: String, ro: String) = when (ja
 @Composable
 internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONObject?, active: WearWorkout?, onDetails: () -> Unit, onBack: () -> Unit) {
     val now = System.currentTimeMillis()
-    val pulse = wearHomeLivePulse(health, active?.workoutId, true, now)
-    val passive = daily.pulse?.takeIf { now - it.at in 0L..300000L }
+    // 2808: same stable pulse presentation as the home page (live, recent, earlier with time, or "–").
+    val pulse = wearHomePulse(wearHomeLivePulse(health, active?.workoutId, true, now), daily.pulse, now)
+    val stepsAt = daily.data.stepsAt?.takeIf { daily.data.steps != null }
     RoundList(dailyText("Egészség", "Health", "Gesundheit", "Sănătate")) {
         centerItem { Title(daily.data.steps?.toString() ?: "–", 32) }
+        if (stepsAt != null) centerItem {
+            Label(wearText("frissítve") + " " + java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+                .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(stepsAt)),
+                color = if (wearDailyStepsFresh(stepsAt, now)) Muted else DangerText, size = 10)
+        }
         centerItem { Label(dailyText("Lépés · cél", "Steps · goal", "Schritte · Ziel", "Pași · obiectiv") + " " + (goal?.toString() ?: "–")) }
-        centerItem { Label("♥ " + (pulse?.let { "$it bpm" } ?: passive?.let { "${it.bpm} bpm · " + dailyText("utolsó", "last", "zuletzt", "ultimul") } ?: "–")) }
+        centerItem { Label("♥ " + wearHomePulseText(pulse)) }
         centerItem { Label((daily.data.calories?.let(::trimWearNumber) ?: "–") + " kcal · " + dailyText("összes", "total", "gesamt", "total")) }
         centerItem { Label(dailyText("Távolság", "Distance", "Distanz", "Distanță") + " " + (daily.data.distanceMeters?.let { trimWearNumber(it / 1000.0) + " km" } ?: "–")) }
         centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " " + (daily.data.sleepIntervalMinutes?.let { "${it / 60} h ${it % 60} min" } ?: "–")) }
