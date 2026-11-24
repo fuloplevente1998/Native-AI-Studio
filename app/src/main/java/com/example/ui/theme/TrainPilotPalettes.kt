@@ -18,7 +18,9 @@ enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmo
 
 /** Preserve approved matte/contrast semantics; make colored readings readable on new surfaces. */
 private fun readableThemeSemantic(seed: Color, id: Int, page: Color, card: Color, inner: Color, accent: Color): Color {
-    if (id !in 17..32) return seed
+    // #349: also the contrast family (9..16): the new cobalt / petrol cards need lighter state colours.
+    // A colour that is already readable is returned unchanged (step 0), so the other palettes keep theirs.
+    if (id !in 9..32) return seed
     val surfaces = listOf(page, card, inner) + listOf(0.12f, 0.16f, 0.22f).map {
         accent.copy(alpha = it).compositeOver(card)
     }
@@ -262,21 +264,22 @@ object TrainPilotPalettes {
         // =========================================================================
         TrainPilotPalette(
             id = 9,
+            // #349: approved replacement (saved key kept, so existing choices load the new palette).
             key = "copper_forge",
-            nameHu = "Kontraszt Fekete & Tiszta Arany",
-            nameEn = "High Contrast Black & Pure Gold",
-            nameDe = "Kontrast Schwarz & Reingold",
-            nameRo = "Contrast Negru & Aur Pur",
+            nameHu = "Kontraszt Grafit & Arany",
+            nameEn = "High Contrast Graphite & Gold",
+            nameDe = "Kontrast Graphit & Gold",
+            nameRo = "Contrast Grafit & Auriu",
             category = PaletteCategory.BASIC,
-            background = Color(0xFF000000),
-            surface = Color(0xFF202733),
-            surfaceElevated = Color(0xFF344050),
-            primary = Color(0xFFFFD60A),
-            onPrimary = Color(0xFF000000),
+            background = Color(0xFF101216),
+            surface = Color(0xFF262D36),
+            surfaceElevated = Color(0xFF1B2129),
+            primary = Color(0xFFFFD426),
+            onPrimary = Color(0xFF171305),
             secondary = Color(0xFF00E5FF),
-            textPrimary = Color(0xFFFFFFFF),
-            textSecondary = Color(0xFFDCE4F2),
-            cardBorder = Color(0xFF475569)
+            textPrimary = Color(0xFFF5F7FB),
+            textSecondary = Color(0xFFC7D0DD),
+            cardBorder = Color(0xFF3D4754)
         ),
         TrainPilotPalette(
             id = 10,
@@ -334,21 +337,22 @@ object TrainPilotPalettes {
         ),
         TrainPilotPalette(
             id = 13,
+            // #349: approved replacement (saved key kept, so existing choices load the new palette).
             key = "titanium_lime",
-            nameHu = "Kontraszt Titán & Volt Lime",
-            nameEn = "High Contrast Titanium & Volt Lime",
-            nameDe = "Kontrast Titan & Volt-Limette",
-            nameRo = "Contrast Titan & Lime Volt",
+            nameHu = "Kontraszt Kobaltkék & Lime",
+            nameEn = "High Contrast Cobalt & Lime",
+            nameDe = "Kontrast Kobaltblau & Limette",
+            nameRo = "Contrast Cobalt & Lime",
             category = PaletteCategory.BASIC,
-            background = Color(0xFF020402),
-            surface = Color(0xFF252D1E),
-            surfaceElevated = Color(0xFF3D482F),
-            primary = Color(0xFFB8FF01),
-            onPrimary = Color(0xFF000000),
+            background = Color(0xFF0E1432),
+            surface = Color(0xFF293C8A),
+            surfaceElevated = Color(0xFF1B285D),
+            primary = Color(0xFFD9FA3D),
+            onPrimary = Color(0xFF181D06),
             secondary = Color(0xFF00E5FF),
-            textPrimary = Color(0xFFFFFFFF),
-            textSecondary = Color(0xFFE0F2D8),
-            cardBorder = Color(0xFF3E592C)
+            textPrimary = Color(0xFFF4F6FF),
+            textSecondary = Color(0xFFE0E6FF),
+            cardBorder = Color(0xFF4257B0)
         ),
         TrainPilotPalette(
             id = 14,
@@ -388,21 +392,22 @@ object TrainPilotPalettes {
         ),
         TrainPilotPalette(
             id = 16,
+            // #349: approved replacement (saved key kept, so existing choices load the new palette).
             key = "espresso_bronze",
-            nameHu = "Kontraszt Mélyfekete & Türkiz",
-            nameEn = "High Contrast Deep Black & Cyan",
-            nameDe = "Kontrast Tiefschwarz & Türkis",
-            nameRo = "Contrast Negru Profund & Turcoaz",
+            nameHu = "Kontraszt Petrol & Menta",
+            nameEn = "High Contrast Petrol & Mint",
+            nameDe = "Kontrast Petrol & Minze",
+            nameRo = "Contrast Petrol & Mentă",
             category = PaletteCategory.BASIC,
-            background = Color(0xFF000304),
-            surface = Color(0xFF1A2D32),
-            surfaceElevated = Color(0xFF2C4850),
-            primary = Color(0xFF00F5D4),
-            onPrimary = Color(0xFF000000),
+            background = Color(0xFF0D2024),
+            surface = Color(0xFF1C3F46),
+            surfaceElevated = Color(0xFF142F35),
+            primary = Color(0xFF69EDC2),
+            onPrimary = Color(0xFF07291F),
             secondary = Color(0xFFFFB703),
-            textPrimary = Color(0xFFFFFFFF),
-            textSecondary = Color(0xFFD5F2EE),
-            cardBorder = Color(0xFF255963)
+            textPrimary = Color(0xFFEFF8F7),
+            textSecondary = Color(0xFFC7E1E0),
+            cardBorder = Color(0xFF2D5C65)
         ),
 
         // =========================================================================

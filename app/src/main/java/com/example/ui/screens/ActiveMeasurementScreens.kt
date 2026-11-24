@@ -105,6 +105,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -322,17 +323,22 @@ fun ActiveStrengthWorkoutScreen(
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
 
     val listState = rememberLazyListState()
-    val isScrolledDown by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 130
+    // #347: the rest starts compact after a set is ticked; only the user's own downward scroll (a drag,
+    // not the automatic scroll after ticking) or the arrow opens the large mode.
+    var restTimerManualOverride by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(uiState.restTimerRunning) { if (uiState.restTimerRunning) restTimerManualOverride = false }
+    val restVisible = com.repforge.app.StudioRestTimer.visible(uiState)
+    val userScrollOpensRest = remember(restVisible) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPreScroll(available: androidx.compose.ui.geometry.Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (restVisible && source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput &&
+                    available.y < -12f && restTimerManualOverride != true) restTimerManualOverride = true
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
         }
     }
-    var restTimerManualOverride by remember { mutableStateOf<Boolean?>(null) }
-    // When scrolling changes, allow automatic compact <-> large switching unless manually pinned
-    LaunchedEffect(isScrolledDown) {
-        restTimerManualOverride = null
-    }
-    val isRestTimerLargeMode = restTimerManualOverride ?: isScrolledDown
+    val isRestTimerLargeMode = restTimerManualOverride ?: false
 
     StudioRestCountdown(uiState, onAdjustRestTimer)
 
@@ -347,7 +353,8 @@ fun ActiveStrengthWorkoutScreen(
             state = listState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .nestedScroll(userScrollOpensRest),
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
@@ -385,6 +392,7 @@ fun ActiveStrengthWorkoutScreen(
                 onToggle = { onToggleSetCompleted(setItem.setNumber) },
                 onDelete = { onDeleteSet(setItem.setNumber) },
                 lastLabel = lastSets.firstOrNull { it.setNumber == setItem.setNumber }
+                    ?.takeIf { com.example.ui.components.lastSetDiffers(it, setItem) }
                     ?.let { com.example.ui.components.lastSetLabel(it, lang) }
             )
         }
@@ -442,7 +450,8 @@ fun ActiveStrengthWorkoutScreen(
                 // 2778: shared rest dock (same component on every measurement screen).
                 com.example.ui.components.StudioRestTimerDock(uiState, isRestTimerLargeMode,
                     onLarge = { restTimerManualOverride = it }, onAdjust = onAdjustRestTimer,
-                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
+                    showIdle = false)
 
                 // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
                 com.example.ui.components.ActiveWorkoutBottomBar(
@@ -1654,7 +1663,8 @@ fun ActiveBilateralWorkoutScreen(
                 // 2778: same rest dock as the strength screen (compact <-> large card), not a hint line.
                 com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
                     onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
-                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
+                    showIdle = false)
 
                 // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
                 com.example.ui.components.ActiveWorkoutBottomBar(

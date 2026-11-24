@@ -152,6 +152,13 @@ internal fun lastLoggedSets(logged: List<LoggedWorkoutEntry>, exercise: Exercise
         .orEmpty()
 }
 
+/**
+ * #348: the "last time" line only helps when it says something new: hidden when the last saved weight
+ * and reps equal what the set fields already show (compared at the shown precision: 2 decimals).
+ */
+internal fun lastSetDiffers(last: ExerciseSetItem, current: ExerciseSetItem): Boolean =
+    Math.round(last.weightKg * 100.0) != Math.round(current.weightKg * 100.0) || last.reps != current.reps
+
 /** "legutóbb: 5,5 × 12" (weight omitted when none was logged). */
 internal fun lastSetLabel(set: ExerciseSetItem, language: AppLanguage): String {
     val number = NumberFormat.getNumberInstance(Locale.forLanguageTag(language.name.lowercase())).apply {

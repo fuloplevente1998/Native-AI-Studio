@@ -35,7 +35,8 @@ class Collector2778RegressionTest {
         compose.onNodeWithText("+15 mp").performClick()
         compose.onNodeWithText("Kihagyás").performClick()
         compose.runOnIdle { assertEquals(listOf("adjust15", "skip"), calls) }
-        compose.onNodeWithText("Lapos mód").performClick()
+        // #347: the caption is gone; the arrow (spoken "Pihenő összecsukása") collapses it.
+        compose.onNodeWithContentDescription("Pihenő összecsukása").performClick()
         compose.onNodeWithTag("sticky_rest_timer_compact").assertExists()
     }
 
