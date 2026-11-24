@@ -67,7 +67,7 @@ fun PalettePickerBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var expandedFamily by androidx.compose.runtime.saveable.rememberSaveable {
         mutableStateOf((selectedCategory?.takeIf { it in setOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT) }
-            ?: TrainPilotPalettes.getById(selectedPaletteId).subGroup).name)
+            ?: palette.subGroup).name)
     }
 
     TrainPilotModalBottomSheet(
@@ -205,10 +205,11 @@ fun PalettePickerBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            StudioPaletteCategories(currentLanguage, selectedPaletteId,
+            StudioPaletteCategories(currentLanguage, if (palette.id == -1) -1 else selectedPaletteId,
                 PaletteCategory.entries.firstOrNull { it.name == expandedFamily },
                 onExpand = { expandedFamily = it?.name.orEmpty(); onSelectCategory(it) },
                 onSelect = onSelectPalette, choiceTag = "palette_option_")
+            CustomThemeSection(currentLanguage)
         }
     }
 }
