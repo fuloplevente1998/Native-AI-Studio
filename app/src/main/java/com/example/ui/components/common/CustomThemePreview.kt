@@ -25,7 +25,7 @@ internal fun CustomThemePreview(resolved: ResolvedCustomTheme, workout: Boolean,
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
     val shape = RoundedCornerShape(14.dp)
     TrainPilotTheme(palette = p) {
-        Column(Modifier.fillMaxWidth().background(p.background, shape)
+        Column(Modifier.fillMaxWidth().background(p.pageBrush, shape)
             .border(1.dp, p.cardBorder, shape).padding(10.dp).testTag("custom_theme_preview"),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
