@@ -3188,7 +3188,7 @@ internal fun cloudServiceStatus(connected: Boolean, lastSuccessIso: String, last
     if (!connected) return CloudSyncStatus.NEUTRAL
     if (lastAttemptFailed) return CloudSyncStatus.ERROR
     val last = runCatching { java.time.Instant.parse(lastSuccessIso) }.getOrNull()
-        ?: runCatching { java.time.LocalDateTime.parse(lastSuccessIso.take(19)).atZone(java.time.ZoneId.systemDefault()).toInstant() }.getOrNull()
+        ?: runCatching { java.time.LocalDateTime.parse(lastSuccessIso.take(19).replace(' ', 'T')).atZone(java.time.ZoneId.systemDefault()).toInstant() }.getOrNull()
     if (last == null) return if (expectedAuto) CloudSyncStatus.LATE else CloudSyncStatus.NEUTRAL
     // A manual-only (or switched-off) sync never turns yellow just because its date is old.
     return if (expectedAuto && java.time.Duration.between(last, now).toHours() > 72) CloudSyncStatus.LATE else CloudSyncStatus.OK
