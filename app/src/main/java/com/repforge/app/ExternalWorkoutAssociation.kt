@@ -27,7 +27,8 @@ internal object ExternalWorkoutAssociation {
         if (ids.size >= 64 && id !in ids) return ExternalWorkoutImport.Outcome.REVIEW_OVERLAP
         val sources = raw.optJSONObject(SOURCES) ?: JSONObject()
         val previous = sources.optJSONObject(id)
-        if (previous != null && previous.optLong("lastModifiedMs") > workout.modifiedMs)
+        if (previous != null && (previous.optLong("lastModifiedMs") > workout.modifiedMs ||
+                previous.optBoolean("sourceDeleted") && previous.optLong("lastModifiedMs") >= workout.modifiedMs))
             return ExternalWorkoutImport.Outcome.ALREADY_IMPORTED
         val next = workout.summary()
         // A linked session whose source window moved must not silently appear as the

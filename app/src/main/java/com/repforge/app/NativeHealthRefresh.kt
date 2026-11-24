@@ -175,6 +175,7 @@ internal object NativeHealthRefresh {
                 SamsungHealthRepository.readGrantScope(context, guard) else emptySet()
             val automatic = ExternalWorkoutAutoImport.admitRefresh(context, prepared.provider,
                 prepared.localDay, prepared.zone)
+            var importReport = ExternalWorkoutAutoImport.Report()
             suspend fun read(target: LocalDate): JSONObject {
                 val (startInstant, endInstant) = dayWindow(target, prepared.zone, java.time.Instant.now())
                 val value = if (prepared.provider == HealthJournalStore.SAMSUNG) {
@@ -192,8 +193,23 @@ internal object NativeHealthRefresh {
                             prepared.journalGeneration, commitRead, stepsEnd = stepsEnd)
                     }
                 }
-                if ("READ_EXERCISE" in (if (prepared.provider == HealthJournalStore.HC) prepared.healthGrants else samsungGrants))
+                if ("READ_EXERCISE" in (if (prepared.provider == HealthJournalStore.HC) prepared.healthGrants else samsungGrants)) {
                     automatic.observe(target, value)
+                    // Publish the bounded day before the existing delta checkpoint is acknowledged.
+                    // A failed import remains retryable instead of losing older dirty dates.
+                    val report = automatic.publish(context, prepared.journalGeneration) {
+                        requirePermissionIdentity()
+                        requireCommitIdentity()
+                    }
+                    importReport = importReport + report
+                    if (report.failed || report.limited) {
+                        value.put("externalImportIncomplete359", true).put("partial", true)
+                        if (prepared.provider == HealthJournalStore.HC) withContext(Dispatchers.IO) {
+                            commitRead { HealthJournalStore.get(context).markExternalImportDirtyDay(
+                                target.toString(), prepared.journalGeneration) }
+                        }
+                    }
+                }
                 return value
             }
             val result = if (fullSync == null) read(day) else {
@@ -224,7 +240,8 @@ internal object NativeHealthRefresh {
                     override suspend fun readDay(day: LocalDate): Boolean {
                         val value = read(day)
                         return (value.optJSONArray("warnings")?.length() ?: 0) == 0 &&
-                            (value.optJSONArray("failedFields")?.length() ?: 0) == 0
+                            (value.optJSONArray("failedFields")?.length() ?: 0) == 0 &&
+                            !value.optBoolean("externalImportIncomplete359")
                     }
                 }
                 val journal = object : NativeHealthSync.Journal {
@@ -255,15 +272,7 @@ internal object NativeHealthRefresh {
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }
             withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
-            // A successful exercise read may coexist with missing unrelated health permissions.
-            // Only the explicitly observed sessions are considered, not old cached journal pages.
-            val importReport = try {
-                automatic.publish(context, prepared.journalGeneration) {
-                    requirePermissionIdentity()
-                    requireCommitIdentity()
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { ExternalWorkoutAutoImport.Report(failed = true) }
+            // All observed days were published before checkpoint acknowledgement.
             result.put("externalImport359", importReport.json())
             if (importReport.failed || importReport.limited) result.put("partial", true)
             // Source deletions are independent of auto-import consent; only actual HC tombstones

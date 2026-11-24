@@ -130,7 +130,8 @@ internal object ExternalWorkoutImport {
                     if (w.originDevice != "external" || !raw.optBoolean("externalWorkoutImported359"))
                         return@withTransaction Outcome.REVIEW_OVERLAP
                     val previous = raw.optJSONObject("externalWorkout359")
-                    if (previous != null && previous.optLong("lastModifiedMs") > workout.modifiedMs)
+                    if (previous != null && (previous.optLong("lastModifiedMs") > workout.modifiedMs ||
+                            previous.optBoolean("sourceDeleted") && previous.optLong("lastModifiedMs") >= workout.modifiedMs))
                         return@withTransaction Outcome.ALREADY_IMPORTED
                     val next = sourceSnapshot(workout, metrics)
                     // Only a pristine imported copy may adopt a corrected provider interval.

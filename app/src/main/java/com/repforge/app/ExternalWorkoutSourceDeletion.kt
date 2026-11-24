@@ -31,6 +31,16 @@ internal object ExternalWorkoutSourceDeletion {
             raw.keys().asSequence().all { it in pureKeys }
     }
 
+    /** Retain only the minimal identity and timing evidence required for a retained local row.
+     * Do not leave provider measurements in a source-deleted snapshot or in its backup.
+     */
+    internal fun markDeleted(snapshot: JSONObject): JSONObject {
+        snapshot.put("sourceDeleted", true)
+        for (key in listOf("metrics", "series", "segments", "laps", "sessionEvidence", "sessionCalories", "device"))
+            snapshot.remove(key)
+        return snapshot
+    }
+
     internal fun HealthJournalStore.confirmedDeletion(identity: ExternalWorkoutIdentity, modified: Long,
                                                        generation: Long): Long? = synchronized(HealthJournalStore.LOCK) {
         if (identity.provider != HealthJournalStore.HC) return@synchronized null
@@ -81,7 +91,7 @@ internal object ExternalWorkoutSourceDeletion {
                                 val identity = ExternalWorkoutIdentity(HealthJournalStore.HC, linked.optString("source"), linked.optString("id"))
                                 if (ExternalWorkoutImport.localId(identity) != linkedId) continue
                                 if (journal.confirmedDeletion(identity, linked.optLong("lastModifiedMs"), generation) != null) {
-                                    linked.put("sourceDeleted", true).remove("metrics")
+                                    markDeleted(linked)
                                     linkedChanged = true
                                 }
                             }
@@ -107,7 +117,7 @@ internal object ExternalWorkoutSourceDeletion {
                             } else {
                                 val primary = requireNotNull(source)
                                 if (primary.optBoolean("sourceDeleted") && !linkedChanged) return@withTransaction 0
-                                primary.put("sourceDeleted", true).remove("metrics")
+                                markDeleted(primary)
                                 check(dao.updateExternalWorkoutJson(id, detail.workout.rawJson, raw.toString()) == 1)
                                 guard()
                                 2

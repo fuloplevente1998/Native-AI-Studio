@@ -65,6 +65,24 @@ class ExternalWorkoutAutoImportTest {
         assertTrue(enabled.allowsNew(enabled.candidates().single()))
     }
 
+    @Test fun dailyPublicationDrainsCandidatesAndAccumulatesPartialOutcome() {
+        val f = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.HC, day, ZoneOffset.UTC)
+        f.observe(day, result(*(0..600).map { row(it.toString()) }.toTypedArray()))
+        val (first, limited) = f.drain()
+        assertEquals(512, first.size)
+        assertTrue(limited)
+        assertTrue(f.candidates().isEmpty())
+        f.observe(day, result(row("later")))
+        val (second, secondLimited) = f.drain()
+        assertEquals("later", second.single().identity.recordId)
+        assertFalse(secondLimited)
+        val combined = ExternalWorkoutAutoImport.Report(saved = 1, limited = true) +
+            ExternalWorkoutAutoImport.Report(saved = 2, failed = true, overlap = 1)
+        assertEquals(3, combined.saved)
+        assertEquals(1, combined.overlap)
+        assertTrue(combined.failed && combined.limited)
+    }
+
     @Test fun budgetIsBoundedAndIdentityIsNotDroppedOnRepeat() {
         val f = ExternalWorkoutAutoImport.Flight(1, HealthJournalStore.SAMSUNG, day, ZoneOffset.UTC)
         f.observe(day, result(*(0..600).map { row(it.toString()) }.toTypedArray()))

@@ -49,6 +49,8 @@ internal object ExternalWorkoutAutoImport {
                       val failed: Boolean = false, val limited: Boolean = false) {
         fun json() = JSONObject().put("saved", saved).put("overlap", overlap).put("skipped", skipped)
             .put("failed", failed).put("limited", limited)
+        operator fun plus(other: Report) = Report(saved + other.saved, overlap + other.overlap,
+            skipped + other.skipped, failed || other.failed, limited || other.limited)
     }
 
     internal class Flight(private val revision: Long, private val provider: String,
@@ -57,6 +59,12 @@ internal object ExternalWorkoutAutoImport {
         private val observed = linkedMapOf<ExternalWorkoutIdentity, Observed>()
         private var limited = false
         internal fun candidates(): List<Observed> = observed.values.toList()
+        internal fun drain(): Pair<List<Observed>, Boolean> {
+            val result = candidates() to limited
+            observed.clear()
+            limited = false
+            return result
+        }
         internal fun allowsNew(seen: Observed): Boolean = create &&
             seen.start >= today.minusDays(29).atStartOfDay(zone).toInstant().toEpochMilli()
 
@@ -97,6 +105,8 @@ internal object ExternalWorkoutAutoImport {
 
         suspend fun publish(context: Context, generation: Long, syncGuard: () -> Unit): Report =
             withContext(Dispatchers.IO) {
+                val (batchCandidates, batchLimited) = drain()
+                if (batchCandidates.isEmpty()) return@withContext Report(limited = batchLimited)
                 val app = context.applicationContext
                 val coroutine = currentCoroutineContext()
                 val ticket = NativeDataReplacement.continuationForCurrentData(app)
@@ -112,13 +122,13 @@ internal object ExternalWorkoutAutoImport {
                     check(NativeHealthBackupGate.available() && NativeHealthForegroundAdmission.safeOffMain(app))
                 }
                 try {
-                    if (!matches(app, revision, create) || observed.isEmpty()) return@withContext Report(limited = limited)
+                    if (!matches(app, revision, create)) return@withContext Report(failed = true, limited = batchLimited)
                     val db = TrainPilotDatabase.getInstance(app)
-                    for (batch in candidates().chunked(16)) {
+                    for (batch in batchCandidates.chunked(16)) {
                         guard()
                         NativeHealthForegroundAdmission.requireMainAdmission(app)
                         if (!ExternalWorkoutImport.hasReadGrant(app, provider, guard))
-                            return@withContext Report(saved, overlap, skipped, failed = true, limited = limited)
+                            return@withContext Report(saved, overlap, skipped, failed = true, limited = batchLimited)
                         val grants = if (provider == HealthJournalStore.HC)
                             HealthConnectRepository.currentlyGrantedReadKeys(app)
                         else SamsungHealthRepository.readGrantedKeys(app, guard)
@@ -149,9 +159,9 @@ internal object ExternalWorkoutAutoImport {
                             }
                         }
                     }
-                    Report(saved, overlap, skipped, limited = limited)
+                    Report(saved, overlap, skipped, limited = batchLimited)
                 } catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { Report(saved, overlap, skipped, failed = true, limited = limited) }
+                catch (_: Exception) { Report(saved, overlap, skipped, failed = true, limited = batchLimited) }
                 finally { if (saved > 0) ExternalWorkoutImport.notifyImported() }
             }
     }
