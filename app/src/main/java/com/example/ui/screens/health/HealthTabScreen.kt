@@ -465,7 +465,7 @@ fun HealthTabScreen(
             "today" -> {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = palette.surfaceCard,
+                    color = palette.cardPaint,
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
@@ -570,7 +570,7 @@ fun HealthTabScreen(
                 val shape = RoundedCornerShape(20.dp)
                 Surface(
                     shape = shape,
-                    color = palette.surfaceCard,
+                    color = palette.cardPaint,
                     modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
                 ) {
                     Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -584,7 +584,7 @@ fun HealthTabScreen(
             "weight" -> {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
+                    color = palette.cardPaint,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("health_weight_card")
@@ -715,7 +715,7 @@ fun HealthTabScreen(
             state = healthListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .background(palette.pageBrush)
                 .testTag("health_tab_screen"),
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
