@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.readablePrimaryLabel
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -202,7 +203,7 @@ internal fun StudioRestTimerDock(
                                 modifier = Modifier.fillMaxWidth().height(36.dp)) {
                                 Box(contentAlignment = Alignment.Center) {
                                     TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
-                                        color = if (primary) palette.onPrimary else palette.textPrimary,
+                                        color = if (primary) palette.readablePrimaryLabel() else palette.textPrimary,
                                         fontWeight = FontWeight.Bold)
                                 }
                             }
