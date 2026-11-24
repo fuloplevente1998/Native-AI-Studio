@@ -63,6 +63,7 @@ internal fun TrainPilotWearApp(
 ) {
     var route by rememberSaveable { mutableStateOf(initialRoute) }
     val context = LocalContext.current
+    val daily = rememberWearDailyHealth()
     var pendingGps216 by remember { mutableStateOf<GpsLaunch216?>(null) }
     var gpsBack216 by rememberSaveable { mutableStateOf("menu") }
     var daysBack216 by rememberSaveable { mutableStateOf("home") }
@@ -143,6 +144,7 @@ internal fun TrainPilotWearApp(
                 "journal-detail" -> miniJournalBackRoute
                 "journal" -> journalBackRoute
                 "metrics" -> metricsBackRoute
+                "daily-details" -> "metrics"
                 "settings" -> settingsBackRoute
                 "discard" -> discardBackRoute
                 else -> "home"
@@ -203,7 +205,7 @@ internal fun TrainPilotWearApp(
                             backLabel = if (settingsBackRoute == "home") wearText("‹ Kezdőlap") else wearText("‹ Főmenü"),
                             onBack = { route = settingsBackRoute },
                         )
-                    route == "metrics" ->
+                    route == "daily-details" || (route == "metrics" && metricsBackRoute != "home") ->
                         HealthScreen(
                             health.value,
                             measuring.value,
@@ -216,8 +218,12 @@ internal fun TrainPilotWearApp(
                             onRefreshJournal,
                             onOpenJournal = { openJournal("metrics") },
                             onSelectMeasurement = { openMeasurement(it, "metrics") },
-                            onBack = { route = metricsBackRoute },
+                            onBack = { route = if (route == "daily-details") "metrics" else metricsBackRoute },
                         )
+                    route == "metrics" ->
+                        WearDailyHealthScreen(daily, home.value?.dailyStepsGoal, health.value, active,
+                            onDetails = { route = "daily-details" },
+                            onBack = { route = metricsBackRoute })
                     route == "save-sync" -> SaveSyncScreen(saveSync?.value,
                         onRetry = { saveSync?.value?.let { onRetrySync?.invoke(it.workoutId) } },
                         onBack = { route=syncBackRoute })
@@ -409,6 +415,7 @@ internal fun TrainPilotWearApp(
                             },
                             onMenu = { route = "menu" },
                             onOpenPhone = onOpenPhone,
+                            dailyHealth = daily.data,
                         )
                 }
             }

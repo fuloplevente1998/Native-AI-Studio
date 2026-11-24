@@ -951,6 +951,11 @@ object WearSyncRepository {
             val hasDraft = (activeWorkout != null && activeWorkout.optBoolean("active", false)) ||
                 (draftDoc != null && draftDoc.json.isNotBlank() && draftDoc.json != "null" && draftDoc.json != "{}")
 
+            // Same durable phone goal as the Goals UI; no daily health metrics travel here.
+            val goalDocument = db.keyValueDocumentDao().getDocument("native:userGoals")
+            val dailyStepsGoal = goalDocument?.json?.let { raw ->
+                runCatching { JSONObject(raw).optInt("stepsGoal", 0) }.getOrNull()
+            }?.takeIf { it > 0 } ?: com.example.ui.viewmodel.TrainPilotUiState().stepsGoal
             val now = System.currentTimeMillis()
             val homeSnapshot = JSONObject()
                 .put("schema", 1)
@@ -959,6 +964,7 @@ object WearSyncRepository {
                     com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo)
                 } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
+                .put("dailyStepsGoal", dailyStepsGoal)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
                 .put("calendarDays", allCalendarDaysArray)

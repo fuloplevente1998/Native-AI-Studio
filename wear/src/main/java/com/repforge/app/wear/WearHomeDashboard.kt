@@ -65,6 +65,7 @@ internal fun WearHomeDashboard(
     onSettings: () -> Unit,
     onMenu: () -> Unit,
     onOpenPhone: () -> Unit,
+    dailyHealth: WearDailyHealth = WearDailyHealth(),
 ) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(active?.workoutId) {
@@ -104,6 +105,7 @@ internal fun WearHomeDashboard(
     val phoneCaption = when (language) { "hu" -> "Telefon"; "de" -> "Telefon"; "ro" -> "Telefon"; else -> "Phone" }
     val settingsCaption = when (language) { "hu" -> "Beáll."; "de" -> "Einst."; "ro" -> "Setări"; else -> "Settings" }
     val connection = when (phoneConnected) { true -> "●"; false -> "○"; null -> "…" }
+    val stepPercent = wearDailyStepPercent(dailyHealth.steps, home?.dailyStepsGoal)
     val batteryColor = if (battery != null && battery <= 15) Color(0xFFEF5350) else theme.accentColor
     val status = saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.source)
     BoxWithConstraints(
@@ -128,7 +130,7 @@ internal fun WearHomeDashboard(
             drawArc(HomeLine, -45f, 90f, false, topLeft, arcSize, style = stroke)
             val fraction = (battery?.coerceIn(0, 100) ?: 0) / 100f
             if (fraction > 0f) drawArc(batteryColor, 135f, 90f * fraction, false, topLeft, arcSize, style = stroke)
-            // No daily total/goal in the current snapshot: the right arc is intentionally empty.
+            if (stepPercent != null && stepPercent > 0) drawArc(theme.secondaryColor, 45f, -90f * (stepPercent.coerceAtMost(100) / 100f), false, topLeft, arcSize, style = stroke)
         }
         Column(
             Modifier.align(Alignment.TopCenter).offset(y = bodyTop)
@@ -181,7 +183,7 @@ internal fun WearHomeDashboard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(painterResource(R.drawable.ic_tp_steps), null, Modifier.size(11.dp), colorFilter = ColorFilter.tint(HomeMuted))
-            Text("–", color = HomeMuted, fontSize = 9.sp)
+            Text(stepPercent?.let { "$it%" } ?: "–", color = if (stepPercent != null) theme.secondaryColor else HomeMuted, fontSize = 9.sp)
         }
     }
 }
