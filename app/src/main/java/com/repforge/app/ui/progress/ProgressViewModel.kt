@@ -56,7 +56,8 @@ data class ProgressUiState(
     val cardio: CardioModelResult? = null,
     val cardioActivities: List<CardioActivityOption> = emptyList(),
     val cardioLoading: Boolean = true,
-    val cardioError: Boolean = false
+    val cardioError: Boolean = false,
+    val externalProgress: ExternalProgressSummary? = null
 )
 
 class ProgressViewModel(application: Application) : AndroidViewModel(application) {
@@ -140,7 +141,8 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                         val groups = db.workoutHistoryDao().getProgressMuscleSummary(
                             now - 30L * 86_400_000L, now)
                         val photos = runCatching { NativeProgressPhotoData.load(db) }
-                        (Triple(language, exercises, groups) to photos) to
+                        val external = ExternalProgressSummary.load(db.workoutHistoryDao(), now)
+                        Triple(Triple(language, exercises, groups), photos, external) to
                             NativeDataReplacement.continuationForCurrentData(context)
                     }
                 }
@@ -152,7 +154,7 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                     .takeIf { selected -> exercises.any { it.id == selected } }
                     ?: exercises.firstOrNull()?.id.orEmpty()
                 _uiState.update { it.copy(
-                    language = language, exercises = exercises, muscleLoads = muscle,
+                    language = language, exercises = exercises, muscleLoads = muscle, externalProgress = result.third,
                     progressPhotos = result.second.getOrDefault(emptyList()),
                     selectedPhotoKey = it.selectedPhotoKey?.takeIf { key ->
                         result.second.getOrNull()?.any { photo -> photo.galleryKey == key } == true

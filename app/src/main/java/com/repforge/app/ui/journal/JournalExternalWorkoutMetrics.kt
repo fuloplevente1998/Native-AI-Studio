@@ -46,6 +46,30 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
             style = MaterialTheme.typography.titleMedium, color = colors.text)
         source?.optString("source")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
         source?.optString("title")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.text) }
+        source?.optJSONObject("device")?.let { device ->
+            val name = listOf("manufacturer", "model").mapNotNull { key ->
+                device.optString(key).takeIf { !device.isNull(key) && it.isNotBlank() }
+            }.joinToString(" ")
+            if (name.isNotBlank()) Text(name, color = colors.muted)
+        }
+        source?.optJSONArray("laps")?.takeIf { it.length() > 0 }?.let { laps ->
+            Text(local("Körök: ${laps.length()}", "Laps: ${laps.length()}", "Runden: ${laps.length()}", "Tururi: ${laps.length()}"), color = colors.muted)
+            for (i in 0 until minOf(laps.length(), 100)) {
+                val lap = laps.optJSONObject(i) ?: continue
+                val length = (lap.opt("lengthMeters") as? Number)?.toDouble()
+                val seconds = (lap.optLong("endMs") - lap.optLong("startMs")) / 1000
+                Text("${i+1}. · ${seconds.coerceAtLeast(0)} s" + (length?.let { " · ${number.format(it)} m" } ?: ""), color = colors.muted)
+            }
+        }
+        source?.optJSONArray("segments")?.takeIf { it.length() > 0 }?.let { segments ->
+            Text(local("Forrás szegmensek: ${segments.length()}", "Source segments: ${segments.length()}", "Quellsegmente: ${segments.length()}", "Segmente sursă: ${segments.length()}"), color = colors.muted)
+            for (i in 0 until minOf(segments.length(), 100)) {
+                val segment = segments.optJSONObject(i) ?: continue
+                val reps = (segment.opt("repetitions") as? Number)?.toInt()
+                val type = segment.optInt("segmentType")
+                Text("${i+1}. · #$type" + (reps?.let { " · $it ×" } ?: ""), color = colors.muted)
+            }
+        }
         if (deleted) Text(local("A forrás törölte az edzést; a helyi naplóadatok megmaradtak.",
             "Source deleted the workout; local journal data was kept.", "Quelle hat das Training gelöscht; lokale Protokolldaten bleiben erhalten.",
             "Sursa a șters antrenamentul; datele locale au fost păstrate."), color = colors.muted)
@@ -56,6 +80,9 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         if (metrics.isEmpty()) Text(text.getString(com.repforge.app.R.string.journal_no_data), color = colors.muted)
         else {
             JournalHealthMetrics(metrics, "external", text, number)
+            if (metrics.containsKey("workoutCalories")) Text(local("Edzésenergia, aktív/teljes bontás nélkül.",
+                "Session energy, active/total split unavailable.", "Trainingsenergie ohne Aktiv-/Gesamtaufteilung.",
+                "Energie sesiune fără separare activă/totală."), color = colors.muted)
             Text(local("Részleges, azonos forrású tárolt mérés; az átlagok mintákból származnak.",
                 "Partial same-source cached evidence; averages are sample-based.",
                 "Teilweise gespeicherte Messwerte derselben Quelle; Mittelwerte aus Stichproben.",

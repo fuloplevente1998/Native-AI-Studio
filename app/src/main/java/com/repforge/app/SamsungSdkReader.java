@@ -385,7 +385,9 @@ final class SamsungSdkReader {
                     JSONObject data = new JSONObject().put("value", Duration.between(a, b).toMillis() / 60000.0)
                         .put("unit", "min").put("title", s.getCustomTitle())
                         .put("clientRecordId", p.getClientDataId());
-                    // Samsung's session calories have not been classified as active vs total here.
+                    // The SDK session energy is explicitly neither active nor total energy.
+                    if (Double.isFinite(s.getCalories()) && s.getCalories() > 0)
+                        data.put("sessionCalories", s.getCalories());
                     record(p, "ExerciseSessionRecord", "", data, a, b);
                     sessions.put(new JSONObject().put("id", p.getUid()).put("source", source(p))
                         .put("start", a.toString()).put("end", b.toString())

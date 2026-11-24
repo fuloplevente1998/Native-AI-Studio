@@ -666,6 +666,14 @@ class HealthBackgroundJob : JobService() {
                     }
                     retry = report.failed && !stopped.get() && permitted(this)
                 }
+                if (access.allowed("READ_EXERCISE")) {
+                    kotlinx.coroutines.runBlocking {
+                        ExternalWorkoutSourceDeletion.reconcile(this@HealthBackgroundJob, epoch) {
+                            access.requireForeground()
+                            check(store.generation() == epoch)
+                        }
+                    }
+                }
             } catch (_: Exception) {
                 retry = !stopped.get() && NativePrivacyControls.enabled(this, NativePrivacyControls.HEALTH_CONNECT) && permitted(this)
             } finally {

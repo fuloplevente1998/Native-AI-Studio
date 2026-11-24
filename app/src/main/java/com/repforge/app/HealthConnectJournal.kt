@@ -204,6 +204,10 @@ internal object HealthConnectJournal {
                     .put("exerciseType", r.exerciseType)
                     .put("title", r.title?.toString() ?: JSONObject.NULL)
                     .put("clientRecordId", r.metadata.clientRecordId ?: JSONObject.NULL)
+                r.metadata.device?.let { device ->
+                    d.put("device", JSONObject().put("manufacturer", device.manufacturer ?: JSONObject.NULL)
+                        .put("model", device.model ?: JSONObject.NULL).put("type", device.type))
+                }
                 d.put("segments", JSONArray().apply {
                     for (segment in r.segments) put(externalWorkoutSegment(
                         segment.startTime, segment.endTime, segment.segmentType, segment.repetitionsCount))

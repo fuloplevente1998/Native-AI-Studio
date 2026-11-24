@@ -73,13 +73,30 @@ internal object ExternalWorkoutSourceDeletion {
                             guard()
                             val detail = dao.getWorkoutWithDetailsById(id) ?: return@withTransaction 0
                             val raw = JSONObject(detail.workout.rawJson)
-                            val source = raw.optJSONObject("externalWorkout359") ?: return@withTransaction 0
-                            if (source.optString("provider") != HealthJournalStore.HC) return@withTransaction 0
-                            val identity = ExternalWorkoutIdentity(HealthJournalStore.HC, source.optString("source"), source.optString("id"))
-                            if (identity.source.isBlank() || identity.recordId.isBlank() ||
-                                ExternalWorkoutImport.localId(identity) != id) return@withTransaction 0
-                            val at = journal.confirmedDeletion(identity, source.optLong("lastModifiedMs"), generation)
-                                ?: return@withTransaction 0
+                            var linkedChanged = false
+                            val links = raw.optJSONObject("externalLinkedSources359")
+                            for (linkedId in ExternalWorkoutAssociation.linkedIds(raw)) {
+                                val linked = links?.optJSONObject(linkedId) ?: continue
+                                if (linked.optBoolean("sourceDeleted") || linked.optString("provider") != HealthJournalStore.HC) continue
+                                val identity = ExternalWorkoutIdentity(HealthJournalStore.HC, linked.optString("source"), linked.optString("id"))
+                                if (ExternalWorkoutImport.localId(identity) != linkedId) continue
+                                if (journal.confirmedDeletion(identity, linked.optLong("lastModifiedMs"), generation) != null) {
+                                    linked.put("sourceDeleted", true).remove("metrics")
+                                    linkedChanged = true
+                                }
+                            }
+                            val source = raw.optJSONObject("externalWorkout359")
+                            val at = source?.takeIf { it.optString("provider") == HealthJournalStore.HC }?.let {
+                                val identity = ExternalWorkoutIdentity(HealthJournalStore.HC, it.optString("source"), it.optString("id"))
+                                if (ExternalWorkoutImport.localId(identity) != id) null
+                                else journal.confirmedDeletion(identity, it.optLong("lastModifiedMs"), generation)
+                            }
+                            if (at == null) {
+                                if (!linkedChanged) return@withTransaction 0
+                                check(dao.updateJournalPhotoJson(id, detail.workout.rawJson, raw.toString()) == 1)
+                                guard()
+                                return@withTransaction 2
+                            }
                             if (pureCopy(detail, raw)) {
                                 val w = detail.workout
                                 dao.upsertTombstone(HistoryTombstoneEntity(w.id, w.workoutKey,
@@ -88,8 +105,9 @@ internal object ExternalWorkoutSourceDeletion {
                                 guard()
                                 1
                             } else {
-                                if (source.optBoolean("sourceDeleted")) return@withTransaction 0
-                                source.put("sourceDeleted", true).remove("metrics")
+                                val primary = requireNotNull(source)
+                                if (primary.optBoolean("sourceDeleted") && !linkedChanged) return@withTransaction 0
+                                primary.put("sourceDeleted", true).remove("metrics")
                                 check(dao.updateExternalWorkoutJson(id, detail.workout.rawJson, raw.toString()) == 1)
                                 guard()
                                 2

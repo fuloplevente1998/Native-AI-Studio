@@ -73,6 +73,12 @@ internal object ExternalWorkoutMetrics {
 internal fun HealthJournalStore.externalWorkoutMetrics(
     workout: ExternalWorkout, generation: Long, grants: Set<String>
 ): JSONObject? = synchronized(HealthJournalStore.LOCK) {
+    if (workout.identity.provider == HealthJournalStore.SAMSUNG) {
+        val values = JSONObject()
+        workout.sessionCalories?.let { values.put("workoutCalories", it) }
+        return@synchronized JSONObject().put("values", values).put("partial", true)
+            .put("method", "samsung_exercise_session")
+    }
     if (workout.identity.provider != HealthJournalStore.HC || "READ_EXERCISE" !in grants) return@synchronized null
     val db = readableDatabase
     writable(db, generation)

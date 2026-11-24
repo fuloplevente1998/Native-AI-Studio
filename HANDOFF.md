@@ -23,3 +23,5 @@
 - #359 hatodik fázis: meglévő HC háttérjob opt-in import bekötése (új worker nélkül); HC tombstone alapján tiszta külső másolat eltávolítása, helyi módosítás/gyakorlat/fotó vagy ismeretlen mező esetén megtartás és forrástörlés jelölése; nincs törlés puszta rekordhiányból. A közvetlen Samsung törlésfeed nem igazolt; tesztek és CI ellenőrzendők.
 
 - #359 kézi átfedés-feloldás: meglévő edzéshez explicit társítás (önálló Room rekord nélkül), vagy külön edzésként explicit mentés; forrás azonosító tartós, saját gyakorlat és metrika változatlan, forrásadatok health-consent szerint szűrve. A társított mérés külön bizonyíték, nem automatikusan összesített érték. CI és eszközteszt ellenőrzendő.
+
+- #359 natív Egészség és Napló panel bekötése, device metaadat mindkét HC SDK-n, kör/szegmens kijelzés, Samsung session energia külön típusban, 30 napos külső Progress összesítő (nem szintetikus sorozat), kapcsolt forrás törlésjelzés és HC háttér törlésreconcile. Fizikai eszközteszt és CI még nincs igazolva.

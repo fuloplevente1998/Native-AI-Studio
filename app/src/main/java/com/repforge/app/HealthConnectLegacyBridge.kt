@@ -144,6 +144,10 @@ internal object HealthConnectLegacyBridge {
                     .put("unit", "min").put("exerciseType", record.exerciseType)
                     .put("title", record.title ?: JSONObject.NULL)
                     .put("clientRecordId", record.metadata.clientRecordId ?: JSONObject.NULL)
+                    .put("device", record.metadata.device?.let { device ->
+                        JSONObject().put("manufacturer", device.manufacturer ?: JSONObject.NULL)
+                            .put("model", device.model ?: JSONObject.NULL).put("type", device.type)
+                    } ?: JSONObject.NULL)
                     .put("segments", JSONArray().apply {
                         for (segment in record.segments) put(externalWorkoutSegment(
                             segment.startTime, segment.endTime, segment.segmentType, segment.repetitions))

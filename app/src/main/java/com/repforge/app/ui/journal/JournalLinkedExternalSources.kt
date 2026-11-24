@@ -33,7 +33,10 @@ internal fun JournalLinkedExternalSources(raw: String, text: Resources, language
         sources.forEachIndexed { i, source ->
             Text(source.optString("source"), color = colors.muted)
             Text("${source.optString("start")} – ${source.optString("end")}", color = colors.muted)
-            val values = source.optJSONObject("metrics")?.optJSONObject("values")
+            if (source.optBoolean("sourceDeleted")) Text(when (language.lowercase(Locale.ROOT).take(2)) {
+                "hu" -> "A forrás törölve"; "de" -> "Quelle gelöscht"; "ro" -> "Sursă ștearsă"; else -> "Source deleted"
+            }, color = colors.muted)
+            val values = source.optJSONObject("metrics")?.optJSONObject("values").takeUnless { source.optBoolean("sourceDeleted") }
             val map = values?.let { v -> v.keys().asSequence().mapNotNull { k -> (v.opt(k) as? Number)?.toDouble()?.let { k to it } }.toMap() }.orEmpty()
             JournalHealthMetrics(map, "external_linked_$i", text, number)
         }

@@ -261,6 +261,10 @@ fun ProgressScreen(
             NativeProgressPhotoGallery(state, viewModel::openPhoto, viewModel::closePhoto)
         }
 
+        state.externalProgress?.takeIf { it.count > 0 }?.let { external ->
+            item(key = "external_progress") { ExternalProgressPanel(external, state.language) }
+        }
+
         item(key = "progress_cardio") {
             NativeCardioProgressPanel(
                 state = state,

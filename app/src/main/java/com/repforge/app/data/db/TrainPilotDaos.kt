@@ -246,12 +246,12 @@ interface WorkoutHistoryDao {
     suspend fun getWearMiniJournal(): List<WorkoutHistoryWithDetails>
 
     /** List-only projection: no raw JSON, GPS coordinates, photos or set relations. */
-    @Query("SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226 FROM workout_history ORDER BY startedEpochMs DESC, id DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226, originDevice FROM workout_history ORDER BY startedEpochMs DESC, id DESC LIMIT :limit OFFSET :offset")
     suspend fun getJournalSummaryPage(limit: Int, offset: Int): List<JournalWorkoutSummary>
 
     @Query("""
         SELECT w.id, w.startedEpochMs, w.programName, w.dayName, w.durationSeconds,
-            w.completedSetsCount, w.totalSetsCount, w.hasPr226,
+            w.completedSetsCount, w.totalSetsCount, w.hasPr226, w.originDevice,
             w.programName || ' ' || w.dayName || ' ' || COALESCE((
                 SELECT group_concat(e.nameHu || ' ' || e.nameEn || ' ' ||
                     COALESCE(l.nameDe, '') || ' ' || COALESCE(l.nameRo, ''), ' ')
@@ -267,7 +267,7 @@ interface WorkoutHistoryDao {
         limit: Int): List<JournalSearchRow>
 
     @Query("""
-        SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226
+        SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226, originDevice
         FROM workout_history WHERE startedEpochMs >= :fromEpoch AND startedEpochMs < :toEpoch
             AND (:beforeEpoch IS NULL OR startedEpochMs < :beforeEpoch OR (startedEpochMs = :beforeEpoch AND id < :beforeId))
         ORDER BY startedEpochMs DESC, id DESC LIMIT :limit
@@ -448,7 +448,12 @@ interface WorkoutHistoryDao {
         ORDER BY startedEpochMs DESC, id LIMIT 32""")
     suspend fun externalOverlapCandidates(id: String, start: Long, end: Long): List<WorkoutHistoryEntity>
 
-    @Query("SELECT id FROM workout_history WHERE originDevice = 'external' AND id > :after ORDER BY id LIMIT :limit")
+    @Query("""SELECT * FROM workout_history WHERE originDevice = 'external' AND startedEpochMs >= :from
+        AND finishedEpochMs <= :to AND id > :after ORDER BY id LIMIT :limit""")
+    suspend fun pageExternalProgress(from: Long, to: Long, after: String, limit: Int): List<WorkoutHistoryEntity>
+
+    @Query("""SELECT id FROM workout_history WHERE (originDevice = 'external' OR instr(rawJson, '"externalLinkedIds359"') > 0)
+        AND id > :after ORDER BY id LIMIT :limit""")
     suspend fun pageExternalWorkoutIds(after: String, limit: Int): List<String>
 
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected AND originDevice = 'external'")
