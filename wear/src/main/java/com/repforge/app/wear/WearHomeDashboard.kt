@@ -66,6 +66,7 @@ internal fun WearHomeDashboard(
     onMenu: () -> Unit,
     onOpenPhone: () -> Unit,
     dailyHealth: WearDailyHealth = WearDailyHealth(),
+    dailyPulse: WearDailyPulse? = null,
 ) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(active?.workoutId) {
@@ -99,6 +100,7 @@ internal fun WearHomeDashboard(
             HomeAction.PHONE -> wearText("Telefon megnyitása a folytatáshoz")
         }
     val pulse = wearHomeLivePulse(health, active?.workoutId, enabled, now)
+    val lastPulse = dailyPulse?.takeIf { now - it.at in 0L..300000L }
     val clock = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
         .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(now))
     val language = java.util.Locale.getDefault().language
@@ -130,7 +132,10 @@ internal fun WearHomeDashboard(
             drawArc(HomeLine, -45f, 90f, false, topLeft, arcSize, style = stroke)
             val fraction = (battery?.coerceIn(0, 100) ?: 0) / 100f
             if (fraction > 0f) drawArc(batteryColor, 135f, 90f * fraction, false, topLeft, arcSize, style = stroke)
-            if (stepPercent != null && stepPercent > 0) drawArc(theme.secondaryColor, 45f, -90f * (stepPercent.coerceAtMost(100) / 100f), false, topLeft, arcSize, style = stroke)
+            if (stepPercent != null && stepPercent > 0) {
+                val sweep = 90f * (stepPercent.coerceAtMost(100) / 100f)
+                drawArc(theme.secondaryColor, 45f - sweep, sweep, false, topLeft, arcSize, style = stroke)
+            }
         }
         Column(
             Modifier.align(Alignment.TopCenter).offset(y = bodyTop)
@@ -144,7 +149,7 @@ internal fun WearHomeDashboard(
             HomeFitText("${wearText(model.title)} · $status", Modifier.fillMaxWidth().height(13.dp).testTag("wear-home-title"),
                 10f, HomeMuted)
             HomeFitText(
-                if (pulse != null) "♥ $pulse bpm · ${wearText("Mérés aktív")}" else "♥ – · ${wearText(model.measurement)}",
+                if (pulse != null) "♥ $pulse bpm · ${wearText("Mérés aktív")}" else if (lastPulse != null) "♥ ${lastPulse.bpm} bpm · ${wearText("Korábbi adat")}" else "♥ – · ${wearText(model.measurement)}",
                 Modifier.fillMaxWidth().height(13.dp).testTag("wear-home-measurement"),
                 10f, theme.secondaryColor, weight = FontWeight.SemiBold,
             )

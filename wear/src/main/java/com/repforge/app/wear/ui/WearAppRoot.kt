@@ -416,6 +416,7 @@ internal fun TrainPilotWearApp(
                             onMenu = { route = "menu" },
                             onOpenPhone = onOpenPhone,
                             dailyHealth = daily.data,
+                            dailyPulse = daily.pulse,
                         )
                 }
             }

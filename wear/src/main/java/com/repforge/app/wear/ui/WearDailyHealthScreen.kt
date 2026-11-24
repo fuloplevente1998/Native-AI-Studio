@@ -16,7 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-internal data class WearDailyUi(val data: WearDailyHealth, val enabled: Boolean, val registered: Boolean?, val toggle: () -> Unit)
+internal data class WearDailyUi(val data: WearDailyHealth, val enabled: Boolean, val registered: Boolean?, val toggle: () -> Unit, val pulse: WearDailyPulse? = null)
 
 @Composable
 internal fun rememberWearDailyHealth(): WearDailyUi {
@@ -48,11 +48,13 @@ internal fun rememberWearDailyHealth(): WearDailyUi {
         if (!enabled) data = WearDailyHealth()
         while (resumed && enabled) { data = WearDailyHealthStore.read(context); delay(2000L) }
     }
-    return WearDailyUi(data, enabled, registered) {
+    val passivePulse = rememberWearDailyPulse(enabled && resumed)
+    val toggle: () -> Unit = {
         if (enabled) { WearDailyHealthStore.enable(context, false); enabled = false; data = WearDailyHealth() }
         else if (WearDailyHealthStore.permitted(context)) { WearDailyHealthStore.enable(context, true); enabled = true }
         else request.launch(Manifest.permission.ACTIVITY_RECOGNITION)
     }
+    return WearDailyUi(data, enabled, registered, toggle, passivePulse)
 }
 
 private fun dailyText(hu: String, en: String, de: String, ro: String) = when (java.util.Locale.getDefault().language) {
@@ -61,13 +63,16 @@ private fun dailyText(hu: String, en: String, de: String, ro: String) = when (ja
 
 @Composable
 internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONObject?, active: WearWorkout?, onDetails: () -> Unit, onBack: () -> Unit) {
-    val pulse = wearHomeLivePulse(health, active?.workoutId, true, System.currentTimeMillis())
+    val now = System.currentTimeMillis()
+    val pulse = wearHomeLivePulse(health, active?.workoutId, true, now)
+    val passive = daily.pulse?.takeIf { now - it.at in 0L..300000L }
     RoundList(dailyText("Egészség", "Health", "Gesundheit", "Sănătate")) {
         centerItem { Title(daily.data.steps?.toString() ?: "–", 32) }
         centerItem { Label(dailyText("Lépés · cél", "Steps · goal", "Schritte · Ziel", "Pași · obiectiv") + " " + (goal?.toString() ?: "–")) }
-        centerItem { Label("♥ " + (pulse?.let { "$it bpm" } ?: "–")) }
+        centerItem { Label("♥ " + (pulse?.let { "$it bpm" } ?: passive?.let { "${it.bpm} bpm · " + dailyText("utolsó", "last", "zuletzt", "ultimul") } ?: "–")) }
         centerItem { Label((daily.data.calories?.let(::trimWearNumber) ?: "–") + " kcal · " + dailyText("összes", "total", "gesamt", "total")) }
-        centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " –") }
+        centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " " + (daily.data.sleepIntervalMinutes?.let { "${it / 60} h ${it % 60} min" } ?: "–")) }
+        if (daily.data.sleepIntervalMinutes != null) centerItem { Label(dailyText("Utolsó észlelt alvási szakasz", "Last observed sleep interval", "Letzte erkannte Schlafphase", "Ultimul interval de somn detectat"), size = 10, lines = 2) }
         centerItem { Label(dailyText("Órás napi adatok", "Watch daily data", "Tagesdaten der Uhr", "Date zilnice de pe ceas"), size = 10) }
         if (daily.enabled && daily.registered == false) centerItem {
             Label(dailyText("Nem elérhető · ellenőrizd az engedélyt", "Unavailable · check permission", "Nicht verfügbar · Berechtigung prüfen", "Indisponibil · verifică permisiunea"), lines = 2)

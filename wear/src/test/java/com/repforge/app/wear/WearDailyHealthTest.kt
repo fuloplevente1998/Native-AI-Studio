@@ -22,4 +22,11 @@ class WearDailyHealthTest {
         assertFalse(wearDailyAccept(0, now - 86400000, now, zone))
         assertFalse(wearDailyAccept(0, now + 1, now, zone))
     }
+    @Test fun sleepRequiresCompletedOrderedBoundedInterval() {
+        val start = 100000000L
+        assertEquals(420L, wearObservedSleepMinutes(start, start + 420 * 60000L))
+        assertNull(wearObservedSleepMinutes(0, start))
+        assertNull(wearObservedSleepMinutes(start, start - 1))
+        assertNull(wearObservedSleepMinutes(start, start + 25 * 3600000L))
+    }
 }
