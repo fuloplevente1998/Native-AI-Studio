@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.LocalGlassTopInset
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -90,6 +93,7 @@ import com.example.ui.components.MockupHealthConnectBadge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -464,9 +468,9 @@ fun HealthTabScreen(
             "today" -> {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = palette.surfaceCard,
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(24.dp))
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
                 ) {
                     Column(
@@ -481,16 +485,16 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.primary.copy(alpha = 0.14f),
+                                color = palette.selectionColors().surface,
                                 modifier = Modifier
                                     .size(38.dp)
-                                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                    .trainPilotBorder(1.dp, palette.selectionColors().border, RoundedCornerShape(14.dp))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.Favorite,
                                         contentDescription = null,
-                                        tint = palette.primary,
+                                        tint = palette.selectionColors().foreground,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -569,8 +573,8 @@ fun HealthTabScreen(
                 val shape = RoundedCornerShape(20.dp)
                 Surface(
                     shape = shape,
-                    color = palette.surfaceCard,
-                    modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                    modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, shape).trainPilotBorder(1.dp, palette.cardBorder, shape)
                 ) {
                     Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         StudioBodyFitnessTiles(uiState, layout) { key, reading ->
@@ -583,13 +587,13 @@ fun HealthTabScreen(
             "weight" -> {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                         .testTag("health_weight_card")
                         .trainPilotBorder(
                             width = 1.dp,
-                            color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
+                            color = if (uiState.expandedHealthWeightLog) palette.selectionColors().border else palette.cardBorder,
                             shape = RoundedCornerShape(20.dp)
                         )
                 ) {
@@ -607,14 +611,14 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = palette.primary.copy(alpha = 0.16f),
+                                color = palette.selectionColors().surface,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.MonitorWeight,
                                         contentDescription = null,
-                                        tint = palette.primary,
+                                        tint = palette.selectionColors().foreground,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -714,9 +718,9 @@ fun HealthTabScreen(
             state = healthListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .background(palette.pageBrush).trainPilotGlassScene(palette)
                 .testTag("health_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         if (layout.draft == null) {

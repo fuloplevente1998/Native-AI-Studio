@@ -246,12 +246,12 @@ interface WorkoutHistoryDao {
     suspend fun getWearMiniJournal(): List<WorkoutHistoryWithDetails>
 
     /** List-only projection: no raw JSON, GPS coordinates, photos or set relations. */
-    @Query("SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226 FROM workout_history ORDER BY startedEpochMs DESC, id DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226, originDevice FROM workout_history ORDER BY startedEpochMs DESC, id DESC LIMIT :limit OFFSET :offset")
     suspend fun getJournalSummaryPage(limit: Int, offset: Int): List<JournalWorkoutSummary>
 
     @Query("""
         SELECT w.id, w.startedEpochMs, w.programName, w.dayName, w.durationSeconds,
-            w.completedSetsCount, w.totalSetsCount, w.hasPr226,
+            w.completedSetsCount, w.totalSetsCount, w.hasPr226, w.originDevice,
             w.programName || ' ' || w.dayName || ' ' || COALESCE((
                 SELECT group_concat(e.nameHu || ' ' || e.nameEn || ' ' ||
                     COALESCE(l.nameDe, '') || ' ' || COALESCE(l.nameRo, ''), ' ')
@@ -267,7 +267,7 @@ interface WorkoutHistoryDao {
         limit: Int): List<JournalSearchRow>
 
     @Query("""
-        SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226
+        SELECT id, startedEpochMs, programName, dayName, durationSeconds, completedSetsCount, totalSetsCount, hasPr226, originDevice
         FROM workout_history WHERE startedEpochMs >= :fromEpoch AND startedEpochMs < :toEpoch
             AND (:beforeEpoch IS NULL OR startedEpochMs < :beforeEpoch OR (startedEpochMs = :beforeEpoch AND id < :beforeId))
         ORDER BY startedEpochMs DESC, id DESC LIMIT :limit
@@ -421,6 +421,11 @@ interface WorkoutHistoryDao {
                OR (t.workoutKey <> '' AND t.workoutKey = w.workoutKey))""")
     suspend fun getWorkoutCountBetween(fromInclusive: Long, toExclusive: Long): Int
 
+    // An overlap is a review candidate, never proof that two workouts are the same.
+    @Query("""SELECT EXISTS(SELECT 1 FROM workout_history
+        WHERE id <> :id AND startedEpochMs < :end AND finishedEpochMs > :start)""")
+    suspend fun hasExternalImportOverlap(id: String, start: Long, end: Long): Boolean
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkout(workout: WorkoutHistoryEntity)
 
@@ -435,6 +440,30 @@ interface WorkoutHistoryDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertNewJournalPhoto(photo: WorkoutPhotoEntity)
+
+    @Query("SELECT * FROM workout_history WHERE id <> :id AND instr(rawJson, :quotedId) > 0 LIMIT 64")
+    suspend fun externalLinkCandidates(id: String, quotedId: String): List<WorkoutHistoryEntity>
+
+    @Query("""SELECT * FROM workout_history WHERE id <> :id AND startedEpochMs < :end AND finishedEpochMs > :start
+        ORDER BY startedEpochMs DESC, id LIMIT 32""")
+    suspend fun externalOverlapCandidates(id: String, start: Long, end: Long): List<WorkoutHistoryEntity>
+
+    @Query("""SELECT * FROM workout_history WHERE originDevice = 'external' AND startedEpochMs >= :from
+        AND finishedEpochMs <= :to AND id > :after ORDER BY id LIMIT :limit""")
+    suspend fun pageExternalProgress(from: Long, to: Long, after: String, limit: Int): List<WorkoutHistoryEntity>
+
+    @Query("""SELECT id FROM workout_history WHERE (originDevice = 'external' OR instr(rawJson, '"externalLinkedIds359"') > 0)
+        AND id > :after ORDER BY id LIMIT :limit""")
+    suspend fun pageExternalWorkoutIds(after: String, limit: Int): List<String>
+
+    @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected AND originDevice = 'external'")
+    suspend fun updateExternalWorkoutJson(id: String, expected: String, updated: String): Int
+
+    @Query("""UPDATE workout_history SET rawJson=:updated, started=:start, finished=:end,
+        startedEpochMs=:startMs, finishedEpochMs=:endMs, durationSeconds=:duration
+        WHERE id=:id AND rawJson=:expected AND originDevice='external'""")
+    suspend fun updateExternalWorkoutWindow(id: String, expected: String, updated: String, start: String, end: String,
+        startMs: Long, endMs: Long, duration: Int): Int
 
     // UPDATE keeps existing exercises, sets and photos: REPLACE cascades their deletion.
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected")

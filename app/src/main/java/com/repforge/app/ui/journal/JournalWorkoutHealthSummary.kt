@@ -24,6 +24,10 @@ import java.util.Locale
 
 @Composable
 internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text: Resources, language: String) {
+    if (detail.workout.originDevice == "external") {
+        JournalExternalWorkoutMetrics(detail, text, language)
+        return
+    }
     val colors = LocalTrainPilotColors.current
     val result = remember(detail.workout) { NativeWorkoutHealthSummary.read(detail.workout) }
     val number = remember(language) { NumberFormat.getNumberInstance(Locale.forLanguageTag(language)).apply { maximumFractionDigits = 1 } }

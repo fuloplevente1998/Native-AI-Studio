@@ -17,6 +17,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.toArgb
+import com.example.ui.theme.CustomThemeCodec
+import com.example.ui.theme.CustomThemeDefinition
+import com.example.ui.theme.PaletteCategory
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.TrainPilotPalettes
+import com.example.ui.theme.resolveCustomTheme
+import com.example.ui.theme.isCustomThemeKey
+import com.example.ui.theme.DEFAULT_GLASS_CLARITY
+import com.example.ui.theme.withGlassClarity
 import org.json.JSONObject
 import java.util.UUID
 
@@ -73,23 +82,30 @@ data class TrainPilotUserSettings(
     val migrationV1371Complete: Boolean = false,
     val gpsStartChoices216: Map<String, Boolean> = emptyMap(),
     /** Unmodified settings.trainingModes197 JSON, including unknown portable extensions. */
-    val trainingModes197Json: String? = null
+    val trainingModes197Json: String? = null,
+    val customThemesJson: String = "[]",
+    val glassClarity: Int = DEFAULT_GLASS_CLARITY
 ) {
     fun timerConfiguration(): JSONObject = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
         .put("work", workSeconds).put("rest", intervalRestSeconds).put("rounds", rounds)
         .put("sound", soundEnabled).put("vibration", vibrationEnabled).put("autoAdvance", intervalAutoAdvance))
 
+    internal fun customThemes(): List<CustomThemeDefinition> = CustomThemeCodec.decode(customThemesJson)
+
+    internal fun resolvedThemePalette(): TrainPilotPalette = customThemes().firstOrNull { it.key == themeKey }
+        ?.let { resolveCustomTheme(it.draft, it.key)?.palette }
+        ?: TrainPilotPalettes.getByKey(themeKey)?.withGlassClarity(glassClarity) ?: TrainPilotPalettes.getById(1)
+
     fun themeJson(): JSONObject {
-        val palette = com.example.ui.theme.TrainPilotPalettes.getByKey(themeKey)
-            ?: com.example.ui.theme.TrainPilotPalettes.getById(1)
+        val palette = resolvedThemePalette()
         fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
         val result = JSONObject().put("key", palette.key)
             .put("accent", hex(palette.primary))
             .put("accent2", hex(palette.secondary))
-            .put("family", when (palette.id) {
-                in 9..16 -> "contrast"
-                in 17..24 -> "glow"
-                in 25..32 -> "light"
+            .put("family", when (palette.subGroup) {
+                PaletteCategory.CONTRAST, PaletteCategory.LIQUID_GLASS -> "contrast"
+                PaletteCategory.GLOW -> "glow"
+                PaletteCategory.LIGHT -> "light"
                 else -> "matte"
             })
         palette.let {
@@ -114,6 +130,8 @@ class TrainPilotSettingsStore(private val context: Context,
         val KEY_THEME_ACCENT = stringPreferencesKey("themeAccent")
         val KEY_THEME_ACCENT2 = stringPreferencesKey("themeAccent2")
         val KEY_THEME_FAMILY = stringPreferencesKey("themeFamily")
+        internal val KEY_CUSTOM_THEMES = stringPreferencesKey("customThemes350")
+        internal val KEY_GLASS_CLARITY = intPreferencesKey("glassClarity350")
         val KEY_REST_SECONDS = intPreferencesKey("restSeconds")
         val KEY_INTERVAL_REST_SECONDS = intPreferencesKey("intervalRestSeconds")
         val KEY_WORK_SECONDS = intPreferencesKey("workSeconds")
@@ -181,7 +199,19 @@ class TrainPilotSettingsStore(private val context: Context,
         fun importedTheme(data: JSONObject): ThemePaletteOption? {
             val candidates = listOf(data.optJSONObject("settings")?.optString("themeKey").orEmpty(),
                 data.optString("themeKey"), data.optString("themeAccent"))
-            return candidates.firstNotNullOfOrNull { key -> AVAILABLE_THEMES.firstOrNull { it.key == key } }
+            return candidates.firstNotNullOfOrNull { key ->
+                AVAILABLE_THEMES.firstOrNull { it.key == key } ?: TrainPilotPalettes.getByKey(key)?.let { palette ->
+                    fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
+                    ThemePaletteOption(palette.key, palette.nameHu, palette.nameEn, hex(palette.primary),
+                        hex(palette.secondary), when (palette.subGroup) {
+                            PaletteCategory.CONTRAST -> "contrast"
+                            PaletteCategory.GLOW -> "glow"
+                            PaletteCategory.LIGHT -> "light"
+                            PaletteCategory.LIQUID_GLASS -> "glass"
+                            else -> "matte"
+                        }, palette.nameDe, palette.nameRo)
+                }
+            }
         }
 
     }
@@ -225,7 +255,9 @@ class TrainPilotSettingsStore(private val context: Context,
                 json.keys().asSequence().filter { com.repforge.app.NativeOutdoorStart.eligible(it, "distance", "km") }
                     .associateWith { json.opt(it) == true }
             }.getOrDefault(emptyMap()),
-            trainingModes197Json = prefs[KEY_TRAINING_MODES_197]
+            trainingModes197Json = prefs[KEY_TRAINING_MODES_197],
+            customThemesJson = prefs[KEY_CUSTOM_THEMES] ?: "[]",
+            glassClarity = (prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY).coerceIn(0, 100)
         )
     }
 
@@ -335,17 +367,103 @@ class TrainPilotSettingsStore(private val context: Context,
         NativeDataReplacement.mutate(context) {
             ticket.requireCurrent(context)
             context.trainPilotDataStore.edit { prefs ->
-            prefs[KEY_THEME_KEY] = option.key
-            prefs[KEY_THEME_ACCENT] = option.accent
-            prefs[KEY_THEME_ACCENT2] = option.accent2
-            prefs[KEY_THEME_FAMILY] = option.family
+            val glass = TrainPilotPalettes.getByKey(option.key)?.takeIf { it.isLiquidGlass }
+            if (glass != null) writePaletteSelection(prefs, glass.withGlassClarity(prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY))
+            else {
+                prefs[KEY_THEME_KEY] = option.key
+                prefs[KEY_THEME_ACCENT] = option.accent
+                prefs[KEY_THEME_ACCENT2] = option.accent2
+                prefs[KEY_THEME_FAMILY] = option.family
+            }
         }
         }
+        publishThemeAfterCommit()
+    }
+
+    private suspend fun publishThemeAfterCommit() {
         // Commit first; Data Layer keeps the last snapshot for reconnect/restart.
         // A transport failure never rolls back the selected palette.
         try { publishTheme(context) }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (_: Exception) { /* Normal reconnect/home refresh retries the persisted palette. */ }
+    }
+
+    internal suspend fun setGlassClarityForDataset(clarity: Int, ticket: NativeDataReplacement.Continuation) {
+        require(clarity in 0..100)
+        var active = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                prefs[KEY_GLASS_CLARITY] = clarity
+                val palette = TrainPilotPalettes.getByKey(prefs[KEY_THEME_KEY].orEmpty())
+                active = palette?.isLiquidGlass == true
+                if (active && palette != null) writePaletteSelection(prefs, palette.withGlassClarity(clarity))
+            }
+        }
+        if (active) publishThemeAfterCommit()
+    }
+
+    /** Save alone does not apply a new theme. Editing the active theme refreshes it atomically. */
+    internal suspend fun saveCustomThemeForDataset(definition: CustomThemeDefinition,
+        ticket: NativeDataReplacement.Continuation) {
+        val checked = requireNotNull(definition.draft.toDefinition(definition.key))
+        val resolved = requireNotNull(resolveCustomTheme(checked.draft, checked.key))
+        require(resolved.correctedRoles.isEmpty()) { "Custom theme needs contrast correction" }
+        var active = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val themes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]").toMutableList()
+                val index = themes.indexOfFirst { it.key == checked.key }
+                if (index < 0) themes.add(checked) else themes[index] = checked
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(themes)
+                active = prefs[KEY_THEME_KEY] == checked.key
+                if (active) writePaletteSelection(prefs, resolved.palette)
+            }
+        }
+        if (active) publishThemeAfterCommit()
+    }
+
+    internal suspend fun applyCustomThemeForDataset(key: String, ticket: NativeDataReplacement.Continuation) {
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val theme = requireNotNull(CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+                    .firstOrNull { it.key == key }) { "Custom theme missing" }
+                val resolved = requireNotNull(resolveCustomTheme(theme.draft, theme.key))
+                writePaletteSelection(prefs, resolved.palette)
+            }
+        }
+        publishThemeAfterCommit()
+    }
+
+    internal suspend fun deleteCustomThemeForDataset(key: String, ticket: NativeDataReplacement.Continuation) {
+        require(com.example.ui.theme.isCustomThemeKey(key))
+        var active = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                val themes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(themes.filterNot { it.key == key })
+                active = prefs[KEY_THEME_KEY] == key
+                if (active) writePaletteSelection(prefs, TrainPilotPalettes.getById(1))
+            }
+        }
+        if (active) publishThemeAfterCommit()
+    }
+
+    private fun writePaletteSelection(prefs: androidx.datastore.preferences.core.MutablePreferences, palette: TrainPilotPalette) {
+        fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
+        prefs[KEY_THEME_KEY] = palette.key
+        prefs[KEY_THEME_ACCENT] = hex(palette.primary)
+        prefs[KEY_THEME_ACCENT2] = hex(palette.secondary)
+        prefs[KEY_THEME_FAMILY] = when (palette.subGroup) {
+            PaletteCategory.CONTRAST -> "contrast"
+            PaletteCategory.GLOW -> "glow"
+            PaletteCategory.LIGHT -> "light"
+            PaletteCategory.LIQUID_GLASS -> "glass"
+            else -> "matte"
+        }
     }
 
     suspend fun setTimerDefaults(workSeconds: Int, restSeconds: Int, rounds: Int, sound: Boolean, vibration: Boolean,
@@ -580,6 +698,9 @@ class TrainPilotSettingsStore(private val context: Context,
         val source = data.optJSONObject("settings") ?: JSONObject()
         val language = source.optString("language", source.optString("lang", data.optString("language")))
         val theme = importedTheme(data)
+        val importedThemeKey = listOf(source.optString("themeKey"), data.optString("themeKey"), data.optString("themeAccent"))
+            .firstOrNull { it.isNotBlank() }
+        val incomingCustomThemes = source.optJSONArray("customThemes350")?.let { CustomThemeCodec.decode(it.toString()) }
         val preset = source.optJSONObject("intervalPreset110")?.let {
             com.repforge.app.NativeIntervalPreset.normalized(it, defaultAutoAdvance = false)
         }
@@ -593,9 +714,38 @@ class TrainPilotSettingsStore(private val context: Context,
             }
             if (language in listOf("hu", "en", "de", "ro")) prefs[KEY_LANGUAGE] = language
             if (data.optString("activeProgramId").isNotBlank()) prefs[KEY_ACTIVE_PROGRAM_ID] = data.getString("activeProgramId")
-            if (theme != null) {
-                prefs[KEY_THEME_KEY] = theme.key; prefs[KEY_THEME_ACCENT] = theme.accent
-                prefs[KEY_THEME_ACCENT2] = theme.accent2; prefs[KEY_THEME_FAMILY] = theme.family
+            val importedClarity = source.opt("glassClarity350")
+            if (importedClarity is Number && importedClarity.toDouble().isFinite() &&
+                importedClarity.toDouble() == importedClarity.toInt().toDouble() && importedClarity.toInt() in 0..100) {
+                prefs[KEY_GLASS_CLARITY] = importedClarity.toInt()
+            } else if (replaceTrainingModesOnMissing) prefs[KEY_GLASS_CLARITY] = DEFAULT_GLASS_CLARITY
+            val previousCustomThemes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+            val customThemes = when {
+                replaceTrainingModesOnMissing -> incomingCustomThemes ?: emptyList()
+                incomingCustomThemes != null -> (previousCustomThemes + incomingCustomThemes).associateBy { it.key }.values.toList()
+                else -> previousCustomThemes
+            }
+            if (incomingCustomThemes != null || replaceTrainingModesOnMissing) {
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(customThemes)
+            }
+            val selectedCustom = customThemes.firstOrNull { it.key == importedThemeKey }
+            when {
+                selectedCustom != null -> writePaletteSelection(prefs,
+                    requireNotNull(resolveCustomTheme(selectedCustom.draft, selectedCustom.key)).palette)
+                importedThemeKey != null && isCustomThemeKey(importedThemeKey) ->
+                    writePaletteSelection(prefs, TrainPilotPalettes.getById(1))
+                theme != null && TrainPilotPalettes.getByKey(theme.key)?.isLiquidGlass == true ->
+                    writePaletteSelection(prefs, requireNotNull(TrainPilotPalettes.getByKey(theme.key))
+                        .withGlassClarity(prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY))
+                theme != null -> {
+                    prefs[KEY_THEME_KEY] = theme.key; prefs[KEY_THEME_ACCENT] = theme.accent
+                    prefs[KEY_THEME_ACCENT2] = theme.accent2; prefs[KEY_THEME_FAMILY] = theme.family
+                }
+                isCustomThemeKey(prefs[KEY_THEME_KEY].orEmpty()) -> {
+                    val retained = customThemes.firstOrNull { it.key == prefs[KEY_THEME_KEY] }
+                    val palette = retained?.let { resolveCustomTheme(it.draft, it.key)?.palette }
+                    writePaletteSelection(prefs, palette ?: TrainPilotPalettes.getById(1))
+                }
             }
             if (source.has("restSeconds")) {
                 prefs[KEY_REST_SECONDS] = source.optInt("restSeconds", 90).coerceIn(0, 3600)

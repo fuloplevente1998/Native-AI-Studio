@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
@@ -46,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.BarChart
 import com.example.localization.LocalizedStrings
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
+import androidx.compose.runtime.remember
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -75,6 +79,7 @@ fun ProgressTabScreen(
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
     val sections = listOf(0 to strings.navProgress, 2 to statisticsLabel)
     val activeSection = if (uiState.progressMainSection == 2) 2 else 0
+    val selection = remember(palette) { palette.selectionColors() }
 
     val layoutBlocks = listOf(
         PageLayoutBlock("photos", trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto")),
@@ -89,15 +94,15 @@ fun ProgressTabScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .background(palette.pageBrush).trainPilotGlassScene(palette)
             .testTag("progress_tab_screen")
     ) {
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceCard,
+            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp).trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
@@ -120,13 +125,13 @@ fun ProgressTabScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                            color = if (selected) selection.surface else Color.Transparent,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(42.dp)
                                 .trainPilotBorder(
                                     width = if (selected) 1.dp else 0.dp,
-                                    color = if (selected) palette.primary else Color.Transparent,
+                                    color = if (selected) selection.border else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .testTag("progress_section_visual_$idx")
@@ -139,14 +144,14 @@ fun ProgressTabScreen(
                                 Icon(
                                     imageVector = if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
                                     contentDescription = null,
-                                    tint = if (selected) palette.primary else palette.textSecondary,
+                                    tint = if (selected) selection.foreground else palette.textSecondary,
                                     modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
                                 )
                                 com.example.ui.components.TrainPilotFitText(
                                     text = label,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) palette.primary else palette.textSecondary,
+                                    color = if (selected) selection.foreground else palette.textSecondary,
                                     modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
                                 )
                             }
@@ -176,9 +181,9 @@ fun ProgressTabScreen(
                             photoBlock = {
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
+                                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                                         .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenPhotos() }

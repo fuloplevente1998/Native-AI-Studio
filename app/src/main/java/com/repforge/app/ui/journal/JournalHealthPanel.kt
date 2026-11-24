@@ -48,6 +48,12 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     selectProvider: (String) -> Unit = {}, permissions: (@Composable (String) -> Unit)? = null,
     expandedState: MutableState<String?>? = null,
     refresh: () -> Unit) {
+    if (detail.workout.originDevice == "external") {
+        // The generic health-window refresh aggregates all origins; it is not a valid
+        // substitute for an imported session's own-source evidence.
+        JournalExternalWorkoutMetrics(detail, text, language)
+        return
+    }
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
@@ -71,6 +77,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
                 HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect")) {

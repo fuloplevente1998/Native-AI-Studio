@@ -121,8 +121,11 @@ private fun JournalSummaryCard(row: JournalWorkoutSummary, text: Resources, loca
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TrainPilotIconBadge(Icons.Default.History)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(row.programName, color = colors.muted, style = MaterialTheme.typography.labelMedium)
-                Text(row.dayName, color = colors.text, style = MaterialTheme.typography.titleMedium)
+                if (row.originDevice == "external") Text(externalJournalTitle(locale.language), color = colors.text, style = MaterialTheme.typography.titleMedium)
+                else {
+                    Text(row.programName, color = colors.muted, style = MaterialTheme.typography.labelMedium)
+                    Text(row.dayName, color = colors.text, style = MaterialTheme.typography.titleMedium)
+                }
             }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = colors.accentText)
         }
@@ -139,7 +142,8 @@ private fun JournalSummaryCard(row: JournalWorkoutSummary, text: Resources, loca
         HorizontalDivider(color = colors.line)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             TrainPilotStatusBadge(text.getString(R.string.journal_minutes, row.durationSeconds / 60))
-            TrainPilotStatusBadge(text.getString(R.string.journal_sets, row.completedSetsCount, row.totalSetsCount))
+            if (row.originDevice != "external" || row.totalSetsCount > 0)
+                TrainPilotStatusBadge(text.getString(R.string.journal_sets, row.completedSetsCount, row.totalSetsCount))
             if (row.hasPr226) Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(Icons.Default.EmojiEvents, null, tint = colors.accentText)
@@ -173,7 +177,8 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                     else -> {
                         val detail = state.detail
                         val workout = detail.workout
-                        Text(workout.dayName, style = MaterialTheme.typography.headlineSmall)
+                        Text(if (workout.originDevice == "external") externalJournalTitle(language) else workout.dayName,
+                            style = MaterialTheme.typography.headlineSmall)
                         val tabs = listOf(R.string.journal_exercises, R.string.journal_statistics, R.string.journal_source)
                         TabRow(tab) { tabs.forEachIndexed { index, label ->
                             Tab(tab == index, onClick = { tab = index }, modifier = Modifier.testTag("journal_tab_$index"),
@@ -181,6 +186,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                         } }
                         LazyColumn(Modifier.weight(1f).testTag("journal_details_list"), verticalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(vertical = 12.dp)) {
+                            if (tab == 0 && workout.originDevice == "external" && detail.exercises.isEmpty()) item {
+                                Text(text.getString(R.string.journal_no_data), color = colors.muted)
+                            }
                             if (tab == 0) items(detail.exercises.sortedBy { it.exercise.orderIndex }, key = { it.exercise.rowId }) { exercise ->
                                 Card(colors = CardDefaults.cardColors(containerColor = colors.card)) {
                                     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -200,8 +208,11 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                             if (tab == 1) item {
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text(text.getString(R.string.journal_minutes, workout.durationSeconds / 60))
-                                    Text(text.getString(R.string.journal_sets, workout.completedSetsCount, workout.totalSetsCount))
-                                    Text("${text.getString(R.string.journal_volume)}: ${workout.totalVolumeKg} kg")
+                                    if (workout.originDevice != "external" || workout.totalSetsCount > 0) {
+                                        Text(text.getString(R.string.journal_sets, workout.completedSetsCount, workout.totalSetsCount))
+                                        Text("${text.getString(R.string.journal_volume)}: ${workout.totalVolumeKg} kg")
+                                    }
+                                    if (workout.originDevice == "external") JournalExternalWorkoutMetrics(detail, text, language)
                                     val effort = when (workout.effortFeedback) {
                                         "easy" -> R.string.journal_effort_easy; "light" -> R.string.journal_effort_light
                                         "good" -> R.string.journal_effort_good; "challenging" -> R.string.journal_effort_challenging
@@ -220,7 +231,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                             }
                             if (tab == 2) item {
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Text(text.getString(if (workout.originDevice == "watch") R.string.journal_watch else R.string.journal_phone))
+                                    Text(if (workout.originDevice == "external") externalJournalTitle(language)
+                                        else text.getString(if (workout.originDevice == "watch") R.string.journal_watch else R.string.journal_phone))
+                                    if (workout.originDevice == "external") ExternalRoutePreview(detail, language)
                                     JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
                                         provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider) {
                                         model.refreshWorkoutHealth(context as? android.app.Activity)
@@ -317,4 +330,8 @@ private fun JournalLoading(text: Resources) {
 private fun JournalRetry(text: Resources, onRetry: () -> Unit) {
     Text(text.getString(R.string.journal_error))
     TextButton(onClick = onRetry) { Text(text.getString(R.string.journal_retry)) }
+}
+
+private fun externalJournalTitle(language: String): String = when (language.lowercase(java.util.Locale.ROOT).take(2)) {
+    "hu" -> "Külső edzés"; "de" -> "Externes Training"; "ro" -> "Antrenament extern"; else -> "External workout"
 }

@@ -21,7 +21,8 @@ internal object NativeHistoryDeletion {
         ticket: NativeDataReplacement.Continuation) = NativeDataReplacement.mutate(context) {
         ticket.requireCurrent(context)
         val w = target.workout
-        val aliases = listOf(w.id, w.syncId, w.workoutKey).filter(String::isNotBlank).distinct()
+        val aliases = (listOf(w.id, w.syncId, w.workoutKey) +
+            ExternalWorkoutAssociation.linkedIds(JSONObject(w.rawJson))).filter(String::isNotBlank).distinct()
         NativeJournalEditor.requireNotActive(context, aliases.toSet())
         val key = PREFIX + w.id
         db.withTransaction {
@@ -50,6 +51,7 @@ internal object NativeHistoryDeletion {
 
     suspend fun recover(context: Context, db: TrainPilotDatabase) = NativeDataReplacement.mutate(context) {
         for (doc in db.keyValueDocumentDao().getHistoryCleanupDocuments()) cleanup(context, db, doc.key)
+        ExternalRouteStore(context.noBackupFilesDir).prune(db.workoutHistoryDao())
     }
 
     private suspend fun cleanup(context: Context, db: TrainPilotDatabase, key: String) {
@@ -87,6 +89,7 @@ internal object NativeHistoryDeletion {
         }
         if (receipt.optBoolean("ledger") && !sharedRoute && !referenced(id))
             GpsRouteLedger193.open(context.noBackupFilesDir).deleteWorkout(id)
+        check(ExternalRouteStore(context.noBackupFilesDir).delete(id)) { "A helyi útvonal törlése nem sikerült." }
         // A failure leaves the receipt for an explicit retry or the next journal opening.
         db.keyValueDocumentDao().deleteDocument(key)
     }

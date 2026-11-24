@@ -251,6 +251,30 @@ object WearSyncRepository {
                             }
                         }
 
+                        "phoneRest367" -> withContext(Dispatchers.Main) {
+                            val applied = PhoneRemoteRest367.apply(appContext, command)
+                            check(WearCommandReceipts.complete(appContext, command, if (applied) "applied" else "superseded", uri))
+                        }
+
+                        "phonePause367" -> withContext(Dispatchers.Main) {
+                            val applied = PhoneRemotePause367.apply(appContext, command)
+                            check(WearCommandReceipts.complete(appContext, command, if (applied) "applied" else "superseded", uri))
+                        }
+
+                        "watchControl367" -> withContext(Dispatchers.Main) {
+                            val current = ActiveWorkoutStore.current(appContext)
+                            val next = if (PhoneOwnership193.commandAllowed(appContext, command))
+                                NativeWatchControlAdmission367.snapshot(current, command) else null
+                            if (next == null) {
+                                WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                            } else {
+                                val saved = if (next === current) next else ActiveWorkoutStore.saveOwned(appContext, next)
+                                PhoneGpsRoute193.authorizeOwned(appContext, saved)
+                                publishActiveWorkoutSnapshot(appContext, saved)
+                                check(WearCommandReceipts.complete(appContext, command, "applied", uri))
+                            }
+                        }
+
                         "addQuickExercise", "watchAutomationState", "resumeWorkout" -> {
                             withContext(Dispatchers.Main) {
                                 val current = ActiveWorkoutStore.current(appContext)
@@ -951,6 +975,11 @@ object WearSyncRepository {
             val hasDraft = (activeWorkout != null && activeWorkout.optBoolean("active", false)) ||
                 (draftDoc != null && draftDoc.json.isNotBlank() && draftDoc.json != "null" && draftDoc.json != "{}")
 
+            // Same durable phone goal as the Goals UI; no daily health metrics travel here.
+            val goalDocument = db.keyValueDocumentDao().getDocument("native:userGoals")
+            val dailyStepsGoal = goalDocument?.json?.let { raw ->
+                runCatching { JSONObject(raw).optInt("stepsGoal", 0) }.getOrNull()
+            }?.takeIf { it > 0 } ?: com.example.ui.viewmodel.TrainPilotUiState().stepsGoal
             val now = System.currentTimeMillis()
             val homeSnapshot = JSONObject()
                 .put("schema", 1)
@@ -959,6 +988,8 @@ object WearSyncRepository {
                     com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo)
                 } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
+                .put("dailyStepsGoal", dailyStepsGoal)
+                .put("controlProtocol367", 6)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
                 .put("calendarDays", allCalendarDaysArray)
@@ -1009,6 +1040,11 @@ object WearSyncRepository {
                     workoutId != current.optString("workoutId")
                 ) {
                     return@withContext Result.failure(IllegalStateException("The requested workout is no longer active."))
+                }
+                if (!requestOwnership && (current.optBoolean("workoutPaused") ||
+                        current.optString("timerOwner", "phone") != "phone" ||
+                        com.repforge.shared.WorkoutOwnership193.pending(current))) {
+                    return@withContext Result.failure(IllegalStateException("The phone no longer controls an unpaused workout."))
                 }
                 if (nodes.size != 1) {
                     return@withContext Result.failure(

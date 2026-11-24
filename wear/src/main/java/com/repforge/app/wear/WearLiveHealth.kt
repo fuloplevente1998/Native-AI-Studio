@@ -16,6 +16,7 @@ internal object WearLiveHealth {
         val revision=prefs.getLong("revision",0)+1
         val value=JSONObject().put("schema",1).put("watchId",watchId).put("workoutId",workoutId)
             .put("revision",revision).put("state",state).put("message",message.take(240)).put("updatedAt",System.currentTimeMillis())
+        WorkoutSnapshotStore.load(context)?.takeIf { it.workoutId==workoutId }?.let { value.put("ownerEpoch351",it.ownerEpoch193) }
         summary?.let { value.put("summary",WearHealthAccumulator(it).snapshot()) }
         // The watch UI can read exactly the same immutable measured payload as
         // the phone, even if its Activity missed a workout DataItem callback.

@@ -958,13 +958,21 @@ data class LoggedWorkoutEntry(
     val dayName: String = "",
     val scheduleId: String = "",
     /** 2779: the saved #226 PR badges of this workout (JSON array), read from Room. */
-    val prRecordsJson: String = ""
+    val prRecordsJson: String = "",
+    val externalSource: String? = null,
+    val externalProvider: String? = null
 ) {
     fun localizedTitle(
         lang: AppLanguage,
         programs: List<TrainingProgramModel> = emptyList(),
         exercises: List<ExerciseItem> = emptyList()
     ): String {
+        if (originDevice == "external") return when (lang) {
+            AppLanguage.HU -> "Külső edzés"
+            AppLanguage.EN -> "External workout"
+            AppLanguage.DE -> "Externes Training"
+            AppLanguage.RO -> "Antrenament extern"
+        }
         val customProgram = programs.any { it.id == programId && it.isCustom }
         val title = when {
             isHomeBasicLegacyName(titleHu) && programId in homeBasicProgramIds && !customProgram -> canonicalHomeBasicName(lang)

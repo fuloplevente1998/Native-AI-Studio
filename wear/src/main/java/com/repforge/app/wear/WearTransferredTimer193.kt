@@ -6,7 +6,8 @@ import org.json.JSONObject
 
 /** Runs a frozen phone plan on the existing watch timer owner, using local monotonic time. */
 internal object WearTransferredTimer193 {
-    private data class Plan(val checkpoint: JSONObject,val timer: JSONObject,val rows: JSONArray,val timeline: IntervalTimeline193)
+    private data class Plan(val checkpoint: JSONObject,val timer: JSONObject,val rows: JSONArray,val timeline: IntervalTimeline193,val steps: List<IntervalTimeline193.Step>)
+    internal data class RestAdjustment(val workout: WearWorkout, val proof: JSONObject)
     private fun read(workout: WearWorkout): Plan {
         val raw=workout.timerCheckpoint193 ?: error("Missing transferred timer")
         require(raw.toByteArray(Charsets.UTF_8).size<=96000)
@@ -20,7 +21,7 @@ internal object WearTransferredTimer193 {
             require(row.optString("gpsKey").isEmpty())
             IntervalTimeline193.Step(row.getString("exerciseId"),row.getString("setId"),row.optString("name"),row.getInt("work"),row.getInt("rest"),row.getInt("rounds"),"")
         }
-        val timeline=IntervalTimeline193(steps,t.getBoolean("autoAdvance"),t.optInt("initialRest"),t.getBoolean("restOnly"))
+        val timeline=IntervalTimeline193(steps,t.getBoolean("autoAdvance"),t.optInt("initialRest"),t.getBoolean("restOnly"),IntervalTimeline193.readRestOverrides(t))
         val position=t.getLong("elapsedMs");val p=timeline.at(position)
         require(position==p.elapsedMs&&t.getString("phase")==p.phase&&t.getLong("remainingMs")==p.remainingMs&&t.getInt("round")==p.round&&t.getInt("stepIndex")==p.step)
         val ledger=t.getJSONObject("ledger");val parts=ledger.getJSONArray("steps")
@@ -35,7 +36,7 @@ internal object WearTransferredTimer193 {
             val base=row.optDouble("baseSeconds",0.0);require(base.isFinite()&&base in 0.0..86400.0)
         }
         require(work==ledger.getLong("workMs")&&rest==ledger.getLong("restMs")&&paused==ledger.getLong("pausedMs")&&work+rest<=position)
-        return Plan(c,t,rows,timeline)
+        return Plan(c,t,rows,timeline,steps)
     }
     fun install(workout: WearWorkout,now: Long,boot: Int,key: String): WearWorkout {
         val plan=read(workout);val t=plan.timer;val p=plan.timeline.at(t.getLong("elapsedMs"));val row=plan.rows.getJSONObject(p.step)
@@ -47,13 +48,16 @@ internal object WearTransferredTimer193 {
         val automatic=WearAutomatic(enabled=true,owner="watch",key=key,phase=p.phase,paused=true,
             workSeconds=row.getInt("work"),restSeconds=row.getInt("rest"),rounds=row.getInt("rounds"),round=p.round,
             vibration=t.optBoolean("vibration",true),targetExercise=e,targetSet=s,targetId=row.getString("setId"),remainingMs=p.remainingMs,
-            anchorMs=now,boot=boot,phaseNumber=t.optLong("phaseNumber")+1)
+            anchorMs=now,boot=boot,phaseNumber=t.optLong("phaseNumber")+1,
+            restPhaseDurationMs367=if(p.phase=="rest")plan.timeline.phaseDurationMs(p)else 0,
+            restChangeRevision367=t.optLong("restChangeRevision367"))
         return workout.copy(automation=automatic,timerCheckpoint193=plan.checkpoint.toString(),restEndAt=0)
     }
     private fun project(plan: Plan,position: Long) {
         val t=plan.timer;val p=plan.timeline.at(position)
         t.put("elapsedMs",p.elapsedMs).put("phase",p.phase).put("stepIndex",p.step).put("round",p.round)
             .put("completed",p.completed).put("stepElapsedMs",p.stepElapsedMs).put("remainingMs",p.remainingMs).put("totalMs",p.totalMs)
+            .put("restPhaseDurationMs367",if(p.phase=="rest")plan.timeline.phaseDurationMs(p)else 0)
         t.getJSONObject("ledger").put("positionMs",p.elapsedMs).put("owner","timeline193")
     }
     fun tick(workout: WearWorkout,now: Long,boot: Int): WearAutomaticTransition {
@@ -89,7 +93,8 @@ internal object WearTransferredTimer193 {
         val e=workout.exercises.indexOfFirst { it.id==row.getString("exerciseId") };val s=workout.exercises[e].sets.indexOfFirst { it.setId==row.getString("setId") }
         var automatic=a.copy(phase=p.phase,remainingMs=p.remainingMs,anchorMs=now,round=p.round,workSeconds=row.getInt("work"),
             restSeconds=row.getInt("rest"),rounds=row.getInt("rounds"),targetExercise=e,targetSet=s,targetId=row.getString("setId"),
-            phaseNumber=a.phaseNumber+if(p.token!=before.token)1 else 0,workMs=a.workMs+work,restMs=a.restMs+rest,pausedMs=a.pausedMs+paused)
+            phaseNumber=a.phaseNumber+if(p.token!=before.token)1 else 0,
+            restPhaseDurationMs367=if(p.phase=="rest")plan.timeline.phaseDurationMs(p)else 0,workMs=a.workMs+work,restMs=a.restMs+rest,pausedMs=a.pausedMs+paused)
         val logs=plan.checkpoint.getJSONObject("timeLogs193");logs.put(a.key,automatic.json().getJSONObject("timeLog"))
         var current=workout.copy(automation=automatic,timerCheckpoint193=plan.checkpoint.toString(),currentExercise=e)
         var completedExercise: Int?=null;var completedSet: Int?=null
@@ -115,6 +120,43 @@ internal object WearTransferredTimer193 {
                 else WearAutomaticEngine.afterRecord(current,now,a.boot)
         }
         return WearAutomaticTransition(current,completedExercise,completedSet)
+    }
+    /** Apply one override at a sampled monotonic position, preserving the transferred ledger. */
+    fun adjustActiveRest367(workout: WearWorkout,now: Long,boot: Int,delta: Int): RestAdjustment? {
+        val a=workout.automation ?: return null
+        if(workout.workoutPaused || workout.timerOwner!="watch" || !a.enabled || a.owner!="watch" ||
+            a.phase!="rest" || a.paused || a.interrupted || a.awaitingPhone ||
+            a.boot!=boot || now<a.anchorMs || a.remaining(now)<=0 ||
+            delta !in listOf(-15,15))return null
+        return try {
+            val sampled=tick(workout,now,boot).workout
+            val before=sampled.automation ?: return null
+            if(before.phase!="rest" || before.phaseNumber!=a.phaseNumber || before.paused || before.interrupted)return null
+            val plan=read(sampled)
+            val position=plan.timer.getLong("elapsedMs")
+            val old=plan.timeline.at(position)
+            val key=plan.timeline.restKey(old) ?: return null
+            val prior=IntervalTimeline193.readRestOverrides(plan.timer)
+            val overrides=plan.timeline.adjustedRestOverrides(position,delta) ?: return null
+            val next=IntervalTimeline193(plan.steps,plan.timer.getBoolean("autoAdvance"),plan.timer.optInt("initialRest"),plan.timer.getBoolean("restOnly"),overrides)
+            val phase=next.at(position)
+            val revision=maxOf(before.restChangeRevision367,plan.timer.optLong("restChangeRevision367"))+1
+            val proof=JSONObject().put("restKey",key).put("position",position)
+                .put("priorOverride",prior[key] ?: JSONObject.NULL)
+                .put("beforeRemaining",old.remainingMs).put("beforePhaseDuration",plan.timeline.phaseDurationMs(old))
+                .put("restRevision",revision).put("sourceTimerKey",plan.timer.getString("key"))
+            val changed=plan.copy(timeline=next)
+            plan.timer.put("restOverridesMs367",next.restOverridesJson()).put("restChangeRevision367",revision)
+            project(changed,position)
+            val changedPhase=if(phase.token!=old.token)1 else 0
+            val changedWorkout=sampled.copy(timerCheckpoint193=plan.checkpoint.toString(),
+                automation=before.copy(anchorMs=now,remainingMs=phase.remainingMs,phaseNumber=before.phaseNumber+changedPhase,
+                    restChangeRevision367=revision))
+            // Zero remaining enters the next phase at the same position. No virtual or actual time is added.
+            val result=advance(changedWorkout,changed,now).workout
+            if(result.timerCheckpoint193==null)proof.put("terminalTimer",JSONObject(plan.timer.toString()))
+            RestAdjustment(result,proof)
+        }catch(_:Exception){null}
     }
     fun skipRest(workout: WearWorkout,now: Long,boot: Int): WearWorkout {
         var current=tick(workout,now,boot).workout

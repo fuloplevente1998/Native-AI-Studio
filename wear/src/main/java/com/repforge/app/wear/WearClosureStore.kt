@@ -15,7 +15,8 @@ data class WearClosure(
     val exerciseCount: Int,
     val completedSets: Int,
     val started: String = "",
-    val needsFeedback: Boolean = false
+    val needsFeedback: Boolean = false,
+    val overview: WearSummaryOverview? = null,
 )
 
 /** Only a matching terminal receipt proves closure; rejections must not look like endless delivery. */
@@ -153,6 +154,9 @@ object WearClosureStore {
         action = value.optString("action"), status = value.optString("status", "pending"),
         message = value.optString("message"), durationSeconds = value.optInt("durationSeconds"),
         exerciseCount = value.optInt("exerciseCount"), completedSets = value.optInt("completedSets"),
-        started = value.optString("started"), needsFeedback = value.optBoolean("needsFeedback")
+        started = value.optString("started"), needsFeedback = value.optBoolean("needsFeedback"),
+        overview = value.optJSONObject("command")?.optJSONObject("finalSnapshot")?.toString()
+            ?.let(WorkoutSnapshotStore::parse)?.takeIf { it.workoutId == value.optString("workoutId") }
+            ?.let(::wearSummaryOverview)
     )
 }

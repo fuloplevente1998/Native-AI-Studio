@@ -115,6 +115,19 @@ internal fun HealthJournalStore.reconcileRecords(
     }
 }
 
+/** Keep a successfully read day retryable if its external Room publication failed.
+ * The existing full/delta sync already consumes dirty_days; no extra scheduler or token.
+ */
+internal fun HealthJournalStore.markExternalImportDirtyDay(day: String, generation: Long) {
+    require(validDay(day))
+    transaction { db ->
+        writable(db, generation)
+        db.insertWithOnConflict("dirty_days", null, ContentValues().apply { put("day", day) },
+            SQLiteDatabase.CONFLICT_IGNORE)
+        null
+    }
+}
+
 internal fun HealthJournalStore.nativeChangeRevision(expectedGeneration: Long): Long = synchronized(LOCK) {
     writable(readableDatabase, expectedGeneration)
     meta(readableDatabase, "hc_change_revision", "0").toLong()

@@ -148,6 +148,13 @@ fun LogWorkoutDetailScreen(
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (workout.originDevice == "external") {
+                                Text(listOfNotNull(workout.externalProvider?.let {
+                                    if (it == "health_connect") "Health Connect" else if (it == "samsung_health") "Samsung Health" else it
+                                }, workout.externalSource).joinToString(" · ").ifBlank {
+                                    trL(uiState.language, "Forrásadat nem elérhető", "Source unavailable", "Quelle nicht verfügbar", "Sursă indisponibilă")
+                                }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            }
                         }
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "subscreen_back_button")
                     }
@@ -214,6 +221,9 @@ fun LogWorkoutDetailScreen(
         // Tab-specific content for Gyakorlatok (0) | Statisztikák (1) | Forrás (2)
         if (uiState.logDetailTabIndex == 0) {
             val details = workout.exerciseDetails
+            if (workout.originDevice == "external" && details.isEmpty()) item {
+                Text(trL(uiState.language, "Nincs igazolt gyakorlat- vagy sorozatadat.", "No verified exercise or set data.", "Keine bestätigten Übungs- oder Satzdaten.", "Nu există date confirmate despre exerciții sau serii."), color = palette.textSecondary)
+            }
             items(details.size) { index ->
                 val exDetail = details[index]
                 val expanded = uiState.expandedLogExerciseIndex == index
@@ -346,7 +356,11 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(trL(uiState.language, "Adatforrás és szinkron napló", "Data source & sync log", "Datenquelle & Synchronisationsprotokoll", "Sursă de date și jurnal de sincronizare"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        val originLabel = if (workout.originDevice == "watch") trL(uiState.language, "Óra", "Watch", "Uhr", "Ceas") else trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
+                        val originLabel = when (workout.originDevice) {
+                            "external" -> trL(uiState.language, "Külső forrás, eszköz nem igazolt", "External source, device unverified", "Externe Quelle, Gerät nicht bestätigt", "Sursă externă, dispozitiv neverificat")
+                            "watch" -> trL(uiState.language, "Óra", "Watch", "Uhr", "Ceas")
+                            else -> trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
+                        }
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
                     }
                 }

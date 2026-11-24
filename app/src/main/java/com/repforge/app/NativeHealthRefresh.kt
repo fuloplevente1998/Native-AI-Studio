@@ -173,9 +173,12 @@ internal object NativeHealthRefresh {
             }
             val samsungGrants = if (prepared.provider == HealthJournalStore.SAMSUNG)
                 SamsungHealthRepository.readGrantScope(context, guard) else emptySet()
+            val automatic = ExternalWorkoutAutoImport.admitRefresh(context, prepared.provider,
+                prepared.localDay, prepared.zone)
+            var importReport = ExternalWorkoutAutoImport.Report()
             suspend fun read(target: LocalDate): JSONObject {
                 val (startInstant, endInstant) = dayWindow(target, prepared.zone, java.time.Instant.now())
-                return if (prepared.provider == HealthJournalStore.SAMSUNG) {
+                val value = if (prepared.provider == HealthJournalStore.SAMSUNG) {
                     SamsungHealthRepository.readHealthDayScoped(context, startInstant.toString(), endInstant.toString(),
                         target.toString(), guard, expectedGeneration = prepared.journalGeneration,
                         readCommit = commitRead, expectedGrantScope = samsungGrants).getOrThrow()
@@ -190,6 +193,24 @@ internal object NativeHealthRefresh {
                             prepared.journalGeneration, commitRead, stepsEnd = stepsEnd)
                     }
                 }
+                if ("READ_EXERCISE" in (if (prepared.provider == HealthJournalStore.HC) prepared.healthGrants else samsungGrants)) {
+                    automatic.observe(target, value)
+                    // Publish the bounded day before the existing delta checkpoint is acknowledged.
+                    // A failed import remains retryable instead of losing older dirty dates.
+                    val report = automatic.publish(context, prepared.journalGeneration) {
+                        requirePermissionIdentity()
+                        requireCommitIdentity()
+                    }
+                    importReport = importReport + report
+                    if (report.failed || report.limited) {
+                        value.put("externalImportIncomplete359", true).put("partial", true)
+                        if (prepared.provider == HealthJournalStore.HC) withContext(Dispatchers.IO) {
+                            commitRead { HealthJournalStore.get(context).markExternalImportDirtyDay(
+                                target.toString(), prepared.journalGeneration) }
+                        }
+                    }
+                }
+                return value
             }
             val result = if (fullSync == null) read(day) else {
                 val store = HealthJournalStore.get(context)
@@ -219,7 +240,8 @@ internal object NativeHealthRefresh {
                     override suspend fun readDay(day: LocalDate): Boolean {
                         val value = read(day)
                         return (value.optJSONArray("warnings")?.length() ?: 0) == 0 &&
-                            (value.optJSONArray("failedFields")?.length() ?: 0) == 0
+                            (value.optJSONArray("failedFields")?.length() ?: 0) == 0 &&
+                            !value.optBoolean("externalImportIncomplete359")
                     }
                 }
                 val journal = object : NativeHealthSync.Journal {
@@ -250,6 +272,22 @@ internal object NativeHealthRefresh {
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }
             withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
+            // All observed days were published before checkpoint acknowledgement.
+            result.put("externalImport359", importReport.json())
+            if (importReport.failed || importReport.limited) result.put("partial", true)
+            // Source deletions are independent of auto-import consent; only actual HC tombstones
+            // can remove a pure imported copy. A denied scope or missing snapshot is not deletion.
+            if (prepared.provider == HealthJournalStore.HC && "READ_EXERCISE" in prepared.healthGrants && fullSync != null) {
+                val report = try {
+                    ExternalWorkoutSourceDeletion.reconcile(context, prepared.journalGeneration) {
+                        requirePermissionIdentity()
+                        requireCommitIdentity()
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { ExternalWorkoutSourceDeletion.Report(failed = true) }
+                result.put("externalDeletion359", report.json())
+                if (report.failed) result.put("partial", true)
+            }
             Result.success(result)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { Result.failure(failure) }

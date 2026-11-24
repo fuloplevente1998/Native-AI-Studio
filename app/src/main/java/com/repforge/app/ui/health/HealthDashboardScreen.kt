@@ -413,6 +413,20 @@ fun HealthJournalTabContent(
             }
         }
 
+        item(key = "external_workout_import_panel") {
+            TrainPilotSectionSurface(Modifier.fillMaxWidth()) {
+                Column {
+                    com.example.ui.screens.ExternalWorkoutImportPanel(
+                        when (state.language.lowercase(java.util.Locale.ROOT).take(2)) {
+                            "hu" -> com.example.model.AppLanguage.HU
+                            "de" -> com.example.model.AppLanguage.DE
+                            "ro" -> com.example.model.AppLanguage.RO
+                            else -> com.example.model.AppLanguage.EN
+                        }, enabled = !state.healthRefreshing)
+                }
+            }
+        }
+
         // Foreground auto-on-open is intentionally independent of Android background job permission.
         item {
             TrainPilotSubtleSurface(Modifier.fillMaxWidth().testTag("health_auto_refresh_card")) {

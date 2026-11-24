@@ -51,6 +51,7 @@ fun TrainPilotViewModel.selectPalette(paletteId: Int) {
                 PaletteCategory.CONTRAST -> "contrast"
                 PaletteCategory.GLOW, PaletteCategory.VIVID -> "glow"
                 PaletteCategory.LIGHT -> "light"
+                PaletteCategory.LIQUID_GLASS -> "glass"
                 else -> "matte"
             },
             nameDe = pal.nameDe,
@@ -187,6 +188,7 @@ fun TrainPilotViewModel.updateGoals(
                     }
                 }
             }
+            com.repforge.app.WearSyncRepository.refreshWatchHomeAsync(context)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { withContext(Dispatchers.Main.immediate) { failed() } }
     }

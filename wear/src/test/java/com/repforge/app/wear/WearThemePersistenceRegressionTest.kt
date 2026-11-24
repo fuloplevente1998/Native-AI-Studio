@@ -39,6 +39,16 @@ class WearThemePersistenceRegressionTest {
         assertEquals(WearHomeTheme.DEFAULT, WearHomeTheme.parse(theme().put("accent", "transparent")))
     }
 
+    @Test fun customThemeIdentityIsNotTruncatedInWearStorage() {
+        val key = "custom:01234567-89ab-cdef-0123-456789abcdef"
+        val parsed = WearHomeTheme.parse(theme().put("key", key))
+        assertEquals(key, parsed.key)
+        assertEquals(parsed, WearHomeTheme.parse(parsed.toJson()))
+        val saved = WatchHomeStore.save(context, home(500, parsed.toJson()))!!
+        assertEquals(key, saved.theme.key)
+        assertEquals(key, WatchHomeStore.load(context)!!.theme.key)
+    }
+
     @Test fun restartAndPartialOrOlderHomePacketsRetainLastValidTheme() {
         val selected = WatchHomeStore.save(context, home(100, theme()))!!
         assertEquals("phone-light", selected.theme.key)

@@ -18,6 +18,11 @@ internal fun wearText(hu: String, language: String = Locale.getDefault().languag
 }
 
 private val wearTranslations = mapOf(
+    "Tervezett" to listOf("Planned", "Geplant", "Planificat"),
+    "Kihagyva" to listOf("Skipped", "Übersprungen", "Omis"),
+    "Mára nincs átvett naptáradat" to listOf("No calendar data received for today", "Keine Kalenderdaten für heute", "Nu există date de calendar pentru azi"),
+    "Mai nap" to listOf("Today’s schedule", "Heute", "Ziua de azi"),
+    "Ma" to listOf("Today", "Heute", "Astăzi"),
     "%d. sorozat • %s" to listOf("Set %d • %s", "Satz %d • %s", "Seria %d • %s"),
     "Szünet · %s" to listOf("Paused · %s", "Pausiert · %s", "Întrerupt · %s"),
     "Pihenő %s" to listOf("Rest %s", "Pause %s", "Pauză %s"),

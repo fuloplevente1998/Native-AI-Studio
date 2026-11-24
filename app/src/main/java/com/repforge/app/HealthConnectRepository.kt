@@ -490,16 +490,7 @@ object HealthConnectRepository {
         private fun sessionArray(rows: List<ExerciseSessionRecord>): JSONArray {
             val a = JSONArray()
             for (r in rows) {
-                val x = JSONObject()
-                    .put("id", id(r))
-                    .put("start", r.startTime.toString())
-                    .put("end", r.endTime.toString())
-                    .put("durationMinutes", max(0L, Duration.between(r.startTime, r.endTime).toMinutes()))
-                    .put("exerciseType", r.exerciseType)
-                    .put("title", r.title?.toString() ?: "")
-                    .put("source", src(r))
-                    .put("clientRecordId", r.metadata.clientRecordId ?: JSONObject.NULL)
-                a.put(x)
+                a.put(ExternalWorkout.fromRecord(HealthConnectJournal.serialize(r)).summary())
             }
             return a
         }

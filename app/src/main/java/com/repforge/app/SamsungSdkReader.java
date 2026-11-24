@@ -177,6 +177,7 @@ final class SamsungSdkReader {
                 Map<String, JSONObject> timed = new LinkedHashMap<>();
                 for (HealthDataPoint p : points(DataTypes.HEART_RATE::getReadDataRequestBuilder, start, end)) {
                     List<HeartRate> series = p.getValue(DataType.HeartRateType.SERIES_DATA);
+                    JSONArray pointSamples = new JSONArray();
                     if (series != null && !series.isEmpty()) {
                         // A sample is timestamped by its start, not by a parent interval overlap.
                         // Exclude pre-midnight and future-day samples at the [start, end) boundary.
@@ -187,6 +188,8 @@ final class SamsungSdkReader {
                             samples.put(key, new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
                             timed.put(key, new JSONObject().put("time", h.getStartTime().toString())
                                 .put("bpm", h.getHeartRate()).put("source", source(p)));
+                            pointSamples.put(new JSONObject().put("timeMs", h.getStartTime().toEpochMilli())
+                                .put("value", h.getHeartRate()));
                         }
                     } else if (!p.getStartTime().isBefore(start) && p.getStartTime().isBefore(end)) {
                         Float value = p.getValue(DataType.HeartRateType.HEART_RATE);
@@ -197,7 +200,18 @@ final class SamsungSdkReader {
                                 p.getValueOrDefault(DataType.HeartRateType.MAX_HEART_RATE, value)});
                             timed.put(key, new JSONObject().put("time", p.getStartTime().toString())
                                 .put("bpm", value).put("source", source(p)));
+                            pointSamples.put(new JSONObject().put("timeMs", p.getStartTime().toEpochMilli()).put("value", value));
                         }
+                    }
+                    if (pointSamples.length() > 0 && p.getUid() != null && !p.getUid().isEmpty()) {
+                        long first = Long.MAX_VALUE, last = Long.MIN_VALUE;
+                        for (int i = 0; i < pointSamples.length(); i++) {
+                            long stamp = pointSamples.getJSONObject(i).getLong("timeMs");
+                            first = Math.min(first, stamp); last = Math.max(last, stamp);
+                        }
+                        record(p, "HeartRateRecord", ":day:" + HealthJournalStore.day(start.toEpochMilli()),
+                            new JSONObject().put("samples", pointSamples).put("unit", "bpm"),
+                            Instant.ofEpochMilli(first), Instant.ofEpochMilli(last + 1));
                     }
                 }
                 double sum = 0, min = Double.POSITIVE_INFINITY, max = 0; int count = 0;
@@ -363,6 +377,54 @@ final class SamsungSdkReader {
             JSONObject out = wellness(start, end); activity(out, start, end); heart(out, start, end); sleep(out, start, end); energyScore(out, start, end);
             // No HRV/RMSSD field exists in Samsung's 1.1.0 Data SDK. Never derive one from HR or Energy Score.
             out.put("hrvRmssdMs", JSONObject.NULL);
+            // Store completed sessions in the same durable journal as other direct SDK records.
+            // Multiple sessions in one point have no verified stable per-session SDK identity;
+            // do not guess their identities from editable timestamps or array indexes.
+            safe(DataTypes.EXERCISE, () -> {
+                JSONArray sessions = new JSONArray();
+                for (HealthDataPoint p : points(DataTypes.EXERCISE::getReadDataRequestBuilder, start.minus(Duration.ofDays(1)), end)) {
+                    if (source(p).equals("com.repforge.app") || source(p).equals("com.TrainPilot.com")
+                        || p.getClientDataId() != null && p.getClientDataId().startsWith("trainpilot:")) continue;
+                    List<ExerciseSession> rows = p.getValue(DataType.ExerciseType.SESSIONS);
+                    if (rows == null || rows.isEmpty()) continue;
+                    if (rows.size() != 1) {
+                        warnings.put("Samsung exercise point has multiple sessions without verified stable session IDs");
+                        failed.put("exerciseSessions");
+                        continue;
+                    }
+                    ExerciseSession s = rows.get(0);
+                    if (s.getStartTime() == null || s.getEndTime() == null) continue;
+                    Instant a = s.getStartTime(), b = s.getEndTime();
+                    if (a.isBefore(start) || !a.isBefore(end) || !b.isAfter(a) || b.isAfter(Instant.now())) continue;
+                    JSONObject data = new JSONObject().put("value", Duration.between(a, b).toMillis() / 60000.0)
+                        .put("unit", "min").put("title", s.getCustomTitle())
+                        .put("clientRecordId", p.getClientDataId());
+                    // Session-specific SDK values, never daily aggregates. Optional fields remain absent.
+                    JSONObject evidence = new JSONObject();
+                    if (s.getExerciseType() != null) evidence.put("exerciseTypeName", s.getExerciseType().name());
+                    if (s.getCountType() != null) evidence.put("countTypeName", s.getCountType().name());
+                    if (s.getCount() != null && s.getCount() > 0) evidence.put("count", s.getCount());
+                    long duration = s.getDuration() == null ? 0L : s.getDuration().toMillis();
+                    if (duration > 0 && duration <= Duration.between(a, b).toMillis())
+                        evidence.put("sessionDurationSeconds", duration / 1000.0);
+                    ExternalSessionEvidence.putPositive(evidence, "distanceMeters", s.getDistance());
+                    ExternalSessionEvidence.putPositive(evidence, "averageHeartRate", s.getMeanHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "minHeartRate", s.getMinHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "maxHeartRate", s.getMaxHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "averageSpeedMps", s.getMeanSpeed());
+                    ExternalSessionEvidence.putPositive(evidence, "maxSpeedMps", s.getMaxSpeed());
+                    ExternalSessionEvidence.putPositive(evidence, "vo2Max", s.getVo2Max());
+                    data.put("sessionEvidence", evidence);
+                    // The SDK session energy is explicitly neither active nor total energy.
+                    ExternalSessionEvidence.putPositive(data, "sessionCalories", s.getCalories());
+                    record(p, "ExerciseSessionRecord", "", data, a, b);
+                    sessions.put(new JSONObject().put("id", p.getUid()).put("source", source(p))
+                        .put("start", a.toString()).put("end", b.toString())
+                        .put("lastModifiedMs", (p.getUpdateTime() == null ? a : p.getUpdateTime()).toEpochMilli())
+                        .put("title", s.getCustomTitle()));
+                }
+                out.put("exerciseSessions", sessions);
+            }, "exerciseSessions");
             return out;
         }
         JSONObject workout(Instant start, Instant end) throws Exception {

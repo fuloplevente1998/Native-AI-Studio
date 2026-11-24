@@ -16,8 +16,9 @@ class IntervalTimeline @JvmOverloads constructor(
     steps: List<Step>?,
     advance: Boolean,
     initialRestSeconds: Int = 0,
-    restOnly: Boolean = false
-) : IntervalTimeline193(steps, advance, initialRestSeconds, restOnly) {
+    restOnly: Boolean = false,
+    restOverridesMs: Map<String, Long> = emptyMap(),
+) : IntervalTimeline193(steps, advance, initialRestSeconds, restOnly, restOverridesMs) {
     companion object {
         const val MAX_MS: Long = IntervalTimeline193.MAX_MS
     }

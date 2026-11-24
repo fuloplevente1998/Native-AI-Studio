@@ -97,7 +97,10 @@ internal fun TrainPilotViewModel.startCanonicalWorkout(allowExisting: Boolean = 
             check(studioIntervalWriteError == null) { requireNotNull(studioIntervalWriteError) }
             if (!stillRequested()) return@launch
             val frame = start() // Canonical engine commits before the UI advertises a workout.
-            if (presentCanonicalWorkout(frame, stillRequested)) onPresented(frame)
+            if (presentCanonicalWorkout(frame, stillRequested)) {
+                onPresented(frame)
+                queueWatchMeasurementStart(frame)
+            }
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (error: Exception) {
             _uiState.update { it.copy(statusBannerMessage = error.message ?: "Az edzés nem indítható.") }
@@ -273,6 +276,7 @@ fun TrainPilotViewModel.startGpsTrackingSession(activityName: String = "Kültér
         val saved = com.repforge.app.StudioWorkoutBridge.persist(ctx, buildCanonicalSessionJsonFromState(nextState))
         check(saved.optString("workoutId") == nextState.activeWorkoutId) { "Másik natív edzés aktív. Nyisd meg a futó edzést." }
         _uiState.value = nextState
+        queueWatchMeasurementStart(saved)
         true
     } catch (error: Exception) {
         _uiState.update { it.copy(statusBannerMessage = error.message ?: "A GPS-edzés nem indítható.") }

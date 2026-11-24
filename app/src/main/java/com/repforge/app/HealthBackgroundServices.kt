@@ -630,8 +630,23 @@ class HealthBackgroundJob : JobService() {
                         throw IllegalStateException("Background sync stopped")
                     }
                 }
+                val ticket = NativeDataReplacement.continuationForCurrentData(this)
+                // Reuse the existing writer fence. No SDK IO under this short publication lease.
+                access.readCommit = { writer ->
+                    kotlinx.coroutines.runBlocking {
+                        NativeDataReplacement.mutate(this@HealthBackgroundJob) {
+                            NativeHealthBackupGate.publish {
+                                ticket.requireCurrent(this@HealthBackgroundJob)
+                                access.requireForeground()
+                                check(store.generation() == epoch)
+                                writer()
+                            }
+                        }
+                    }
+                }
                 access.requireForeground()
                 val today = LocalDate.now()
+                val automatic = ExternalWorkoutAutoImport.admitRefresh(this, HealthJournalStore.HC, today, ZoneId.systemDefault())
                 var complete = true
                 for (i in 1 downTo 0) {
                     val date = today.minusDays(i.toLong())
@@ -642,6 +657,7 @@ class HealthBackgroundJob : JobService() {
                             access,
                             JSONObject().put("start", start.toString()).put("end", end.toString())
                         )
+                        if (access.allowed("READ_EXERCISE")) automatic.observe(date, day)
                         if (day.optJSONArray("warnings")?.let { it.length() > 0 } == true) {
                             complete = false
                         }
@@ -654,7 +670,22 @@ class HealthBackgroundJob : JobService() {
                     val at = Instant.now().toString()
                     meta.put("lastSyncAt", at).put("lastSyncAt_${HealthJournalStore.HC}", at)
                 }
-                store.syncMeta(meta)
+                access.readCommit { store.syncMeta(meta) }
+                val report = kotlinx.coroutines.runBlocking {
+                    automatic.publish(this@HealthBackgroundJob, epoch) {
+                        access.requireForeground()
+                        check(store.generation() == epoch)
+                    }
+                }
+                retry = report.failed && !stopped.get() && permitted(this)
+                if (access.allowed("READ_EXERCISE")) {
+                    kotlinx.coroutines.runBlocking {
+                        ExternalWorkoutSourceDeletion.reconcile(this@HealthBackgroundJob, epoch) {
+                            access.requireForeground()
+                            check(store.generation() == epoch)
+                        }
+                    }
+                }
             } catch (_: Exception) {
                 retry = !stopped.get() && NativePrivacyControls.enabled(this, NativePrivacyControls.HEALTH_CONNECT) && permitted(this)
             } finally {

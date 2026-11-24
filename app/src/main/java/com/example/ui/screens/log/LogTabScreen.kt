@@ -618,7 +618,10 @@ internal fun LogWorkoutCard(
                     color = palette.textPrimary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    text = if (entry.isOutdoorRun) {
+                    text = if (entry.originDevice == "external") {
+                        "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")}" +
+                            (entry.externalSource?.let { " · $it" } ?: "")
+                    } else if (entry.isOutdoorRun) {
                         "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.distanceKm} km · ${entry.paceLabel}"
                     } else {
                         "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.totalSets} ${trL(lang, "sorozat", "sets", "Sätze", "serii")} · ${entry.totalVolumeKg} kg"

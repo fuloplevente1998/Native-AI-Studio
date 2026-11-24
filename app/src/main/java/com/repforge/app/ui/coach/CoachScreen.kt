@@ -90,6 +90,16 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
             }
         }
         item { Text(words[12], color = colors.muted) }
+        if ((readiness?.externalCount ?: 0) > 0) item {
+            val missing = readiness?.externalWithoutEffort ?: 0
+            val label = when (state.language.lowercase(Locale.ROOT).take(2)) {
+                "hu" -> "A legutóbbi edzések között: ${readiness?.externalCount} külső; $missing terhelési visszajelzés nélkül."
+                "de" -> "Unter den letzten Trainings: ${readiness?.externalCount} externe; $missing ohne Belastungsfeedback."
+                "ro" -> "Printre ultimele antrenamente: ${readiness?.externalCount} externe; $missing fără feedback de efort."
+                else -> "Recent workouts: ${readiness?.externalCount} external; $missing without effort feedback."
+            }
+            Text(label, color = colors.muted, modifier = Modifier.testTag("coach_external_evidence"))
+        }
         item {
             val target = state.target
             Card(colors = CardDefaults.cardColors(containerColor = colors.card)) {

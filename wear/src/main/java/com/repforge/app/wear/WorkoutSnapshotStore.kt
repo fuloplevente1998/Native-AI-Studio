@@ -59,7 +59,8 @@ data class WearWorkout(
     val ownerEpoch193: Long = 0L,
     val handoff193: String? = null,
     val timerCheckpoint193: String? = null,
-    val resumeIntent193: String? = null
+    val resumeIntent193: String? = null,
+    val controlIntent367: String? = null,
 ) {
     fun elapsedSeconds(now: Long = System.currentTimeMillis()): Int = try {
         val duration=activeIntervals?.sumOf { (if(it.end>0)it.end else now).minus(it.start).coerceAtLeast(0) }
@@ -120,7 +121,11 @@ object WorkoutSnapshotStore {
             clear(context)
             return null
         }
-        var parsed = mergeWorkoutPause(current,parse(raw) ?: return current,android.os.SystemClock.elapsedRealtime(),System.currentTimeMillis())
+        // A local control intent is persisted atomically with the owner's mutation. Do not
+        // replace it with a phone mirror before its durable outbox entry exists.
+        if (current?.controlIntent367 != null && root.optString("workoutId") == current.workoutId &&
+            root.optLong("ownerEpoch193") == current.ownerEpoch193) return current
+        var parsed = mergeWorkoutPause(current,parse(raw)?.copy(controlIntent367 = null) ?: return current,android.os.SystemClock.elapsedRealtime(),System.currentTimeMillis())
         if(current?.workoutId==parsed.workoutId)parsed=parsed.copy(lastRecord188=parsed.lastRecord188 ?: current.lastRecord188,undo188=current.undo188)
         if (WearClosureStore.isClosed(context, parsed.workoutId)) return current
         if (current?.revision == 0L && current.localSequence > 0L && parsed.workoutId != current.workoutId) return current
@@ -148,13 +153,26 @@ object WorkoutSnapshotStore {
     }
 
     @Synchronized
-    fun saveWorkout(context: Context, workout: WearWorkout): WearWorkout {
+    fun saveWorkout(context: Context, workout: WearWorkout): WearWorkout =
+        saveWorkoutInternal(context, workout, null)
+
+    @Synchronized
+    internal fun clearControlIntent367(context: Context, expected: String, sequence: Long): WearWorkout? {
+        val current = load(context) ?: return null
+        if (current.controlIntent367 != expected || sequence <= 0) return current
+        return saveWorkoutInternal(context, current.copy(localSequence = maxOf(current.localSequence, sequence),
+            controlIntent367 = null), expected)
+    }
+
+    private fun saveWorkoutInternal(context: Context, workout: WearWorkout, clearedIntent: String?): WearWorkout {
         val current=load(context)
+        if (current?.controlIntent367 != null && current.controlIntent367 != clearedIntent &&
+            workout.controlIntent367 != current.controlIntent367) return current
         val fenced193=current?.let { it.ownershipProtocol193==1||it.ownerEpoch193>0||it.handoff193!=null }==true||workout.ownershipProtocol193==1
         if(current!=null&&fenced193&&com.repforge.shared.WorkoutOwnership193.stale(encode(current),encode(workout)))return current
         val safe=if(current?.workoutId==workout.workoutId&&(workout.pauseRevision<current.pauseRevision||workout.pauseRevision==current.pauseRevision&&current.workoutPaused))preserveWorkoutPause(workout,current)else workout
         val saved=if(current?.workoutId==safe.workoutId)safe.copy(localSequence=maxOf(current.localSequence,safe.localSequence),revision=maxOf(current.revision,safe.revision))else safe
-        val committed=context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(SNAPSHOT, encode(saved).toString()).commit()
+        val committed=context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(SNAPSHOT, encode(saved).apply { saved.controlIntent367?.let { put("controlIntent367", JSONObject(it)) } }.toString()).commit()
         if(!committed)throw IllegalStateException("Workout snapshot could not be saved")
         return saved
     }
@@ -264,7 +282,8 @@ object WorkoutSnapshotStore {
                 ownerEpoch193 = root.optLong("ownerEpoch193"),
                 handoff193 = root.optJSONObject("handoff193")?.toString(),
                 timerCheckpoint193 = root.optJSONObject("timerCheckpoint193")?.toString(),
-                resumeIntent193 = root.optJSONObject("resumeIntent193")?.toString()
+                resumeIntent193 = root.optJSONObject("resumeIntent193")?.toString(),
+                controlIntent367 = root.optJSONObject("controlIntent367")?.toString()
             )
         } catch (_: Exception) { null }
     }

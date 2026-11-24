@@ -22,6 +22,12 @@ nagy fájlok sorai frissülnek.
 | Alulról nyíló lapok, útvonalak | `ex/ui/components/TrainPilotSheetRoutes.kt`, `TrainPilotScreenSheet.kt`, `TrainPilotModalBottomSheet.kt` |
 | Gombok, chipek, nyomásvisszajelzés, keretek | `ex/ui/components/TrainPilotControls.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt`, `TrainPilotFrames.kt`, `TrainPilotButton.kt` |
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
+| Közös kijelölés és telt gomb feliratkontraszt (#349) | `ex/ui/theme/ThemeSelectionColors.kt`, teszt `app/src/test/java/com/example/ThemeSelection349Test.kt` |
+| Saját téma (#350): modell, kontrasztfeloldás, hordozható JSON | `ex/ui/theme/CustomThemeDraft.kt`, `CustomThemeResolver.kt`, `CustomThemeCodec.kt` |
+| Ötödik Liquid Glass család (#350) | `ex/ui/theme/LiquidGlassPalettes.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `GlassAwareScaffold.kt`, `ex/ui/components/common/LiquidGlassControl.kt`, `StudioPaletteCategories.kt`; terv és aktuális hatókör: `docs/LIQUID_GLASS_THEMES.md` |
+| Saját téma lista / szerkesztő / előnézet / színvezérlők | `ex/ui/components/common/CustomThemeSection.kt`, `CustomThemeEditorSheet.kt`, `CustomThemePreview.kt`, `CustomThemeColorControls.kt`, `CustomThemeColorWheel.kt`; wireframe `docs/CUSTOM_THEME_EDITOR_350.md` |
+| Saját téma tartós CRUD / alkalmazás / Wear színek / backup | `rf/data/store/TrainPilotSettingsStore.kt`, `rf/MainActivity.kt`, `rf/data/migration/LegacyWebViewMigrator.kt`, `wear/.../WearHomeTheme.kt` |
+| Saját téma teszt | `app/src/test/java/com/example/CustomTheme{Draft,Resolver,Store,Editor}350Test.kt`, `LiquidGlass350Test.kt`, `wear/src/test/java/com/repforge/app/wear/WearThemePersistenceRegressionTest.kt` |
 | Szövegek (4 nyelv) | `ex/localization/TrainPilotStrings.kt`; képernyőkben `tr(lang, hu, en, de, ro)` (`ex/ui/screens/ScreenText.kt`) |
 
 ## Kezdőlap, gyors edzés
@@ -74,6 +80,8 @@ nagy fájlok sorai frissülnek.
 | Szinkron ütemezés (előtér/háttér percek, Google auto) | `rf/NativeSyncSchedule.kt` |
 | HC háttér job, BLE óra szolgáltatás | `rf/HealthBackgroundServices.kt` |
 | Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/NativeHealthSync.kt` · napló tár: `rf/HealthJournalStore.kt` (séma, meta, tranzakció, beállítás, sync-állapot), `rf/HealthJournalIngest.kt` (rekord/nap írás), `rf/HealthJournalQueries.kt` (projection, page, forrásnap), `rf/HealthJournalBackup.kt` (export, restore, erase) |
+| Külső edzés #359 (HC session modell, Samsung jelöltek, Room import, kézi + opt-in előtéri automatikus import, saját forrású metrikák) | `rf/ExternalWorkout.kt`, `rf/ExternalWorkoutImport.kt`, `rf/ExternalWorkoutAutoImport.kt`, `rf/ExternalWorkoutMetrics.kt`, `rf/ExternalSessionEvidence.kt`, `rf/ExternalWorkoutSourceDeletion.kt`, `rf/ExternalWorkoutAssociation.kt`, `rf/ui/progress/ExternalProgressSummary.kt`, `rf/ui/journal/JournalExternalWorkoutMetrics.kt`, `rf/ui/journal/ExternalHeartRateZones.kt`, `rf/ui/journal/ExternalRoutePreview.kt`, `rf/ExternalRouteStore.kt`, `rf/HealthConnectJournal.kt`, `rf/HealthConnectLegacyBridge.kt`, `rf/HealthConnectRepository.kt`, `rf/SamsungSdkReader.java` |
+| Külső edzés import panel, automatikus import kapcsoló, négy nyelv | `ex/ui/screens/health/ExternalWorkoutImportPanel.kt` (meglévő szinkronból tárolt jelöltek) |
 | Kalória/energia | `rf/HealthProjectionsAndEnergy.kt` |
 | Coach képernyő, készenlét | `ex/ui/screens/health/CoachDetailScreen.kt`, `rf/ui/coach/NativeCoachReadiness.kt` |
 
@@ -91,9 +99,10 @@ nagy fájlok sorai frissülnek.
 ## Telefon ↔ óra
 | Funkció | Fájl |
 |---|---|
+| #351 automatikus órás mérés: telefonos indítási kérés, élő mérési ACK, előtéri fallback | `ex/ui/viewmodel/VmWatchMeasurement.kt`, `ex/ui/components/StudioWorkoutHandoverBar.kt`, `rf/WearSyncStoresAndHandoff.kt`, `wear/.../WearHealthService.kt`, `WearBackgroundMeasurement.kt`, `WearBackgroundSensorAccess.kt`, shared `WearMeasurementRequest351.kt` |
 | Telefon oldali szinkron, távoli mérésindítás | `rf/WearSyncRepository.kt`, `rf/WearSyncStoresAndHandoff.kt`, `rf/WearCommandListenerService.kt` |
 | Közös szerződések (ownership/epoch/ACK, GPS csomag) | `shared/.../com/repforge/shared/*` |
-| Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../ui/`: `WearAppRoot.kt` (gyökér, navigáció), `WearMenuScreens.kt`, `WearJournalScreens.kt`, `WearCalendarScreens.kt`, `WearHealthScreen.kt`, `WearWorkoutScreens.kt`, `WearTimedSetScreens.kt`, `WearValueControls.kt`, `WearWorkoutMenuAndSummary.kt`, `WearUiPrimitives.kt`/`WearUiTokens.kt`; `WearHomeDashboard.kt`, `WearMenu216.kt` |
+| Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../ui/`: `WearAppRoot.kt` (gyökér, navigáció), `WearMenuScreens.kt`, `WearJournalScreens.kt`, `WearCalendarScreens.kt`, `WearHealthScreen.kt`, `WearWorkoutScreens.kt`, `WearWorkoutControlOverlay.kt` (ideiglenes vezérlők és peremvédett edzésgesztus), `WearWorkoutV2.kt` (sorozatérték, korábbi teljesítmény, pihenő), `WearTimedSetScreens.kt`, `WearValueControls.kt`, `WearWorkoutMenuAndSummary.kt`, `WearFinishPreview.kt` (mentés előtti összegzés, meglévő lezárási pillanatkép), `WearControlTargets367.kt` (célazonosított UI-callbackok), `wear/.../WearWatchControls367.kt` (óratulajdonú pihenő/pause tartós parancs), `app/.../NativeWatchControlAdmission367.kt`, `NativeTransferredRestAdmission367.kt` (telefonos validáció és ACK), `WearPhoneControls367.kt`, `PhoneRemotePause367.kt`, `PhoneRemoteRest367.kt` (natív telefon-tulajdonú távoli vezérlés), `shared/.../IntervalTimeline193.kt` (fázisonkénti opcionális pihenőfelülírás, átadható checkpoint), `WearUiPrimitives.kt`/`WearUiTokens.kt`; `WearMainNavigation.kt` (főlapok, szélső visszagesztus megőrzése), `WearDailyHealthScreen.kt` (napi helyi adatok, engedély), `wear/.../WearDailyHealth.kt` (független passzív mérési cache), `wear/.../WearHomeDashboard.kt`, `WearMenu216.kt` |
 | Óra adatfogadás, tulajdon, GPS | `wear/.../WearDataListenerService.kt`, `WearOwnership193.kt`, `WearGps193.kt` |
 
 ## Teszt, CI, kiadás

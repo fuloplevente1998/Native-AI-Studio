@@ -24,11 +24,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -38,7 +36,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -96,6 +93,8 @@ import com.example.ui.screens.WatchAndSyncScreen
 import com.example.ui.screens.WorkoutSummaryScreen
 import com.example.ui.screens.WorkoutTabScreen
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.GlassAwareScaffold
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotViewModel
@@ -155,6 +154,7 @@ import com.example.ui.viewmodel.openLoggedWorkoutRouteMap
 import com.example.ui.viewmodel.openPlannedProgramDetails
 import com.example.ui.viewmodel.openProgramEditor
 import com.example.ui.viewmodel.openQuickWorkoutSheet
+import com.example.ui.viewmodel.launchPendingWatchMeasurement
 import com.example.ui.viewmodel.pauseOutdoorMeasurement
 import com.example.ui.viewmodel.planMonthlyWorkouts
 import com.example.ui.viewmodel.previewProgressionSettings
@@ -285,6 +285,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = TrainPilotStrings.forLanguage(uiState.language)
+    val measurementStart by viewModel.pendingWatchMeasurementStart.collectAsStateWithLifecycle()
+    LaunchedEffect(measurementStart) {
+        measurementStart?.let { viewModel.launchPendingWatchMeasurement(context as? android.app.Activity, it) }
+    }
     val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
     val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val health by nativeHealth.uiState.collectAsStateWithLifecycle()
@@ -528,12 +532,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             )
         }
 
-        Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(palette.background),
-            containerColor = palette.background,
-            contentWindowInsets = WindowInsets.safeDrawing,
+        GlassAwareScaffold(uiState, palette,
             topBar = {
                 Column {
                 TrainPilotGlobalTopHeaderAndNav(
@@ -557,12 +556,13 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
                 }
             }
-        ) { innerPadding ->
+        ) { bodyPadding, glassCapture, glassTopInset ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(palette.background)
-                .padding(innerPadding),
+                .padding(bodyPadding)
+                .then(glassCapture),
             contentAlignment = Alignment.TopCenter
         ) {
             val contentMaxWidth = if (uiState.compactPhoneMode) 360.dp else 600.dp
@@ -1278,7 +1278,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
                 }
                 }
-                com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
+                CompositionLocalProvider(LocalGlassTopInset provides glassTopInset) {
+                    com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
+                }
                 if (sheetRouteActive) {
                     val sheetRoute = uiState.currentSubScreen
                     val sheetDepth = uiState.backStack.size

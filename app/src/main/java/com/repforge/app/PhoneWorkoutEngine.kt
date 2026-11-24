@@ -755,6 +755,8 @@ internal object PhoneWorkoutExecution {
         val frame = store(context).snapshot()
         if (frame == null || !frame.optBoolean("active")) return null
         val value = JSONObject(frame.toString())
+        value.remove("remotePause367")
+        value.remove("remoteRest367")
         value.remove("retiredTimers188")
         value.remove("timeLogs162")
         value.remove("latestTimer162")
@@ -784,6 +786,9 @@ internal object PhoneWorkoutExecution {
                     JSONObject()
                         .put("owner", "phone")
                         .put("enabled", true)
+                        .put("restOnly", plan.optBoolean("restOnly"))
+                        .put("restPhaseDurationMs367", timer.optLong("restPhaseDurationMs367"))
+                        .put("restChangeRevision367", timer.optLong("restChangeRevision367"))
                         .put("key", plan.getString("key"))
                         .put("phase", if (interrupted) "ready" else if (restComplete) "ready" else timer.optString("phase"))
                         .put("paused", interrupted || (!running && "complete" != timer.optString("phase")))

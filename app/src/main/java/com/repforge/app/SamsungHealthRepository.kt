@@ -228,6 +228,7 @@ object SamsungHealthRepository {
                 "READ_DISTANCE" to listOf("distanceMeters"),
                 "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries"),
                 "READ_SLEEP" to listOf("sleepSessions"),
+                "READ_EXERCISE" to listOf("exerciseSessions"),
                 "READ_WEIGHT" to listOf("weightKg", "weightTime", "weightSource", "bodyFatPercent", "bodyFatTime",
                     "bodyFatSource", "bodyFatMassKg", "skeletalMuscleMassKg", "fatFreeMassKg",
                     "totalBodyWaterLiters", "basalMetabolicRateKcal", "bodyMassIndex"),

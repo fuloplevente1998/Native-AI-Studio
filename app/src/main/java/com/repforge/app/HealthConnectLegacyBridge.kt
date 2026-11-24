@@ -141,7 +141,23 @@ internal object HealthConnectLegacyBridge {
                 data.put("samples", samples).put("unit", "m/s") }
             is ExerciseSessionRecord -> { start = record.startTime; end = record.endTime
                 data.put("value", Duration.between(start, end).toMillis() / 60_000.0)
-                    .put("unit", "min").put("exerciseType", record.exerciseType) }
+                    .put("unit", "min").put("exerciseType", record.exerciseType)
+                    .put("title", record.title ?: JSONObject.NULL)
+                    .put("clientRecordId", record.metadata.clientRecordId ?: JSONObject.NULL)
+                    .put("device", record.metadata.device?.let { device ->
+                        JSONObject().put("manufacturer", device.manufacturer ?: JSONObject.NULL)
+                            .put("model", device.model ?: JSONObject.NULL).put("type", device.type)
+                    } ?: JSONObject.NULL)
+                    .put("segments", JSONArray().apply {
+                        for (segment in record.segments) put(externalWorkoutSegment(
+                            segment.startTime, segment.endTime, segment.segmentType, segment.repetitions).apply {
+                            if (segment.segmentType == ExerciseSegment.EXERCISE_SEGMENT_TYPE_PAUSE) put("pause", true)
+                        })
+                    })
+                    .put("laps", JSONArray().apply {
+                        for (lap in record.laps) put(externalWorkoutLap(
+                            lap.startTime, lap.endTime, lap.length?.inMeters))
+                    }) }
             is SleepSessionRecord -> { start = record.startTime; end = record.endTime
                 val stages = JSONArray()
                 val sleeps = mutableListOf<Pair<Long, Long>>()
@@ -185,6 +201,12 @@ internal object HealthConnectLegacyBridge {
             .put("lastModifiedMs", record.metadata.lastModifiedTime.toEpochMilli())
             .put("day", HealthJournalStore.day((if (record is SleepSessionRecord) end else start).toEpochMilli()))
             .put("data", data)
+            .apply {
+                if (record is ExerciseSessionRecord) {
+                    record.startZoneOffset?.let { put("startZoneOffsetSeconds", it.totalSeconds) }
+                    record.endZoneOffset?.let { put("endZoneOffsetSeconds", it.totalSeconds) }
+                }
+            }
     }
 
     private fun latest(rows: List<Record>, type: KClass<out Record>): Record? =
@@ -307,9 +329,7 @@ internal object HealthConnectLegacyBridge {
         out.put("sleepSessions",sleeps)
         val sessions = JSONArray()
         byType["READ_EXERCISE"].orEmpty().filterIsInstance<ExerciseSessionRecord>().forEach {
-            sessions.put(JSONObject().put("start",it.startTime.toString())
-                .put("end",it.endTime.toString()).put("source",originalSource(it))
-                .put("exerciseType",it.exerciseType))
+            sessions.put(ExternalWorkout.fromRecord(serialized(it)).summary())
         }
         out.put("exerciseSessions",sessions)
         val single = listOf(
@@ -404,10 +424,7 @@ internal object HealthConnectLegacyBridge {
         val speeds = safeRaw("READ_SPEED",SpeedRecord::class)
         val sessionsJson = JSONArray()
         val rawSessions = exercises.map { record ->
-            sessionsJson.put(JSONObject().put("start",record.startTime.toString())
-                .put("end",record.endTime.toString())
-                .put("source",originalSource(record))
-                .put("exerciseType",record.exerciseType))
+            sessionsJson.put(ExternalWorkout.fromRecord(serialized(record)).summary())
             HealthWorkoutEnergy.Session(originalSource(record),
                 record.startTime.toEpochMilli(),record.endTime.toEpochMilli())
         }

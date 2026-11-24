@@ -19,6 +19,7 @@ import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
 import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.StudioWorkoutSessionPresentation
@@ -36,10 +37,32 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
     val palette = LocalTrainPilotPalette.current
     val banner = state.statusBannerMessage?.takeIf { it.isNotBlank() }
     if (!state.isWorkoutSessionActive && banner == null) return
+    val selection = remember(palette) { palette.selectionColors() }
     fun word(hu: String, en: String, de: String, ro: String) = when (state.language) {
         AppLanguage.HU -> hu; AppLanguage.EN -> en; AppLanguage.DE -> de; AppLanguage.RO -> ro
     }
     val frame by ActiveWorkoutStore.snapshotFlow.collectAsState()
+    val liveHealth by com.repforge.app.WearLiveHealthStore.liveHealthFlow.collectAsState()
+    val expectedNode by com.repforge.app.WearLiveHealthStore.expectedNode351.collectAsState()
+    var measurementNow by remember(state.activeWorkoutId) { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state.activeWorkoutId) {
+        while(state.isWorkoutSessionActive) { measurementNow=System.currentTimeMillis();delay(1000) }
+    }
+    val measurement = com.repforge.app.PhoneMeasurementReconnect351.freshReceipt(liveHealth,state.activeWorkoutId,
+        frame?.optLong("ownerEpoch193") ?: -1L,expectedNode,measurementNow)
+    val measurementStatus = when {
+        measurement != null && state.watchConnected -> when (measurement.optString("state")) {
+            "active" -> word("Órás mérés aktív", "Watch recording active", "Uhrmessung aktiv", "Măsurare ceas activă")
+            "paused" -> word("Órás mérés szünetel", "Watch recording paused", "Uhrmessung pausiert", "Măsurare ceas în pauză")
+            "starting", "reconnecting", "ending" -> word("Órás mérés: folyamatban…", "Watch recording: pending…", "Uhrmessung: läuft an…", "Măsurare ceas: în curs…")
+            "foregroundRequired" -> word("Nyisd meg a TrainPilotot az órán", "Open TrainPilot on the watch", "TrainPilot auf der Uhr öffnen", "Deschide TrainPilot pe ceas")
+            "disabled", "permissionRequired", "error", "ended" -> measurement.optString("message").ifBlank { word("Órás mérés nem aktív", "Watch recording inactive", "Uhrmessung inaktiv", "Măsurare ceas inactivă") }
+            else -> null
+        }
+        measurement != null && !state.watchConnected -> word("Órás mérés: nincs élő kapcsolat", "Watch recording: disconnected", "Uhrmessung: keine Verbindung", "Măsurare ceas: deconectat")
+        liveHealth?.optString("workoutId")==state.activeWorkoutId && state.activeWorkoutId.isNotBlank() -> word("Órás mérés: nincs friss visszaigazolás", "Watch recording: no recent confirmation", "Uhrmessung: keine aktuelle Bestätigung", "Măsurare ceas: fără confirmare recentă")
+        else -> null
+    } ?: state.watchMeasurementStatus.takeIf { state.watchMeasurementStatusId == state.activeWorkoutId }
     val currentSnapshot = frame?.takeIf {
         it.optBoolean("active") &&
             (state.activeWorkoutId.isBlank() || it.optString("workoutId") == state.activeWorkoutId) &&
@@ -87,15 +110,15 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 val elapsedContent: @Composable () -> Unit = {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = palette.tintedSurface(0.18f),
-                        border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.55f)),
+                        color = selection.surface,
+                        border = TrainPilotFrames.stroke(1.dp, selection.border),
                         modifier = Modifier.testTag("active_workout_elapsed")
                     ) {
                         Text(
                             text = elapsedText,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = palette.primary,
+                            color = selection.foreground,
                             maxLines = 1,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
@@ -106,12 +129,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                         else if (state.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction
                     TrainPilotOutlinedButton(onClick = onToggle, enabled = enabled,
                         shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.tintedSurface(0.12f),
-                            contentColor = palette.primary, disabledContainerColor = palette.surfaceElevated,
+                        border = TrainPilotFrames.stroke(1.dp, if (enabled) selection.border else palette.cardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = selection.surface,
+                            contentColor = selection.foreground, disabledContainerColor = palette.surfaceElevated,
                             disabledContentColor = palette.textSecondary.copy(alpha = 0.6f)),
                         modifier = Modifier.heightIn(min = 48.dp).testTag("workout_handover_action")) {
                         Icon(Icons.Default.Watch, contentDescription = null,
-                            tint = palette.primary, modifier = Modifier.size(18.dp))
+                            tint = if (enabled) selection.foreground else palette.textSecondary.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
                         Text(actionLabel, style = MaterialTheme.typography.labelMedium,
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
@@ -134,6 +158,10 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                         Box(Modifier.widthIn(max = actionMaxWidth)) { action() }
                     }
                 }
+            }
+            if (state.isWorkoutSessionActive) measurementStatus?.let {
+                Text(it, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.testTag("watch_measurement_status"))
             }
             banner?.let {
                 Text(it, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall,

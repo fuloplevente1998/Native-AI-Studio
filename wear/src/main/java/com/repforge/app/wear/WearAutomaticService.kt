@@ -22,6 +22,8 @@ class WearAutomaticService : Service() {
     private val tick=object : Runnable {
         override fun run() {
             synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
+            if(WorkoutSnapshotStore.load(this@WearAutomaticService)?.controlIntent367!=null)
+                runCatching { WearWatchControls367.recover(this@WearAutomaticService) }
             val current=WorkoutSnapshotStore.load(this@WearAutomaticService)
             if(current==null||current.workoutId!=id||current.automation?.enabled!=true||current.automation.owner!="watch"){finish();return}
             if(current.automation.key!=key){key=current.automation.key;haptics=WearAutomaticHaptics()}
@@ -35,7 +37,7 @@ class WearAutomaticService : Service() {
                 val s=transition.completedSet ?: return@let
                 WearAutomaticController.publishCompleted(this@WearAutomaticService,next,e,s,current)
             }
-            if(boundary||SystemClock.elapsedRealtime()-lastMirrorAt>=5000){lastMirrorAt=SystemClock.elapsedRealtime();WearAutomaticController.publish(this@WearAutomaticService,WorkoutSnapshotStore.load(this@WearAutomaticService) ?: next)}
+            if(current.controlIntent367==null&&(boundary||SystemClock.elapsedRealtime()-lastMirrorAt>=5000)){lastMirrorAt=SystemClock.elapsedRealtime();WearAutomaticController.publish(this@WearAutomaticService,WorkoutSnapshotStore.load(this@WearAutomaticService) ?: next)}
             val duration=haptics.next(a,SystemClock.elapsedRealtime())
             if(a.vibration&&duration>0)getSystemService(Vibrator::class.java)?.vibrate(VibrationEffect.createOneShot(duration,VibrationEffect.DEFAULT_AMPLITUDE))
             if(a.counting&&!a.paused){if(wake?.isHeld!=true)wake?.acquire(86400000L)}else release()

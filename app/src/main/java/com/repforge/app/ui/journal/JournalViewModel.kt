@@ -207,6 +207,8 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshWorkoutHealth(activity: android.app.Activity?) {
         val detail = _uiState.value.detail ?: return
+        // External sessions use their exact source record, never a generic multi-provider window refresh.
+        if (detail.workout.originDevice == "external") return
         if (_uiState.value.healthRefreshing || _uiState.value.deleting || _editor.value?.saving == true) return
         if (activity == null) { _uiState.update { it.copy(healthError = R.string.journal_health_unavailable) }; return }
         val revision = ++healthRevision

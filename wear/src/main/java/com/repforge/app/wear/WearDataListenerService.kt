@@ -9,6 +9,7 @@ import com.google.android.gms.wearable.MessageEvent
 class WearDataListenerService : WearableListenerService() {
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
         WearGps193.recover(this,!WearGpsRouteService193.active(WearGps193.scope(this).optString("workoutId")))
+        WearWatchControls367.recover(this)
         WearOwnership193.recover(this)
         WearUndo188.recover(this)
         WearCommandOutbox.flush(this,true)
@@ -19,6 +20,14 @@ class WearDataListenerService : WearableListenerService() {
             return
         }
 
+        if(event.path==com.repforge.shared.WearMeasurementRequest351.PATH) {
+            val request=com.repforge.shared.WearMeasurementRequest351.parse(event.data)
+            val source=event.sourceNodeId
+            if(request!=null)android.os.Handler(android.os.Looper.getMainLooper()).post {
+                WearBackgroundMeasurement.receive(applicationContext,source,request)
+            }
+            return
+        }
         if(event.path!=WearWorkoutHandoff.REPLY || event.data.size>100000)return
         if(WearWorkoutHandoff.accept(this,event.data.toString(Charsets.UTF_8)))WearSurfaces.refresh(this)
     }
@@ -50,14 +59,21 @@ class WearDataListenerService : WearableListenerService() {
             val raw = if (item.uri.path == WATCH_HOME_PATH) com.repforge.shared.WatchHomePayload.read(data)
                 else data.getString("snapshot")
             when (item.uri.path) {
-                ACTIVE_WORKOUT_PATH -> WorkoutSnapshotStore.save(this, raw)
+                ACTIVE_WORKOUT_PATH -> {
+                    WorkoutSnapshotStore.save(this, raw)
+                    val source=item.uri.host
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        WearBackgroundMeasurement.snapshot(applicationContext,source,raw)
+                    }
+                }
                 WearPhoneAutomatic.PATH -> WearPhoneAutomatic.receive(this,DataMapItem.fromDataItem(item).dataMap.getString("automatic"))
                 WATCH_HOME_PATH -> WatchHomeStore.save(this, raw, DataMapItem.fromDataItem(item).dataMap.getLong("publishedAt"),item.uri.host)
             }
             WearCommandOutbox.flush(this)
             WearPhoneAutomatic.applyCached(this)
             WearHealthService.syncPause(this)
-            if(WorkoutSnapshotStore.load(this)==null && WearHealthStore.active(this).isNotBlank())WearHealthService.stop(this)
+            val recordingId = WearHealthStore.active(this)
+            if(recordingId.isNotBlank() && WorkoutSnapshotStore.load(this)?.workoutId != recordingId)WearHealthService.stop(this)
             WearSurfaces.refresh(this,true)
         }
     }

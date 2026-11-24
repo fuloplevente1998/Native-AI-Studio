@@ -28,6 +28,11 @@ internal fun WorkoutMenu(
     restRemaining: Int,
     onFinish: () -> Unit,
     onHome: () -> Unit,
+    onDiscard: () -> Unit = {},
+    onBack: () -> Unit = onHome,
+    onHealth: (() -> Unit)? = null,
+    onPauseWorkout: (() -> Unit)? = null,
+    onPhoneControl: (() -> Unit)? = null,
 ) {
     val automaticToggle=LocalAutomaticToggle.current
     val automaticCommand=LocalAutomaticCommand.current
@@ -35,6 +40,11 @@ internal fun WorkoutMenu(
     val undo=LocalUndo.current
     val touchLock=LocalTouchLock189.current
     RoundList(wearText("Edzésmenü")) {
+        centerItem { Pill(WearMenu216.text("back"), tone = Secondary, onClick = onBack) }
+        if (onHealth != null) centerItem { Pill(WearMenu216.text("metrics"), tone = Card, onClick = onHealth) }
+        if (onPauseWorkout != null) centerItem { Pill(wearV2Text("pauseWorkout"), onClick = onPauseWorkout) }
+        else if (onPhoneControl != null) centerItem { Pill(wearV2Text("phoneControl"), tone = Secondary, onClick = onPhoneControl) }
+        centerItem { Pill(WearMenu216.text("discard"), tone = Danger, enabled = !WearUndo188.blocked(workout) && !WearOwnership193.pending(workout), onClick = onDiscard) }
         touchLock?.let { lock -> centerItem { Pill(WearTouchCopy189.language(java.util.Locale.getDefault().language).lock,tone=Secondary,onClick=lock) } }
         if(undo!=null&&WearUndo188.available(workout))centerItem {
             Pill(wearText("Utolsó sorozat visszavonása"),tone=Gold) { WearUndo188.record(workout)?.optString("recordId")?.let(undo) }
@@ -196,7 +206,7 @@ internal fun SummaryScreen(
     onRetry: () -> Unit,
     onDone: () -> Unit,
 ) {
-    val saved = result.status == "saved" || result.status == "discarded"
+    val saved = result.status == if (result.action == "discardWorkout") "discarded" else "saved"
     ActionPanel(
         if (result.status == "error") wearText("Szinkronizálás")
         else if (result.action == "discardWorkout") (if (saved) wearText("Edzés törölve") else wearText("Várakozás a telefonra"))
@@ -229,6 +239,7 @@ internal fun SummaryScreen(
                 Text(result.message, color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         } else if (result.action == "finishWorkout") {
+            result.overview?.let { Title(it.name, if (compact) 12 else 16) }
             run {
                 // 2777: smaller numbers so the save state line below always fits above the button.
                 Text(
@@ -251,6 +262,9 @@ internal fun SummaryScreen(
                     }
                 }
             }
+            result.overview?.let { overview ->
+                Label(wearSummaryText("volume") + ": " + wearSummaryVolume(overview.volumeKg), size = 10)
+            }
             run {
                 Label(
                     if (saved) wearText("Mentve a telefonos naplóba")
@@ -267,6 +281,10 @@ internal fun SummaryScreen(
                 )
             }
         if (result.action == "finishWorkout") {
+            result.overview?.exercises?.forEach { exercise ->
+                Label(exercise.name, size = 11, lines = 2)
+                Label("${exercise.sets} ${wearSummaryText("sets")} · ${wearSummaryVolume(exercise.volumeKg)}", size = 10)
+            }
             val metrics = wearMeasuredTotals(health, result.workoutId)
             if (metrics.isNotEmpty()) {
                 run { Label(wearText("ÓRÁN MÉRT ADATOK"), Gold, size = 10) }
