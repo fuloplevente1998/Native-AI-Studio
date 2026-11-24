@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,7 +70,7 @@ internal fun CustomThemeSection(language: AppLanguage) {
         TrainPilotPrimaryButton(word("+ Új téma", "+ New theme", "+ Neues Design", "+ Temă nouă"), {
             failed = false
             editing = CustomThemeDefinition(newCustomThemeKey(), CustomThemeDraft.fromStyle(CustomThemeStyle.MATTE))
-        }, Modifier.fillMaxWidth().focusRequester(newThemeFocus).focusable().testTag("custom_theme_new"), enabled = !busy)
+        }, Modifier.fillMaxWidth().focusRequester(newThemeFocus).testTag("custom_theme_new"), enabled = !busy)
         access.themes.forEach { theme ->
             key(theme.key) {
                 val active = theme.key == access.activeKey
