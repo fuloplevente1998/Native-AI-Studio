@@ -13,13 +13,11 @@ class SourceSizeGuardTest {
     private val LIMIT = 900
 
     private val legacyCaps = mapOf(
-        "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt" to 4556,
+        "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt" to 3272,
         // One 990-line composable (R2 kept it whole: splitting needs a real refactor, not a move).
         "app/src/main/java/com/example/ui/screens/workout/CalendarPlannerScreen.kt" to 1100,
-        "wear/src/main/java/com/repforge/app/wear/WearScreens.kt" to 2949,
         // One 954-line composable (R5 kept it whole: splitting needs a real refactor, not a move).
         "app/src/main/java/com/example/ui/components/common/PersonalPlannerModal.kt" to 1050,
-        "app/src/main/java/com/example/ui/components/AnatomicalBodyAndMapComponents.kt" to 1918,
         "app/src/main/java/com/example/MainActivity.kt" to 1393,
         "app/src/main/java/com/repforge/app/ui/workout/ActiveWorkoutViewModel.kt" to 1384,
         "app/src/main/java/com/repforge/app/ui/workout/ActiveWorkoutScreen.kt" to 1361,

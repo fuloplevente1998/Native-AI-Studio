@@ -12,8 +12,9 @@ nagy fájlok sorai frissülnek.
 | Indító Activity (manifest LAUNCHER) → `TrainPilotAppRoot` | `rf/MainActivity.kt` |
 | App gyökér, fül/képernyő-váltás, lapok, health/settings VM bekötés | `ex/MainActivity.kt` (`TrainPilotAppRoot`) |
 | Állapot (UI state), navigáció enumok | `ex/ui/viewmodel/TrainPilotUiState.kt`, `ex/model/TrainPilotModels.kt` |
-| Fő ViewModel (állapot, edzés, napló, súly, health-híd, perzisztencia) | `ex/ui/viewmodel/TrainPilotViewModel.kt` (4.4k – R6b/c) |
+| Fő ViewModel (állapot, init/perzisztencia, napló, súly, health-híd, óra, backup, beállítások) | `ex/ui/viewmodel/TrainPilotViewModel.kt` (3.1k – R6c) |
 | VM kiterjesztések (R6a): navigáció/vissza; téma, nyelv, célok, gyors edzés lap; programok (könyvtár-mutáció, átnevezés, másolás, törlés, aktiválás); programszerkesztő (napok, gyakorlatok, sorrend, új program); naptár (törlés, újratervezés, esemény, visszavonás); gyakorlatkönyvtár + saját gyakorlat | `ex/ui/viewmodel/VmNavigation.kt`, `VmAppearance.kt`, `VmPrograms.kt`, `VmProgramEditor.kt`, `VmCalendar.kt`, `VmExerciseLibrary.kt` |
+| VM aktív edzés (R6b): sorozat-szerkesztés/visszavonás; kezdő profil + ajánlott program; pihenő, intervall, összegző/gyakorlat-visszajelzés; edzésindítás (tervezett, coach, gyors, sor, kültéri/GPS); gyakorlatváltás/léptetés, kültéri metrika; befejezés + mentés | `ex/ui/viewmodel/VmActiveSets.kt`, `VmStarterProfile.kt`, `VmRestAndIntervals.kt`, `VmWorkoutStart.kt`, `VmExerciseSwitch.kt`, `VmFinishWorkout.kt` |
 | Felső fejléc, alsó nav, piros X | `ex/ui/components/common/TopHeaderAndNav.kt` |
 | Palettaválasztó lap, céldialógus | `ex/ui/components/common/PalettePickerSheet.kt`, `ex/ui/components/common/GoalsEditDialog.kt` |
 | Gyakorlatvideó gomb, görgetés-segédek | `ex/ui/components/common/ExerciseVideoButton.kt`, `ex/ui/components/common/ScrollHelpers.kt` |
@@ -56,10 +57,11 @@ nagy fájlok sorai frissülnek.
 | Funkció | Fájl |
 |---|---|
 | Napló lista, edzés részletei, térkép | `ex/ui/screens/log/LogTabScreen.kt`, `ex/ui/screens/log/LogWorkoutDetailScreen.kt`, `ex/ui/screens/log/LogRouteMapScreen.kt` |
-| Fejlődés, volumen, izomtérkép | `ex/ui/screens/progress/ProgressTabScreen.kt`, `ex/ui/screens/progress/ProgressVolumeAndMuscle.kt`, `ex/ui/components/AnatomicalBodyAndMapComponents.kt`, `ex/ui/screens/StudioVolumeChart.kt` |
+| Fejlődés, volumen, izomtérkép | `ex/ui/screens/progress/ProgressTabScreen.kt`, `ex/ui/screens/progress/ProgressVolumeAndMuscle.kt`, `ex/ui/components/visual/MuscleHeatmapCard.kt`, `visual/AnatomicalFigure.kt`, `ex/ui/screens/StudioVolumeChart.kt` |
 | Statisztikák, kardió | `ex/ui/screens/StudioStatisticsScreen.kt`, `rf/ui/progress/NativeCardio*` |
 | PR rekordok | `ex/ui/screens/LoggedPrRecords.kt`, `rf/PersonalRecordCalculator226.kt` |
 | Diagram koppintás/kijelölés | `ex/ui/components/TrainPilotChartSelection.kt` |
+| Útvonaltérkép, gyakorlat-illusztráció, programtípus embléma, felszerelés-összegzés, óra/HC jelvény | `ex/ui/components/visual/` (`WorkoutRouteMapBox.kt`, `ExercisePostureIllustration.kt`, `ProgramTypeEmblem.kt`, `ProgramEquipmentSummary.kt`, `IntegrationBadges.kt`) |
 
 ## Egészség, súly, Coach
 | Funkció | Fájl |
@@ -90,7 +92,7 @@ nagy fájlok sorai frissülnek.
 |---|---|
 | Telefon oldali szinkron, távoli mérésindítás | `rf/WearSyncRepository.kt`, `rf/WearSyncStoresAndHandoff.kt`, `rf/WearCommandListenerService.kt` |
 | Közös szerződések (ownership/epoch/ACK, GPS csomag) | `shared/.../com/repforge/shared/*` |
-| Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../WearScreens.kt` (R7), `WearHomeDashboard.kt`, `WearMenu216.kt` |
+| Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../ui/`: `WearAppRoot.kt` (gyökér, navigáció), `WearMenuScreens.kt`, `WearJournalScreens.kt`, `WearCalendarScreens.kt`, `WearHealthScreen.kt`, `WearWorkoutScreens.kt`, `WearTimedSetScreens.kt`, `WearValueControls.kt`, `WearWorkoutMenuAndSummary.kt`, `WearUiPrimitives.kt`/`WearUiTokens.kt`; `WearHomeDashboard.kt`, `WearMenu216.kt` |
 | Óra adatfogadás, tulajdon, GPS | `wear/.../WearDataListenerService.kt`, `WearOwnership193.kt`, `WearGps193.kt` |
 
 ## Teszt, CI, kiadás
