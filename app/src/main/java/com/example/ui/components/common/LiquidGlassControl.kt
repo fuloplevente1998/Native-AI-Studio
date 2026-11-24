@@ -8,6 +8,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -33,18 +36,42 @@ internal fun LiquidGlassControl(language: AppLanguage, selectedId: Int) {
     val candidate = remember(selectedId, clarity) {
         TrainPilotPalettes.getById(selectedId.takeIf { it in 33..40 } ?: 35).withGlassClarity(clarity)
     }
+    var latest by remember { mutableIntStateOf(clarity) }
+    LaunchedEffect(clarity) { latest = clarity }
     val label = customThemeText(language, "Üveghatás", "Glass clarity", "Glas-Klarheit", "Claritatea sticlei")
     Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("$label: $clarity%", color = palette.textPrimary, style = MaterialTheme.typography.labelLarge)
         Slider(clarity.toFloat(), { value ->
             val next = value.roundToInt().coerceIn(0, 100)
+            latest = next
             if (access == null) local = next else access.preview(next)
-        }, valueRange = 0f..100f, onValueChangeFinished = { access?.commit(clarity) },
+        }, valueRange = 0f..100f, onValueChangeFinished = { access?.commit(latest) },
             modifier = Modifier.testTag("liquid_glass_clarity").semantics { contentDescription = label })
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Frosted", color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
             Text("Clear Liquid", color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
         }
         LiquidGlassMaterialPreview(candidate, language)
+    }
+}
+
+@Composable
+private fun LiquidGlassMaterialPreview(p: TrainPilotPalette, language: AppLanguage) {
+    val shape = RoundedCornerShape(18.dp)
+    Box(Modifier.fillMaxWidth().clip(shape).trainPilotGlassScene(p)
+        .padding(8.dp).testTag("liquid_glass_preview")) {
+        Column(Modifier.fillMaxWidth().clip(shape).trainPilotGlassMaterial(p, shape).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(customThemeText(language, "Élő üvegelőnézet", "Live glass preview",
+                "Live-Glasvorschau", "Previzualizare sticlă"), color = p.textSecondary,
+                style = MaterialTheme.typography.labelMedium)
+            Text(customThemeText(language, "Aktív program", "Active program", "Aktives Programm", "Program activ"),
+                color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Box(Modifier.fillMaxWidth().clip(shape).trainPilotGlassMaterial(p, shape).padding(12.dp),
+                contentAlignment = Alignment.Center) {
+                Text(customThemeText(language, "Edzés indítása", "Start workout", "Training starten",
+                    "Începe antrenamentul"), color = p.primary)
+            }
+        }
     }
 }
