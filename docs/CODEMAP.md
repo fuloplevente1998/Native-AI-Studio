@@ -1,0 +1,103 @@
+# Kódtérkép (funkció → fájl)
+
+Előbb ezt olvasd, utána csak a megnevezett fájlt. Nagy fájlban: `rg -n "fun Név" fájl` és célzott
+sortartomány. Gyökerek: telefon `app/src/main/java/`, óra `wear/src/main/java/com/repforge/app/wear/`,
+közös szerződések `shared/` (`com.repforge.shared`). Rövidítések: `ex/` = `com/example/`,
+`rf/` = `com/repforge/app/`. Új funkció/fájl → új sor ide. A szétszedés (docs/REFACTOR_PLAN.md) után a
+nagy fájlok sorai frissülnek.
+
+## Belépés, keret
+| Funkció | Fájl |
+|---|---|
+| Indító Activity (manifest LAUNCHER) → `TrainPilotAppRoot` | `rf/MainActivity.kt` |
+| App gyökér, fül/képernyő-váltás, lapok, health/settings VM bekötés | `ex/MainActivity.kt` (`TrainPilotAppRoot`) |
+| Állapot (UI state), navigáció enumok | `ex/ui/viewmodel/TrainPilotUiState.kt`, `ex/model/TrainPilotModels.kt` |
+| Fő ViewModel (edzés, programok, naptár, napló, súly, health-híd) | `ex/ui/viewmodel/TrainPilotViewModel.kt` (5.7k – R6) |
+| Felső fejléc, alsó nav, piros X, palettaválasztó, céldialógus | `ex/ui/components/TrainPilotCommonComponents.kt` (R5) |
+| Alulról nyíló lapok, útvonalak | `ex/ui/components/TrainPilotSheetRoutes.kt`, `TrainPilotScreenSheet.kt`, `TrainPilotModalBottomSheet.kt` |
+| Gombok, chipek, nyomásvisszajelzés, keretek | `ex/ui/components/TrainPilotControls.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt`, `TrainPilotFrames.kt`, `TrainPilotButton.kt` |
+| Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
+| Szövegek (4 nyelv) | `ex/localization/TrainPilotStrings.kt`; képernyőkben `tr(lang, hu, en, de, ro)` (`ex/ui/screens/ScreenText.kt`) |
+
+## Kezdőlap, gyors edzés
+| Funkció | Fájl |
+|---|---|
+| Kezdőlap | `ex/ui/screens/HomeScreen.kt` |
+| Mai állapot csempék és lenyíló lap | `ex/ui/screens/StudioTodayStatusGrid.kt`, `ex/ui/screens/health/HealthTodayStatusSheet.kt`, `ex/ui/screens/health/HealthTodayTileExtras.kt`, `ex/ui/screens/health/HealthTiles.kt` |
+| Heti célok | `ex/ui/components/WeeklyGoals.kt`, `ex/ui/screens/health/HealthWeightAndGoals.kt` (`HealthWeeklyGoalsPanel`) |
+| Gyors edzés lap | `ex/ui/components/QuickWorkoutHubSheet.kt` |
+| Coach tanács kártya | `ex/ui/components/HomeCoachAdviceCard.kt`, `rf/ui/coach/*` |
+
+## Edzés fül, programok, naptár, könyvtár
+| Funkció | Fájl |
+|---|---|
+| Edzés fül, módcsempék, napkártyák | `ex/ui/screens/WorkoutAndPlanningScreens.kt` (`WorkoutTabScreen`), `WorkoutTabDayCards.kt` |
+| Programlista, programkártya, szerkesztő | `WorkoutAndPlanningScreens.kt` (`ProgramsListScreen`, `ProgramEditorScreen`); mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
+| Naptár tervező | `WorkoutAndPlanningScreens.kt` (`CalendarPlannerScreen`); logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
+| Gyakorlatkönyvtár, részletek, saját gyakorlat | `WorkoutAndPlanningScreens.kt` (`ExerciseLibraryScreen`, `ExerciseDetailScreen`, `AddCustomExerciseModalDialog`) |
+| Személyes tervező (első profil) | `ex/ui/components/StudioPersonalPlannerDialog.kt`, `TrainPilotCommonComponents.kt` (`PersonalPlannerModalDialog`) |
+
+## Aktív edzés, mérés
+| Funkció | Fájl |
+|---|---|
+| Erő / időzített / kétoldalas / kültéri GPS képernyő | `ex/ui/screens/ActiveMeasurementScreens.kt` (`Active*WorkoutScreen`, `ActiveOutdoorGpsScreen`) (R3) |
+| Felső sáv, „Legutóbb” sor | `ex/ui/components/StudioActiveWorkoutTop.kt`, `StudioWorkoutHandoverBar.kt` |
+| Pihenő dokk / kompakt pihenő | `ex/ui/components/StudioRestTimerDock.kt`, `StudioCompactRestControls.kt`, `rf/StudioRestTimer.kt` |
+| Sorozatkártya | `ex/ui/components/StudioStrengthSetCard.kt` |
+| Intervallum | `ActiveMeasurementScreens.kt` (`IntervalSettingsScreen`), `rf/IntervalTimerService.kt` |
+| GPS műszerfal, útvonal | `ex/ui/screens/OutdoorGpsDashboard.kt`, `rf/DistanceTrackingService.kt`, `rf/GpsRouteStore.kt` |
+| Edzésösszegzés | `ActiveMeasurementScreens.kt` (`WorkoutSummaryScreen`) |
+| Motor, időzítő-tulajdonos, mentés/lezárás | `rf/PhoneWorkoutEngine.kt`, `rf/PhoneWorkoutExecutionStore.kt`, `rf/TrainPilotWorkoutFinalization.kt`, `rf/ActiveWorkoutStore.kt` |
+
+## Napló, fejlődés, statisztika
+| Funkció | Fájl |
+|---|---|
+| Napló lista, edzés részletei, térkép | `ex/ui/screens/LogAndProgressScreens.kt` (`LogTabScreen`, `LogWorkoutDetailScreen`, `LogRouteMapScreen`) (R4) |
+| Fejlődés, volumen, izomtérkép | `LogAndProgressScreens.kt` (`ProgressTabScreen`, `MainProgressVolumeAndMuscleSection`), `ex/ui/components/AnatomicalBodyAndMapComponents.kt`, `ex/ui/screens/StudioVolumeChart.kt` |
+| Statisztikák, kardió | `ex/ui/screens/StudioStatisticsScreen.kt`, `rf/ui/progress/NativeCardio*` |
+| PR rekordok | `ex/ui/screens/LoggedPrRecords.kt`, `rf/PersonalRecordCalculator226.kt` |
+| Diagram koppintás/kijelölés | `ex/ui/components/TrainPilotChartSelection.kt` |
+
+## Egészség, súly, Coach
+| Funkció | Fájl |
+|---|---|
+| Egészség fül (+ közös segédek `health/HealthScreenShared.kt`) | `ex/ui/screens/health/HealthTabScreen.kt` |
+| Forrásválasztás, szinkron részletei, intervallum chipek | `ex/ui/screens/health/HealthSourcesContent.kt` |
+| Testsúlynapló, fotó | `ex/ui/screens/health/HealthWeightAndGoals.kt` (`WeightLogBody`), `rf/ui/progress/NativeWeightJournalRepository.kt`, `rf/NativeWeightPhotos.kt` |
+| Health VM, előtéri frissítés, kapu | `rf/ui/health/HealthDashboardViewModel.kt`, `NativeHealthAutoRefreshGate.kt`, `NativeHealthAppRefreshPolicy.kt` |
+| Szinkron ütemezés (előtér/háttér percek, Google auto) | `rf/NativeSyncSchedule.kt` |
+| HC háttér job, BLE óra szolgáltatás | `rf/HealthBackgroundServices.kt` |
+| Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/HealthJournalStore.kt`, `rf/NativeHealthSync.kt` |
+| Kalória/energia | `rf/HealthProjectionsAndEnergy.kt` |
+| Coach képernyő, készenlét | `ex/ui/screens/health/CoachDetailScreen.kt`, `rf/ui/coach/NativeCoachReadiness.kt` |
+
+## Beállítások, felhő, mentés
+| Funkció | Fájl |
+|---|---|
+| Beállítások főoldal | `ex/ui/screens/settings/SettingsMainScreen.kt` |
+| Óra és szinkron oldal | `ex/ui/screens/settings/WatchAndSyncScreen.kt` |
+| Google Cloud kártya (állapot, auto, kézi, karbantartás) | `ex/ui/screens/settings/GoogleCloudSyncCard.kt` |
+| Google szinkron motor, Drive-összefésülés | `rf/GoogleSyncRepository.kt`, `rf/GoogleAutoSyncWorker.kt`, `rf/ui/settings/SettingsViewModel.kt`, `rf/ui/settings/NativeGoogleMaintenance*.kt` |
+| Mentés / visszaállítás | `ex/ui/screens/settings/BackupRestoreScreen.kt`, `rf/BackupRestoreManager.kt`, `rf/BackupJsonIO.kt` |
+| Engedélyek, privát fotók | `ex/ui/screens/settings/PermissionsScreen.kt`, `rf/NativePrivacyControls.kt` |
+| Adatbázis, migráció, DataStore | `rf/data/db/*`, `rf/data/migration/*`, `rf/data/store/TrainPilotSettingsStore.kt` |
+
+## Telefon ↔ óra
+| Funkció | Fájl |
+|---|---|
+| Telefon oldali szinkron, távoli mérésindítás | `rf/WearSyncRepository.kt`, `rf/WearSyncStoresAndHandoff.kt`, `rf/WearCommandListenerService.kt` |
+| Közös szerződések (ownership/epoch/ACK, GPS csomag) | `shared/.../com/repforge/shared/*` |
+| Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../WearScreens.kt` (R7), `WearHomeDashboard.kt`, `WearMenu216.kt` |
+| Óra adatfogadás, tulajdon, GPS | `wear/.../WearDataListenerService.kt`, `WearOwnership193.kt`, `WearGps193.kt` |
+
+## Teszt, CI, kiadás
+| Funkció | Fájl |
+|---|---|
+| Gyűjtő regressziós tesztek | `app/src/test/java/com/example/Collector*RegressionTest.kt` |
+| Fájlméret-őr, áthelyezés-ellenőrzés | `app/src/test/java/com/example/SourceSizeGuardTest.kt`, `scripts/verify_move.py` |
+| CI, aláírt kiadás, Play | `.github/workflows/trainpilot-android-ci.yml`, `trainpilot-persistent-signing.yml`, `trainpilot-play-internal-aab.yml` |
+| Verzió | `app/build.gradle.kts`, `wear/build.gradle.kts` |
+| Play kiadási megjegyzés | `docs/PLAY_LISTING.md` |
+
+Megjegyzés: a `rf/ui/{home,journal,calendar,programs,workout,settings}/` alatti `*Screen.kt` fájlok egy része
+régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e valami (az élő UI a `com.example` fa).

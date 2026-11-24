@@ -5,8 +5,9 @@ Ez a fájl a teljes repóra érvényes. Az aktuális felhasználói utasítás e
 
 ## Indulás és önálló haladás
 
-1. Olvasd el a [rövid átadót](docs/WORK_HANDOFF.md), az aktuális feladathoz szükséges
-   részt a [státuszból](docs/CURRENT_STATUS.md), majd a tényleges GitHub-jegyet.
+1. Olvasd el a [HANDOFF.md](HANDOFF.md)-t és a [kódtérképet](docs/CODEMAP.md), majd a tényleges
+   GitHub-jegyet. A kódtérkép alapján csak a megnevezett fájl(oka)t nyisd meg. A `docs/archive/`
+   történeti napló: csak célzott kereséssel.
 2. Ellenőrizd a munkafa, ág/HEAD, nyitott PR-ek és Actions állapotát. A dokumentált
    státusz pillanatkép; ne ossz ki újra másik ágon már készülő javítást.
 3. Csak a szükséges forrásokat olvasd; kereséshez `rg`, fájllistához `rg --files`.

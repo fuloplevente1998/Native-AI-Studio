@@ -1,13 +1,13 @@
 # TrainPilot – native AI Studio app
 
-**Agent workflow and model/thinking rules: [AGENTS.md](AGENTS.md). Short continuation handoff: [WORK_HANDOFF](docs/WORK_HANDOFF.md).**
+**Agent workflow and model/thinking rules: [AGENTS.md](AGENTS.md). Short continuation handoff: [WORK_HANDOFF](docs/archive/WORK_HANDOFF.md).**
 
-**Current source, verified APKs and pending device checks: [CURRENT_STATUS](docs/CURRENT_STATUS.md).**
+**Current source, verified APKs and pending device checks: [CURRENT_STATUS](docs/archive/CURRENT_STATUS.md).**
 
 **Continue from the latest `main`, using the current handoff:**
 
-- [Native implementation / verification handoff](docs/AI_STUDIO_HANDOFF_2026-11-02.md)
-- [Exact Hungarian AI Studio continuation prompt](docs/AI_STUDIO_CONTINUE_PROMPT.md)
+- [Native implementation / verification handoff](docs/archive/AI_STUDIO_HANDOFF_2026-11-02.md)
+- [Exact Hungarian AI Studio continuation prompt](docs/archive/AI_STUDIO_CONTINUE_PROMPT.md)
 - [Current beta fixes, source and verification status: PR #20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20)
 - [Original audit / open task list: PR #1](https://github.com/fuloplevente1998/Native-AI-Studio/pull/1)
 
@@ -40,9 +40,9 @@ are recorded in the handoff and PR #22. Existing Gradle signing configurations r
 live Cloud authorization. Physical map tiles, watch ACK/sensors and real device
 backup/restart acceptance remain separate from JVM/Compose fixture test results.
 
-[Earlier PR #2 checkpoint (historical)](docs/MAIN_TEST_CHECKPOINT_2026-11-01.md).
+[Earlier PR #2 checkpoint (historical)](docs/archive/MAIN_TEST_CHECKPOINT_2026-11-01.md).
 
 Future APK uploads go to the **[TrainPilot Native Drive folder](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9)**.
 The current handoff distinguishes proven automated results from pending device checks and preserves the existing data/privacy rules.
 
-Device-reported progress/Health/workout acceptance checklist: [tracker](docs/PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md), [GitHub #19](https://github.com/fuloplevente1998/Native-AI-Studio/issues/19).
+Device-reported progress/Health/workout acceptance checklist: [tracker](docs/archive/PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md), [GitHub #19](https://github.com/fuloplevente1998/Native-AI-Studio/issues/19).
