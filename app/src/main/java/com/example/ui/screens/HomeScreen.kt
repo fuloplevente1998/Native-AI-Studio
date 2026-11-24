@@ -86,6 +86,8 @@ import com.example.localization.LocalizedStrings
 import com.example.model.HomeDemoMode
 import com.example.ui.components.TrainPilotMountainLogo
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
+import com.example.ui.theme.readablePrimaryLabel
 import com.example.ui.viewmodel.TrainPilotUiState
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -304,7 +306,7 @@ fun HomeScreen(
 
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
-                                                color = palette.tintedSurface(0.12f),
+                                                color = palette.selectionColors().surface,
                                                 modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                             ) {
                                                 Text(
@@ -314,7 +316,7 @@ fun HomeScreen(
                                                     } else currentDay?.localizedDayCode(state.language) ?: tr("A nap", "Day A", "Tag A", "Ziua A"),
                                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold,
                                                         fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.1f),
-                                                    color = palette.primary,
+                                                    color = palette.selectionColors().foreground,
                                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).testTag("home_planned_day")
                                                 )
                                             }
@@ -374,7 +376,7 @@ fun HomeScreen(
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = palette.primary,
-                                            contentColor = palette.onPrimary
+                                            contentColor = palette.readablePrimaryLabel()
                                         ),
                                         modifier = Modifier
                                             .fillMaxWidth()
