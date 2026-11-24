@@ -23,6 +23,7 @@ nagy fájlok sorai frissülnek.
 | Gombok, chipek, nyomásvisszajelzés, keretek | `ex/ui/components/TrainPilotControls.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt`, `TrainPilotFrames.kt`, `TrainPilotButton.kt` |
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
 | Közös kijelölés és telt gomb feliratkontraszt (#349) | `ex/ui/theme/ThemeSelectionColors.kt`, teszt `app/src/test/java/com/example/ThemeSelection349Test.kt` |
+| Saját téma szerkesztő (#350, előkészítés) | `ex/ui/theme/CustomThemeDraft.kt`, `docs/CUSTOM_THEME_EDITOR_350.md`, teszt `app/src/test/java/com/example/CustomThemeDraft350Test.kt` |
 | Szövegek (4 nyelv) | `ex/localization/TrainPilotStrings.kt`; képernyőkben `tr(lang, hu, en, de, ro)` (`ex/ui/screens/ScreenText.kt`) |
 
 ## Kezdőlap, gyors edzés
