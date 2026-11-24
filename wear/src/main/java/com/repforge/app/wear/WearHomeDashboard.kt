@@ -198,39 +198,42 @@ internal fun WearHomeDashboard(
                 androidx.compose.ui.geometry.Size(size.width - 2 * inset, size.height - 2 * inset),
                 style = Stroke(3.dp.toPx(), cap = StrokeCap.Round),
             )
+            // Daily totals and target are not in WatchHomeSnapshot yet. Never substitute session steps.
+            for (i in 0 until 12) drawArc(
+                HomeLine,
+                -35f + i * 6f,
+                3.5f,
+                false,
+                Offset(inset, inset),
+                androidx.compose.ui.geometry.Size(size.width - 2 * inset, size.height - 2 * inset),
+                style = Stroke(3.dp.toPx(), cap = StrokeCap.Round),
+            )
         }
         CurvedLayout(
             Modifier.align(Alignment.Center).size(diameter - 30.dp),
             anchor = 146f,
             angularDirection = CurvedDirection.Angular.Reversed,
         ) {
+            curvedComposable {
+                Image(painterResource(R.drawable.ic_tp_battery), null, Modifier.size(9.dp),
+                    colorFilter = ColorFilter.tint(if (battery != null && battery <= 15) Color(0xFFEF5350) else HomeWhite))
+            }
             basicCurvedText(
-                battery?.let { "$it%" } ?: "–",
+                battery?.let { " $it%" } ?: " –",
                 style = CurvedTextStyle(color = HomeWhite, fontSize = (8f / fontScale).sp),
             )
         }
-        // 2777: on small/medium watches the curved status ran off the right edge; it moves into the body.
-        if (large) CurvedLayout(
-            Modifier.align(Alignment.Center).size(diameter - 18.dp),
+        CurvedLayout(
+            Modifier.align(Alignment.Center).size(diameter - 30.dp),
             anchor = 0f,
         ) {
             curvedComposable {
-                Image(
-                    painterResource(R.drawable.ic_tp_heart),
-                    null,
-                    Modifier.size(if (tiny) 7.dp else 9.dp),
-                    colorFilter = ColorFilter.tint(theme.secondaryColor),
-                )
+                Image(painterResource(R.drawable.ic_tp_steps), null, Modifier.size(9.dp),
+                    colorFilter = ColorFilter.tint(HomeMuted))
             }
             basicCurvedText(
-                " $sideLabel",
-                modifier = CurvedModifier.sizeIn(maxSweepDegrees = if (large) 72f else 60f),
-                style =
-                    CurvedTextStyle(
-                        color = theme.secondaryColor,
-                        fontSize = ((if (tiny) 6.5f else 8f) / fontScale).sp,
-                    ),
-                overflow = TextOverflow.Ellipsis,
+                " –",
+                style = CurvedTextStyle(color = HomeMuted, fontSize = (8f / fontScale).sp),
             )
         }
         Column(
@@ -302,7 +305,7 @@ internal fun WearHomeDashboard(
                         )
                     if (large)
                         HomeFitText(
-                            "${wearText(model.detail)} · ${wearText(model.source)}",
+                            "♥ $sideLabel · ${wearText(model.source)}",
                             Modifier.fillMaxWidth().height(9.dp),
                             7.5f,
                             HomeMuted,
