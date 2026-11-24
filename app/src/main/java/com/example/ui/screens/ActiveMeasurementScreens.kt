@@ -170,13 +170,6 @@ import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
-    AppLanguage.HU -> hu
-    AppLanguage.EN -> en
-    AppLanguage.DE -> de
-    AppLanguage.RO -> ro
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MeasurementModeSwitcherRow(

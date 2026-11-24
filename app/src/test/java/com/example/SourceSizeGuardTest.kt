@@ -14,7 +14,6 @@ class SourceSizeGuardTest {
 
     private val legacyCaps = mapOf(
         "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt" to 5887,
-        "app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt" to 4481,
         "app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt" to 4095,
         "app/src/main/java/com/example/ui/screens/ActiveMeasurementScreens.kt" to 3181,
         "wear/src/main/java/com/repforge/app/wear/WearScreens.kt" to 2949,

@@ -17,14 +17,14 @@ nagy fájlok sorai frissülnek.
 | Alulról nyíló lapok, útvonalak | `ex/ui/components/TrainPilotSheetRoutes.kt`, `TrainPilotScreenSheet.kt`, `TrainPilotModalBottomSheet.kt` |
 | Gombok, chipek, nyomásvisszajelzés, keretek | `ex/ui/components/TrainPilotControls.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt`, `TrainPilotFrames.kt`, `TrainPilotButton.kt` |
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
-| Szövegek (4 nyelv) | `ex/localization/TrainPilotStrings.kt`; képernyőkben `tr(lang, hu, en, de, ro)` |
+| Szövegek (4 nyelv) | `ex/localization/TrainPilotStrings.kt`; képernyőkben `tr(lang, hu, en, de, ro)` (`ex/ui/screens/ScreenText.kt`) |
 
 ## Kezdőlap, gyors edzés
 | Funkció | Fájl |
 |---|---|
 | Kezdőlap | `ex/ui/screens/HomeScreen.kt` |
-| Mai állapot csempék és lenyíló lap | `ex/ui/screens/StudioTodayStatusGrid.kt`, `HealthCoachAndSettingsScreens.kt` (`StudioTodayStatusDetailSheet`, `TodayTileSheetExtras`) |
-| Heti célok | `ex/ui/components/WeeklyGoals.kt`, `HealthCoachAndSettingsScreens.kt` (`HealthWeeklyGoalsPanel`) |
+| Mai állapot csempék és lenyíló lap | `ex/ui/screens/StudioTodayStatusGrid.kt`, `ex/ui/screens/health/HealthTodayStatusSheet.kt`, `ex/ui/screens/health/HealthTodayTileExtras.kt`, `ex/ui/screens/health/HealthTiles.kt` |
+| Heti célok | `ex/ui/components/WeeklyGoals.kt`, `ex/ui/screens/health/HealthWeightAndGoals.kt` (`HealthWeeklyGoalsPanel`) |
 | Gyors edzés lap | `ex/ui/components/QuickWorkoutHubSheet.kt` |
 | Coach tanács kártya | `ex/ui/components/HomeCoachAdviceCard.kt`, `rf/ui/coach/*` |
 
@@ -61,25 +61,25 @@ nagy fájlok sorai frissülnek.
 ## Egészség, súly, Coach
 | Funkció | Fájl |
 |---|---|
-| Egészség fül | `ex/ui/screens/HealthCoachAndSettingsScreens.kt` (`HealthTabScreen`) (R1) |
-| Forrásválasztás, szinkron részletei, intervallum chipek | `HealthCoachAndSettingsScreens.kt` (`HealthSourcesContent`) |
-| Testsúlynapló, fotó | `HealthCoachAndSettingsScreens.kt` (`WeightLogBody`), `rf/ui/progress/NativeWeightJournalRepository.kt`, `rf/NativeWeightPhotos.kt` |
+| Egészség fül (+ közös segédek `health/HealthScreenShared.kt`) | `ex/ui/screens/health/HealthTabScreen.kt` |
+| Forrásválasztás, szinkron részletei, intervallum chipek | `ex/ui/screens/health/HealthSourcesContent.kt` |
+| Testsúlynapló, fotó | `ex/ui/screens/health/HealthWeightAndGoals.kt` (`WeightLogBody`), `rf/ui/progress/NativeWeightJournalRepository.kt`, `rf/NativeWeightPhotos.kt` |
 | Health VM, előtéri frissítés, kapu | `rf/ui/health/HealthDashboardViewModel.kt`, `NativeHealthAutoRefreshGate.kt`, `NativeHealthAppRefreshPolicy.kt` |
 | Szinkron ütemezés (előtér/háttér percek, Google auto) | `rf/NativeSyncSchedule.kt` |
 | HC háttér job, BLE óra szolgáltatás | `rf/HealthBackgroundServices.kt` |
 | Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/HealthJournalStore.kt`, `rf/NativeHealthSync.kt` |
 | Kalória/energia | `rf/HealthProjectionsAndEnergy.kt` |
-| Coach képernyő, készenlét | `HealthCoachAndSettingsScreens.kt` (`CoachDetailScreen`), `rf/ui/coach/NativeCoachReadiness.kt` |
+| Coach képernyő, készenlét | `ex/ui/screens/health/CoachDetailScreen.kt`, `rf/ui/coach/NativeCoachReadiness.kt` |
 
 ## Beállítások, felhő, mentés
 | Funkció | Fájl |
 |---|---|
-| Beállítások főoldal | `HealthCoachAndSettingsScreens.kt` (`SettingsMainScreen`) |
-| Óra és szinkron oldal | `HealthCoachAndSettingsScreens.kt` (`WatchAndSyncScreen`) |
-| Google Cloud kártya (állapot, auto, kézi, karbantartás) | `HealthCoachAndSettingsScreens.kt` (`StudioGoogleCloudSyncCard`, `cloudServiceStatus`) |
+| Beállítások főoldal | `ex/ui/screens/settings/SettingsMainScreen.kt` |
+| Óra és szinkron oldal | `ex/ui/screens/settings/WatchAndSyncScreen.kt` |
+| Google Cloud kártya (állapot, auto, kézi, karbantartás) | `ex/ui/screens/settings/GoogleCloudSyncCard.kt` |
 | Google szinkron motor, Drive-összefésülés | `rf/GoogleSyncRepository.kt`, `rf/GoogleAutoSyncWorker.kt`, `rf/ui/settings/SettingsViewModel.kt`, `rf/ui/settings/NativeGoogleMaintenance*.kt` |
-| Mentés / visszaállítás | `HealthCoachAndSettingsScreens.kt` (`BackupRestoreScreen`), `rf/BackupRestoreManager.kt`, `rf/BackupJsonIO.kt` |
-| Engedélyek, privát fotók | `HealthCoachAndSettingsScreens.kt` (`PermissionsScreen`, `PrivatePhotosScreen`), `rf/NativePrivacyControls.kt` |
+| Mentés / visszaállítás | `ex/ui/screens/settings/BackupRestoreScreen.kt`, `rf/BackupRestoreManager.kt`, `rf/BackupJsonIO.kt` |
+| Engedélyek, privát fotók | `ex/ui/screens/settings/PermissionsScreen.kt`, `rf/NativePrivacyControls.kt` |
 | Adatbázis, migráció, DataStore | `rf/data/db/*`, `rf/data/migration/*`, `rf/data/store/TrainPilotSettingsStore.kt` |
 
 ## Telefon ↔ óra

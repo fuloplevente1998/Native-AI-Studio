@@ -18,7 +18,7 @@ működésváltozás nélkül, ugyanabban a Kotlin-csomagban (a hívások nem v�
 | # | Fájl (sor) | Új fájlok | Kockázat |
 |---|---|---|---|
 | R0 | – | `docs/CODEMAP.md` (funkció → fájl), CLAUDE.md szabály: „előbb CODEMAP, csak a megnevezett fájl”; ~147 történeti `docs/*` → `docs/archive/`; `verify_move.py`, `SourceSizeGuardTest` | alacsony |
-| R1 | HealthCoachAndSettingsScreens (4331) | `screens/health/`: HealthTabScreen, TodayStatusSheet (+ mai csempe segédek), HealthSources, HealthTiles, WeightLog, WeeklyGoalsPanel, CoachScreens · `screens/settings/`: SettingsMainScreen, WatchAndSyncScreen, GoogleCloudSyncCard, BackupRestoreScreen, PermissionsScreen · közös `tr()` → ScreenText.kt | alacsony |
+| R1 ✅ | HealthCoachAndSettingsScreens (4331) → 14 fájl, legnagyobb 852 | `screens/health/`: HealthTabScreen, TodayStatusSheet (+ mai csempe segédek), HealthSources, HealthTiles, WeightLog, WeeklyGoalsPanel, CoachScreens · `screens/settings/`: SettingsMainScreen, WatchAndSyncScreen, GoogleCloudSyncCard, BackupRestoreScreen, PermissionsScreen · közös `tr()` → ScreenText.kt | alacsony |
 | R2 | WorkoutAndPlanningScreens (3945) | WorkoutTabScreen, ProgramsListScreen, ProgramCard, ProgramEditorScreen, CalendarPlannerScreen (+ PlannerFields), ExerciseLibraryScreen, ExerciseDetailScreen, AddCustomExerciseDialog | alacsony |
 | R3 | ActiveMeasurementScreens (3031) | ActiveStrength, ActiveTimed, ActiveBilateral, ActiveOutdoorGps, IntervalSettings, WorkoutSummaryScreen, MeasurementShared | közepes (5 forrásteszt) |
 | R4 | LogAndProgressScreens (2205) | LogTabScreen, LogWorkoutDetail, LogRouteMap, ProgressTabScreen, ProgressVolumeAndMuscle | alacsony |

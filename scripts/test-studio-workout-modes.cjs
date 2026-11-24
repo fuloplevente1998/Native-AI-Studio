@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const file = p => fs.readFileSync(path.join(root, p), 'utf8');
 const main = file('app/src/main/java/com/example/MainActivity.kt');
-const settings = file('app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt');
+const settings = ['SettingsMainScreen', 'WatchAndSyncScreen'].map(n => file('app/src/main/java/com/example/ui/screens/settings/' + n + '.kt')).join('\n');
 const dialog = file('app/src/main/java/com/example/ui/screens/StudioWorkoutModesDialog.kt');
 const model = file('app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt');
 const resolver = file('app/src/main/java/com/repforge/app/data/store/NativeTrainingModes.kt');
