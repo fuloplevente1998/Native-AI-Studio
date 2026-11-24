@@ -37,13 +37,15 @@ internal fun CustomThemeEditorSheet(
     val scope = rememberCoroutineScope()
     var draft by remember(themeKey, initial) { mutableStateOf(initial.copy(opacityPercent = 100)) }
     var role by remember(themeKey) { mutableStateOf(CustomThemeRole.PRIMARY) }
-    var workoutPreview by remember(themeKey) { mutableStateOf(false) }
+    var previewOpen by remember(themeKey) { mutableStateOf(false) }
+    var nameOpen by remember(themeKey) { mutableStateOf(false) }
+    var pendingName by remember(themeKey) { mutableStateOf(initial.name) }
     val resolved = remember(draft, themeKey) { resolveCustomTheme(draft, themeKey) }
     val maxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     fun word(hu: String, en: String, de: String, ro: String) = customThemeText(language, hu, en, de, ro)
     val corrected = resolved?.correctedRoles.orEmpty()
     LaunchedEffect(saveCompleted) {
-        if (saveCompleted) { sheet.hide(); onDismiss() }
+        if (saveCompleted) { nameOpen = false; sheet.hide(); onDismiss() }
     }
     fun cancel() {
         if (!saving) scope.launch { sheet.hide(); onDismiss() }
@@ -58,18 +60,6 @@ internal fun CustomThemeEditorSheet(
                 style = MaterialTheme.typography.titleLarge, color = palette.textPrimary)
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TrainPilotFilterChip(!workoutPreview, { workoutPreview = false },
-                        { Text(word("Kezdőlap", "Home", "Start", "Acasă")) })
-                    TrainPilotFilterChip(workoutPreview, { workoutPreview = true },
-                        { Text(word("Aktív edzés", "Workout", "Training", "Antrenament")) })
-                }
-                if (resolved != null) CustomThemePreview(resolved, workoutPreview, language)
-                else Text(word("Az előnézethez érvényes színek szükségesek.", "Enter valid colors to preview.",
-                    "Gültige Farben für die Vorschau eingeben.", "Introdu culori valide pentru previzualizare."),
-                    color = palette.textSecondary)
-                TrainPilotTextField(draft.name, { draft = draft.copy(name = it) }, Modifier.fillMaxWidth().testTag("custom_theme_name"),
-                    enabled = !saving, singleLine = true, label = { Text(word("Téma neve", "Theme name", "Designname", "Numele temei")) })
                 Text(word("Alapstílus (a színek visszaállnak)", "Base style (resets colors)",
                     "Grundstil (setzt Farben zurück)", "Stil de bază (resetează culorile)"), color = palette.textPrimary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -103,16 +93,52 @@ internal fun CustomThemeEditorSheet(
                         { draft = resolved.suggestedDraft }, Modifier.fillMaxWidth().testTag("custom_theme_accept_correction"), enabled = !saving)
                 }
             }
-            if (saveFailed) Text(word("A mentés nem sikerült.", "Could not save theme.",
-                "Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată."), color = palette.danger)
+            TrainPilotSecondaryButton(word("Előnézet", "Preview", "Vorschau", "Previzualizare"),
+                { previewOpen = true }, Modifier.fillMaxWidth().testTag("custom_theme_open_preview"),
+                enabled = !saving && resolved != null)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainPilotSecondaryButton(word("Mégse", "Cancel", "Abbrechen", "Anulează"), ::cancel,
                     Modifier.weight(1f), enabled = !saving)
                 TrainPilotPrimaryButton(word("Mentés", "Save", "Speichern", "Salvează"), {
-                    draft.toDefinition(themeKey)?.let(onSave)
+                    pendingName = draft.name
+                    nameOpen = true
                 }, Modifier.weight(1f).testTag("custom_theme_save"),
-                    enabled = !saving && !saveCompleted && draft.isInputValid && resolved != null && corrected.isEmpty())
+                    enabled = !saving && !saveCompleted && draft.invalidRoles.isEmpty() && draft.hasValidOpacity && resolved != null && corrected.isEmpty())
             }
         }
     }
+    // Full-size read-only preview does not mutate the draft or the active theme.
+    if (previewOpen && resolved != null) {
+        CustomThemePreviewDialog(resolved, language, onDismiss = { previewOpen = false })
+    }
+    // The name is only requested on Save, including a prefilled name for edits.
+    if (nameOpen) {
+        TrainPilotAlertDialog(
+            onDismissRequest = { if (!saving) nameOpen = false },
+            modifier = Modifier.testTag("custom_theme_name_dialog"),
+            title = { Text(word("Téma mentése", "Save theme", "Design speichern", "Salvează tema")) },
+            text = {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TrainPilotTextField(pendingName, { pendingName = it },
+                        Modifier.fillMaxWidth().testTag("custom_theme_name"),
+                        enabled = !saving, singleLine = true,
+                        label = { Text(word("Téma neve", "Theme name", "Designname", "Numele temei")) })
+                    if (saveFailed) Text(word("A mentés nem sikerült.", "Could not save theme.",
+                        "Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată."), color = palette.danger)
+                }
+            },
+            dismissButton = {
+                TrainPilotSecondaryButton(word("Mégse", "Cancel", "Abbrechen", "Anulează"),
+                    { nameOpen = false }, enabled = !saving)
+            },
+            confirmButton = {
+                TrainPilotPrimaryButton(word("Mentés", "Save", "Speichern", "Salvează"), {
+                    draft.copy(name = pendingName).toDefinition(themeKey)?.let(onSave)
+                }, Modifier.testTag("custom_theme_confirm_save"),
+                    enabled = !saving && !saveCompleted && pendingName.isNotBlank() &&
+                        resolved != null && corrected.isEmpty())
+            }
+        )
+    }
+
 }

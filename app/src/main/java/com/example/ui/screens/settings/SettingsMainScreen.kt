@@ -198,7 +198,7 @@ fun SettingsMainScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(customThemeText(uiState.language, "40 gyári téma", "40 built-in themes", "40 integrierte Designs", "40 de teme incluse"), style = MaterialTheme.typography.titleMedium,
+                                Text(customThemeText(uiState.language, "Témák", "Themes", "Designs", "Teme"), style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text(toggleThemesHint, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }

@@ -1,3 +1,5 @@
+> **Theme Test V2 visszajelzés (2026-11-24):** cím: Témák. A név kizárólag a Mentés gomb után megnyíló TrainPilot-dialógusban adható meg, meglévő témánál előtöltve. A nagy előnézet az alsó Előnézet gombból nyíló teljes ablakos, mintaadatokat használó Kezdőlap/Aktív edzés nézet. Nem alkalmazza vagy menti a témát, visszalépéskor megtartja a draftot. Az alábbi korábbi inline előnézet/névmező elrendezése elavult.
+
 > **2026-11-24 készülékes visszajelzés:** az alábbi eredeti fedettségcsúszka kivezetve. A saját téma tömör; a tervezett Liquid Glass család külön dokumentumban: [LIQUID_GLASS_THEMES.md](LIQUID_GLASS_THEMES.md).
 
 # #350 – Saját téma szerkesztő (bővített wireframe, egyeztetési változat)
