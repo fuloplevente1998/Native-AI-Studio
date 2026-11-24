@@ -31,6 +31,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.selectionColors
+import com.example.ui.theme.readablePrimaryLabel
+import androidx.compose.runtime.remember
 import com.repforge.app.ui.theme.trainPilotClickable
 
 /**
@@ -55,15 +58,16 @@ fun TrainPilotFilterChip(
 ) {
     val p = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(14.dp)
+    val selection = remember(p) { p.selectionColors() }
     val content = when {
         !enabled -> p.textSecondary.copy(alpha = 0.5f)
-        selected -> p.primary
+        selected -> selection.foreground
         else -> p.textPrimary
     }
     Surface(
         shape = shape,
-        color = if (selected) p.primary.copy(alpha = 0.16f) else p.surfaceCard,
-        border = BorderStroke(1.dp, if (selected) p.primary else p.cardBorder),
+        color = if (selected) selection.surface else p.surfaceCard,
+        border = BorderStroke(1.dp, if (selected) selection.border else p.cardBorder),
         modifier = modifier.heightIn(min = 40.dp).semantics { this.selected = selected }
             .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {
@@ -182,7 +186,7 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
         modifier = modifier.heightIn(min = 48.dp).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
-                color = p.onPrimary, maxLines = 1)
+                color = p.readablePrimaryLabel(), maxLines = 1)
         }
     }
 }
