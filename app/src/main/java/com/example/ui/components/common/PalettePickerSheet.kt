@@ -66,7 +66,7 @@ fun PalettePickerBottomSheet(
     val strings = LocalTrainPilotStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var expandedFamily by androidx.compose.runtime.saveable.rememberSaveable {
-        mutableStateOf((selectedCategory?.takeIf { it in setOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT) }
+        mutableStateOf((selectedCategory?.takeIf { it in setOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT, PaletteCategory.LIQUID_GLASS) }
             ?: palette.subGroup).name)
     }
 
