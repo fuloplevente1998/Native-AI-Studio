@@ -18,6 +18,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
+import com.example.ui.viewmodel.dismissSheetRoute
+import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.selectTab
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w393dp-h852dp-xxhdpi")

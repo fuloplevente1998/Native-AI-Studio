@@ -40,6 +40,44 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import com.example.ui.viewmodel.activateProgram
+import com.example.ui.viewmodel.addEditorDay
+import com.example.ui.viewmodel.addPlannedWorkoutOnDay
+import com.example.ui.viewmodel.applyCalendarReplan
+import com.example.ui.viewmodel.cancelCalendarClear
+import com.example.ui.viewmodel.clearCalendarPlans
+import com.example.ui.viewmodel.copyEditorProgram
+import com.example.ui.viewmodel.copyProgram
+import com.example.ui.viewmodel.createNewCustomProgram
+import com.example.ui.viewmodel.deleteCalendarEvent
+import com.example.ui.viewmodel.deleteEditorDay
+import com.example.ui.viewmodel.deleteEditorProgram
+import com.example.ui.viewmodel.deleteProgram
+import com.example.ui.viewmodel.modifyCalendarEvent
+import com.example.ui.viewmodel.moveCalendarEvent
+import com.example.ui.viewmodel.moveEditorExercise
+import com.example.ui.viewmodel.moveProgramOrder
+import com.example.ui.viewmodel.navigateBack
+import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.openExerciseDetail
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.planMonthlyWorkouts
+import com.example.ui.viewmodel.removeEditorExercise
+import com.example.ui.viewmodel.renameEditorProgram
+import com.example.ui.viewmodel.renameProgram
+import com.example.ui.viewmodel.requestCalendarClear
+import com.example.ui.viewmodel.saveEditorProgram
+import com.example.ui.viewmodel.selectCalendarDay
+import com.example.ui.viewmodel.selectCalendarMonth
+import com.example.ui.viewmodel.selectEditingDayIndex
+import com.example.ui.viewmodel.selectTab
+import com.example.ui.viewmodel.setProgramsTabCustomOnly
+import com.example.ui.viewmodel.toggleExpandedEditorExercise
+import com.example.ui.viewmodel.toggleInlineProgramEditor
+import com.example.ui.viewmodel.toggleReplanModal
+import com.example.ui.viewmodel.undoCalendarAction
+import com.example.ui.viewmodel.updatePlanningParameters
+import com.example.ui.viewmodel.updateProgramExercisePrescription
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w400dp-h800dp-mdpi")

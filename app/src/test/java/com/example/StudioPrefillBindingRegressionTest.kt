@@ -25,6 +25,16 @@ import java.time.ZoneOffset
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.activateProgram
+import com.example.ui.viewmodel.addEditorDay
+import com.example.ui.viewmodel.copyEditorProgram
+import com.example.ui.viewmodel.deleteEditorDay
+import com.example.ui.viewmodel.deleteEditorProgram
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.removeEditorExercise
+import com.example.ui.viewmodel.renameEditorProgram
+import com.example.ui.viewmodel.selectEditingDayIndex
+import com.example.ui.viewmodel.toggleExerciseFavorite
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
