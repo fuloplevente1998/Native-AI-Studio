@@ -100,7 +100,7 @@ fun PalettePickerBottomSheet(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = strings.colorPalettes32Title,
+                            text = customThemeText(currentLanguage, "40 gyári téma", "40 built-in themes", "40 integrierte Designs", "40 de teme incluse"),
                             style = MaterialTheme.typography.titleLarge,
                             color = palette.textPrimary
                         )
