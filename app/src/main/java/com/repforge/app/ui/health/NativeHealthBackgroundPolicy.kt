@@ -13,6 +13,7 @@ import com.repforge.app.HealthBackgroundService
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
+import com.repforge.app.pendingRestore
 
 enum class BackgroundBlock {
     READY, RESTORE, UNSUPPORTED, READ_PERMISSION, BACKGROUND_PERMISSION,

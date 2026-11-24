@@ -5,6 +5,9 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.openLogWorkoutDetail
+import com.example.ui.viewmodel.reloadHealthJournal
+import com.example.ui.viewmodel.selectProgressRange
 import com.repforge.app.*
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.migration.LegacyWebViewMigrator
@@ -24,6 +27,9 @@ import java.time.ZoneId
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.repforge.app.erase
+import com.repforge.app.healthDay
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

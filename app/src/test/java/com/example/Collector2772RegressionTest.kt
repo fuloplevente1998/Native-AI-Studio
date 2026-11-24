@@ -6,6 +6,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import com.example.ui.viewmodel.openQuickWorkoutSheet
+import com.example.ui.viewmodel.selectQuickWorkoutTab
+import com.example.ui.viewmodel.toggleQuickWorkoutSheet
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

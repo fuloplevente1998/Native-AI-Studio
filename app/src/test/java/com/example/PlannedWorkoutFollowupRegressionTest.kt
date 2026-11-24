@@ -25,6 +25,9 @@ import java.time.LocalDate
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.applyCalendarReplan
+import com.example.ui.viewmodel.startPlannedWorkout
+import com.example.ui.viewmodel.updatePlanningParameters
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

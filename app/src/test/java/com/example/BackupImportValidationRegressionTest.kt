@@ -39,6 +39,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import com.repforge.app.erase
+import com.repforge.app.exportSnapshot
+import com.repforge.app.importRecords
+import com.repforge.app.mergeSync18
+import com.repforge.app.pendingRestore
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

@@ -26,6 +26,12 @@ import java.time.ZoneId
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.clearBannerMessage
+import com.example.ui.viewmodel.copyEditorProgram
+import com.example.ui.viewmodel.openPlannedProgramDetails
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.removeEditorExercise
+import com.example.ui.viewmodel.saveEditorProgram
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

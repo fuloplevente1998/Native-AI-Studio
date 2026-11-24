@@ -14,6 +14,13 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import com.repforge.app.erase
+import com.repforge.app.exportSnapshot
+import com.repforge.app.finishRestore
+import com.repforge.app.healthDay
+import com.repforge.app.importRecords
+import com.repforge.app.prepareRestore
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

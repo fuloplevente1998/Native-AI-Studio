@@ -5,6 +5,7 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.updateHealthSyncStatus
 import com.repforge.app.*
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.store.TrainPilotUserSettings

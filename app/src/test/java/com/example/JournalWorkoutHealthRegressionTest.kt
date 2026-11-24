@@ -41,6 +41,10 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.navigateBack
+import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.openLogWorkoutDetail
+import com.example.ui.viewmodel.selectTab
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w480dp-h960dp-mdpi")

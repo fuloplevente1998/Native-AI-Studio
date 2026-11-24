@@ -25,6 +25,25 @@ import java.time.ZoneOffset
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.example.ui.viewmodel.activateProgram
+import com.example.ui.viewmodel.addEditorDay
+import com.example.ui.viewmodel.copyEditorProgram
+import com.example.ui.viewmodel.deleteEditorDay
+import com.example.ui.viewmodel.deleteEditorProgram
+import com.example.ui.viewmodel.finishAndSaveWorkout
+import com.example.ui.viewmodel.openProgramEditor
+import com.example.ui.viewmodel.removeEditorExercise
+import com.example.ui.viewmodel.renameEditorProgram
+import com.example.ui.viewmodel.selectEditingDayIndex
+import com.example.ui.viewmodel.startCoachWorkout
+import com.example.ui.viewmodel.startPlannedWorkout
+import com.example.ui.viewmodel.startWorkoutWithExercises
+import com.example.ui.viewmodel.toggleExerciseFavorite
+import com.example.ui.viewmodel.toggleSetCompleted
+import com.example.ui.viewmodel.updateExerciseFeedback
+import com.example.ui.viewmodel.updateSetValuesExact
+import com.repforge.app.healthDay
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

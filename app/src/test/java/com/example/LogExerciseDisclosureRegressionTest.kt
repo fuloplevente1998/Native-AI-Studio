@@ -39,6 +39,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
+import com.example.ui.viewmodel.navigateBack
+import com.example.ui.viewmodel.openLogWorkoutDetail
+import com.example.ui.viewmodel.selectLogDetailTab
+import com.example.ui.viewmodel.toggleExpandedLogExercise
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w393dp-h850dp-mdpi")
