@@ -68,6 +68,7 @@ import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
 import com.example.model.MainTab
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.heightIn
@@ -308,17 +309,18 @@ internal fun TopNavPillItem(
     compact: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
+    val selection = remember(palette) { palette.selectionColors() }
     val glowModifier = if (selected) Modifier.trainPilotSoftGlow(palette.primary, RoundedCornerShape(12.dp)) else Modifier
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) palette.tintedSurface(if (palette.isDark) 0.22f else 0.16f) else palette.surface,
+        color = if (selected) selection.surface else palette.surface,
         modifier = modifier
             .then(glowModifier)
             .heightIn(min = 48.dp)
             .trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) palette.primary else palette.cardBorder,
+                color = if (selected) selection.border else palette.cardBorder,
                 shape = RoundedCornerShape(12.dp)
             )
             .clip(RoundedCornerShape(12.dp))
@@ -341,7 +343,7 @@ internal fun TopNavPillItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) palette.primary else palette.textSecondary,
+                tint = if (selected) selection.foreground else palette.textSecondary,
                 modifier = Modifier.size(if (compact) 16.dp else 18.dp)
             )
             Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
@@ -349,7 +351,7 @@ internal fun TopNavPillItem(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 fontSize = 10.sp
             )
-            val labelColor = if (selected) palette.primary else palette.textPrimary
+            val labelColor = if (selected) selection.foreground else palette.textPrimary
             if (compact) TrainPilotFitText(label, style = labelStyle, color = labelColor,
                 minSize = 8.sp, textAlign = TextAlign.Center)
             else Text(label, style = labelStyle, color = labelColor, maxLines = 2,
