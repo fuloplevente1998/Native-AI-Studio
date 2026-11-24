@@ -1,9 +1,10 @@
 # Aktuális átadó
 
-- A 2792-es kiadás verzióneve 1.4.1. Telefon 279200, Wear 279202. A kiadási ág a #314, alapja a #313, #315 és #317 változásait tartalmazó main.
-- A Napló a felső ikonsorban nyílik. A Fejlődésen az áttekintés és a statisztikák maradnak. A kiválasztott edzés és térkép visszatérési útvonala megmarad.
-- Részletesebb izomcsoportok, kompakt kijelölés, egysoros időszakválasztó az Edzésvolumenben, kompakt PR-rekord panel (#316).
-- Egyoldalas Kardió a mentett aktivitások eredeti típusával (#317). Az Edzésbeállítások az aktív program nevét és finom sorelválasztókat kapnak (#315).
-- A teljes main JVM/R8 ellenőrzés indítja az azonos SHA-ról aláírt APK/AAB párost. Fizikai telefonos ellenőrzés hátravan.
-
-- A #309 a Health Connect jogosultsági útvonalát javítja. A #312/13 valódi be/ki kapcsolói és a készülékes ellenőrzés külön hátravannak. A kiadási build szünetel.
+- Kiadás: 1.4.4 · telefon 280500 · Wear 280502 · main `1994d09` (#353 + #354). Aláírt APK/AAB pár: signing run 45393952281,
+  signer `cd2da9ea…`, nyers JUnit XML: telefon 863 / Wear 204, 0 hiba. TrainPilot.io verziósor frissítve (#12).
+- 2804 (#353): pihenő-dokk és edzéssáv (#347), „Legutóbb” sor (#348), kontrasztpaletta 9/13/16 (#349), kompakt Google-kártya (#352).
+- 2805 (#354): opt-in napi Google Drive/naptár szinkron (`GoogleAutoSyncWorker`, `NativeSyncSchedule`); Health: tartós HC háttérjob
+  (15/30/60 perc), előtér 2/5/15 perc, visszatérés 2 perces fojtással, edzésmentés utáni olvasás. Élő Google-próba hátravan.
+- Nyitott: #349 közös kiemelési szabályok (paletta 12/15 accent <4,5:1), #350 saját témák, #351 óra-mérés automatikus indítása
+  (javaslat kész, jóváhagyásra vár), heti lépés% egy forrásból.
+- Következő: kód-szétszedés a `docs/REFACTOR_PLAN.md` szerint (R0–R8), jóváhagyásra vár. Szint: R1–R5 low, R0/R7 medium, R6/R8 high.
