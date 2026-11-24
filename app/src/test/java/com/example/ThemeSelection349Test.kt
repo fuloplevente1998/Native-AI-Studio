@@ -3,6 +3,7 @@ package com.example
 import com.example.ui.theme.PaletteCategory
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.nativeStudioColors
+import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
 import com.example.ui.theme.selectionColors
 import com.repforge.app.ui.theme.NativeThemeTokens
@@ -35,6 +36,18 @@ class ThemeSelection349Test {
             assertEquals(selection.surface, native.selectedSurface)
             assertEquals(selection.foreground, native.accentText)
             assertEquals(selection.border, native.selectedBorder)
+        }
+    }
+
+    @Test fun neutralFieldOutlineAndRestStartAreReadableInEveryTheme() {
+        for (palette in TrainPilotPalettes.allPalettes) {
+            val outline = palette.fieldOutline()
+            for (surface in listOf(palette.surfaceCard, palette.surfaceElevated)) {
+                assertTrue("Theme ${palette.id}: input boundary",
+                    NativeThemeTokens.contrast(outline, surface) >= 3f)
+            }
+            assertTrue("Theme ${palette.id}: rest start label",
+                NativeThemeTokens.contrast(NativeThemeTokens.onFill(palette.success), palette.success) >= 4.5f)
         }
     }
 
