@@ -25,7 +25,7 @@ működésváltozás nélkül, ugyanabban a Kotlin-csomagban (a hívások nem v�
 | R5 ✅ | TrainPilotCommonComponents (2152) → 7 fájl (`components/common/`); PersonalPlannerModal 1013 (egy függvény, később) | TopHeaderAndNav, PalettePickerSheet, GoalsEditDialog, PersonalPlannerModal (~960 → 2 fájl), ScrollHelpers | alacsony |
 | R6 (R6a ✅) | TrainPilotViewModel (5737 → 4406 R6a után) | R6a: VmNavigation, VmAppearance, VmPrograms, VmProgramEditor, VmCalendar, VmExerciseLibrary (UI/programok/naptár/könyvtár). Osztály marad, funkciók `internal` kiterjesztésekbe, ugyanabba a csomagba: VmPersistence, VmNavigation, VmPrograms, VmCalendar, VmActiveSets, VmWorkoutStart, VmFinishSave, VmLogProgress, VmHealthWeight. 3 PR-ban (állapotmezők `private` → `internal`) | közepes–magas |
 | R7 | Wear: WearScreens (2799), MainActivity (1243) | WearShell, WearJournal, WearCalendar, WearHealth, WearWorkout, WearSetEditors, WearSummary · telefon NavHost kiemelése | közepes (páros verzió nem változik) |
-| R8 | GoogleSyncRepository (1601), HealthJournalStore (1342) | Drive-összefésülő motor (`*18`) külön fájlba – önállóan tesztelhető | közepes |
+| R8 ✅ | GoogleSyncRepository (1601 → 673), HealthJournalStore (1342 → 457) | GoogleSyncMerge18 (`*18` motor), GoogleSyncTransport (HTTP/Drive/Naptár) · HealthJournalIngest, HealthJournalQueries, HealthJournalBackup. Osztály marad; `internal` kiterjesztés/felső szintű függvény, companion-tagok importtal (`…Companion.LIMIT`), törzs változatlan | közepes |
 
 Sorrend indoka: előbb a legtöbbet szerkesztett, alacsony kockázatú képernyők, a ViewModel csak
 ha a képernyők már kicsik (kisebb ütközésfelület).

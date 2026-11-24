@@ -13,6 +13,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.LocalDate
+import com.repforge.app.erase
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

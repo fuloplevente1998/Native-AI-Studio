@@ -5,6 +5,8 @@ import com.repforge.app.R
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.Instant
+import com.repforge.app.page
+import com.repforge.app.pendingRestore
 
 internal data class HealthRecordCursor(val id: Long, val time: Long) {
     init { require(id > 0 && time > 0) }

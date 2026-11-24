@@ -7,6 +7,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import com.repforge.app.page
+import com.repforge.app.pendingRestore
 
 /** Inclusive local dates; advancing a page never assumes that a day has 24 hours. */
 internal data class HealthJournalRange(val from: LocalDate, val to: LocalDate, val pageEnd: LocalDate = to) {

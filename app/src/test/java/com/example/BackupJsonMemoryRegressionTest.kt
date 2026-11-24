@@ -13,6 +13,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
 import java.io.IOException
+import com.repforge.app.erase
+import com.repforge.app.exportSnapshot
+import com.repforge.app.finishRestore
+import com.repforge.app.installRestore
+import com.repforge.app.pendingRestore
+import com.repforge.app.prepareRestore
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

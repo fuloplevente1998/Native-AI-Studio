@@ -30,6 +30,7 @@ import com.example.ui.viewmodel.modifyCalendarEvent
 import com.example.ui.viewmodel.openProgramEditor
 import com.example.ui.viewmodel.requestCalendarClear
 import com.example.ui.viewmodel.updatePlanningParameters
+import com.repforge.app.mergeSync18
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
