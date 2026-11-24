@@ -2,6 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.compositeOver
 import java.util.Locale
 import java.util.UUID
 
@@ -18,7 +19,7 @@ internal enum class CustomThemeRole {
         CARD -> palette.surfaceCard
         PRIMARY -> palette.primary
         SECONDARY -> palette.secondary
-        BORDER -> palette.cardBorder
+        BORDER -> palette.cardBorder.compositeOver(palette.surfaceCard)
     }
 
     fun quickColors(): List<String> =
@@ -47,7 +48,7 @@ internal data class CustomThemeDraft(
     val hasValidOpacity: Boolean
         get() = opacityPercent == 100 || opacityPercent in 70..90
 
-    val canSave: Boolean
+    val isInputValid: Boolean
         get() = name.isNotBlank() && invalidRoles.isEmpty() && hasValidOpacity
 
     fun withColor(role: CustomThemeRole, value: String): CustomThemeDraft =
@@ -55,7 +56,7 @@ internal data class CustomThemeDraft(
 
     /** Returns null for invalid drafts or keys. An edit keeps the existing stable key. */
     fun toDefinition(key: String): CustomThemeDefinition? {
-        if (!canSave || !isCustomThemeKey(key)) return null
+        if (!isInputValid || !isCustomThemeKey(key)) return null
         val normalized = CustomThemeRole.entries.associateWith {
             requireNotNull(normalizeCustomThemeHex(colors.getValue(it)))
         }
