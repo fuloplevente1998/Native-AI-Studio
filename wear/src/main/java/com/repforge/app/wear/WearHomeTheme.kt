@@ -4,6 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import org.json.JSONObject
+import kotlin.math.roundToInt
 
 /** Optional phone palette metadata; old phone snapshots remain readable. */
 data class WearHomeTheme(
@@ -84,6 +85,37 @@ data class WearHomeTheme(
         )
     }
 
+    /**
+     * 2808: the display palette of the watch. The stored phone palette stays untouched (it is
+     * persisted and round-tripped as received); only rendering uses this copy. A light or
+     * custom phone background becomes the dark watch base, accents are kept, and every colour
+     * is lightened only as far as needed for text >= 4.5:1 and controls >= 3:1 on all surfaces.
+     */
+    fun forWatch(): WearHomeTheme {
+        val darkBase = backgroundColor.luminance() > WEAR_LIGHT_SURFACE
+        fun surface(value: Color, dark: Color, tint: Float) =
+            if (!darkBase && value.luminance() <= WEAR_LIGHT_SURFACE) value else mix(dark, accentColor, tint)
+        val bg = wearOpaque(surface(backgroundColor, Color(0xFF0E1015), 0f))
+        val card = wearOpaque(surface(surfaceColor, Color(0xFF1A1E25), .06f))
+        val raised = wearOpaque(surface(elevatedColor, Color(0xFF232933), .10f))
+        val all = listOf(bg, card, raised)
+        fun readable(value: Color, fallback: Color) =
+            wearEnsureContrast(if (value.luminance() < .18f) fallback else value, all, WEAR_TEXT_CONTRAST)
+        val accentOut = wearEnsureContrast(
+            wearEnsureContrast(accentColor, listOf(bg, card), WEAR_TEXT_CONTRAST), listOf(raised), WEAR_CONTROL_CONTRAST)
+        val onAccentOut = color(onAccent, Color.Black).takeIf { wearContrast(it, accentOut) >= WEAR_TEXT_CONTRAST }
+            ?: listOf(Color.Black, Color.White).maxBy { wearContrast(it, accentOut) }
+        return copy(
+            accent = wearHex(accentOut),
+            accent2 = wearHex(wearEnsureContrast(secondaryColor, all, WEAR_TEXT_CONTRAST)),
+            background = wearHex(bg), surface = wearHex(card), elevated = wearHex(raised),
+            text = wearHex(readable(textColor, Color(0xFFF6F8FB))),
+            muted = wearHex(wearEnsureContrast(if (darkBase) Color(0xFF9AA5B6) else mutedColor, all, WEAR_TEXT_CONTRAST)),
+            outline = wearHex(wearEnsureContrast(frame, listOf(bg, card), WEAR_CONTROL_CONTRAST)),
+            onAccent = wearHex(onAccentOut),
+        )
+    }
+
     // Same gamma-encoded sRGB interpolation as the phone's CSS color-mix(in srgb).
     private fun mix(a: Color, b: Color, amount: Float): Color =
         Color(
@@ -91,6 +123,43 @@ data class WearHomeTheme(
             green = a.green * (1f - amount) + b.green * amount,
             blue = a.blue * (1f - amount) + b.blue * amount,
         )
+}
+
+internal const val WEAR_TEXT_CONTRAST = 4.5f
+internal const val WEAR_CONTROL_CONTRAST = 3f
+private const val WEAR_LIGHT_SURFACE = .18f
+
+/** WCAG 2.x contrast ratio of two opaque colours. */
+internal fun wearContrast(a: Color, b: Color): Float {
+    val la = a.luminance()
+    val lb = b.luminance()
+    return (maxOf(la, lb) + .05f) / (minOf(la, lb) + .05f)
+}
+
+internal fun wearHex(color: Color): String =
+    "#%02x%02x%02x".format(java.util.Locale.ROOT,
+        (color.red * 255f).roundToInt().coerceIn(0, 255),
+        (color.green * 255f).roundToInt().coerceIn(0, 255),
+        (color.blue * 255f).roundToInt().coerceIn(0, 255),
+    )
+
+private fun wearOpaque(color: Color): Color = Color(0xFF000000L or wearHex(color).substring(1).toLong(16))
+
+/** Moves a colour toward white (dark surfaces) or black just far enough; checked after sRGB rounding. */
+internal fun wearEnsureContrast(color: Color, surfaces: List<Color>, minimum: Float): Color {
+    val start = wearOpaque(color)
+    if (surfaces.all { wearContrast(start, it) >= minimum }) return start
+    val target = if (surfaces.map { it.luminance() }.average() < .5) Color.White else Color.Black
+    for (step in 1..40) {
+        val amount = step / 40f
+        val candidate = wearOpaque(Color(
+            red = start.red + (target.red - start.red) * amount,
+            green = start.green + (target.green - start.green) * amount,
+            blue = start.blue + (target.blue - start.blue) * amount,
+        ))
+        if (surfaces.all { wearContrast(candidate, it) >= minimum }) return candidate
+    }
+    return target
 }
 
 internal val LocalWearHomeTheme = staticCompositionLocalOf { WearHomeTheme.DEFAULT }

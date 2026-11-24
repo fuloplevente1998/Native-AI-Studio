@@ -61,43 +61,6 @@ internal fun CalendarScreen(
         )
         return
     }
-    if (mainPage && home != null) {
-        // The main pager owns horizontal gestures. The detailed calendar from the menu
-        // still supports all cached weeks; the main page always presents this week.
-        // Readable today-first main page, with full-sized touch targets on small watches.
-        val currentWeek=wearCalendarMonday(today)
-        val locale=java.util.Locale.getDefault()
-        val caption=wearCalendarCaption(currentWeek,today,locale)
-        val todayEntries=wearCalendarTodayEntries(entries,today)
-        RoundList(wearText("Naptár")) {
-            centerItem { Title(caption.month,18); Label(caption.dates) }
-            centerItem { Title(wearText("Ma") + " · " + today.format(DateTimeFormatter.ofPattern("MMM d.",locale)),16) }
-            if(todayEntries.isEmpty()) centerItem { Label(wearText("Mára nincs átvett naptáradat"),lines=2) }
-            todayEntries.forEach { entry ->
-                centerItem {
-                    Label(entry.day?.programName.orEmpty(),lines=1)
-                    Pill(entry.day?.name?.takeIf { it.isNotBlank() } ?: wearCalendarStatus367(entry.status),tone=Secondary) {
-                        selectedKey=today.toString()
-                    }
-                    Label(wearCalendarStatus367(entry.status))
-                }
-            }
-            centerItem { Pill(wearText("Mai nap"),tone=Secondary) { selectedKey=today.toString() } }
-            for(index in 0..6) {
-                val date=currentWeek.plusDays(index.toLong())
-                if(date!=today) {
-                    val records=entries.filter { wearCalendarDate(it)==date }
-                    centerItem {
-                        Pill(wearCalendarDayLabel(index,locale.language)+" · "+date.dayOfMonth+
-                            if(records.isNotEmpty()) " · "+records.size else "",tone=Card) { selectedKey=date.toString() }
-                    }
-                }
-            }
-            centerItem { Pill(WearMenu216.text("days"),tone=Secondary,onClick=onDays) }
-            centerItem { Pill(WearMenu216.text("home"),tone=Secondary,onClick=onBack) }
-        }
-        return
-    }
     if (home == null || entries.isEmpty()) {
         RoundList(wearText("Naptár")) {
             centerItem {
@@ -109,8 +72,16 @@ internal fun CalendarScreen(
                 )
             }
             centerItem { Pill(WearMenu216.text("days"), tone = Card, onClick = onDays) }
-            centerItem { Pill(wearText("‹ Főmenü"), tone = Secondary, onClick = onBack) }
+            centerItem { Pill(if (mainPage) wearText("‹ Kezdőlap") else wearText("‹ Főmenü"), tone = Secondary, onClick = onBack) }
         }
+        return
+    }
+    if (mainPage) {
+        // 2808: the swipe page shows the pre-#368 week grid again (user preference). The main
+        // pager owns horizontal gestures, so this page shows the current week; all cached weeks
+        // stay swipeable in the calendar opened from the menu.
+        CalendarWeekPage(wearCalendarMonday(today), entries, today, 1, 1, onBack, onDays,
+            backDescription = WearMenu216.text("home")) { selectedKey = it.toString() }
         return
     }
     // Native paging consumes a horizontal drag before it can select a day.
@@ -150,6 +121,7 @@ internal fun CalendarWeekPage(
     pageCount: Int,
     onBack: () -> Unit,
     onDays: () -> Unit,
+    backDescription: String = wearText("Vissza a főmenübe"),
     onSelect: (LocalDate) -> Unit,
 ) {
     val fontScale = LocalDensity.current.fontScale
@@ -254,7 +226,7 @@ internal fun CalendarWeekPage(
             Box(
                 Modifier.size(26.dp).background(Card, CircleShape)
                     .clickable(role = Role.Button, onClick = onBack)
-                    .semantics { contentDescription = wearText("Vissza a főmenübe") }
+                    .semantics { contentDescription = backDescription }
                     .testTag("wear-calendar-back"),
                 contentAlignment = Alignment.Center,
             ) { Text("‹", color = White, fontSize = textSize(14f), maxLines = 1) }

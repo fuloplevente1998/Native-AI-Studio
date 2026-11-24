@@ -15,43 +15,54 @@ import java.time.Instant
 
 internal data class WearDailyPulse(val bpm: Int, val at: Long)
 
-/** Foreground-only passive pulse, using the existing heart permission, not the exercise engine. */
+/**
+ * Foreground-only passive callback, using the existing heart permission, not the exercise engine.
+ * 2808: it also carries the opted-in daily totals (ACTIVITY_RECOGNITION), so the open app shows
+ * current steps instead of a batched/old total, and a pause/resume keeps the last pulse sample.
+ */
 @Composable
 internal fun rememberWearDailyPulse(enabled: Boolean): WearDailyPulse? {
     val context = LocalContext.current.applicationContext
     val permission = if (Build.VERSION.SDK_INT >= 36) "android.permission.health.READ_HEART_RATE" else Manifest.permission.BODY_SENSORS
     val allowed = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    val daily = enabled && WearDailyHealthStore.enabled(context) && WearDailyHealthStore.permitted(context)
     var pulse by remember { mutableStateOf<WearDailyPulse?>(null) }
-    DisposableEffect(enabled, allowed) {
-        pulse = null
-        if (!enabled || !allowed) onDispose {}
+    DisposableEffect(enabled, allowed, daily) {
+        if (!allowed) pulse = null
+        if (!enabled || (!allowed && !daily)) onDispose {}
         else {
             val client = HealthServices.getClient(context).passiveMonitoringClient
             var alive = true
             val callback = object : PassiveListenerCallback {
                 override fun onNewDataPointsReceived(dataPoints: DataPointContainer) {
-                    if (!alive || context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) return
+                    if (!alive) return
                     val now = System.currentTimeMillis()
+                    if (daily) WearDailyHealthStore.accept(context, dataPoints, now)
+                    if (!allowed || context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) return
                     val boot = Instant.ofEpochMilli(now - SystemClock.elapsedRealtime())
                     val latest = dataPoints.getData(DataType.HEART_RATE_BPM).mapNotNull {
                         val at = it.getTimeInstant(boot).toEpochMilli()
-                        if (it.value.isFinite() && it.value in 20.0..250.0 && now - at in 0L..300000L)
-                            WearDailyPulse(it.value.toInt(), at) else null
+                        if (it.value.isFinite() && it.value in 20.0..250.0 && now - at in -WEAR_PULSE_SKEW_MS..300000L)
+                            WearDailyPulse(it.value.toInt(), minOf(at, now)) else null
                     }.maxByOrNull { it.at }
                     if (latest != null && latest.at >= (pulse?.at ?: 0L)) pulse = latest
                 }
                 override fun onPermissionLost() { if (alive) pulse = null }
             }
             WearHealthFutures.awaitValue(client.getCapabilitiesAsync(), context.mainExecutor, { alive }, {}) { caps ->
-                if (DataType.HEART_RATE_BPM in caps.supportedDataTypesPassiveMonitoring) {
-                    runCatching { client.setPassiveListenerCallback(
-                        PassiveListenerConfig.builder().setDataTypes(setOf(DataType.HEART_RATE_BPM)).build(), context.mainExecutor, callback) }
+                val supported = caps.supportedDataTypesPassiveMonitoring
+                val types = buildSet<DataType<*, *>> {
+                    if (allowed && DataType.HEART_RATE_BPM in supported) add(DataType.HEART_RATE_BPM)
+                    if (daily) addAll(WearDailyHealthStore.dailyTypes.filter { it in supported })
                 }
+                if (types.isNotEmpty()) runCatching { client.setPassiveListenerCallback(
+                    PassiveListenerConfig.builder().setDataTypes(types).build(), context.mainExecutor, callback) }
             }
             onDispose {
                 alive = false
-                pulse = null
                 runCatching { client.clearPassiveListenerCallbackAsync() }
+                // Keep the background daily subscription in place after the foreground callback ends.
+                if (daily) Thread { runCatching { WearDailyHealthStore.register(context) } }.start()
             }
         }
     }

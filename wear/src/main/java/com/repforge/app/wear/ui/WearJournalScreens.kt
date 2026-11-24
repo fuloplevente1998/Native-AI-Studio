@@ -25,8 +25,10 @@ internal fun MiniJournalScreen(
     onSelect: (MiniJournalWorkout) -> Unit,
 ) {
     val items = home?.recentWorkouts.orEmpty()
-    RoundList(if (mainPage) WearMenu216.text("journal") else wearText("Mini napló")) {
-        if (!mainPage) centerItem { JournalText(wearText("Mentett telefonos edzések · offline másolat"), size = 10) }
+    // 2808: the swipe page shows the pre-#368 journal again (user preference); only the back
+    // label differs. The #368 duration stays on the date line when it is real (> 0).
+    RoundList(wearText("Mini napló")) {
+        centerItem { JournalText(wearText("Mentett telefonos edzések · offline másolat"), size = 10) }
 
         if (items.isEmpty()) {
             val message =
@@ -40,22 +42,13 @@ internal fun MiniJournalScreen(
                 JournalText(message, size = 12)
             }
         }
-        if (!mainPage && home?.phoneVersion?.isNotBlank() == true) {
+        if (home?.phoneVersion?.isNotBlank() == true) {
             centerItem { JournalText("Telefon: ${home.phoneVersion}", size = 10) }
         }
         items.forEach { item ->
             centerItem {
-                if (mainPage) {
-                    Column(Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                        .background(Card, RoundedCornerShape(14.dp))
-                        .clickable(role = Role.Button) { onSelect(item) }
-                        .testTag("wear-journal-entry").padding(horizontal = 10.dp, vertical = 6.dp)) {
-                        Text(item.dayName, color = White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                        Text("${miniJournalDate(item.started)} · ${formatSeconds(item.durationSeconds)} · ${item.exercises.sumOf { it.sets.size }}",
-                            color = Muted, fontSize = 10.sp, maxLines = 2)
-                    }
-                } else Pill(
-                    "${miniJournalDate(item.started)}\n${item.dayName}",
+                Pill(
+                    "${miniJournalDate(item.started)}${item.durationSeconds.takeIf { it > 0 }?.let { " · " + formatSeconds(it) } ?: ""}\n${item.dayName}",
                     modifier = Modifier.fillMaxWidth(.84f).testTag("wear-journal-entry"),
                     tone = Card,
                     size = 12,

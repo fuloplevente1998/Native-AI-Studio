@@ -1,6 +1,12 @@
 package com.repforge.app.wear
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -62,26 +68,49 @@ internal fun WearRestV2(workout: WearWorkout, remaining: Int, onSkip: () -> Unit
     val nextName = nextExercise?.name
     val undo = LocalUndo.current
     val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout)
-    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp).testTag("wear-rest-v2"),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Label(wearText("Pihenő"), size = 12)
-        Text(formatSeconds(remaining), color = White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-        Label(wearV2Text("next") + ": " + (next?.let {
-            listOfNotNull(nextName, it.weight.takeIf { w -> w.isNotBlank() }?.let { w -> "$w kg" },
-                it.reps.takeIf { reps -> reps.isNotBlank() }?.let { reps -> "× $reps" }).joinToString(" ")
-        } ?: "–"), size = 10, lines = 2)
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            RoundControl("−15", enabled = onAdjust != null && !blocked && remaining > 0, description = "−15 s", onClick = { onAdjust?.invoke(-WEAR_REST_STEP367) })
-            RoundControl("»", Gold, enabled = !blocked, caption = wearText("Kihagyás"),
-                description = wearText("Pihenő kihagyása"), onClick = onSkip)
-            RoundControl("+15", enabled = onAdjust != null && !blocked && remaining in 1 until WEAR_REST_MAX367, description = "+15 s", onClick = { onAdjust?.invoke(WEAR_REST_STEP367) })
-        }
-        if (onAdjust == null) Label(wearV2Text("restAdjust"), size = 9)
-        if (undo != null && WearUndo188.available(workout))
-            Pill(wearV2Text("undo"), tone = Secondary, enabled = !blocked, size = 10) {
-                WearUndo188.record(workout)?.optString("recordId")?.let(undo)
+    val canUndo = undo != null && WearUndo188.available(workout)
+    val phone = onPhoneControl?.takeIf { !canUndo && onAdjust == null }
+    BoxWithConstraints(Modifier.fillMaxSize().testTag("wear-rest-v2")) {
+        // 2808: no full-width bar at the round bottom edge. A compact round action replaces it,
+        // and the extra line yields so ring, timer and the three rest controls stay visible.
+        val compactAction = canUndo || phone != null
+        val small = minOf(maxWidth, maxHeight) < 190.dp
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            if (!(compactAction && small)) Label(wearText("Pihenő"), size = 12)
+            Text(formatSeconds(remaining), color = White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Label(wearV2Text("next") + ": " + (next?.let {
+                listOfNotNull(nextName, it.weight.takeIf { w -> w.isNotBlank() }?.let { w -> "$w kg" },
+                    it.reps.takeIf { reps -> reps.isNotBlank() }?.let { reps -> "× $reps" }).joinToString(" ")
+            } ?: "–"), size = 10, lines = if (compactAction) 1 else 2)
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                RoundControl("−15", enabled = onAdjust != null && !blocked && remaining > 0, description = "−15 s", onClick = { onAdjust?.invoke(-WEAR_REST_STEP367) })
+                RoundControl("»", Gold, enabled = !blocked, caption = wearText("Kihagyás"),
+                    description = wearText("Pihenő kihagyása"), onClick = onSkip)
+                RoundControl("+15", enabled = onAdjust != null && !blocked && remaining in 1 until WEAR_REST_MAX367, description = "+15 s", onClick = { onAdjust?.invoke(WEAR_REST_STEP367) })
             }
-        else if (onPhoneControl != null && onAdjust == null)
-            Pill(wearV2Text("phoneControl"), tone = Secondary, size = 10, onClick = onPhoneControl)
+            if (canUndo)
+                WearRestCompactAction("↶", Danger, wearText("Utolsó sorozat visszavonása"), enabled = !blocked) {
+                    WearUndo188.record(workout)?.optString("recordId")?.let { undo?.invoke(it) }
+                }
+            else if (phone != null)
+                WearRestCompactAction("↗", Secondary, wearV2Text("phoneControl"), onClick = phone)
+            else if (onAdjust == null) Label(wearV2Text("restAdjust"), size = 9)
+        }
+    }
+}
+
+/** 48 dp touch target with a 38 dp visual circle, kept inside the round safe area. */
+@Composable
+internal fun WearRestCompactAction(glyph: String, tone: Color, description: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Box(Modifier.size(48.dp).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+        .semantics { contentDescription = description }.testTag("wear-rest-compact-action"),
+        contentAlignment = Alignment.Center) {
+        Box(Modifier.size(38.dp).background(if (enabled) tone else Card, CircleShape)
+            .then(if (tone == Danger) Modifier.border(1.dp, Color(0xFFEF6670), CircleShape) else Modifier),
+            contentAlignment = Alignment.Center) {
+            Text(glyph, color = if (!enabled) Muted else if (tone == Danger) DangerText else White,
+                fontSize = (20f / LocalDensity.current.fontScale).sp, maxLines = 1)
+        }
     }
 }
