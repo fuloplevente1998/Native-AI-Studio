@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
 import com.example.ui.components.customThemeText
 import com.example.ui.components.trainPilotAnimatedExpansion
 
@@ -144,7 +146,7 @@ fun SettingsMainScreen(
             state = settingsListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.pageBrush)
+                .background(palette.pageBrush).trainPilotGlassScene(palette)
                 .testTag("settings_main_screen"),
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -174,8 +176,8 @@ fun SettingsMainScreen(
             }
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.cardPaint,
-                modifier = Modifier.fillMaxWidth()
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
                     .trainPilotAnimatedExpansion()
                     .testTag("settings_themes_group")
@@ -220,9 +222,9 @@ fun SettingsMainScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.cardPaint,
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -258,8 +260,8 @@ fun SettingsMainScreen(
 
         item {
             Surface(
-                shape = RoundedCornerShape(22.dp), color = palette.cardPaint,
-                modifier = Modifier.fillMaxWidth().testTag("settings_workout_group")
+                shape = RoundedCornerShape(22.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp)).testTag("settings_workout_group")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
