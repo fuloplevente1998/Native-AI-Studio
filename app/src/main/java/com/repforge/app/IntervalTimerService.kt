@@ -310,6 +310,9 @@ class IntervalTimerService : Service() {
                 !PhoneWorkoutExecution.store(context).restoreBlocked() && !PhoneWorkoutExecution.store(context).commandsSuspended() &&
                 PhoneOwnership193.phoneAllowed(context, target.workoutId) && s.restOnly && s.steps.size == 1 &&
                 s.running && !s.stopped && !s.interrupted) { "A pihenő tulajdonosa vagy állapota megváltozott." }
+            if ((s.timeline?.restOverridesJson()?.length() ?: 0) > 0) {
+                return adjustPhaseRest367(context, target, deltaSeconds, remoteProof)
+            }
             s.update() // Account elapsed real time on the old timeline first.
             val phase = s.timeline!!.at(s.now())
             check(phase.phase == "rest" && s.running) { "A pihenő már véget ért." }
@@ -352,6 +355,66 @@ class IntervalTimerService : Service() {
             return s.current()
         }
 
+        /** Per-phase mutation of the canonical clock; never changes a later round or credits skipped time. */
+        @JvmStatic
+        fun adjustPhaseRest367(context: Context, target: NativeTimerTarget, deltaSeconds: Int, proof: JSONObject? = null): JSONObject {
+            val s = instance ?: error("No active interval")
+            val store = PhoneWorkoutExecution.store(context)
+            val frame = store.snapshot() ?: error("No active workout")
+            check(target.key.isNotBlank() && target.key == s.key && target.workoutId == s.workoutId &&
+                target.generation == s.executionGeneration && frame.optString("workoutId") == target.workoutId &&
+                frame.optLong("generation") == target.generation && frame.optBoolean("active") &&
+                frame.optString("timerOwner") == "phone" && !frame.optBoolean("workoutPaused") &&
+                PhoneOwnership193.phoneAllowed(context, target.workoutId) && !store.restoreBlocked() &&
+                !store.commandsSuspended() && s.running && !s.stopped && !s.interrupted) { "Timer owner changed" }
+            s.update()
+            val old = s.timeline ?: error("No timeline")
+            val mono = SystemClock.elapsedRealtime()
+            val position = s.elapsed + (mono - s.began).coerceAtLeast(0L)
+            val phase = old.at(position)
+            check(s.running && phase.phase == "rest" && phase.elapsedMs == position && phase.token == s.lastToken) { "Rest ended" }
+            if (proof != null) check(proof.optString("key") == s.key &&
+                proof.optLong("phaseNumber") == s.phaseNumber &&
+                proof.optLong("phaseDurationMs", -1) == old.phaseDurationMs(phase) &&
+                proof.optLong("restRevision", -1) == s.restChangeRevision367) { "Rest target changed" }
+            val overrides = old.adjustedRestOverrides(position, deltaSeconds) ?: error("Rest limit reached")
+            val next = IntervalTimeline(s.steps, s.advance, s.initialRest, s.restOnly, overrides)
+            // Account elapsed real time on the original plan up to this exact monotonic instant.
+            s.timeLedger!!.sample(old, position, mono, true, false, false)
+            val oldLedger = s.timeLedger!!.json(s.planSteps)
+            val previousProof = s.remoteRestProof367
+            val previousRevision = s.restChangeRevision367
+            s.timeline = next
+            s.elapsed = position
+            s.began = mono
+            s.restChangeRevision367 = previousRevision + 1L
+            s.remoteRestProof367 = proof ?: previousProof
+            try {
+                s.save()
+                check(store.snapshot()?.optJSONObject("latestTimer162")?.optLong("restChangeRevision367") == s.restChangeRevision367) {
+                    "Rest checkpoint not committed"
+                }
+            } catch (failure: Exception) {
+                val committed = store.snapshot()?.optJSONObject("latestTimer162")?.let {
+                    it.optString("key") == s.key && it.optLong("restChangeRevision367") == s.restChangeRevision367
+                } == true
+                if (!committed) {
+                    s.timeline = old
+                    s.elapsed = position
+                    s.began = mono
+                    s.restChangeRevision367 = previousRevision
+                    s.remoteRestProof367 = previousProof
+                    s.timeLedger = IntervalTimeLedger.restore(s.planSteps, oldLedger, mono)
+                    _timerStateFlow.value = s.current()
+                }
+                throw failure
+            }
+            s.update() // At zero the existing phase transition/haptics handles the next phase.
+            s.publishWatchClock()
+            s.notifyStatus()
+            return s.current()
+        }
+
         @JvmStatic
         @Throws(Exception::class)
         fun attachGPS(context: Context, key: String, index: Int, tracking: String): JSONObject {
@@ -389,6 +452,7 @@ class IntervalTimerService : Service() {
     private var planSteps = JSONArray()
     private var phaseNumber: Long = 0L
     private var remoteRestProof367: JSONObject? = null
+    private var restChangeRevision367: Long = 0L
     private var running: Boolean = false
     private var advance: Boolean = false
     private var sound: Boolean = false
@@ -535,6 +599,7 @@ class IntervalTimerService : Service() {
         planSteps = JSONArray(plan.getJSONArray("steps").toString())
         phaseNumber = 0L
         remoteRestProof367 = null
+        restChangeRevision367 = plan.optLong("restChangeRevision367").coerceAtLeast(0L)
         ownershipBaseLedger193 = plan.optJSONObject("ownershipBaseLedger193")
         timeline = validate(plan)
         timeLedger = IntervalTimeLedger(plan.getJSONArray("steps").length(), SystemClock.elapsedRealtime())
@@ -729,6 +794,8 @@ class IntervalTimerService : Service() {
                 .put("vibration", false)
                 .put("autoAdvance", advance)
                 .put("restOnly", restOnly)
+                .put("restPhaseDurationMs367", tl.phaseDurationMs(p))
+                .put("restChangeRevision367", restChangeRevision367)
                 .put("stopped", stopped)
                 .put("completed", p.completed)
                 .put("ledger", timeLedger!!.json(planSteps))
@@ -771,6 +838,8 @@ class IntervalTimerService : Service() {
                 .put("round", p.round)
                 .put("remainingMs", p.remainingMs)
                 .put("totalMs", p.totalMs)
+            out.put("restPhaseDurationMs367", tl.phaseDurationMs(p))
+            out.put("restChangeRevision367", restChangeRevision367)
             val overrides = tl.restOverridesJson()
             if (overrides.length() > 0) out.put("restOverridesMs367", overrides)
             remoteRestProof367?.let { out.put("remoteRestProof367", JSONObject(it.toString())) }

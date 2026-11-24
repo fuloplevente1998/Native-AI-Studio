@@ -9,6 +9,7 @@ internal object PhoneRemoteRest367 {
         .put("workoutId",c.optString("workoutId")).put("generation",c.optLong("generation"))
         .put("epoch",c.optLong("ownerEpoch193")).put("pauseRevision",c.optLong("pauseRevision"))
         .put("phaseNumber",c.optLong("phaseNumber")).put("duration",c.optInt("duration")).put("delta",c.optInt("delta"))
+        .apply { if(c.has("phaseDurationMs")) put("phaseDurationMs",c.optLong("phaseDurationMs")).put("restRevision",c.optLong("restRevision")) }
 
     fun sameProof(frame: JSONObject, c: JSONObject): Boolean {
         val saved = frame.optJSONObject("remoteRest367") ?: return false
@@ -25,11 +26,17 @@ internal object PhoneRemoteRest367 {
         frame.optLong("pauseRevision") == c.optLong("pauseRevision",-1) && c.optInt("delta") in listOf(-15,15) &&
         c.optString("key").isNotBlank() && timer.optString("key") == c.optString("key") &&
         timer.optString("workoutId") == c.optString("workoutId") && timer.optLong("generation") == c.optLong("generation") &&
-        timer.optLong("phaseNumber") == c.optLong("phaseNumber",-1) && timer.optBoolean("restOnly") &&
+        timer.optLong("phaseNumber") == c.optLong("phaseNumber",-1) &&
         timer.optBoolean("running") && !timer.optBoolean("interrupted") && !timer.optBoolean("stopped") &&
-        timer.optString("phase") == "rest" && timer.optInt("initialRest") == 0 &&
-        timer.optJSONArray("steps")?.length() == 1 &&
-        timer.optJSONArray("steps")?.optJSONObject(0)?.optInt("rest") == c.optInt("duration",-1)
+        timer.optString("phase") == "rest" && if (c.has("phaseDurationMs")) {
+            c.optLong("phaseDurationMs") > 0 && timer.optLong("restPhaseDurationMs367") == c.optLong("phaseDurationMs") &&
+                timer.optLong("restChangeRevision367") == c.optLong("restRevision",-1)
+        } else {
+            timer.optBoolean("restOnly") && timer.optInt("initialRest") == 0 &&
+                timer.optJSONArray("steps")?.length() == 1 &&
+                timer.optJSONArray("steps")?.optJSONObject(0)?.optInt("rest") == c.optInt("duration",-1) &&
+                !timer.has("restOverridesMs367")
+        }
 
     fun apply(context: Context,c: JSONObject): Boolean {
         val store = PhoneWorkoutExecution.store(context)
@@ -47,7 +54,9 @@ internal object PhoneRemoteRest367 {
         val clock = IntervalTimerService.snapshot(context)
         if (!matches(frame,clock,c)) return false
         try {
-            IntervalTimerService.adjustRest(context,NativeTimerTarget(id,frame.optLong("generation"),c.optString("key")),c.optInt("delta"),proof(c))
+            val target = NativeTimerTarget(id,frame.optLong("generation"),c.optString("key"))
+            if(c.has("phaseDurationMs")) IntervalTimerService.adjustPhaseRest367(context,target,c.optInt("delta"),proof(c))
+            else IntervalTimerService.adjustRest(context,target,c.optInt("delta"),proof(c))
         } catch (e: Exception) {
             // A durable write may already exist even if a later publication fails.
             if (store.snapshot()?.let { sameProof(it,c) } != true) throw e

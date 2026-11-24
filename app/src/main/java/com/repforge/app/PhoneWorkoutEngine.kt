@@ -787,6 +787,8 @@ internal object PhoneWorkoutExecution {
                         .put("owner", "phone")
                         .put("enabled", true)
                         .put("restOnly", plan.optBoolean("restOnly"))
+                        .put("restPhaseDurationMs367", timer.optLong("restPhaseDurationMs367"))
+                        .put("restChangeRevision367", timer.optLong("restChangeRevision367"))
                         .put("key", plan.getString("key"))
                         .put("phase", if (interrupted) "ready" else if (restComplete) "ready" else timer.optString("phase"))
                         .put("paused", interrupted || (!running && "complete" != timer.optString("phase")))

@@ -27,4 +27,12 @@ class PhoneRemoteRest367Test {
         assertTrue(PhoneRemoteRest367.sameProof(saved,c))
         assertFalse(PhoneRemoteRest367.sameProof(saved,command().put("delta",-15)))
     }
+    @Test fun multiPhaseRestRequiresExactPhaseDurationAndRevision() {
+        val clock=timer().put("restOnly",false).put("restPhaseDurationMs367",90000).put("restChangeRevision367",4)
+        val c=command().put("phaseDurationMs",90000).put("restRevision",4)
+        assertTrue(PhoneRemoteRest367.matches(frame(),clock,c))
+        assertFalse(PhoneRemoteRest367.matches(frame(),clock,command()))
+        assertFalse(PhoneRemoteRest367.matches(frame(),clock,JSONObject(c.toString()).put("restRevision",3)))
+        assertFalse(PhoneRemoteRest367.matches(frame(),clock,JSONObject(c.toString()).put("phaseDurationMs",75000)))
+    }
 }

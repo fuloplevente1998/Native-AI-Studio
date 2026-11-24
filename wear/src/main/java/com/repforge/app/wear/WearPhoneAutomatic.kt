@@ -23,7 +23,8 @@ object WearPhoneAutomatic {
         val previous=current.automation ?: return
         if(previous.key!=value.optString("key")||previous.interrupted||previous.awaitingPhone)return
         val a=WearAutomatic.parse(value) ?: return
-        if(a.owner!="phone")return
+        if(a.owner!="phone" || a.restChangeRevision367<previous.restChangeRevision367 ||
+            a.phaseNumber<previous.phaseNumber)return
         WorkoutSnapshotStore.saveWorkout(context,projectPhoneAutomatic(current,value,a))
     }
 }

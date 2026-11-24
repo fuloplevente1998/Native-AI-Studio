@@ -32,12 +32,13 @@ data class WearAutomatic(
     val pausedMs: Long = 0,
     val restOnly: Boolean = false,
     val restPhaseDurationMs367: Long = 0,
+    val restChangeRevision367: Long = 0,
 ) {
     val counting get() = enabled && phase in listOf("work", "rest")
     fun remaining(now: Long): Long = if(owner=="phone"&&counting&&!paused&&deadlineAt>0)(deadlineAt-System.currentTimeMillis()).coerceAtLeast(0)
         else (remainingMs - if (counting && !paused) (now-anchorMs).coerceAtLeast(0) else 0).coerceAtLeast(0)
     fun json() = JSONObject().put("enabled",enabled).put("owner",owner).put("phase",phase)
-        .put("restOnly",restOnly).put("restPhaseDurationMs367",restPhaseDurationMs367).put("paused",paused).put("workSeconds",workSeconds).put("restSeconds",restSeconds)
+        .put("restOnly",restOnly).put("restPhaseDurationMs367",restPhaseDurationMs367).put("restChangeRevision367",restChangeRevision367).put("paused",paused).put("workSeconds",workSeconds).put("restSeconds",restSeconds)
         .put("vibration",vibration).put("key",key).put("targetExercise",targetExercise)
         .put("targetSet",targetSet).put("targetId",targetId).put("remainingMs",remainingMs)
         .put("anchorMs",anchorMs).put("boot",boot).put("phaseNumber",phaseNumber)
@@ -54,7 +55,7 @@ data class WearAutomatic(
                 root.optInt("targetExercise"),root.optInt("targetSet"),root.optString("targetId"),
                 root.optLong("remainingMs").coerceIn(0,3600000),root.optLong("anchorMs"),root.optInt("boot",-1),
                 root.optLong("phaseNumber").coerceAtLeast(0),root.optInt("baseSeconds").coerceAtLeast(0),root.optBoolean("interrupted"),root.optLong("deadlineAt"),root.optInt("rounds",1).coerceIn(1,100),root.optInt("round",1).coerceIn(1,100),
-                root.optJSONArray("handledCommands")?.let { array -> (maxOf(0,array.length()-128) until array.length()).map { array.optString(it) } } ?: emptyList(),root.optBoolean("awaitingPhone"),root.optJSONObject("timeLog")?.optLong("workMs") ?: 0,root.optJSONObject("timeLog")?.optLong("restMs") ?: 0,root.optJSONObject("timeLog")?.optLong("pausedMs") ?: 0,root.optBoolean("restOnly"),root.optLong("restPhaseDurationMs367").coerceAtLeast(0))
+                root.optJSONArray("handledCommands")?.let { array -> (maxOf(0,array.length()-128) until array.length()).map { array.optString(it) } } ?: emptyList(),root.optBoolean("awaitingPhone"),root.optJSONObject("timeLog")?.optLong("workMs") ?: 0,root.optJSONObject("timeLog")?.optLong("restMs") ?: 0,root.optJSONObject("timeLog")?.optLong("pausedMs") ?: 0,root.optBoolean("restOnly"),root.optLong("restPhaseDurationMs367").coerceAtLeast(0),root.optLong("restChangeRevision367").coerceAtLeast(0))
         }
     }
 }
