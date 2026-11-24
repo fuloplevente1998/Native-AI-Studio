@@ -172,9 +172,9 @@ class GoogleSyncRepository internal constructor(
      * The UI resolver is cancellable and process-local; no replacement/workout fence is held here.
      */
     internal suspend fun authorizeAndRun(
-        activity: Activity,
+        activity: Activity?,
         action: GoogleSyncAction,
-        resolve: suspend (PendingIntent) -> ActivityResult,
+        resolve: (suspend (PendingIntent) -> ActivityResult)?,
         recoverEarlier: Boolean = false,
         maintenance: NativeGoogleMaintenance.Request? = null
     ): Result<GoogleSyncCompletion> = withContext(Dispatchers.IO) {
@@ -193,9 +193,12 @@ class GoogleSyncRepository internal constructor(
                         if (maintenance?.kind == NativeGoogleMaintenance.Kind.REVOKE)
                             scopesForOperation("drive") + scopesForOperation("calendar") else emptyList())
                     if (email.isNotBlank()) builder.setAccount(Account(email, "com.google"))
-                    Identity.getAuthorizationClient(activity).authorize(builder.build()).await()
+                    (if (activity != null) Identity.getAuthorizationClient(activity) else Identity.getAuthorizationClient(appContext))
+                        .authorize(builder.build()).await()
                 }
                 if (authorization.hasResolution()) {
+                    // 2805: unattended sync never opens consent UI; the card asks for reconnecting instead.
+                    if (resolve == null) throw IOException(strings.getString(R.string.native_google_auth_failed))
                     val pending = authorization.pendingIntent ?: throw IOException(strings.getString(R.string.native_google_launch_failed))
                     _uiState.update { it.copy(stageMessage = strings.getString(R.string.native_google_waiting)) }
                     val response = resolve(pending)
@@ -247,6 +250,21 @@ class GoogleSyncRepository internal constructor(
                 }
             }
         }
+    }
+
+    /**
+     * 2805: daily background Drive/Calendar sync with an already granted scope. Never prompts,
+     * never merges archives and never runs during an active workout or a maintenance pause.
+     */
+    internal suspend fun runUnattended(action: GoogleSyncAction): Result<GoogleSyncCompletion> {
+        require(action != GoogleSyncAction.CONNECT)
+        return authorizeAndRun(null, action, null, recoverEarlier = false)
+    }
+
+    internal fun unattendedAllowed(action: GoogleSyncAction): Boolean {
+        val p = prefs()
+        return p.getString("sub", "").orEmpty().isNotBlank() &&
+            !p.getBoolean("maintenancePaused:${action.key}", p.getBoolean("maintenancePaused", false))
     }
 
     suspend fun completeConnectWithToken(accessToken: String): Result<JSONObject> = withContext(Dispatchers.IO) {
@@ -494,6 +512,7 @@ class GoogleSyncRepository internal constructor(
 
             WearSyncRepository.refreshWatchHomeAsync(appContext)
             prefs().edit().putString("lastDriveSyncIso", nowIso).apply()
+            NativeSyncSchedule.recordAutoResult(appContext, GoogleSyncAction.DRIVE.key, null)
             _uiState.value = _uiState.value.copy(
                 lastDriveSyncIso = nowIso,
                 errorMessage = null
@@ -592,6 +611,7 @@ class GoogleSyncRepository internal constructor(
             .putString("lastCalendarSyncIso", nowIso)
             .putInt("lastCalendarSyncCount", count)
             .apply()
+        NativeSyncSchedule.recordAutoResult(appContext, GoogleSyncAction.CALENDAR.key, null)
         _uiState.value = _uiState.value.copy(
             lastCalendarSyncIso = nowIso,
             lastCalendarSyncCount = count,

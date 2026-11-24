@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -127,7 +128,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
         appGeneration++
         appRefreshJob?.cancel()
         appRefreshJob = viewModelScope.launch {
-            var first = true
+            // 2805: returning to the app refreshes at once unless the last automatic read is under 2 minutes old.
+            refreshGate.intervalMs = com.repforge.app.NativeSyncSchedule.foregroundMinutes(context) * 60_000L
+            var first = refreshGate.autoOlderThan(SystemClock.elapsedRealtime(), com.repforge.app.NativeSyncSchedule.RESUME_MIN_GAP_MS)
             while (isActive && appVisible && appActivity?.get() === activity) {
                 var attempt = 0
                 do {
@@ -144,7 +147,13 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     delay(retryDelay)
                     attempt++
                 } while (isActive && appVisible && appActivity?.get() === activity)
-                delay(NativeHealthAppRefreshPolicy.FOREGROUND_INTERVAL_MS)
+                val minutes = com.repforge.app.NativeSyncSchedule.foregroundMinutes(context)
+                refreshGate.intervalMs = minutes * 60_000L
+                val revision = com.repforge.app.NativeSyncSchedule.foregroundRevision.value
+                kotlinx.coroutines.withTimeoutOrNull(minutes * 60_000L) {
+                    com.repforge.app.NativeSyncSchedule.foregroundRevision.first { it != revision }
+                }
+                refreshGate.intervalMs = com.repforge.app.NativeSyncSchedule.foregroundMinutes(context) * 60_000L
             }
         }
         refreshBackgroundStatus()
@@ -442,6 +451,16 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { _uiState.update { it.copy(autoOnOpenSaveFailed = true) } }
             finally { _uiState.update { it.copy(autoOnOpenSaving = false) } }
+        }
+    }
+
+    /** 2805: one immediate automatic read after a workout was durably saved (foreground only, no prompts). */
+    fun afterWorkoutSaved() {
+        val activity = appActivity?.get() ?: return
+        if (!appVisible || !_uiState.value.autoOnOpen) return
+        viewModelScope.launch {
+            while (providerJob?.isCompleted == false) providerJob?.join()
+            launchRefresh(activity, NativeHealthAutoRefreshGate.Trigger.AUTO, allProviders = true, appAuto = true, ignoreAutoInterval = true)
         }
     }
 

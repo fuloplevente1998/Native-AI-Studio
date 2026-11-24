@@ -591,11 +591,14 @@ class HealthBackgroundJob : JobService() {
                 jobs.cancel(ID)
                 return
             }
-            if (jobs.getPendingJob(ID) == null &&
-                jobs.schedule(
+            // 2805: survive a reboot (persisted) and follow the chosen 15/30/60 min cadence.
+            val intervalMs = NativeSyncSchedule.backgroundMinutes(context) * 60_000L
+            val pending = jobs.getPendingJob(ID)
+            if (pending != null && pending.isPersisted && pending.intervalMillis == intervalMs) return
+            if (jobs.schedule(
                     JobInfo.Builder(ID, ComponentName(context, HealthBackgroundJob::class.java))
-                        .setPeriodic(15 * 60 * 1000L)
-                        .setPersisted(false)
+                        .setPeriodic(intervalMs)
+                        .setPersisted(true)
                         .build()
                 ) != JobScheduler.RESULT_SUCCESS
             ) {

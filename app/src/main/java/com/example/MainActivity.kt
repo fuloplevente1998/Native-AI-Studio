@@ -179,6 +179,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) nativeHealth.appVisible(activity)
         onDispose { lifecycle.removeObserver(observer); nativeHealth.appHidden(activity) }
     }
+    // 2805: a saved workout pulls fresh Health data (calories, heart rate) right away, without waiting for the timer.
+    var workoutSaveSeen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(uiState.isSavingWorkout, uiState.isWorkoutSessionActive) {
+        if (workoutSaveSeen && !uiState.isSavingWorkout && !uiState.isWorkoutSessionActive) nativeHealth.afterWorkoutSaved()
+        workoutSaveSeen = uiState.isSavingWorkout
+    }
     androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
         viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
             failed = health.syncFailed, message = health.syncMessage)

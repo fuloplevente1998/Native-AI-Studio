@@ -1625,22 +1625,51 @@ private fun HealthSourcesContent(
         }
         com.example.ui.components.TrainPilotAnimatedDisclosure(visible = syncDetailsExpanded) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // 2805: the user picks the cadence; saved first, then the loop / background job follow it.
+            val syncContext = LocalContext.current
+            var foregroundMin by remember { mutableStateOf(com.repforge.app.NativeSyncSchedule.foregroundMinutes(syncContext)) }
+            var backgroundMin by remember { mutableStateOf(com.repforge.app.NativeSyncSchedule.backgroundMinutes(syncContext)) }
             Text(
                 if (uiState.healthAutoOnOpen) tr(uiState.language,
-                    "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
-                    "Automatic refresh on app opening and every 5 minutes in the foreground.",
-                    "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
-                    "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
+                    "Automatikus frissítés appnyitáskor, edzésmentés után és előtérben $foregroundMin percenként.",
+                    "Automatic refresh on app opening, after saving a workout and every $foregroundMin minutes in the foreground.",
+                    "Automatische Aktualisierung beim App-Start, nach dem Speichern eines Trainings und im Vordergrund alle $foregroundMin Minuten.",
+                    "Actualizare automată la deschiderea aplicației, după salvarea antrenamentului și la fiecare $foregroundMin minute în prim-plan.")
                 else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
                 modifier = Modifier.testTag("health_auto_refresh_status"))
+            if (uiState.healthAutoOnOpen) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(tr(uiState.language, "Előtér", "Foreground", "Vordergrund", "Prim-plan"), style = MaterialTheme.typography.labelMedium,
+                    color = palette.textSecondary, modifier = Modifier.weight(1f))
+                com.repforge.app.NativeSyncSchedule.FOREGROUND_MINUTES.forEach { m ->
+                    com.example.ui.components.TrainPilotFilterChip(selected = foregroundMin == m,
+                        onClick = { if (com.repforge.app.NativeSyncSchedule.setForegroundMinutes(syncContext, m)) foregroundMin = m },
+                        label = { Text(tr(uiState.language, "$m perc", "$m min", "$m Min.", "$m min")) },
+                        modifier = Modifier.testTag("health_foreground_interval_$m"))
+                }
+            }
+            if (uiState.healthBackgroundOptedIn) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(tr(uiState.language, "Háttér", "Background", "Hintergrund", "Fundal"), style = MaterialTheme.typography.labelMedium,
+                    color = palette.textSecondary, modifier = Modifier.weight(1f))
+                com.repforge.app.NativeSyncSchedule.BACKGROUND_MINUTES.forEach { m ->
+                    com.example.ui.components.TrainPilotFilterChip(selected = backgroundMin == m,
+                        onClick = {
+                            if (com.repforge.app.NativeSyncSchedule.setBackgroundMinutes(syncContext, m)) {
+                                backgroundMin = m
+                                runCatching { com.repforge.app.HealthBackgroundJob.schedule(syncContext) }
+                            }
+                        },
+                        label = { Text(tr(uiState.language, "$m perc", "$m min", "$m Min.", "$m min")) },
+                        modifier = Modifier.testTag("health_background_interval_$m"))
+                }
+            }
             Text(
                 when {
                     uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
-                        "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
-                        "Health Connect background refresh: about every 15 minutes; Android may delay it.",
-                        "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
-                        "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
+                        "Health Connect háttérfrissítés: kb. $backgroundMin percenként, újraindítás után is; az Android késleltetheti.",
+                        "Health Connect background refresh: about every $backgroundMin minutes, also after a restart; Android may delay it.",
+                        "Health Connect im Hintergrund: etwa alle $backgroundMin Minuten, auch nach einem Neustart; Android kann dies verzögern.",
+                        "Health Connect în fundal: aproximativ la fiecare $backgroundMin minute, și după repornire; Android poate întârzia actualizarea.")
                     uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
                     else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
                 }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
@@ -2930,11 +2959,25 @@ fun StudioGoogleCloudSyncCard(
     }
 
     // #352: one status for the header, judged per service (Drive / Calendar) and never from a stale date of
-    // a manual-only sync. The app has no automatic Google sync, so "late" cannot occur yet (expectedAuto = false).
+    // a manual-only sync. 2805: "late" applies only to a service whose daily automatic sync is switched on.
+    val context = LocalContext.current
+    var autoSync by remember { mutableStateOf(com.repforge.app.NativeSyncSchedule.googleAuto(context)) }
+    val autoFailures = remember(gs.lastDriveSyncIso, gs.lastCalendarSyncIso, gs.isBusy, cloudExpanded) {
+        com.repforge.app.NativeSyncSchedule.autoFailure(context, "drive") to com.repforge.app.NativeSyncSchedule.autoFailure(context, "calendar")
+    }
+    fun saveAutoSync(next: com.repforge.app.NativeSyncSchedule.GoogleAuto) {
+        // Durable choice first; the job follows the saved value, never an unsaved UI state.
+        if (com.repforge.app.NativeSyncSchedule.setGoogleAuto(context, next)) {
+            autoSync = next
+            com.repforge.app.GoogleAutoSyncWorker.schedule(context)
+        }
+    }
     val connected = gs.connectedEmail.isNotEmpty()
     val feedback = settingsState.googleActionFeedback
-    val driveStatus = cloudServiceStatus(connected, gs.lastDriveSyncIso, feedback?.failed == true && feedback.action == "drive", expectedAuto = false)
-    val calendarStatus = cloudServiceStatus(connected, gs.lastCalendarSyncIso, feedback?.failed == true && feedback.action == "calendar", expectedAuto = false)
+    val driveFailMessage = feedback?.takeIf { it.failed && it.action == "drive" }?.message ?: autoFailures.first.takeIf { it.isNotBlank() }
+    val calendarFailMessage = feedback?.takeIf { it.failed && it.action == "calendar" }?.message ?: autoFailures.second.takeIf { it.isNotBlank() }
+    val driveStatus = cloudServiceStatus(connected, gs.lastDriveSyncIso, driveFailMessage != null, expectedAuto = autoSync.drive)
+    val calendarStatus = cloudServiceStatus(connected, gs.lastCalendarSyncIso, calendarFailMessage != null, expectedAuto = autoSync.calendar)
     val headerStatus = if (connected && !gs.errorMessage.isNullOrBlank()) CloudSyncStatus.ERROR
         else cloudSyncHeaderStatus(listOf(driveStatus, calendarStatus))
     val busyAny = gs.isBusy || settingsState.replacementBusy || settingsState.maintenanceBusy
@@ -2958,7 +3001,7 @@ fun StudioGoogleCloudSyncCard(
             else Text(glyph, color = fg, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
         }
     }
-    @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String) {
+    @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String, failMessage: String?) {
         Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceElevated, modifier = Modifier.fillMaxWidth().testTag(tag)) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2974,7 +3017,7 @@ fun StudioGoogleCloudSyncCard(
                 }
                 if (lastIso.isNotBlank()) Text("${tr(lang, "Utolsó siker", "Last success", "Letzter Erfolg", "Ultimul succes")}: ${lastIso.take(19).replace('T', ' ')}$extra",
                     style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                if (st == CloudSyncStatus.ERROR) (feedback?.message ?: gs.errorMessage)?.takeIf { it.isNotBlank() }?.let {
+                if (st == CloudSyncStatus.ERROR) (failMessage ?: gs.errorMessage)?.takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.labelSmall, color = palette.danger)
                 }
             }
@@ -3027,12 +3070,12 @@ fun StudioGoogleCloudSyncCard(
                     style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = palette.textPrimary
                 )
                 ServiceBox(tr(lang, "Google Drive mentés", "Google Drive backup", "Google Drive-Sicherung", "Backup Google Drive"),
-                    driveStatus, gs.lastDriveSyncIso, "", "settings_google_drive_status")
+                    driveStatus, gs.lastDriveSyncIso, "", "settings_google_drive_status", driveFailMessage)
                 val countSuffix = gs.lastCalendarSyncCount?.let { cnt ->
                     " • " + tr(lang, "$cnt esemény", "$cnt events", "$cnt Termine", "$cnt evenimente")
                 }.orEmpty()
                 ServiceBox(tr(lang, "Google Naptár", "Google Calendar", "Google Kalender", "Google Calendar"),
-                    calendarStatus, gs.lastCalendarSyncIso, countSuffix, "settings_google_last_calendar_sync")
+                    calendarStatus, gs.lastCalendarSyncIso, countSuffix, "settings_google_last_calendar_sync", calendarFailMessage)
 
                 if (headerStatus == CloudSyncStatus.ERROR) TrainPilotOutlinedButton(
                     onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
@@ -3046,7 +3089,36 @@ fun StudioGoogleCloudSyncCard(
                         color = palette.danger, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                 }
 
+                // 2805: opt-in daily automatic sync; the manual actions below stay unchanged.
+                Text(tr(lang, "Automatikus szinkron", "Automatic sync", "Automatische Synchronisierung", "Sincronizare automată"),
+                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.textSecondary,
+                    modifier = Modifier.padding(top = 2.dp))
+                @Composable fun AutoRow(label: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onChange(!checked) }
+                        .semantics { stateDescription = if (checked) tr(lang, "Be", "On", "An", "Pornit") else tr(lang, "Ki", "Off", "Aus", "Oprit") }
+                        .testTag(tag), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, style = MaterialTheme.typography.bodyMedium, color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Switch(checked = checked, onCheckedChange = onChange)
+                    }
+                }
+                AutoRow(tr(lang, "Napi Drive-mentés", "Daily Drive backup", "Tägliche Drive-Sicherung", "Backup Drive zilnic"),
+                    autoSync.drive, "settings_google_auto_drive") { saveAutoSync(autoSync.copy(drive = it)) }
+                AutoRow(tr(lang, "Naptár automatikus frissítése", "Refresh calendar automatically", "Kalender automatisch aktualisieren", "Actualizare automată calendar"),
+                    autoSync.calendar, "settings_google_auto_calendar") { saveAutoSync(autoSync.copy(calendar = it)) }
+                if (autoSync.any) AutoRow(tr(lang, "Csak Wi-Fi-n", "Wi-Fi only", "Nur über WLAN", "Doar pe Wi-Fi"),
+                    autoSync.wifiOnly, "settings_google_auto_wifi") { saveAutoSync(autoSync.copy(wifiOnly = it)) }
+                if (autoSync.any) Text(tr(lang,
+                    "Naponta egyszer, töltöttségkímélően; az Android választja ki a pontos időt. Aktív edzés közben kimarad.",
+                    "Once a day, battery-friendly; Android picks the exact time. Skipped during an active workout.",
+                    "Einmal täglich, akkuschonend; Android wählt die genaue Zeit. Während eines Trainings ausgelassen.",
+                    "O dată pe zi, economic; Android alege ora exactă. Omisă în timpul unui antrenament activ."),
+                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+
                 // Everyday actions, one under the other (#352).
+                Text(tr(lang, "Kézi műveletek", "Manual actions", "Manuelle Aktionen", "Acțiuni manuale"),
+                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.textSecondary,
+                    modifier = Modifier.padding(top = 2.dp))
                 Button(
                     onClick = { activity?.let { settingsViewModel.syncDriveCloud(it) } },
                     enabled = !busyAny && activity != null,
@@ -3189,7 +3261,8 @@ internal fun cloudServiceStatus(connected: Boolean, lastSuccessIso: String, last
     if (lastAttemptFailed) return CloudSyncStatus.ERROR
     val last = runCatching { java.time.Instant.parse(lastSuccessIso) }.getOrNull()
         ?: runCatching { java.time.LocalDateTime.parse(lastSuccessIso.take(19).replace(' ', 'T')).atZone(java.time.ZoneId.systemDefault()).toInstant() }.getOrNull()
-    if (last == null) return if (expectedAuto) CloudSyncStatus.LATE else CloudSyncStatus.NEUTRAL
+    // A service that has never completed is "not run yet", also right after switching automation on.
+    if (last == null) return CloudSyncStatus.NEUTRAL
     // A manual-only (or switched-off) sync never turns yellow just because its date is old.
     return if (expectedAuto && java.time.Duration.between(last, now).toHours() > 72) CloudSyncStatus.LATE else CloudSyncStatus.OK
 }

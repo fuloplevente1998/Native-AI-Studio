@@ -6,9 +6,13 @@ package com.repforge.app.ui.health
  * result based on this UI ticket alone: validate the journal generation at each write site.
  */
 internal class NativeHealthAutoRefreshGate(
-    private val intervalMs: Long = NativeHealthAppRefreshPolicy.FOREGROUND_INTERVAL_MS
+    intervalMs: Long = NativeHealthAppRefreshPolicy.FOREGROUND_INTERVAL_MS
 ) {
     init { require(intervalMs > 0L) }
+
+    /** 2805: follows the user's foreground cadence (2/5/15 min); never zero. */
+    @Volatile var intervalMs: Long = intervalMs
+        set(value) { require(value > 0L); field = value }
 
     enum class Trigger { AUTO, MANUAL }
 
@@ -62,6 +66,13 @@ internal class NativeHealthAutoRefreshGate(
                 lastAutoKey = "${snapshot.provider}|${snapshot.day}"
             }
         }
+    }
+
+    /** True when no automatic read started yet, or the last one is at least [gapMs] old. */
+    @Synchronized
+    fun autoOlderThan(elapsedMs: Long, gapMs: Long): Boolean {
+        val previous = lastAutoStartMs ?: return true
+        return elapsedMs < previous || elapsedMs - previous >= gapMs
     }
 
     /** Invalidate a screen/provider/day dataset without releasing an SDK operation still in flight. */
