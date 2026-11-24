@@ -31,6 +31,11 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.repforge.app.erase
+import com.repforge.app.exportSnapshot
+import com.repforge.app.healthDay
+import com.repforge.app.importRecords
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w393dp-h900dp-mdpi")

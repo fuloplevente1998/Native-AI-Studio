@@ -24,6 +24,9 @@ import java.time.ZoneId
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import com.repforge.app.erase
+import com.repforge.app.healthDay
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

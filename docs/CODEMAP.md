@@ -72,7 +72,7 @@ nagy fájlok sorai frissülnek.
 | Health VM, előtéri frissítés, kapu | `rf/ui/health/HealthDashboardViewModel.kt`, `NativeHealthAutoRefreshGate.kt`, `NativeHealthAppRefreshPolicy.kt` |
 | Szinkron ütemezés (előtér/háttér percek, Google auto) | `rf/NativeSyncSchedule.kt` |
 | HC háttér job, BLE óra szolgáltatás | `rf/HealthBackgroundServices.kt` |
-| Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/HealthJournalStore.kt`, `rf/NativeHealthSync.kt` |
+| Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/NativeHealthSync.kt` · napló tár: `rf/HealthJournalStore.kt` (séma, meta, tranzakció, beállítás, sync-állapot), `rf/HealthJournalIngest.kt` (rekord/nap írás), `rf/HealthJournalQueries.kt` (projection, page, forrásnap), `rf/HealthJournalBackup.kt` (export, restore, erase) |
 | Kalória/energia | `rf/HealthProjectionsAndEnergy.kt` |
 | Coach képernyő, készenlét | `ex/ui/screens/health/CoachDetailScreen.kt`, `rf/ui/coach/NativeCoachReadiness.kt` |
 
@@ -82,7 +82,7 @@ nagy fájlok sorai frissülnek.
 | Beállítások főoldal | `ex/ui/screens/settings/SettingsMainScreen.kt` |
 | Óra és szinkron oldal | `ex/ui/screens/settings/WatchAndSyncScreen.kt` |
 | Google Cloud kártya (állapot, auto, kézi, karbantartás) | `ex/ui/screens/settings/GoogleCloudSyncCard.kt` |
-| Google szinkron motor, Drive-összefésülés | `rf/GoogleSyncRepository.kt`, `rf/GoogleAutoSyncWorker.kt`, `rf/ui/settings/SettingsViewModel.kt`, `rf/ui/settings/NativeGoogleMaintenance*.kt` |
+| Google szinkron motor, Drive-összefésülés | `rf/GoogleSyncRepository.kt` (auth, Drive/Naptár szinkron, karbantartás), `rf/GoogleSyncMerge18.kt` (#18 összefésülő motor `*18`), `rf/GoogleSyncTransport.kt` (HTTP, Drive-fájl/fotó, naptár, hibaüzenet), `rf/GoogleAutoSyncWorker.kt`, `rf/ui/settings/SettingsViewModel.kt`, `rf/ui/settings/NativeGoogleMaintenance*.kt` |
 | Mentés / visszaállítás | `ex/ui/screens/settings/BackupRestoreScreen.kt`, `rf/BackupRestoreManager.kt`, `rf/BackupJsonIO.kt` |
 | Engedélyek, privát fotók | `ex/ui/screens/settings/PermissionsScreen.kt`, `rf/NativePrivacyControls.kt` |
 | Adatbázis, migráció, DataStore | `rf/data/db/*`, `rf/data/migration/*`, `rf/data/store/TrainPilotSettingsStore.kt` |

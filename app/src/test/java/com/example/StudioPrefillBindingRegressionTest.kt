@@ -42,6 +42,8 @@ import com.example.ui.viewmodel.toggleExerciseFavorite
 import com.example.ui.viewmodel.toggleSetCompleted
 import com.example.ui.viewmodel.updateExerciseFeedback
 import com.example.ui.viewmodel.updateSetValuesExact
+import com.repforge.app.healthDay
+import com.repforge.app.samsungDay
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
