@@ -38,7 +38,7 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
     }
     fun safeSurface(color: Color): Boolean =
         contrast(foreground, color) >= 6f &&
-            contrast(foreground, foreground.copy(alpha = 0.22f).compositeOver(color)) >= 4.8f
+            contrast(foreground, foreground.copy(alpha = 0.22f).compositeOver(color)) >= 5.2f
 
     val page = move(original.getValue(CustomThemeRole.BACKGROUND), backdrop, ::safeSurface)
     corrected[CustomThemeRole.BACKGROUND] = page
@@ -73,7 +73,7 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
         background = page, surface = card, surfaceElevated = inner,
         primary = primary, onPrimary = NativeThemeTokens.onFill(primary),
         secondary = secondary, primaryBright = primary, tertiary = secondary,
-        textPrimary = foreground, textSecondary = readable(base.textSecondary, 5f, surfaces),
+        textPrimary = foreground, textSecondary = readable(base.textSecondary, 5f, allSurfaces),
         cardBorder = border,
         success = semantic(base.success), warning = semantic(base.warning), danger = semantic(base.danger),
         sleepAccent = semantic(base.sleepAccent), heartAccent = semantic(base.heartAccent),
