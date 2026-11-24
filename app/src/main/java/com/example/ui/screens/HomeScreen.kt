@@ -1,6 +1,7 @@
 package com.example.ui.screens
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.PageLayoutHorizontalRow
 import com.example.ui.components.PageLayoutCard
 import androidx.compose.runtime.key
@@ -149,7 +150,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 4.dp, bottom = 6.dp),
+                .padding(top = 4.dp + LocalGlassTopInset.current, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
         layout.order.forEach { id ->
