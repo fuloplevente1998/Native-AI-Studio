@@ -23,6 +23,7 @@ import com.example.ui.theme.PaletteCategory
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.resolveCustomTheme
+import com.example.ui.theme.isCustomThemeKey
 import org.json.JSONObject
 import java.util.UUID
 
@@ -194,7 +195,18 @@ class TrainPilotSettingsStore(private val context: Context,
         fun importedTheme(data: JSONObject): ThemePaletteOption? {
             val candidates = listOf(data.optJSONObject("settings")?.optString("themeKey").orEmpty(),
                 data.optString("themeKey"), data.optString("themeAccent"))
-            return candidates.firstNotNullOfOrNull { key -> AVAILABLE_THEMES.firstOrNull { it.key == key } }
+            return candidates.firstNotNullOfOrNull { key ->
+                AVAILABLE_THEMES.firstOrNull { it.key == key } ?: TrainPilotPalettes.getByKey(key)?.let { palette ->
+                    fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
+                    ThemePaletteOption(palette.key, palette.nameHu, palette.nameEn, hex(palette.primary),
+                        hex(palette.secondary), when (palette.subGroup) {
+                            PaletteCategory.CONTRAST -> "contrast"
+                            PaletteCategory.GLOW -> "glow"
+                            PaletteCategory.LIGHT -> "light"
+                            else -> "matte"
+                        }, palette.nameDe, palette.nameRo)
+                }
+            }
         }
 
     }
@@ -660,6 +672,9 @@ class TrainPilotSettingsStore(private val context: Context,
         val source = data.optJSONObject("settings") ?: JSONObject()
         val language = source.optString("language", source.optString("lang", data.optString("language")))
         val theme = importedTheme(data)
+        val importedThemeKey = listOf(source.optString("themeKey"), data.optString("themeKey"), data.optString("themeAccent"))
+            .firstOrNull { it.isNotBlank() }
+        val incomingCustomThemes = source.optJSONArray("customThemes350")?.let { CustomThemeCodec.decode(it.toString()) }
         val preset = source.optJSONObject("intervalPreset110")?.let {
             com.repforge.app.NativeIntervalPreset.normalized(it, defaultAutoAdvance = false)
         }
@@ -673,9 +688,30 @@ class TrainPilotSettingsStore(private val context: Context,
             }
             if (language in listOf("hu", "en", "de", "ro")) prefs[KEY_LANGUAGE] = language
             if (data.optString("activeProgramId").isNotBlank()) prefs[KEY_ACTIVE_PROGRAM_ID] = data.getString("activeProgramId")
-            if (theme != null) {
-                prefs[KEY_THEME_KEY] = theme.key; prefs[KEY_THEME_ACCENT] = theme.accent
-                prefs[KEY_THEME_ACCENT2] = theme.accent2; prefs[KEY_THEME_FAMILY] = theme.family
+            val previousCustomThemes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
+            val customThemes = when {
+                replaceTrainingModesOnMissing -> incomingCustomThemes ?: emptyList()
+                incomingCustomThemes != null -> (previousCustomThemes + incomingCustomThemes).associateBy { it.key }.values.toList()
+                else -> previousCustomThemes
+            }
+            if (incomingCustomThemes != null || replaceTrainingModesOnMissing) {
+                prefs[KEY_CUSTOM_THEMES] = CustomThemeCodec.encode(customThemes)
+            }
+            val selectedCustom = customThemes.firstOrNull { it.key == importedThemeKey }
+            when {
+                selectedCustom != null -> writePaletteSelection(prefs,
+                    requireNotNull(resolveCustomTheme(selectedCustom.draft, selectedCustom.key)).palette)
+                importedThemeKey != null && isCustomThemeKey(importedThemeKey) ->
+                    writePaletteSelection(prefs, TrainPilotPalettes.getById(1))
+                theme != null -> {
+                    prefs[KEY_THEME_KEY] = theme.key; prefs[KEY_THEME_ACCENT] = theme.accent
+                    prefs[KEY_THEME_ACCENT2] = theme.accent2; prefs[KEY_THEME_FAMILY] = theme.family
+                }
+                isCustomThemeKey(prefs[KEY_THEME_KEY].orEmpty()) -> {
+                    val retained = customThemes.firstOrNull { it.key == prefs[KEY_THEME_KEY] }
+                    val palette = retained?.let { resolveCustomTheme(it.draft, it.key)?.palette }
+                    writePaletteSelection(prefs, palette ?: TrainPilotPalettes.getById(1))
+                }
             }
             if (source.has("restSeconds")) {
                 prefs[KEY_REST_SECONDS] = source.optInt("restSeconds", 90).coerceIn(0, 3600)
