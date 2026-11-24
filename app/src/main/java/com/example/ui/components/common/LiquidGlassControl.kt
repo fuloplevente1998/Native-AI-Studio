@@ -18,7 +18,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.*
-import kotlin.math.roundToInt
 
 /** One transient preview and one durable commit per completed slider interaction. */
 internal data class GlassThemeAccess(
@@ -38,16 +37,24 @@ internal fun LiquidGlassControl(language: AppLanguage, selectedId: Int) {
         TrainPilotPalettes.getById(selectedId.takeIf { it in 33..40 } ?: 35).withGlassClarity(clarity)
     }
     var latest by remember { mutableIntStateOf(clarity) }
-    LaunchedEffect(clarity) { latest = clarity }
+    // The thumb follows the finger continuously; every crossed 1% step previews live (the whole
+    // app re-tints), and only the release writes the durable value once.
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    LaunchedEffect(clarity) { if (dragging == null) latest = clarity }
     val label = customThemeText(language, "Üveghatás", "Glass clarity", "Glas-Klarheit", "Claritatea sticlei")
     Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("$label: $clarity%", color = palette.textPrimary, style = MaterialTheme.typography.labelLarge)
-        Slider(clarity.toFloat(), { value ->
-            val next = value.roundToInt().coerceIn(0, 100)
-            latest = next
-            if (access == null) local = next else access.preview(next)
-        }, valueRange = 0f..100f, onValueChangeFinished = { access?.commit(latest) },
-            modifier = Modifier.testTag("liquid_glass_clarity").semantics { contentDescription = label })
+        Slider(dragging ?: clarity.toFloat(), { value ->
+            dragging = value
+            val next = glassClarityStep(value)
+            if (next != latest) {
+                latest = next
+                if (access == null) local = next else access.preview(next)
+            }
+        }, valueRange = 0f..100f, onValueChangeFinished = {
+            dragging = null
+            if (access == null) local = latest else access.commit(latest)
+        }, modifier = Modifier.testTag("liquid_glass_clarity").semantics { contentDescription = label })
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Frosted", color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
             Text("Clear Liquid", color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)

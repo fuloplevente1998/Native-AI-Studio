@@ -15,5 +15,8 @@
 - **#371 témák + Liquid Glass** (#349/#350): 32 gyári téma (ID/kulcs változatlan), 8 glass téma (33–40), saját témák (UUID, színkerék/HEX,
   név Mentés után, teljes képernyős előnézet), Frosted–Clear csúszka csak glass családnál, Wear opak színek. `docs/CUSTOM_THEME_EDITOR_350.md`,
   `docs/LIQUID_GLASS_THEMES.md`. **#372 (theme-test APK) soha nem merge-elhető.**
-- **Hátra:** közös CI zöld → Liquid Glass vizuális befejezés (valódi backdrop a többi felületen, AGSL/RenderEffect, opak fallback, Wear/aktív edzés
-  alatt nincs effekt) → készülékes elfogadás → main merge, verzió és kiadás csak felhasználói jóváhagyással. Issue-lezárás csak elfogadás után.
+- **#373 Liquid Glass befejezés:** saját AGSL motor (SDF peremi fénytörés, spekuláris perem, belső árnyék, csak peremi kromatikus szél,
+  `LENS_PEAK` kontrasztőr), folytonos 0–100 csúszka élő előnézettel, egyszer fordított programok, valódi backdrop fejléc + csúszó nav pill alatt,
+  rugós pill/nyomás, csökkentett mozgás, API31–32/opak fallback, aktív edzésnél nincs üveg. `docs/LIQUID_GLASS_THEMES.md` V4, `LiquidGlassOptics373Test`.
+- **Hátra:** közös CI zöld → készülékes Liquid Glass elfogadás (képminőség, AGSL fordítás Samsungon, frame time; tab-átúsztatás még nincs)
+  → main merge, verzió és kiadás csak felhasználói jóváhagyással. Issue-lezárás csak elfogadás után.

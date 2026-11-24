@@ -6,6 +6,7 @@ import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassEffectsActive
 import com.repforge.app.ui.theme.glassPressMotion
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
@@ -249,12 +250,24 @@ fun TrainPilotGlobalTopHeaderAndNav(
             }
 
             // 2. Fő navigációs sor: Kezdőlap | Programok | Edzés | Fejlődés | Egészség (5 optimális fül)
+            // Liquid Glass: one shared glass pill slides between the tabs (spring, liquid stretch).
+            val glassNav = palette.glassEffectsActive(LocalGlassOpticsEnabled.current)
+            val pillTrack = if (glassNav) remember { GlassPillTrack() } else null
+            val tabSelected = listOf(
+                currentTab == MainTab.HOME && currentSubScreen == SubScreen.NONE,
+                (currentTab == MainTab.PROGRAMS || currentSubScreen == SubScreen.PROGRAMS_LIST) && currentSubScreen != SubScreen.SETTINGS_MAIN,
+                isWorkoutTabSelected(currentTab, currentSubScreen),
+                currentTab == MainTab.PROGRESS && currentSubScreen == SubScreen.NONE,
+                currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE
+            )
+            val trackShape = RoundedCornerShape(50)
+            val navRow: @Composable () -> Unit = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
-                    .then(if (palette.isLiquidGlass) Modifier.background(palette.surface.copy(alpha = .22f), RoundedCornerShape(50))
-                        .trainPilotGlassRim(palette, RoundedCornerShape(50)).padding(2.dp) else Modifier)
+                    .then(if (palette.isLiquidGlass && pillTrack == null) Modifier.background(palette.surface.copy(alpha = .22f), trackShape)
+                        .trainPilotGlassRim(palette, trackShape).padding(2.dp) else Modifier)
                     .testTag("top_nav_row")
                     .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(if (palette.isLiquidGlass) 2.dp else 6.dp)
@@ -264,48 +277,61 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 TopNavPillItem(
                     label = strings.navHome,
                     icon = Icons.Default.Home,
-                    selected = currentTab == MainTab.HOME && currentSubScreen == SubScreen.NONE,
+                    selected = tabSelected[0],
                     onClick = { onSelectTab(MainTab.HOME) },
                     modifier = itemModifier,
-                    testTag = "top_nav_home"
+                    testTag = "top_nav_home",
+                    pillTrack = pillTrack, pillIndex = 0
                 )
                 TopNavPillItem(
                     label = strings.navPrograms,
                     icon = Icons.AutoMirrored.Filled.FormatListBulleted,
-                    selected = (currentTab == MainTab.PROGRAMS || currentSubScreen == SubScreen.PROGRAMS_LIST) && currentSubScreen != SubScreen.SETTINGS_MAIN,
+                    selected = tabSelected[1],
                     onClick = { onSelectTab(MainTab.PROGRAMS) },
                     modifier = itemModifier,
-                    testTag = "top_nav_programs"
+                    testTag = "top_nav_programs",
+                    pillTrack = pillTrack, pillIndex = 1
                 )
                 TopNavPillItem(
                     label = strings.navWorkout,
                     icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                    selected = isWorkoutTabSelected(currentTab, currentSubScreen),
+                    selected = tabSelected[2],
                     onClick = { onSelectTab(MainTab.WORKOUT) },
                     modifier = itemModifier,
-                    testTag = "top_nav_workout"
+                    testTag = "top_nav_workout",
+                    pillTrack = pillTrack, pillIndex = 2
                 )
                 TopNavPillItem(
                     label = strings.navProgress,
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    selected = currentTab == MainTab.PROGRESS && currentSubScreen == SubScreen.NONE,
+                    selected = tabSelected[3],
                     onClick = { onSelectTab(MainTab.PROGRESS) },
                     modifier = itemModifier,
-                    testTag = "top_nav_progress"
+                    testTag = "top_nav_progress",
+                    pillTrack = pillTrack, pillIndex = 3
                 )
                 TopNavPillItem(
                     label = strings.navHealth,
-                    icon = if (currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE) {
+                    icon = if (tabSelected[4]) {
                         Icons.Default.Favorite
                     } else {
                         Icons.Default.FavoriteBorder
                     },
-                    selected = currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE,
+                    selected = tabSelected[4],
                     onClick = { onSelectTab(MainTab.HEALTH) },
                     modifier = itemModifier,
-                    testTag = "top_nav_health"
+                    testTag = "top_nav_health",
+                    pillTrack = pillTrack, pillIndex = 4
                 )
             }
+            }
+            if (pillTrack != null) {
+                Box(Modifier.fillMaxWidth().background(palette.surface.copy(alpha = .22f), trackShape)
+                    .trainPilotGlassRim(palette, trackShape).padding(2.dp)) {
+                    GlassSelectionPill(pillTrack, tabSelected.indexOf(true), trackShape, palette, selection.border)
+                    navRow()
+                }
+            } else navRow()
         }
     }
 }
@@ -318,34 +344,39 @@ internal fun TopNavPillItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     testTag: String = "",
-    compact: Boolean = false
+    compact: Boolean = false,
+    /** Non-null: a shared [GlassSelectionPill] paints the selection; the item stays transparent. */
+    pillTrack: GlassPillTrack? = null,
+    pillIndex: Int = -1
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
-    val glass = palette.isLiquidGlass && LocalGlassOpticsEnabled.current
+    val glass = palette.glassEffectsActive(LocalGlassOpticsEnabled.current)
+    val hosted = glass && pillTrack != null
     val shape = RoundedCornerShape(if (glass) 50 else 20)
     val legacyShape = RoundedCornerShape(12.dp)
     val itemShape = if (glass) shape else legacyShape
     val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
-    val target = if (glass) (if (selected) palette.primary.copy(alpha = .10f) else Color.Transparent)
+    val target = if (glass) (if (selected && !hosted) palette.primary.copy(alpha = .10f) else Color.Transparent)
         else if (selected) selection.surface else palette.surface
     val fill = if (glass) animateColorAsState(target,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "glass selected pill").value else target
     val source = remember { MutableInteractionSource() }
-    val selectedModifier = if (glass) Modifier.glassPressMotion(source, true)
+    val ownGlass = !hosted && (selected || compact)
+    val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-        .then(if (selected || compact) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
-        .then(if (selected || compact) Modifier.trainPilotGlassRim(palette, itemShape) else Modifier)
+        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(
         shape = itemShape,
         color = fill,
         modifier = modifier
+            .glassPillSlot(if (hosted) pillTrack else null, pillIndex)
             .then(glowModifier)
             .heightIn(min = 48.dp)
-            .then(if (glass && !selected && !compact) Modifier else Modifier.trainPilotBorder(
+            .then(if (glass && !ownGlass) Modifier else Modifier.trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
                 color = if (selected) selection.border else palette.cardBorder.copy(alpha = if (glass) .45f else palette.cardBorder.alpha),
                 shape = itemShape

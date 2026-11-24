@@ -30,7 +30,7 @@ internal fun GlassAwareScaffold(
 ) {
     // Only routes with an explicit in-scroll safe-area spacer can extend under glass navigation.
     val glassHost = uiState.sheetHostState()
-    val glassUnderlap = palette.isLiquidGlass && LocalGlassOpticsEnabled.current &&
+    val glassUnderlap = palette.glassEffectsActive(LocalGlassOpticsEnabled.current) &&
         Build.VERSION.SDK_INT >= 31 &&
         (glassHost.currentSubScreen == SubScreen.SETTINGS_MAIN ||
             (glassHost.currentSubScreen == SubScreen.NONE && glassHost.currentTab in setOf(MainTab.HOME, MainTab.HEALTH)))
