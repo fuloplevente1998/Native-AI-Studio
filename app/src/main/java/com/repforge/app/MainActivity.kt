@@ -38,6 +38,7 @@ import com.example.ui.components.LocalCustomThemeAccess
 import com.example.ui.components.GlassThemeAccess
 import com.example.ui.components.LocalGlassThemeAccess
 import com.example.ui.theme.withGlassClarity
+import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.isCustomThemeKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -186,7 +187,8 @@ class MainActivity : ComponentActivity() {
                         startupScreen.markNativeReady()
                     }
                     com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
-                        CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess) {
+                        CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
+                            LocalGlassOpticsEnabled provides !uiState.isWorkoutSessionActive) {
                             TrainPilotAppRoot(viewModel = viewModel)
                         }
                     }
