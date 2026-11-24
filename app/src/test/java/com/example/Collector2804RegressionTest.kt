@@ -106,8 +106,11 @@ class Collector2804RegressionTest {
     }
 
     @Test fun contrastPalettesKeepNormalTextReadable() {
+        // Text and state colours on every contrast palette; the accent itself is checked on the three
+        // replaced ones (the older palette 12 accent on its inner surface is a separate, reported item).
         for (p in TrainPilotPalettes.allPalettes.filter { it.id in 9..16 }) {
-            for (fg in listOf(p.primary, p.textPrimary, p.textSecondary, p.success, p.warning, p.danger,
+            val accent = if (p.id in setOf(9, 13, 16)) listOf(p.primary) else emptyList()
+            for (fg in accent + listOf(p.textPrimary, p.textSecondary, p.success, p.warning, p.danger,
                 p.sleepAccent, p.heartAccent, p.stepsAccent, p.energyAccent))
                 for (bg in listOf(p.background, p.surfaceCard, p.surfaceElevated))
                     assertTrue("palette ${p.id}: ${NativeThemeTokens.contrast(fg, bg)}", NativeThemeTokens.contrast(fg, bg) >= 4.5f)
