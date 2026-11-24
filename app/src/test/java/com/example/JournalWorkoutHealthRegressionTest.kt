@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.openLogWorkoutDetail
 import com.example.ui.viewmodel.selectTab
 
 @RunWith(RobolectricTestRunner::class)

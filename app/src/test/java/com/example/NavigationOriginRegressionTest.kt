@@ -12,10 +12,19 @@ import org.robolectric.annotation.Config
 import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
 import com.example.ui.viewmodel.openExerciseDetail
+import com.example.ui.viewmodel.openHealthAndExpand
+import com.example.ui.viewmodel.openLogWorkoutDetail
 import com.example.ui.viewmodel.openLogWorkoutPhotos
+import com.example.ui.viewmodel.openLoggedWorkoutRouteMap
 import com.example.ui.viewmodel.selectExerciseCategory
+import com.example.ui.viewmodel.selectExpandedStatsCard
+import com.example.ui.viewmodel.selectLogDetailTab
+import com.example.ui.viewmodel.selectProgressMainSection
+import com.example.ui.viewmodel.selectStatsSubTab
 import com.example.ui.viewmodel.selectTab
+import com.example.ui.viewmodel.toggleHealthSection
 import com.example.ui.viewmodel.updateExerciseSearch
+import com.example.ui.viewmodel.updateLogSearch
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

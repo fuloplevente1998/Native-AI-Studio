@@ -59,7 +59,9 @@ import com.example.ui.viewmodel.moveEditorExercise
 import com.example.ui.viewmodel.moveProgramOrder
 import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
+import com.example.ui.viewmodel.openCalendarEventWorkoutDetail
 import com.example.ui.viewmodel.openExerciseDetail
+import com.example.ui.viewmodel.openLogWorkoutDetail
 import com.example.ui.viewmodel.openProgramEditor
 import com.example.ui.viewmodel.planMonthlyWorkouts
 import com.example.ui.viewmodel.removeEditorExercise
@@ -70,8 +72,16 @@ import com.example.ui.viewmodel.saveEditorProgram
 import com.example.ui.viewmodel.selectCalendarDay
 import com.example.ui.viewmodel.selectCalendarMonth
 import com.example.ui.viewmodel.selectEditingDayIndex
+import com.example.ui.viewmodel.selectExpandedStatsCard
+import com.example.ui.viewmodel.selectLogDetailTab
+import com.example.ui.viewmodel.selectProgressExercise
+import com.example.ui.viewmodel.selectProgressMainSection
+import com.example.ui.viewmodel.selectProgressRange
+import com.example.ui.viewmodel.selectStatsSubTab
 import com.example.ui.viewmodel.selectTab
+import com.example.ui.viewmodel.selectVolumeBar
 import com.example.ui.viewmodel.setProgramsTabCustomOnly
+import com.example.ui.viewmodel.toggleCardioFilterStepsMode
 import com.example.ui.viewmodel.toggleExpandedEditorExercise
 import com.example.ui.viewmodel.toggleInlineProgramEditor
 import com.example.ui.viewmodel.toggleReplanModal

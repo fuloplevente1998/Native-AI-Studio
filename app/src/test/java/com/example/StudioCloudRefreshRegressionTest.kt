@@ -5,6 +5,7 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.example.ui.viewmodel.refreshAfterCloudSync
 import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.db.TrainPilotDatabase
