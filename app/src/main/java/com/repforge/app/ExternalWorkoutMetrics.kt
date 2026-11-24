@@ -108,6 +108,9 @@ internal fun HealthJournalStore.externalWorkoutMetrics(
         .use { it.moveToFirst() }
     val values = JSONObject()
     val series = JSONObject()
+    val directKeys = ExternalSessionEvidence.directValues(workout).also { direct ->
+        direct.forEach { (key, value) -> values.put(key, value) }
+    }.keys
     if (workout.identity.provider == HealthJournalStore.SAMSUNG)
         workout.sessionCalories?.let { values.put("workoutCalories", it) }
     if (!overlap) for (kind in ExternalWorkoutMetrics.kinds) {
@@ -117,7 +120,10 @@ internal fun HealthJournalStore.externalWorkoutMetrics(
             .use { cursor ->
                 buildList { while (cursor.moveToNext()) add(JSONObject(cursor.getString(0))) }
             }
-        ExternalWorkoutMetrics.values(workout, kind, rows).forEach { (key, value) -> values.put(key, value) }
+        val measured = ExternalWorkoutMetrics.values(workout, kind, rows)
+        // Do not splice the SDK's session HR aggregate with the journal's partial HR samples.
+        val directHeart = kind.key == "HeartRate" && directKeys.any { it in setOf("averageHeartRate", "minHeartRate", "maxHeartRate") }
+        measured.forEach { (key, value) -> if (!directHeart || key == "heartRateSamples") values.put(key, value) }
         if (kind.key == "HeartRate" || kind.key == "Speed") {
             val samples = ExternalWorkoutMetrics.samples(workout, kind, rows)
             if (samples.isNotEmpty()) series.put(kind.key, JSONArray().apply {

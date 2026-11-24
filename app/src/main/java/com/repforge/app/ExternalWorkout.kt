@@ -22,7 +22,8 @@ internal data class ExternalWorkout(
     val segments: JSONArray?,
     val laps: JSONArray?,
     val device: JSONObject? = null,
-    val sessionCalories: Double? = null
+    val sessionCalories: Double? = null,
+    val sessionEvidence: JSONObject? = null
 ) {
     // Elapsed time only: not measured active time.
     val elapsedMs: Long get() = endMs - startMs
@@ -45,6 +46,7 @@ internal data class ExternalWorkout(
         .put("laps", laps ?: JSONObject.NULL)
         .put("device", device ?: JSONObject.NULL)
         .put("sessionCalories", sessionCalories ?: JSONObject.NULL)
+        .put("sessionEvidence", sessionEvidence ?: JSONObject.NULL)
 
     companion object {
         fun fromRecord(row: JSONObject): ExternalWorkout {
@@ -61,7 +63,8 @@ internal data class ExternalWorkout(
                 data.nullableInt("exerciseType"), data.nullableString("title"),
                 data.nullableString("clientRecordId"), row.nullableInt("startZoneOffsetSeconds"),
                 row.nullableInt("endZoneOffsetSeconds"), data.optJSONArray("segments"), data.optJSONArray("laps"),
-                data.optJSONObject("device"), (data.opt("sessionCalories") as? Number)?.toDouble()?.takeIf { it.isFinite() && it > 0 }
+                data.optJSONObject("device"), (data.opt("sessionCalories") as? Number)?.toDouble()?.takeIf { it.isFinite() && it > 0 },
+                data.optJSONObject("sessionEvidence")
             )
         }
     }

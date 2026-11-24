@@ -399,6 +399,22 @@ final class SamsungSdkReader {
                     JSONObject data = new JSONObject().put("value", Duration.between(a, b).toMillis() / 60000.0)
                         .put("unit", "min").put("title", s.getCustomTitle())
                         .put("clientRecordId", p.getClientDataId());
+                    // Session-specific SDK values, never daily aggregates. Optional fields remain absent.
+                    JSONObject evidence = new JSONObject();
+                    evidence.put("exerciseTypeName", s.getExerciseType().name());
+                    evidence.put("countTypeName", s.getCountType().name());
+                    if (s.getCount() != null && s.getCount() > 0) evidence.put("count", s.getCount());
+                    long duration = s.getDuration().toMillis();
+                    if (duration > 0 && duration <= Duration.between(a, b).toMillis())
+                        evidence.put("sessionDurationSeconds", duration / 1000.0);
+                    ExternalSessionEvidence.putPositive(evidence, "distanceMeters", s.getDistance());
+                    ExternalSessionEvidence.putPositive(evidence, "averageHeartRate", s.getMeanHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "minHeartRate", s.getMinHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "maxHeartRate", s.getMaxHeartRate());
+                    ExternalSessionEvidence.putPositive(evidence, "averageSpeedMps", s.getMeanSpeed());
+                    ExternalSessionEvidence.putPositive(evidence, "maxSpeedMps", s.getMaxSpeed());
+                    ExternalSessionEvidence.putPositive(evidence, "vo2Max", s.getVo2Max());
+                    data.put("sessionEvidence", evidence);
                     // The SDK session energy is explicitly neither active nor total energy.
                     if (Double.isFinite(s.getCalories()) && s.getCalories() > 0)
                         data.put("sessionCalories", s.getCalories());

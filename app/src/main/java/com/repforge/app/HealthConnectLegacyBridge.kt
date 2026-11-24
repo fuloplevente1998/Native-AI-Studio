@@ -150,7 +150,9 @@ internal object HealthConnectLegacyBridge {
                     } ?: JSONObject.NULL)
                     .put("segments", JSONArray().apply {
                         for (segment in record.segments) put(externalWorkoutSegment(
-                            segment.startTime, segment.endTime, segment.segmentType, segment.repetitions))
+                            segment.startTime, segment.endTime, segment.segmentType, segment.repetitions).apply {
+                            if (segment.segmentType == ExerciseSegment.EXERCISE_SEGMENT_TYPE_PAUSE) put("pause", true)
+                        })
                     })
                     .put("laps", JSONArray().apply {
                         for (lap in record.laps) put(externalWorkoutLap(

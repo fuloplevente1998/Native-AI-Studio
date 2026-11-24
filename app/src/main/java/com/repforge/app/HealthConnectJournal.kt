@@ -210,8 +210,13 @@ internal object HealthConnectJournal {
                 }
                 d.put("segments", JSONArray().apply {
                     for (segment in r.segments) put(externalWorkoutSegment(
-                        segment.startTime, segment.endTime, segment.segmentType, segment.repetitionsCount))
+                        segment.startTime, segment.endTime, segment.segmentType, segment.repetitionsCount).apply {
+                        ExternalSessionEvidence.platformStrength(segment, this)
+                        if (segment.segmentType == android.health.connect.datatypes.ExerciseSegmentType.EXERCISE_SEGMENT_TYPE_PAUSE)
+                            put("pause", true)
+                    })
                 })
+                d.put("sessionEvidence", JSONObject().apply { ExternalSessionEvidence.platformRpe(r, this) })
                 d.put("laps", JSONArray().apply {
                     for (lap in r.laps) put(externalWorkoutLap(lap.startTime, lap.endTime, lap.length?.inMeters))
                 })

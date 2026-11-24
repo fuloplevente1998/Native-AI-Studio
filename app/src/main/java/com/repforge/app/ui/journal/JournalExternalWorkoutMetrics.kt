@@ -67,7 +67,13 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
                 val segment = segments.optJSONObject(i) ?: continue
                 val reps = (segment.opt("repetitions") as? Number)?.toInt()
                 val type = segment.optInt("segmentType")
-                Text("${i+1}. · #$type" + (reps?.let { " · $it ×" } ?: ""), color = colors.muted)
+                val extra = listOfNotNull(
+                    (segment.opt("weightKg") as? Number)?.let { "${number.format(it)} kg" },
+                    (segment.opt("setIndex") as? Number)?.let { local("Sorozatindex", "Set index", "Satzindex", "Index serie") + ": " + it },
+                    (segment.opt("rpe") as? Number)?.let { "RPE ${number.format(it)}/10" }
+                )
+                Text("${i+1}. · #$type" + (reps?.let { " · $it ×" } ?: "") +
+                    extra.joinToString(" · ", prefix = if (extra.isEmpty()) "" else " · "), color = colors.muted)
             }
         }
         if (deleted) Text(local("A forrás törölte az edzést; a helyi naplóadatok megmaradtak.",
@@ -76,14 +82,27 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         if (source != null && !matches) Text(local("A forrás és a helyi edzés időablaka eltér. Ellenőrzés szükséges.",
             "Source and local workout windows differ. Review required.", "Quell- und lokales Zeitfenster unterscheiden sich. Prüfung erforderlich.",
             "Intervalele sursei și antrenamentului local diferă. Necesită verificare."), color = colors.muted)
+        if (matches && !deleted) source?.optJSONObject("sessionEvidence")?.let { evidence ->
+            evidence.optString("exerciseTypeName").takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
+            (evidence.opt("count") as? Number)?.let {
+                Text(local("Forrás szerinti darabszám", "Source count", "Quellanzahl", "Număr sursă") +
+                    ": $it · " + evidence.optString("countTypeName"), color = colors.muted)
+            }
+            (evidence.opt("rpe") as? Number)?.let { Text("RPE: ${number.format(it)}/10", color = colors.muted) }
+        }
         JournalLinkedExternalSources(workout.rawJson, text, language)
         if (metrics.isEmpty()) Text(text.getString(com.repforge.app.R.string.journal_no_data), color = colors.muted)
         else {
             JournalHealthMetrics(metrics, "external", text, number)
+            metrics["vo2Max"]?.let { Text("VO₂max: ${number.format(it)} ml/kg/min", color = colors.muted) }
+            metrics["sessionDurationSeconds"]?.let { Text(local("Forrás szerinti edzésidő", "Provider session duration", "Trainingsdauer laut Quelle", "Durata sesiunii din sursă") +
+                ": ${number.format(it / 60)} min", color = colors.muted) }
+            metrics["recordedPauseSeconds"]?.let { Text(local("Rögzített szünet", "Recorded pause", "Erfasste Pause", "Pauză înregistrată") +
+                ": ${number.format(it)} s", color = colors.muted) }
             metrics["averageSpeedMps"]?.takeIf { it > 0 }?.let { speed ->
                 val pace = (1000.0 / speed).takeIf { it.isFinite() && it < 86400 }?.toInt()
-                if (pace != null) Text(local("Tempó (a minták átlagsebességéből)", "Pace (from mean sampled speed)",
-                    "Tempo (aus mittlerer Stichprobengeschwindigkeit)", "Ritm (din viteza medie eșantionată)") +
+                if (pace != null) Text(local("Tempó (átlagsebességből)", "Pace (from average speed)",
+                    "Tempo (aus Durchschnittsgeschwindigkeit)", "Ritm (din viteza medie)") +
                     ": ${pace / 60}:${(pace % 60).toString().padStart(2, '0')} min/km", color = colors.muted)
             }
             source?.optJSONObject("metrics")?.optJSONObject("series")?.optJSONArray("HeartRate")?.let {
@@ -92,10 +111,10 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
             if (metrics.containsKey("workoutCalories")) Text(local("Edzésenergia, aktív/teljes bontás nélkül.",
                 "Session energy, active/total split unavailable.", "Trainingsenergie ohne Aktiv-/Gesamtaufteilung.",
                 "Energie sesiune fără separare activă/totală."), color = colors.muted)
-            Text(local("Részleges, azonos forrású tárolt mérés; az átlagok mintákból származnak.",
-                "Partial same-source cached evidence; averages are sample-based.",
-                "Teilweise gespeicherte Messwerte derselben Quelle; Mittelwerte aus Stichproben.",
-                "Date parțiale stocate din aceeași sursă; mediile provin din eșantioane."), color = colors.muted)
+            Text(local("Részleges, azonos forrású mérés; edzésösszesítő vagy minták alapján.",
+                "Partial same-source evidence; session summary or measured samples.",
+                "Teilweise Messwerte derselben Quelle; Sitzungsübersicht oder Stichproben.",
+                "Date parțiale din aceeași sursă; sumarul sesiunii sau eșantioane măsurate."), color = colors.muted)
         }
     }
 }

@@ -120,6 +120,23 @@ class ExternalWorkoutRoomImportTest {
         assertEquals(listOf(link), ExternalWorkoutAssociation.linkedIds(sanitized))
     }
 
+    @Test fun externalSessionCanBeAnnotatedWithoutInventingExercise() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        try {
+            val w = workout("annotate")
+            assertEquals(ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.persist(context, db, w) {})
+            val detail = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(ExternalWorkoutImport.localId(w.identity)))
+            val draft = NativeJournalEditor.from(detail).copy(feedbackEffort = "hard", note = "Measured session")
+            val encoded = NativeJournalEditor.encode(detail, draft, emptyMap())
+            assertEquals(0, encoded.getJSONArray("exercises").length())
+            assertEquals("hard", encoded.getJSONObject("feedback").getString("effort"))
+            assertEquals("Measured session", encoded.getJSONObject("feedback").getString("note"))
+            assertEquals(w.identity.recordId, encoded.getJSONObject("externalWorkout359").getString("id"))
+        } finally { db.close() }
+        Unit
+    }
+
     @Test fun backupWithoutHealthConsentRemovesSourceDetailsButKeepsOpaqueIdentity() {
         val raw = ExternalWorkoutImport.raw(workout("record"))
         val sanitized = NativeBackupPrivacy.sanitize(raw, includeHealth = false)

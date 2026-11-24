@@ -105,7 +105,8 @@ internal object NativeJournalEditor {
         val duration = java.time.Duration.between(start, finish)
         require(!duration.isNegative && !duration.isZero && duration <= java.time.Duration.ofHours(24))
         require(finish.toEpochMilli() <= now + 60_000L)
-        require(draft.exercises.size in 1..200)
+        val minimum = if (detail.workout.originDevice == "external" && detail.exercises.isEmpty()) 0 else 1
+        require(draft.exercises.size in minimum..200)
         val raw = LegacyWebViewMigrator.workoutJson(detail)
         if (draft.note != savedNote(raw)) require(draft.note.length <= 3000 &&
             draft.note.none { it.isISOControl() && it != '\n' })
