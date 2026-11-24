@@ -33,6 +33,9 @@ import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.selectionColors
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
 import androidx.compose.runtime.remember
@@ -186,12 +189,16 @@ fun TrainPilotTextField(
 @Composable
 fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val p = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
-        modifier = modifier.heightIn(min = 48.dp).trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+    val glass = enabled && p.isLiquidGlass && LocalGlassOpticsEnabled.current
+    val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
+    Surface(shape = shape, color = if (glass) p.primary.copy(alpha = .12f) else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
+        border = if (glass) BorderStroke(1.dp, p.selectionColors().border) else null,
+        modifier = modifier.heightIn(min = 48.dp)
+            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
+            .trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
-                color = p.readablePrimaryLabel(), maxLines = 1)
+                color = if (glass) p.textPrimary else p.readablePrimaryLabel(), maxLines = 1)
         }
     }
 }
@@ -200,9 +207,12 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
 @Composable
 fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val p = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = p.surfaceElevated, border = BorderStroke(1.dp, p.cardBorder),
-        modifier = modifier.heightIn(min = 48.dp).trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+    val glass = enabled && p.isLiquidGlass && LocalGlassOpticsEnabled.current
+    val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
+    Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = BorderStroke(1.dp, p.cardBorder),
+        modifier = modifier.heightIn(min = 48.dp)
+            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
+            .trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                 color = if (enabled) p.textPrimary else p.textSecondary, maxLines = 1)
