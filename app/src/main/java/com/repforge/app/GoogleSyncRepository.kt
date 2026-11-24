@@ -78,6 +78,8 @@ class GoogleSyncRepository internal constructor(
     }
 
     internal val appContext = context.applicationContext
+    /** 2806: "today" for the 30-day calendar window; tests pin it to their fixture dates. */
+    internal var calendarToday: () -> java.time.LocalDate = { java.time.LocalDate.now() }
     private val database = TrainPilotDatabase.getInstance(appContext)
     internal val settingsStore = TrainPilotSettingsStore(appContext)
     private val migrator = LegacyWebViewMigrator(appContext, database, settingsStore)
@@ -491,7 +493,8 @@ class GoogleSyncRepository internal constructor(
                     KeyValueDocumentEntity("cloudStatus", JSONObject().put("drive", nowIso).toString(), System.currentTimeMillis()))
             }
 
-            if (recoverEarlier) {
+            // 2806: retention runs after every verified publication (it used to need the "merge earlier" box).
+            run {
                 _uiState.value = _uiState.value.copy(stageMessage = "Régi mentések karbantartása…")
                 try { pruneSnapshotsInternal(accessToken, owner, deviceId) }
                 catch (cancelled: CancellationException) { throw cancelled }
@@ -528,8 +531,10 @@ class GoogleSyncRepository internal constructor(
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"
         var count = 0
-        val operations = NativeCalendarSyncPlan.operations(entries).toList()
+        val operations = NativeCalendarSyncPlan.operations(entries, calendarToday()).toList()
         val total = operations.size
+        // 2806: the card shows the events kept in Google Calendar (the next 30 days), not removals.
+        val liveEvents = operations.count { !it.delete }
         // Only skip writes confirmed by this app on this exact account and calendar.
         // A failed or interrupted run never records an unconfirmed operation.
         val syncScope = "${prefs().getString("sub", "").orEmpty()}|$calendarId"
@@ -545,8 +550,9 @@ class GoogleSyncRepository internal constructor(
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             val fingerprint = operation.payload?.toString() ?: "<deleted>"
+            // A confirmed removal stays removed: out-of-window rows are not re-deleted on every daily run.
             if (confirmed.optString(operation.id) == fingerprint &&
-                System.currentTimeMillis() - checked.optLong(operation.id, 0L) in 0L..86_400_000L) {
+                (operation.delete || System.currentTimeMillis() - checked.optLong(operation.id, 0L) in 0L..86_400_000L)) {
                 count++
                 _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
                 continue
@@ -597,15 +603,15 @@ class GoogleSyncRepository internal constructor(
         dataTicket.requireCurrent(appContext)
         prefs().edit()
             .putString("lastCalendarSyncIso", nowIso)
-            .putInt("lastCalendarSyncCount", count)
+            .putInt("lastCalendarSyncCount", liveEvents)
             .apply()
         NativeSyncSchedule.recordAutoResult(appContext, GoogleSyncAction.CALENDAR.key, null)
         _uiState.value = _uiState.value.copy(
             lastCalendarSyncIso = nowIso,
-            lastCalendarSyncCount = count,
+            lastCalendarSyncCount = liveEvents,
             errorMessage = null
         )
-        return count
+        return liveEvents
     }
 
     suspend fun deleteAllDriveAppData(accessToken: String): Result<Int> = withContext(Dispatchers.IO) {

@@ -5,6 +5,7 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.repforge.shared.LegacySyncIdentity18
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import com.repforge.app.GoogleSyncRepository.Companion.SNAPSHOT_NAME_REGEX
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -108,18 +109,19 @@ internal fun GoogleSyncRepository.writeSnapshotInternal(accessToken: String, own
 
 internal fun GoogleSyncRepository.pruneSnapshotsInternal(accessToken: String, owner: String, device: String): JSONObject {
     if (!UUID_REGEX.matches(device)) throw IOException("Invalid device ID.")
-    val files = appFiles(accessToken, "name contains 'repforge-sync-$device-'")
-    val rows = ArrayList<JSONObject>()
+    // 2806: every device of this account (incl. old WebView-era installs) keeps only its latest DRIVE_SNAPSHOTS_KEPT
+    // snapshots (user decision). This runs only after this phone's new snapshot was published and verified.
+    val files = appFiles(accessToken, "name contains 'repforge-sync-'")
+    val byDevice = HashMap<String, ArrayList<JSONObject>>()
     for (i in 0 until files.length()) {
         val f = files.getJSONObject(i)
-        if (APP_FILE_REGEX.matches(f.optString("name"))) rows.add(f)
+        val name = f.optString("name")
+        val nameDevice = SNAPSHOT_NAME_REGEX.find(name)?.groupValues?.get(1) ?: continue
+        if (APP_FILE_REGEX.matches(name)) byDevice.getOrPut(nameDevice) { ArrayList() }.add(f)
     }
-    rows.sortBy { it.optString("createdTime") }
     var deleted = 0
     var protectedLegacy = 0
-    // Keep the oldest safety snapshot (index 0) and the latest ten.
-    for (i in 1 until rows.size - 10) {
-        val f = rows[i]
+    for ((fileDevice, rows) in byDevice) for (f in snapshotsToPrune(rows)) {
         val snapshot = request(
             accessToken,
             "GET",
@@ -128,7 +130,7 @@ internal fun GoogleSyncRepository.pruneSnapshotsInternal(accessToken: String, ow
         )
         if ("RepForgeSync" != snapshot.optString("app") ||
             owner != snapshot.optString("owner") ||
-            device != snapshot.optString("device")
+            fileDevice != snapshot.optString("device")
         ) {
             continue
         }
@@ -145,14 +147,19 @@ internal fun GoogleSyncRepository.pruneSnapshotsInternal(accessToken: String, ow
                 if (LegacySyncIdentity18.isLegacyProtectedId(id)) legacy = true
             }
         }
-        if (legacy) {
-            protectedLegacy++
-            continue
-        }
+        if (legacy) protectedLegacy++ // Reported only; no longer kept forever.
         request(accessToken, "DELETE", "https://www.googleapis.com/drive/v3/files/${enc(f.getString("id"))}", null)
         deleted++
     }
     return JSONObject().put("deleted", deleted).put("protectedLegacy", protectedLegacy)
+}
+
+internal const val DRIVE_SNAPSHOTS_KEPT = 3
+
+/** Oldest first; everything except the newest [keep] snapshots (by createdTime). Never empty-handed: keeps at least one. */
+internal fun snapshotsToPrune(rows: List<JSONObject>, keep: Int = DRIVE_SNAPSHOTS_KEPT): List<JSONObject> {
+    val sorted = rows.sortedBy { it.optString("createdTime") }
+    return sorted.dropLast(keep.coerceAtLeast(1))
 }
 
 private fun photoName(id: String): String = "trainpilot-photo-$id.jpg"

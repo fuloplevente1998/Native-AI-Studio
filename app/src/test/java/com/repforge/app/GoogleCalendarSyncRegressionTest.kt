@@ -47,6 +47,7 @@ class GoogleCalendarSyncRegressionTest {
             .putString("profile", "{\"sub\":\"account-sub\",\"email\":\"owner@example.test\"}")
             .putString("drive-sentinel", "keep-cloud-backup-reference").commit()
         repository = GoogleSyncRepository(context, NativeGoogleOperationGate()) { url -> fakeConnection(url) }
+        repository.calendarToday = { java.time.LocalDate.parse("2026-11-01") } // fixtures sit inside the 30-day window
         expect("GET", "/oauth2/v3/userinfo", json = "{\"sub\":\"account-sub\",\"email\":\"owner@example.test\"}")
     }
 
