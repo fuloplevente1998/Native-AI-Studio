@@ -188,7 +188,8 @@ internal fun WearHomeDashboard(
         Canvas(Modifier.align(Alignment.Center).size(diameter)) {
             val inset = 7.dp.toPx()
             for (i in 0 until 12) drawArc(
-                if (battery != null && i < battery.coerceIn(0, 100) * 12 / 100f) theme.accentColor
+                if (battery != null && i < battery.coerceIn(0, 100) * 12 / 100f)
+                    if (battery <= 15) Color(0xFFEF5350) else theme.accentColor
                 else HomeLine,
                 145f + i * 6f,
                 3.5f,
@@ -204,7 +205,7 @@ internal fun WearHomeDashboard(
             angularDirection = CurvedDirection.Angular.Reversed,
         ) {
             basicCurvedText(
-                battery?.let { "$it%" } ?: "—",
+                battery?.let { "$it%" } ?: "–",
                 style = CurvedTextStyle(color = HomeWhite, fontSize = (8f / fontScale).sp),
             )
         }
@@ -339,13 +340,12 @@ internal fun WearHomeDashboard(
                 .testTag("wear-fixed-actions")
         ) {
             HomeQuickButton(
-                if (model.active) R.drawable.ic_tp_delete else R.drawable.ic_tp_journal,
-                if (model.active) wearText("Törlés") else wearText("Napló"),
-                if (model.active) wearText("Megkezdett edzés törlése") else wearText("Edzésnapló"),
+                R.drawable.ic_tp_phone,
+                WearMenu216.text("phone"),
+                WearMenu216.text("phone"),
                 theme,
                 false,
-                if (model.active) onDiscard else onJournal,
-                danger = model.active,
+                onOpenPhone,
             )
             Box(Modifier.offset(x = arc.sideOffset.dp, y = arc.centerTop.dp)) {
                 HomeQuickButton(
@@ -419,7 +419,7 @@ private fun HomeQuickButton(
         Image(
             painterResource(icon),
             null,
-            Modifier.size(22.dp),
+            Modifier.size(if (primary) 27.dp else 22.dp),
             colorFilter = ColorFilter.tint(
                 if (danger) Color(0xFFEFBCC3) else theme.textColor
             ),

@@ -96,6 +96,7 @@ internal fun TrainPilotWearApp(
     var miniJournalId by rememberSaveable { mutableStateOf("") }
     var miniJournalBackRoute by rememberSaveable { mutableStateOf("journal") }
     var journalBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var calendarBackRoute by rememberSaveable { mutableStateOf("menu") }
     var syncBackRoute by rememberSaveable { mutableStateOf("home") }
     var metricsBackRoute by rememberSaveable { mutableStateOf("menu") }
     var settingsBackRoute by rememberSaveable { mutableStateOf("home") }
@@ -134,7 +135,7 @@ internal fun TrainPilotWearApp(
                 "gpsStart216" -> { pendingGps216=null;gpsBack216 }
                 "gpsRoute193" -> "workout"
                 "planned216", "quick", "ownership193" -> "menu"
-                "calendar" -> "menu"
+                "calendar" -> calendarBackRoute
                 "days" -> daysBack216
                 "save-sync" -> syncBackRoute
                 "journal-detail" -> miniJournalBackRoute
@@ -159,7 +160,21 @@ internal fun TrainPilotWearApp(
     ) {
         val syncedTheme = LocalWearHomeTheme.current
         MaterialTheme(colorScheme = syncedTheme.materialColors(MaterialTheme.colorScheme)) {
-            Box(Modifier.fillMaxSize().background(Black)) {
+            val mainRoute = if (workout.value != null || touchLocked) null else when {
+                route == "home" -> route
+                route == "journal" && journalBackRoute == "home" -> route
+                route == "metrics" && metricsBackRoute == "home" -> route
+                route == "calendar" && calendarBackRoute == "home" -> route
+                else -> null
+            }
+            WearMainNavigation(mainRoute, onPage = { destination ->
+                when (destination) {
+                    "journal" -> journalBackRoute = "home"
+                    "metrics" -> metricsBackRoute = "home"
+                    "calendar" -> calendarBackRoute = "home"
+                }
+                route = destination
+            }) {
                 val active = workout.value
                 when {
                     touchLocked && active != null -> WearTouchLockedScreen189(active,restRemaining.value,health.value,touchCopy,onUnlock={
@@ -213,7 +228,7 @@ internal fun TrainPilotWearApp(
                         onStart={ val request=pendingGps216;pendingGps216=null;request?.start?.invoke();route=if(workout.value!=null)"workout" else gpsBack216 },
                         onCancel={pendingGps216=null;route=gpsBack216})
                     route == "planned216" -> RoundList(WearMenu216.text("planned")) {
-                        centerItem { Pill(WearMenu216.text("calendar")) {route="calendar"} }
+                        centerItem { Pill(WearMenu216.text("calendar")) {calendarBackRoute="menu";route="calendar"} }
                         centerItem { Pill(WearMenu216.text("days"),tone=Card) {daysBack216="planned216";route="days"} }
                         centerItem { Pill(WearMenu216.text("back"),tone=Secondary) {route="menu"} }
                     }
@@ -222,6 +237,7 @@ internal fun TrainPilotWearApp(
                             if (it == "journal") openJournal("menu")
                             else {
                                 if (it == "metrics") metricsBackRoute = "menu"
+                                if (it == "calendar") calendarBackRoute = "menu"
                                 if (it == "settings") settingsBackRoute = "menu"
                                 route = it
                             }
@@ -271,7 +287,7 @@ internal fun TrainPilotWearApp(
                             active == null &&
                                 home.value?.hasDraft == false &&
                                 closure.value?.status !in listOf("pending", "error"),
-                            onBack = { route = "menu" },
+                            onBack = { route = calendarBackRoute },
                             onDays = { daysBack216 = "calendar"; route = "days" },
                         ) { entry ->
                             entry.day?.let {
