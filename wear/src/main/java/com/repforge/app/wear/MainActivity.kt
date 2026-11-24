@@ -697,18 +697,35 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         else { restTimer?.cancel(); restRemaining.intValue = 0 }
     }
 
+    private var warnedManualRestDeadline367 = 0L
+
     private fun startRest(seconds: Int, vibrateAtEnd: Boolean) {
         restTimer?.cancel()
         if (seconds <= 0) { restRemaining.intValue = 0; return }
         restRemaining.intValue = seconds
-        restTimer = object : CountDownTimer(seconds * 1000L, 250L) {
+        val target = workout.value
+        val deadline = target?.restEndAt ?: 0L
+        val workoutId = target?.workoutId
+        val remainingMillis = if (deadline > 0L) (deadline - System.currentTimeMillis()).coerceAtLeast(1L) else seconds * 1000L
+        val vibrationEnabled = vibrateAtEnd && target?.automation?.vibration != false
+        var previousSeconds = ((remainingMillis + 999L) / 1000L).toInt()
+        restTimer = object : CountDownTimer(remainingMillis, 250L) {
             override fun onTick(millisUntilFinished: Long) {
-                restRemaining.intValue = max(0, ((millisUntilFinished + 999L) / 1000L).toInt())
+                val remaining = max(0, ((millisUntilFinished + 999L) / 1000L).toInt())
+                restRemaining.intValue = remaining
+                if (vibrationEnabled && deadline > 0L && warnedManualRestDeadline367 != deadline &&
+                    previousSeconds > 10 && remaining in 9..10 && workout.value?.let {
+                        it.workoutId == workoutId && it.restEndAt == deadline && !it.workoutPaused
+                    } == true) {
+                    warnedManualRestDeadline367 = deadline
+                    getSystemService(Vibrator::class.java)?.vibrate(VibrationEffect.createOneShot(160L,VibrationEffect.DEFAULT_AMPLITUDE))
+                }
+                previousSeconds = remaining
             }
             override fun onFinish() {
                 restRemaining.intValue = 0
                 workout.value?.let { workout.value = WorkoutSnapshotStore.saveWorkout(this@MainActivity, it.endRest()) }
-                if (vibrateAtEnd) getSystemService(Vibrator::class.java)?.vibrate(
+                if (vibrationEnabled) getSystemService(Vibrator::class.java)?.vibrate(
                     VibrationEffect.createOneShot(300L, VibrationEffect.DEFAULT_AMPLITUDE)
                 )
             }

@@ -352,14 +352,18 @@ class IntervalHapticCues193 {
     private var token: String = ""
     private var second: Long = -1L
     private var quietUntil: Long = -1L
+    private var previousRestSeconds: Long? = null
+    private var warnedRest = false
 
     fun next(p: IntervalTimeline193.Phase, running: Boolean): Int {
-        if (!running) return 0
+        if (!running) { previousRestSeconds = null; return 0 }
         val remaining = (p.remainingMs + 999L) / 1000L
         if (p.token != token) {
             val transition = token.isNotEmpty()
             token = p.token
             second = remaining
+            warnedRest = false
+            previousRestSeconds = remaining.takeIf { p.phase == "rest" }
             val duration = if (transition || "complete" == p.phase) {
                 1000
             } else if (remaining in 1L..3L) {
@@ -369,6 +373,12 @@ class IntervalHapticCues193 {
             }
             quietUntil = p.elapsedMs + duration
             return duration
+        }
+        val previous = previousRestSeconds
+        previousRestSeconds = remaining.takeIf { p.phase == "rest" }
+        if (p.phase == "rest" && !warnedRest && previous != null && previous > 10L && remaining in 9L..10L) {
+            warnedRest = true
+            if (p.elapsedMs >= quietUntil) { quietUntil = p.elapsedMs + 160L; return 160 }
         }
         if ("complete" != p.phase && remaining in 1L..3L && remaining != second) {
             second = remaining

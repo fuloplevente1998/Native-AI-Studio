@@ -130,4 +130,15 @@ class WearAutomaticTest {
         val long = rest.copy(automation=rest.automation!!.copy(remainingMs=595000))
         assertEquals(600000L,WearAutomaticEngine.adjustActiveRest367(long,1000,1,15)!!.automation!!.remainingMs)
     }
+    @Test fun automaticRestWarnsAtTenSecondsWithoutReplay() {
+        val rest=WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=30)),1000,1).automation!!
+        val h=WearAutomaticHaptics()
+        assertEquals(0L,h.next(rest,1000))
+        assertEquals(0L,h.next(rest,19000))
+        assertEquals(160L,h.next(rest,21000))
+        assertEquals(0L,h.next(rest,21100))
+        assertEquals(0L,h.next(rest,22000))
+        val fresh=WearAutomaticHaptics()
+        assertEquals(0L,fresh.next(rest,22000))
+    }
 }

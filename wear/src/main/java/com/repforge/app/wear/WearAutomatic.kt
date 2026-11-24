@@ -200,20 +200,29 @@ object WearAutomaticEngine {
     }
 }
 
-/** Last three seconds and one continuous second at a boundary, with no replay on resume. */
+/** Ten-second rest warning, existing last-three-second cues and one boundary vibration. */
 class WearAutomaticHaptics {
     private var token=""
     private var second=-1L
     private var quietUntil=0L
+    private var previousRestSeconds: Long?=null
+    private var warnedRest=false
     fun next(a: WearAutomatic, now: Long): Long {
-        if(!a.enabled||a.owner!="watch"||a.paused||a.interrupted)return 0
+        if(!a.enabled||a.owner!="watch"||a.paused||a.interrupted){previousRestSeconds=null;return 0}
         val current="${a.key}:${a.phaseNumber}:${a.phase}"
         val remaining=(a.remaining(now)+999)/1000
         if(current!=token) {
             val changed=token.isNotEmpty();token=current;second=remaining
+            warnedRest=false;previousRestSeconds=remaining.takeIf { a.phase=="rest" }
             val duration=if(changed)1000L else if(a.counting&&remaining in 1..3)80L else 0L
             quietUntil=now+duration
             return duration
+        }
+        val previous=previousRestSeconds
+        previousRestSeconds=remaining.takeIf { a.phase=="rest" }
+        if(a.phase=="rest" && !warnedRest && previous!=null && previous>10L && remaining in 9L..10L) {
+            warnedRest=true
+            if(now>=quietUntil){quietUntil=now+160L;return 160L}
         }
         if(a.counting && remaining in 1..3 && remaining!=second) {
             second=remaining
