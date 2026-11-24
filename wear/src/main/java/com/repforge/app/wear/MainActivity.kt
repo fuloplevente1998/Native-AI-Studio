@@ -84,6 +84,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private val healthTick=object : Runnable {
         override fun run() {
             refreshHealth();refreshHomeIndicators()
+            if (WorkoutSnapshotStore.load(this@MainActivity)?.controlIntent367 != null) {
+                WearWatchControls367.recover(this@MainActivity)
+                workout.value = WorkoutSnapshotStore.load(this@MainActivity)
+            }
             WearCommandOutbox.flush(this@MainActivity)
             refreshSaveSync()
             if(workout.value==null && WearHealthStore.active(this@MainActivity).isNotBlank())WearHealthService.stop(this@MainActivity)
@@ -431,6 +435,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 onPrevious = { navigateExercise(-1) },
                 onNext = { navigateExercise(1) },
                 onSkipRest = ::skipRest,
+                onRestAdjust367 = { target, delta -> applyWatchControl367 { WearWatchControls367.adjust(this, target, delta) } },
+                onPauseWorkout367 = { target -> applyWatchControl367 { WearWatchControls367.pause(this, target) } },
                 onToggleAutomatic = {
                     val current=WorkoutSnapshotStore.load(this)
                     if(current!=null){
@@ -651,6 +657,26 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         workout.value?.let { workout.value = WorkoutSnapshotStore.saveWorkout(this, it.copy(localSequence = maxOf(it.localSequence,sequence))) }
     }
 
+    private fun applyWatchControl367(action: () -> WearWorkout?) {
+        if (home.value?.controlProtocol367 != 1) return
+        try {
+            val updated = action()
+            if (updated == null) {
+                Toast.makeText(this, WearOwnershipText193.text("failed"), Toast.LENGTH_SHORT).show()
+                return
+            }
+            workout.value = updated
+            restoreRestFromSnapshot(updated)
+            refreshHealth()
+            refreshSaveSync()
+        } catch (_: Exception) {
+            workout.value = WorkoutSnapshotStore.load(this)
+            restoreRestFromSnapshot(workout.value)
+            refreshSaveSync()
+            Toast.makeText(this, WearOwnershipText193.text("failed"), Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun restoreRestFromSnapshot(value: WearWorkout?) {
         if(value?.automation?.enabled==true){restTimer?.cancel();restRemaining.intValue=if(value.automation.phase=="rest")((value.automation.remaining(android.os.SystemClock.elapsedRealtime())+999)/1000).toInt()else 0;return}
         val endAt = value?.restEndAt ?: 0L
@@ -814,6 +840,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     ) {
         val current = WorkoutSnapshotStore.load(this) ?: return
         if(WearUndo188.blocked(current))return
+        if(current.controlIntent367!=null)return
         if(current.workoutPaused&&action !in listOf("resumeWorkout","finishWorkout","discardWorkout"))return
         val exercise = exerciseIndex?.let { current.exercises.getOrNull(it) }
         val set = if (exercise != null && setIndex != null) exercise.sets.getOrNull(setIndex) else null
@@ -892,7 +919,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
         val visible=workout.value ?: return
         var current=WorkoutSnapshotStore.load(this)?.takeIf { it.workoutId==visible.workoutId } ?: return
-        if(WearUndo188.blocked(current)||WearOwnership193.pending(current))return
+        if(WearUndo188.blocked(current)||WearOwnership193.pending(current)||current.controlIntent367!=null)return
         if(current.ownershipProtocol193==1&&current.timerOwner=="watch") {
             current=WearOwnership193.freeze(this,current.workoutId) ?: return
             workout.value=current

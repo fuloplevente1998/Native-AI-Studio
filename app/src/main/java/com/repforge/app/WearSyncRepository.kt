@@ -251,6 +251,20 @@ object WearSyncRepository {
                             }
                         }
 
+                        "watchControl367" -> withContext(Dispatchers.Main) {
+                            val current = ActiveWorkoutStore.current(appContext)
+                            val next = if (PhoneOwnership193.commandAllowed(appContext, command))
+                                NativeWatchControlAdmission367.snapshot(current, command) else null
+                            if (next == null) {
+                                WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                            } else {
+                                val saved = if (next === current) next else ActiveWorkoutStore.saveOwned(appContext, next)
+                                PhoneGpsRoute193.authorizeOwned(appContext, saved)
+                                publishActiveWorkoutSnapshot(appContext, saved)
+                                check(WearCommandReceipts.complete(appContext, command, "applied", uri))
+                            }
+                        }
+
                         "addQuickExercise", "watchAutomationState", "resumeWorkout" -> {
                             withContext(Dispatchers.Main) {
                                 val current = ActiveWorkoutStore.current(appContext)
@@ -965,6 +979,7 @@ object WearSyncRepository {
                 } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
                 .put("dailyStepsGoal", dailyStepsGoal)
+                .put("controlProtocol367", 1)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
                 .put("calendarDays", allCalendarDaysArray)

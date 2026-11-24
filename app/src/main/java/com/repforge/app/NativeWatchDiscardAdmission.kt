@@ -46,7 +46,7 @@ internal object NativeWatchDiscardAdmission {
     }
 
     suspend fun rejectsResurrection(db: TrainPilotDatabase, command: JSONObject): Boolean =
-        command.optString("action") in setOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout") &&
+        command.optString("action") in setOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout", "watchControl367") &&
             (db.workoutHistoryDao().isTombstoned(command.optString("workoutId"), JSONObject.quote(command.optString("workoutId"))) ||
                 db.workoutHistoryDao().hasSavedWorkoutId(command.optString("workoutId")))
 

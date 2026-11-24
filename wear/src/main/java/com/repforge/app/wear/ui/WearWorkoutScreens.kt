@@ -122,10 +122,11 @@ internal fun WorkoutPager(
     var controls by remember(workout.workoutId) { mutableStateOf(false) }
     val pauseTarget = wearPauseTarget367(workout)
     val restTarget = wearRestTarget367(workout, System.currentTimeMillis())
-    val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout)
-    val pauseAction: (() -> Unit)? = if (pauseTarget != null && onPauseWorkout367 != null && !blocked)
+    val blocked = WearUndo188.blocked(workout) || WearOwnership193.pending(workout) || workout.controlIntent367 != null
+    val canControlWatch = home?.controlProtocol367 == 1 && workout.timerOwner == "watch"
+    val pauseAction: (() -> Unit)? = if (canControlWatch && pauseTarget != null && onPauseWorkout367 != null && !blocked)
         ({ onPauseWorkout367(pauseTarget) }) else null
-    val adjustAction: ((Int) -> Unit)? = if (restTarget != null && onRestAdjust367 != null && !blocked)
+    val adjustAction: ((Int) -> Unit)? = if (canControlWatch && restTarget != null && onRestAdjust367 != null && !blocked)
         ({ delta -> onRestAdjust367(restTarget, delta) }) else null
     val phoneControl = onPhoneControl?.takeIf { workout.timerOwner == "phone" && !blocked }
     val command = LocalAutomaticCommand.current

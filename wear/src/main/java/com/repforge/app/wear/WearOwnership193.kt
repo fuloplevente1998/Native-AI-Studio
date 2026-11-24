@@ -86,10 +86,10 @@ internal object WearOwnership193 {
         }}
     }
     /** Freeze the durable source, including the last partial seconds, before handing off or closing. */
-    fun freeze(context: Context,expectedId: String): WearWorkout? {
+    fun freeze(context: Context,expectedId: String, beforeSave: (WearWorkout) -> WearWorkout = { it }): WearWorkout? {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
             var current=WorkoutSnapshotStore.load(context) ?: return null
-            if(current.workoutId!=expectedId||current.ownershipProtocol193!=1||current.timerOwner!="watch"||pending(current)||WearUndo188.blocked(current))return null
+            if(current.workoutId!=expectedId||current.ownershipProtocol193!=1||current.timerOwner!="watch"||pending(current)||WearUndo188.blocked(current)||current.controlIntent367!=null)return null
             val beforeAuto=current.automation
             val resume=current.resumeAutomaticOnContinue||!current.workoutPaused&&beforeAuto?.enabled==true&&!beforeAuto.paused
             if(!current.workoutPaused&&beforeAuto?.enabled==true)
@@ -97,10 +97,13 @@ internal object WearOwnership193 {
             if(beforeAuto?.enabled==true)WearStopwatchStore.pause(context)
             else current=WearStopwatchStore.freezeIntoWorkout193(context,current)
             val now=System.currentTimeMillis()
-            current=WorkoutSnapshotStore.saveWorkout(context,current.copy(workoutPaused=true,resumeAutomaticOnContinue=resume,
+            val intervals = current.activeIntervals ?: runCatching {
+                listOf(WearActiveInterval(java.time.Instant.parse(current.started).toEpochMilli()))
+            }.getOrNull()
+            current=WorkoutSnapshotStore.saveWorkout(context,beforeSave(current.copy(workoutPaused=true,resumeAutomaticOnContinue=resume,
                 pauseRevision=if(current.workoutPaused)current.pauseRevision else maxOf(current.pauseRevision+1,now),
                 pausedRestMillis=maxOf(current.pausedRestMillis,(current.restEndAt-now).coerceAtLeast(0)),restEndAt=0,
-                activeIntervals=current.activeIntervals?.map { if(it.end==0L)it.copy(end=maxOf(it.start,now))else it }))
+                activeIntervals=intervals?.map { if(it.end==0L)it.copy(end=maxOf(it.start,now))else it })))
             WearAutomaticService.stop(context);WearHealthService.syncPause(context);WearGpsRouteService193.freeze(context)
             return current
         }}
@@ -108,7 +111,7 @@ internal object WearOwnership193 {
     fun resume(context: Context): WearWorkout? {
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
             var current=WorkoutSnapshotStore.load(context) ?: return null
-            if(current.timerOwner!="watch"||pending(current))return current
+            if(current.timerOwner!="watch"||pending(current)||current.controlIntent367!=null)return current
             if(!current.workoutPaused){retryResume(context);return WorkoutSnapshotStore.load(context)}
             val now=System.currentTimeMillis()
             current=current.copy(workoutPaused=false,pauseRevision=maxOf(now,current.pauseRevision+1),

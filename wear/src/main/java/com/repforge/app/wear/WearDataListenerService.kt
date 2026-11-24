@@ -9,6 +9,7 @@ import com.google.android.gms.wearable.MessageEvent
 class WearDataListenerService : WearableListenerService() {
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
         WearGps193.recover(this,!WearGpsRouteService193.active(WearGps193.scope(this).optString("workoutId")))
+        WearWatchControls367.recover(this)
         WearOwnership193.recover(this)
         WearUndo188.recover(this)
         WearCommandOutbox.flush(this,true)

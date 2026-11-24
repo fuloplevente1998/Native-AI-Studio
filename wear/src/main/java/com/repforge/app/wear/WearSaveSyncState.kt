@@ -11,7 +11,7 @@ data class WearSaveSyncState(val workoutId: String, val phase: WearSavePhase, va
 object WearSaveSyncModel {
     val tracked=setOf("startWorkout","startQuickWorkout","addQuickExercise","updateSet","completeSet","completeMeasuredSet","undoSet",
         "finishWorkout","discardWorkout","saveWorkoutFeedback","healthSummary","selectExercise",
-        "nextExercise","prevExercise","automaticControl","toggleAutomatic","skipRest","resumeWorkout","gpsRouteChunk193")
+        "nextExercise","prevExercise","automaticControl","toggleAutomatic","skipRest","resumeWorkout","watchControl367","gpsRouteChunk193")
     fun tracked(command: JSONObject)=command.optString("action") in tracked &&
         command.optString("commandId").length in 1..128 && command.optString("workoutId").length in 1..(if(command.optString("action")=="gpsRouteChunk193")512 else 96)
 
