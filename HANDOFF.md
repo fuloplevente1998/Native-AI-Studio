@@ -12,4 +12,4 @@
   jóváhagyásra vár), #359 (külső órás edzésimport – a refaktor feltétele teljesült).
 
 ## #359 – külső edzésimport (részleges, draft ág)
-- `feature/359-external-workout-import`, base `0affd420`: egységes HC session modell és lapozott, meglévő health-journal alapú olvasás; metadata, körök, szegmensek. Nem kész funkció: Room edzésnapló, Samsung közvetlen session import, társítás, deduplikáció, opt-in és metrikák bekötése hátra van. A PR CI ellenőrzendő; fizikai eszközteszt nem történt. #367/#351 változatlan.
+- `feature/359-external-workout-import`, draft #369, base `0affd420`: első commit `43ea62c` CI zöld (45454282119). Közös HC modell, lapozott olvasás; Samsung napi egyértelmű UID-jű session jelöltek, explicit Room import tranzakció stabil ID-val, tombstone és adatcsere védelemmel. Átfedés esetén felülvizsgálat, nincs automatikus összevonás. A Room import még nincs UI/automatikus szinkronba kapcsolva; késői módosítás/törlés, metrikák, teljes dedup, Samsung többsession UID, adatvédelmi/backup end-to-end, lokalizáció és készülékteszt hátra. #367/#351 változatlan.

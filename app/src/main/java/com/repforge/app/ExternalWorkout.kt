@@ -82,13 +82,31 @@ internal fun externalWorkoutLap(start: Instant, end: Instant, meters: Double?): 
 internal data class ExternalWorkoutPage(val workouts: List<ExternalWorkout>, val next: Long, val nextTime: Long)
 
 internal fun HealthJournalStore.externalWorkoutPage(
-    from: String, to: String, ownPackage: String, before: Long = 0L, beforeTime: Long = 0L, limit: Int = 32
+    from: String, to: String, ownPackage: String, before: Long = 0L, beforeTime: Long = 0L, limit: Int = 32,
+    provider: String = HealthJournalStore.HC
 ): ExternalWorkoutPage {
-    val page = page(from, to, HealthJournalStore.HC, "", before, beforeTime, limit,
+    require(provider in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG))
+    val page = page(from, to, provider, "", before, beforeTime, limit,
         recordType = "ExerciseSessionRecord", includeSummaries = false)
     val records = page.getJSONArray("records")
     val workouts = (0 until records.length()).map { records.getJSONObject(it) }
-        .filter { it.getString("source") != ownPackage }
         .map(ExternalWorkout::fromRecord)
+        .filterNot { it.isOwnExport(ownPackage) }
     return ExternalWorkoutPage(workouts, page.optLong("nextCursor"), page.optLong("nextTime"))
+}
+
+internal fun ExternalWorkout.isOwnExport(ownPackage: String): Boolean =
+    identity.source == ownPackage || identity.source == "com.repforge.app" ||
+        clientRecordId?.startsWith("trainpilot:") == true
+
+/** Resolve a candidate again under the current journal generation before using it. */
+internal fun HealthJournalStore.externalWorkoutRecord(
+    identity: ExternalWorkoutIdentity, generation: Long
+): ExternalWorkout? = synchronized(HealthJournalStore.LOCK) {
+    val db = readableDatabase
+    writable(db, generation)
+    db.rawQuery("SELECT json FROM records WHERE channel=? AND source=? AND type='ExerciseSessionRecord' AND record_id=?",
+        arrayOf(identity.provider, identity.source, identity.recordId)).use { cursor ->
+        if (cursor.moveToFirst()) ExternalWorkout.fromRecord(JSONObject(cursor.getString(0))) else null
+    }
 }

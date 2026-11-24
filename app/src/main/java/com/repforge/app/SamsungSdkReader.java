@@ -363,6 +363,36 @@ final class SamsungSdkReader {
             JSONObject out = wellness(start, end); activity(out, start, end); heart(out, start, end); sleep(out, start, end); energyScore(out, start, end);
             // No HRV/RMSSD field exists in Samsung's 1.1.0 Data SDK. Never derive one from HR or Energy Score.
             out.put("hrvRmssdMs", JSONObject.NULL);
+            // Store completed sessions in the same durable journal as other direct SDK records.
+            // Multiple sessions in one point have no verified stable per-session SDK identity;
+            // do not guess their identities from editable timestamps or array indexes.
+            safe(DataTypes.EXERCISE, () -> {
+                JSONArray sessions = new JSONArray();
+                for (HealthDataPoint p : points(DataTypes.EXERCISE::getReadDataRequestBuilder, start.minus(Duration.ofDays(1)), end)) {
+                    if (source(p).equals("com.repforge.app") || source(p).equals("com.TrainPilot.com")
+                        || p.getClientDataId() != null && p.getClientDataId().startsWith("trainpilot:")) continue;
+                    List<ExerciseSession> rows = p.getValue(DataType.ExerciseType.SESSIONS);
+                    if (rows == null || rows.isEmpty()) continue;
+                    if (rows.size() != 1) {
+                        warnings.put("Samsung exercise point has multiple sessions without verified stable session IDs");
+                        failed.put("exerciseSessions");
+                        continue;
+                    }
+                    ExerciseSession s = rows.get(0);
+                    if (s.getStartTime() == null || s.getEndTime() == null) continue;
+                    Instant a = s.getStartTime(), b = s.getEndTime();
+                    if (a.isBefore(start) || !a.isBefore(end) || !b.isAfter(a) || b.isAfter(Instant.now())) continue;
+                    JSONObject data = new JSONObject().put("value", Duration.between(a, b).toMillis() / 60000.0)
+                        .put("unit", "min").put("title", s.getCustomTitle())
+                        .put("clientRecordId", p.getClientDataId());
+                    // Samsung's session calories have not been classified as active vs total here.
+                    record(p, "ExerciseSessionRecord", "", data, a, b);
+                    sessions.put(new JSONObject().put("id", p.getUid()).put("source", source(p))
+                        .put("start", a.toString()).put("end", b.toString())
+                        .put("title", s.getCustomTitle()));
+                }
+                out.put("exerciseSessions", sessions);
+            }, "exerciseSessions");
             return out;
         }
         JSONObject workout(Instant start, Instant end) throws Exception {

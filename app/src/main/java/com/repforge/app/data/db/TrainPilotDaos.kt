@@ -421,6 +421,11 @@ interface WorkoutHistoryDao {
                OR (t.workoutKey <> '' AND t.workoutKey = w.workoutKey))""")
     suspend fun getWorkoutCountBetween(fromInclusive: Long, toExclusive: Long): Int
 
+    // An overlap is a review candidate, never proof that two workouts are the same.
+    @Query("""SELECT EXISTS(SELECT 1 FROM workout_history
+        WHERE id <> :id AND startedEpochMs < :end AND finishedEpochMs > :start)""")
+    suspend fun hasExternalImportOverlap(id: String, start: Long, end: Long): Boolean
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkout(workout: WorkoutHistoryEntity)
 
