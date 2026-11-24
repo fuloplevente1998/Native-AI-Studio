@@ -1384,6 +1384,7 @@ class TrainPilotViewModel : ViewModel() {
     internal var exerciseFeedbackTicket: NativeDataReplacement.Continuation? = null
     internal var exerciseFeedbackOwnerId = ""
     internal var nativeStartJob: kotlinx.coroutines.Job? = null
+    internal val pendingWatchMeasurementStart = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
     internal val activeMeasurementScreens = setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED,
         SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS)

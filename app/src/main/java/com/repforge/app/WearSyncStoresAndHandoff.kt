@@ -21,10 +21,14 @@ internal object WearLiveHealthStore {
 
     private val _liveHealthFlow = MutableStateFlow<JSONObject?>(null)
     val liveHealthFlow: StateFlow<JSONObject?> = _liveHealthFlow.asStateFlow()
+    private val _expectedNode351 = MutableStateFlow<String?>(null)
+    val expectedNode351: StateFlow<String?> = _expectedNode351.asStateFlow()
+    fun expectNode351(node: String?) { _expectedNode351.value = node }
+    fun disconnect351(node: String) { if(_expectedNode351.value==node)_expectedNode351.value=null }
 
     @JvmStatic
     @Synchronized
-    fun save(context: Context, raw: String?) {
+    fun save(context: Context, raw: String?, sourceNode: String? = null) {
         if (raw == null || raw.length > 32768) return
         try {
             val next = JSONObject(raw)
@@ -40,7 +44,10 @@ internal object WearLiveHealthStore {
             ) {
                 return
             }
-            context.getSharedPreferences(PREFS, 0).edit().putString("health", raw).apply()
+            // Node identity is local transport metadata, never trusted from the JSON payload.
+            next.remove("sourceNode351")
+            sourceNode?.let { next.put("sourceNode351",it) }
+            context.getSharedPreferences(PREFS, 0).edit().putString("health", next.toString()).apply()
             _liveHealthFlow.value = next
         } catch (_: Exception) {
         }

@@ -116,6 +116,13 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         if(WearHealthStore.enabled(this) && recordingAccess().systemLocationEnabled)continueHealthRequest()
         else refreshHealth()
     }
+    private val backgroundSensorPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        // Denial does not disable the ordinary foreground workout.
+        refreshHealth()
+    }
+    private fun offerBackgroundSensors() {
+        WearBackgroundSensorAccess.offer(this) { backgroundSensorPermission.launch(it) }
+    }
     private val permissionRequest=registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         val allowed=healthAllowed()
         WearHealthStore.enable(this,allowed);measuring.value=allowed
@@ -124,6 +131,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         gpsEnabled.value=WearHealthStore.gps(this)
         if(allowed){
             continueHealthRequest()
+            if(!recordingAccess().locationBlocked)offerBackgroundSensors()
             if(gpsDenied)Toast.makeText(this,"Pontos helyengedély nélkül az órás GPS kikapcsolva marad. Az engedélyezett szenzorok mérése folytatódhat.",Toast.LENGTH_LONG).show()
         } else Toast.makeText(this,"Órás méréshez engedély szükséges.",Toast.LENGTH_LONG).show()
     }
@@ -234,6 +242,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         val missing=permissions.filter { checkSelfPermission(it)!=PackageManager.PERMISSION_GRANTED }
         if(missing.isEmpty()) {
             WearHealthStore.enable(this,healthAllowed());continueHealthRequest()
+            if(!recordingAccess().locationBlocked)offerBackgroundSensors()
         } else permissionRequest.launch(missing.toTypedArray())
     }
     private fun continueHealthRequest() {

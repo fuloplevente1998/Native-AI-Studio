@@ -93,6 +93,7 @@ nagy fájlok sorai frissülnek.
 ## Telefon ↔ óra
 | Funkció | Fájl |
 |---|---|
+| #351 automatikus órás mérés: telefonos indítási kérés, élő mérési ACK, előtéri fallback | `ex/ui/viewmodel/VmWatchMeasurement.kt`, `ex/ui/components/StudioWorkoutHandoverBar.kt`, `rf/WearSyncStoresAndHandoff.kt`, `wear/.../WearHealthService.kt`, `WearBackgroundMeasurement.kt`, `WearBackgroundSensorAccess.kt`, shared `WearMeasurementRequest351.kt` |
 | Telefon oldali szinkron, távoli mérésindítás | `rf/WearSyncRepository.kt`, `rf/WearSyncStoresAndHandoff.kt`, `rf/WearCommandListenerService.kt` |
 | Közös szerződések (ownership/epoch/ACK, GPS csomag) | `shared/.../com/repforge/shared/*` |
 | Óra UI (menü, napló, naptár, egészség, edzés, összegzés) | `wear/.../ui/`: `WearAppRoot.kt` (gyökér, navigáció), `WearMenuScreens.kt`, `WearJournalScreens.kt`, `WearCalendarScreens.kt`, `WearHealthScreen.kt`, `WearWorkoutScreens.kt`, `WearTimedSetScreens.kt`, `WearValueControls.kt`, `WearWorkoutMenuAndSummary.kt`, `WearUiPrimitives.kt`/`WearUiTokens.kt`; `WearHomeDashboard.kt`, `WearMenu216.kt` |

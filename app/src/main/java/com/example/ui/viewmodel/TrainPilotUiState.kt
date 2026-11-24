@@ -279,6 +279,8 @@ data class TrainPilotUiState(
     val watchInfoCardData: WatchInfoCardData = WatchInfoCardData(),
     val phoneControlsWorkout: Boolean = true,
     val watchControlPending: Boolean = false,
+    val watchMeasurementStatusId: String = "",
+    val watchMeasurementStatus: String? = null,
     val offlineContinuationEnabled: Boolean = true,
     val lastWatchSyncLabel: String = "—",
     val autoDriveSync: Boolean = false,

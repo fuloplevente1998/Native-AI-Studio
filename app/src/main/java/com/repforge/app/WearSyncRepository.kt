@@ -1010,6 +1010,11 @@ object WearSyncRepository {
                 ) {
                     return@withContext Result.failure(IllegalStateException("The requested workout is no longer active."))
                 }
+                if (!requestOwnership && (current.optBoolean("workoutPaused") ||
+                        current.optString("timerOwner", "phone") != "phone" ||
+                        com.repforge.shared.WorkoutOwnership193.pending(current))) {
+                    return@withContext Result.failure(IllegalStateException("The phone no longer controls an unpaused workout."))
+                }
                 if (nodes.size != 1) {
                     return@withContext Result.failure(
                         IllegalStateException(if (nodes.isEmpty()) "No watch is connected." else "More than one watch is connected.")

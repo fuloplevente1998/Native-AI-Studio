@@ -93,8 +93,13 @@ class WearCommandListenerService : WearableListenerService() {
         WearSyncRepository.refreshWatchHomeAsync(this)
         // Retry the durable terminal projection when a previous Data Layer write failed.
         val current = ActiveWorkoutStore.current(this) ?: return
-        if (!current.optBoolean("active", true) && current.optString("workoutId").isNotBlank())
-            runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(this, current) }
+        if(current.optString("workoutId").isNotBlank())
+            runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(this,current) }
+        PhoneMeasurementReconnect351.send(applicationContext,peer.id)
+    }
+
+    override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
+        WearLiveHealthStore.disconnect351(peer.id)
     }
 
     private fun queue(command: JSONObject, uri: Uri?) {
@@ -147,7 +152,7 @@ class WearCommandListenerService : WearableListenerService() {
                 try {
                     WearLiveHealthStore.save(
                         this,
-                        DataMapItem.fromDataItem(item).dataMap.getString("health")
+                        DataMapItem.fromDataItem(item).dataMap.getString("health"), uri.host
                     )
                 } catch (_: Exception) {
                 }

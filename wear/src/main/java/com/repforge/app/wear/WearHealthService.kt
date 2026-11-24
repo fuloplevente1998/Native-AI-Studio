@@ -20,12 +20,18 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
     private var registered=false
     private var afterRegistration: (() -> Unit)?=null
     private val stopReceiver=object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) { if(intent?.action==SYNC_PAUSE)syncWorkoutPause() else end() }
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when(intent?.action) {
+                SYNC_PAUSE -> syncWorkoutPause()
+                REFRESH_CONFIRMATION -> checkSensorHealth(force=true)
+                STOP -> end()
+            }
+        }
     }
     override fun onCreate() {
         super.onCreate()
-        if(Build.VERSION.SDK_INT>=33)registerReceiver(stopReceiver,IntentFilter(STOP).apply { addAction(SYNC_PAUSE) },Context.RECEIVER_NOT_EXPORTED)
-        else registerReceiver(stopReceiver,IntentFilter(STOP).apply { addAction(SYNC_PAUSE) })
+        if(Build.VERSION.SDK_INT>=33)registerReceiver(stopReceiver,IntentFilter(STOP).apply { addAction(SYNC_PAUSE);addAction(REFRESH_CONFIRMATION) },Context.RECEIVER_NOT_EXPORTED)
+        else registerReceiver(stopReceiver,IntentFilter(STOP).apply { addAction(SYNC_PAUSE);addAction(REFRESH_CONFIRMATION) })
     }
     private var pauseInFlight=false
     private var appliedPause=false
@@ -63,6 +69,7 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
         }catch(error:Exception){pauseFailed(error)}
     }
 
+    private var backgroundStart=false
     private var destroyed=false
     private var watchdog: Runnable?=null
     private var sensorWatchdog: Runnable?=null
@@ -84,12 +91,14 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
             scheduleSensorWatchdog()
         }.also { handler.postDelayed(it, 15000L) }
     }
-    private fun checkSensorHealth() {
+    private fun checkSensorHealth(force: Boolean=false) {
         val data=summary ?: return
         val session=lifecycle ?: return
         if(destroyed || session.finished || !session.owned || session.stopRequested)return
         val now=SystemClock.elapsedRealtime()
-        if(data.optString("state")=="active" && lastUpdateReceivedAt>0L && (now-lastUpdateReceivedAt>30000L)) {
+        if(WorkoutSnapshotStore.load(this)?.workoutId!=data.optString("workoutId")) { end();return }
+        if(data.optString("state") in setOf("active","paused") &&
+            (force || lastUpdateReceivedAt>0L && now-lastUpdateReceivedAt>15000L)) {
             WearHealthFutures.awaitValue(
                 client.getCurrentExerciseInfoAsync(),
                 executor,
@@ -102,8 +111,8 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                     } else {
                         if(data.optString("heartRateAvailability")!="acquiring") {
                             data.put("heartRateAvailability","acquiring")
-                            persist()
                         }
+                        persist() // A successful Health Services ownership query renews the live receipt.
                     }
                 }
             )
@@ -114,10 +123,12 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
         if(intent?.action==STOP) { end();return START_NOT_STICKY }
         val id=intent?.getStringExtra("workoutId") ?: WearHealthStore.active(this)
         if(id.isBlank()) { stopSelf();return START_NOT_STICKY }
-        if(summary?.optString("workoutId")==id){syncWorkoutPause();return START_STICKY}
+        if(summary?.optString("workoutId")==id){syncWorkoutPause();checkSensorHealth(force=true);return START_STICKY}
         if(summary!=null) { end();return START_STICKY }
+        backgroundStart=intent?.getBooleanExtra("backgroundStart351",false)==true
         val oldId=WearHealthStore.active(this)
         val closePrevious=oldId.isNotBlank() && oldId!=id
+        val recoveringExisting=oldId.isNotBlank()
         summary=WearHealthStore.begin(this,if(closePrevious)oldId else id)
         if(summary!!.optString("state") in listOf("ended","error")) { stopSelf();return START_NOT_STICKY }
         appliedPause=summary!!.optBoolean("workoutPauseApplied201",summary!!.optString("state")=="paused")
@@ -137,7 +148,8 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                 .addAction(Notification.Action.Builder(android.R.drawable.ic_media_pause,"Mérés leállítása",stop).build()).build()
             val access=wearRecordingAccess(this,request.gps,WearHealthStore.providerRequiresLocation(this))
             if(access.locationBlocked && !session.stopRequested){fail("A méréshez helyhozzáférés szükséges.",access);return START_NOT_STICKY}
-            val location=access.foregroundLocation
+            // This request never elevates location access from the background.
+            val location=access.foregroundLocation && !backgroundStart
             if(Build.VERSION.SDK_INT>=34) startForeground(129,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH or if(location)ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
             else startForeground(129,notification,if(location)ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
             WearHealthStore.save(this,summary!!)
@@ -146,6 +158,10 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                     when(info.exerciseTrackedStatus) {
                         ExerciseTrackedStatus.OTHER_APP_IN_PROGRESS -> fail("Másik alkalmazás már edzést mér. A TrainPilot nem szakította meg.")
                         ExerciseTrackedStatus.OWNED_EXERCISE_IN_PROGRESS -> {
+                            if(backgroundStart && !recoveringExisting) {
+                                fail("Korábbi órás mérés tulajdonosa nem igazolható; nyisd meg az órás alkalmazást.")
+                                return@await
+                            }
                             session.confirmOwnership()
                             lastUpdateReceivedAt=SystemClock.elapsedRealtime()
                             summary?.put("state",if(session.stopRequested)"ending" else if(appliedPause)"paused" else "active");persist()
@@ -157,15 +173,24 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
                 }
             }
             client.setUpdateCallback(executor,this)
-        } catch(error: Exception) { fail("A mérés nem indítható: ${error.message ?: "ellenőrizd az engedélyeket"}") }
+        } catch(error: Exception) {
+            if(backgroundStart && error is SecurityException && !registered && lifecycle?.owned!=true) {
+                // A rejected promotion is not a failed workout and must not poison the visible retry.
+                WearLiveHealth.publish(this,id,"foregroundRequired","Az órás méréshez nyisd meg a TrainPilotot.")
+                stopSelf();return START_NOT_STICKY
+            }
+            fail("A mérés nem indítható: ${error.message ?: "ellenőrizd az engedélyeket"}")
+        }
         return START_STICKY
     }
     private fun capabilities(requested: String?, gps: Boolean) {
+        if(WorkoutSnapshotStore.load(this)?.workoutId!=summary?.optString("workoutId"))lifecycle?.requestStop()
         if(lifecycle?.stopRequested==true){finishWithoutExercise();return}
         await(client.getCapabilitiesAsync()) { capabilities ->
+            if(WorkoutSnapshotStore.load(this)?.workoutId!=summary?.optString("workoutId"))lifecycle?.requestStop()
             if(lifecycle?.stopRequested==true){finishWithoutExercise();return@await}
             val wanted=when(requested) { "running" -> ExerciseType.RUNNING; "walking" -> ExerciseType.WALKING; "cycling" -> ExerciseType.BIKING; else -> ExerciseType.STRENGTH_TRAINING }
-            val location=wearRecordingAccess(this,gps,WearHealthStore.providerRequiresLocation(this)).locationAvailable
+            val location=!backgroundStart && wearRecordingAccess(this,gps,WearHealthStore.providerRequiresLocation(this)).locationAvailable
             val type=wearRecordingType(wanted,capabilities.supportedExerciseTypes,location)
             if(type==null) { fail("Ezen az órán ez az edzéstípus nem mérhető.");return@await }
             val supported=capabilities.getExerciseTypeCapabilities(type).supportedDataTypes
@@ -179,6 +204,7 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
             persist()
             awaitCompletion(client.startExerciseAsync(config)) {
                 lifecycle?.confirmOwnership();appliedPause=false
+                if(WorkoutSnapshotStore.load(this)?.workoutId!=summary?.optString("workoutId"))lifecycle?.requestStop()
                 summary?.put("workoutPauseApplied201",false)
                 summary?.put("state",if(lifecycle?.stopRequested==true)"ending" else "active");persist()
                 lastUpdateReceivedAt=SystemClock.elapsedRealtime()
@@ -235,7 +261,8 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
     override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {}
     override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
         val data=summary ?: return
-        if(lifecycle?.finished==true || destroyed || data.optString("state")=="error")return
+        // A callback before the owned-exercise check/start future is not a measurement ACK.
+        if(lifecycle?.owned!=true || lifecycle?.finished==true || destroyed || data.optString("state")=="error")return
         lastUpdateReceivedAt=SystemClock.elapsedRealtime()
         val accumulator=WearHealthAccumulator(data)
         val currentOrigin=System.currentTimeMillis()-SystemClock.elapsedRealtime()
@@ -324,10 +351,12 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
             context.sendBroadcast(Intent(SYNC_PAUSE).setPackage(context.packageName))
         }
         const val STOP="com.repforge.app.wear.STOP_HEALTH"
-        fun start(context: Context, workout: WearWorkout) {
+        private const val REFRESH_CONFIRMATION="com.repforge.app.wear.REFRESH_CONFIRMATION_351"
+        fun refreshConfirmation(context: Context) { context.sendBroadcast(Intent(REFRESH_CONFIRMATION).setPackage(context.packageName)) }
+        fun start(context: Context, workout: WearWorkout, background: Boolean=false) {
             if(workout.workoutPaused)return
             val request=wearRecordingRequestForWorkout(workout,WearHealthStore.gps(context))
-            context.startForegroundService(Intent(context,WearHealthService::class.java).putExtra("workoutId",workout.workoutId).putExtra("exerciseType",request.exerciseType).putExtra("gps",request.gps))
+            context.startForegroundService(Intent(context,WearHealthService::class.java).putExtra("workoutId",workout.workoutId).putExtra("exerciseType",request.exerciseType).putExtra("gps",request.gps).putExtra("backgroundStart351",background))
         }
         fun stop(context: Context) { context.sendBroadcast(Intent(STOP).setPackage(context.packageName)) }
     }
