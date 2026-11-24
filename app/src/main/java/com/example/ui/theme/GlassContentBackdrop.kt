@@ -54,6 +54,7 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
     if (!palette.isLiquidGlass) return this
+    val enabled = LocalGlassOpticsEnabled.current
     val lensLayer = rememberGraphicsLayer()
     var origin by remember { mutableStateOf(Offset.Zero) }
     return onGloballyPositioned { origin = it.positionInRoot() }
@@ -62,7 +63,7 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
             val relative = origin - backdrop.origin
             val dimensions = IntSize(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
             val optics = GlassOptics.from(palette.glassClarity)
-            val effect = if (Build.VERSION.SDK_INT >= 33) runCatching {
+            val effect = if (!enabled) null else if (Build.VERSION.SDK_INT >= 33) runCatching {
                 createContentLensEffect33(dimensions, optics, palette.surface, 1.dp.toPx())
             }.getOrNull() else if (Build.VERSION.SDK_INT >= 31) runCatching {
                 createContentBlur31((1f + (1f - optics.clarity) * 16f).dp.toPx())
