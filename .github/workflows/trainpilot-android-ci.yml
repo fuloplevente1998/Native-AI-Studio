@@ -3,7 +3,7 @@ name: TrainPilot Native Android Regression Tests
 on:
   # Main pushes run the full gate before an automatically signed release pair.
   push:
-    branches: [main, 'test/349-350-theme-apk']
+    branches: [main]
     paths:
       - 'app/**'
       - 'wear/**'
@@ -39,7 +39,7 @@ on:
         default: false
 
 concurrency:
-  group: native-audit-${{ github.ref }}
+  group: native-audit-${{ github.head_ref == 'test/349-350-theme-apk' && 'refs/heads/test/349-350-theme-apk' || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   android-build:
-    if: github.ref != 'refs/heads/test/349-350-theme-apk'
+    if: github.ref != 'refs/heads/test/349-350-theme-apk' && github.head_ref != 'test/349-350-theme-apk'
     name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -163,7 +163,7 @@ jobs:
           retention-days: 7
 
   release-r8:
-    if: github.ref != 'refs/heads/test/349-350-theme-apk'
+    if: github.ref != 'refs/heads/test/349-350-theme-apk' && github.head_ref != 'test/349-350-theme-apk'
     # Same release R8/shrink check as before, on its own runner so it no longer
     # competes for CPU with debug compilation and Robolectric tests.
     name: Release R8 minification check
@@ -216,12 +216,14 @@ jobs:
 
   theme-test-apk:
     # Disposable, phone-only visual testing. Never a release gate or signing run.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/test/349-350-theme-apk'
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/349-350-theme-apk' && github.base_ref == 'feature/349-350-themes'
     name: Isolated phone theme test APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -272,7 +274,7 @@ jobs:
           grep -F "package: name='com.TrainPilot.com.themetest'" theme-test-output/apk-metadata.txt
           grep -F "application-label:'TrainPilot Theme Test'" theme-test-output/apk-metadata.txt
           "$apksigner" verify --print-certs "$apk" >> theme-test-output/apk-metadata.txt
-          echo "$GITHUB_SHA" > theme-test-output/source-sha.txt
+          git rev-parse HEAD > theme-test-output/source-sha.txt
           (cd theme-test-output && sha256sum TrainPilot-Theme-Test.apk > SHA256SUMS)
       - name: Upload isolated APK
         uses: actions/upload-artifact@v4
