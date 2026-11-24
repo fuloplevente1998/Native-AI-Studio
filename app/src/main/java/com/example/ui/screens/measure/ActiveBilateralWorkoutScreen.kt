@@ -31,6 +31,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -132,6 +134,10 @@ fun ActiveBilateralWorkoutScreen(
     // Modal dialog for manual bilateral set editing
     var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
     var restTimerLargeMode by remember(com.repforge.app.StudioRestTimer.visible(uiState)) { mutableStateOf(false) }
+    // 2808/9: same scroll sizing as the strength screen (user scroll only; ticking never opens large).
+    val bilateralListState = rememberLazyListState()
+    val userScrollSizesRest = com.example.ui.components.rememberRestDockScrollConnection(bilateralListState,
+        com.repforge.app.StudioRestTimer.visible(uiState), restTimerLargeMode) { restTimerLargeMode = it }
     StudioRestCountdown(uiState, onAdjustRestTimer)
 
     // Dedicated Bilateral Set Editor Modal ("külön ablak adat rögzítésre")
@@ -248,9 +254,11 @@ fun ActiveBilateralWorkoutScreen(
             "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
         LazyColumn(
+            state = bilateralListState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .nestedScroll(userScrollSizesRest),
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {

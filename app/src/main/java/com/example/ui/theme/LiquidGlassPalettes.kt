@@ -49,7 +49,8 @@ internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
     val clarity = value.coerceIn(0, 100)
     val t = clarity / 100f
     val end = lerp(background, Color(0xFF080D17), .65f)
-    val paint = Color(0xFF334359).copy(alpha = .82f - .58f * t)
+    // 2808/12: thinner card tint towards Clear (.82 -> .18), contrast lifted below as before.
+    val paint = Color(0xFF334359).copy(alpha = .82f - .64f * t)
     val card = paint.compositeOver(background)
     val inner = lerp(card, Color.White, .05f)
     val optics = GlassOptics.from(clarity)

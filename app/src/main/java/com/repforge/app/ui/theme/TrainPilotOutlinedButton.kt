@@ -1,5 +1,6 @@
 package com.repforge.app.ui.theme
 
+import com.example.ui.theme.glassTouchBubble
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +30,6 @@ fun TrainPilotOutlinedButton(
     content: @Composable RowScope.() -> Unit
 ) {
     TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        OutlinedButton(onClick, modifier, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+        OutlinedButton(onClick, modifier.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
     }
 }

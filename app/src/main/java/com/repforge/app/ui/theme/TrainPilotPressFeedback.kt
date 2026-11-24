@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import com.example.ui.theme.GlassMotion
 import com.example.ui.theme.glassEffectsActive
+import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.rememberGlassMotionEnabled
 import androidx.compose.ui.graphics.drawscope.scale
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -127,6 +128,7 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
         animationSpec = if (motion) spring(dampingRatio = .55f, stiffness = Spring.StiffnessMediumLow) else snap(),
         label = "glass press"
     )
+    // 2808/11: the touch bubble rides inside the same scaled draw (glass + motion only, see GlassTouchBubble).
     return drawWithContent {
         val progress = press.value
         val factor = if (motion) GlassMotion.pressScale(progress) else 1f
@@ -142,7 +144,7 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
                 }
             }
         }
-    }
+    }.glassTouchBubble(source, enabled, shape)
 }
 
 /** Paint on the visual child while the accessible parent retains the larger hit area. */

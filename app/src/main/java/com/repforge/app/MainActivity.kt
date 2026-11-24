@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
                     }
                     com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
                         CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
-                            LocalGlassOpticsEnabled provides glassOpticsEnabledFor(uiState.isWorkoutSessionActive)) {
+                            LocalGlassOpticsEnabled provides glassOpticsEnabledFor(uiState)) {
                             TrainPilotAppRoot(viewModel = viewModel)
                         }
                     }
