@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.customThemeText
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -193,7 +194,7 @@ fun SettingsMainScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(strings.themes32Title, style = MaterialTheme.typography.titleMedium,
+                                Text(customThemeText(uiState.language, "40 gyári téma", "40 built-in themes", "40 integrierte Designs", "40 de teme incluse"), style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text(toggleThemesHint, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }
