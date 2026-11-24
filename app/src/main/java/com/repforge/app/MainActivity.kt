@@ -31,6 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.example.ui.components.CustomThemeAccess
+import com.example.ui.components.LocalCustomThemeAccess
+import com.example.ui.theme.isCustomThemeKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -113,7 +118,24 @@ class MainActivity : ComponentActivity() {
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val currentPalette = TrainPilotPalettes.getById(uiState.selectedPaletteId)
+            val currentPalette = if (isCustomThemeKey(settings.themeKey)) {
+                remember(settings.themeKey, settings.customThemesJson) { settings.resolvedThemePalette() }
+            } else TrainPilotPalettes.getById(uiState.selectedPaletteId)
+            val customThemeAccess = remember(settings.themeKey, settings.customThemesJson) {
+                CustomThemeAccess(settings.customThemes(), settings.themeKey,
+                    save = { definition -> withContext(Dispatchers.IO) {
+                        settingsStore.saveCustomThemeForDataset(definition,
+                            NativeDataReplacement.continuationForCurrentData(applicationContext))
+                    } },
+                    apply = { key -> withContext(Dispatchers.IO) {
+                        settingsStore.applyCustomThemeForDataset(key,
+                            NativeDataReplacement.continuationForCurrentData(applicationContext))
+                    } },
+                    delete = { key -> withContext(Dispatchers.IO) {
+                        settingsStore.deleteCustomThemeForDataset(key,
+                            NativeDataReplacement.continuationForCurrentData(applicationContext))
+                    } })
+            }
             SideEffect { PaletteSystemBars.apply(window, currentPalette) }
 
             com.example.ui.theme.TrainPilotTheme(
@@ -136,7 +158,9 @@ class MainActivity : ComponentActivity() {
                         startupScreen.markNativeReady()
                     }
                     com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
-                        TrainPilotAppRoot(viewModel = viewModel)
+                        CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess) {
+                            TrainPilotAppRoot(viewModel = viewModel)
+                        }
                     }
                 } else if (migrationFailure) {
                     LaunchedEffect(Unit) {
@@ -251,7 +275,7 @@ class MainActivity : ComponentActivity() {
                 catch (_: Exception) { null } ?: return@launch
             viewModel.syncNativeSettings(stored.language, stored.themeKey, stored.restSeconds,
                 stored.soundEnabled, stored.vibrationEnabled)
-            PaletteSystemBars.apply(window, TrainPilotPalettes.getById(viewModel.uiState.value.selectedPaletteId))
+            PaletteSystemBars.apply(window, stored.resolvedThemePalette())
         }
         if (!migrationReady) return
         HealthBackgroundService.stop(this)
