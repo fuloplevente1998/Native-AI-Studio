@@ -19,6 +19,7 @@ import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
 import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.StudioWorkoutSessionPresentation
@@ -36,6 +37,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
     val palette = LocalTrainPilotPalette.current
     val banner = state.statusBannerMessage?.takeIf { it.isNotBlank() }
     if (!state.isWorkoutSessionActive && banner == null) return
+    val selection = remember(palette) { palette.selectionColors() }
     fun word(hu: String, en: String, de: String, ro: String) = when (state.language) {
         AppLanguage.HU -> hu; AppLanguage.EN -> en; AppLanguage.DE -> de; AppLanguage.RO -> ro
     }
@@ -87,15 +89,15 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 val elapsedContent: @Composable () -> Unit = {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = palette.tintedSurface(0.18f),
-                        border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.55f)),
+                        color = selection.surface,
+                        border = TrainPilotFrames.stroke(1.dp, selection.border),
                         modifier = Modifier.testTag("active_workout_elapsed")
                     ) {
                         Text(
                             text = elapsedText,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = palette.primary,
+                            color = selection.foreground,
                             maxLines = 1,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
@@ -106,12 +108,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                         else if (state.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction
                     TrainPilotOutlinedButton(onClick = onToggle, enabled = enabled,
                         shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.tintedSurface(0.12f),
-                            contentColor = palette.primary, disabledContainerColor = palette.surfaceElevated,
+                        border = TrainPilotFrames.stroke(1.dp, if (enabled) selection.border else palette.cardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = selection.surface,
+                            contentColor = selection.foreground, disabledContainerColor = palette.surfaceElevated,
                             disabledContentColor = palette.textSecondary.copy(alpha = 0.6f)),
                         modifier = Modifier.heightIn(min = 48.dp).testTag("workout_handover_action")) {
                         Icon(Icons.Default.Watch, contentDescription = null,
-                            tint = palette.primary, modifier = Modifier.size(18.dp))
+                            tint = if (enabled) selection.foreground else palette.textSecondary.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
                         Text(actionLabel, style = MaterialTheme.typography.labelMedium,
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
