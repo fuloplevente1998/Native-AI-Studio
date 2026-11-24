@@ -101,6 +101,7 @@ internal fun TrainPilotWearApp(
     var metricsBackRoute by rememberSaveable { mutableStateOf("menu") }
     var settingsBackRoute by rememberSaveable { mutableStateOf("home") }
     var returnWorkoutPage by rememberSaveable { mutableStateOf(0) }
+    var discardBackRoute by rememberSaveable { mutableStateOf("home") }
     val touchIdentity=WearTouchLock189.identity(workout.value)
     var touchLocked by remember(touchIdentity) { mutableStateOf(WearTouchLock189.locked(context,workout.value)) }
     val touchCopy=WearTouchCopy189.language(java.util.Locale.getDefault().language)
@@ -142,7 +143,7 @@ internal fun TrainPilotWearApp(
                 "journal" -> journalBackRoute
                 "metrics" -> metricsBackRoute
                 "settings" -> settingsBackRoute
-                "discard" -> "home"
+                "discard" -> discardBackRoute
                 else -> "home"
             }
     }
@@ -239,6 +240,7 @@ internal fun TrainPilotWearApp(
                                 if (it == "metrics") metricsBackRoute = "menu"
                                 if (it == "calendar") calendarBackRoute = "menu"
                                 if (it == "settings") settingsBackRoute = "menu"
+                                if (it == "discard") discardBackRoute = "menu"
                                 route = it
                             }
                         }
@@ -305,7 +307,7 @@ internal fun TrainPilotWearApp(
                             if (it) {
                                 onDiscard()
                                 route = "summary"
-                            } else route = "home"
+                            } else route = discardBackRoute
                         }
                     route == "finish" && active != null ->
                         ConfirmationScreen(false, active.completedSets) {
@@ -374,6 +376,7 @@ internal fun TrainPilotWearApp(
                             onTimerTools = { route = "timer" },
                             onFinish = { route = "finish" },
                             onHome = { route = "home" },
+                            onDiscard = { discardBackRoute = "workout"; route = "discard" },
                         )
                     else ->
                         WearHomeDashboard(
@@ -395,7 +398,7 @@ internal fun TrainPilotWearApp(
                             onDays = { daysBack216="home";route = "days" },
                             onResult = { route = "summary" },
                             onJournal = { openJournal("home") },
-                            onDiscard = { route = "discard" },
+                            onDiscard = { discardBackRoute = "home"; route = "discard" },
                             onSettings = {
                                 settingsBackRoute = "home"
                                 route = "settings"

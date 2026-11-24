@@ -1,5 +1,6 @@
 package com.repforge.app.wear
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -109,13 +110,32 @@ internal fun WorkoutPager(
     onReturnPageConsumed: () -> Unit,
     onFinish: () -> Unit,
     onHome: () -> Unit,
+    onDiscard: () -> Unit = {},
 ) {
     val pager = rememberPagerState(initialPage = initialPage, pageCount = { 3 })
     LaunchedEffect(Unit) { onReturnPageConsumed() }
     LaunchedEffect(pager.currentPage) { if (pager.currentPage == 2) onRefreshJournal() }
     val scope = rememberCoroutineScope()
-    Box(Modifier.fillMaxSize()) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
+    var controls by remember(workout.workoutId) { mutableStateOf(false) }
+    LaunchedEffect(controls, workout.workoutId) {
+        if (controls) { delay(3000L); controls = false }
+    }
+    val command = LocalAutomaticCommand.current
+    // Only automatic timer pause is currently exposed to this UI; never pretend it pauses the whole workout.
+    val automatic = workout.automation
+    val timerPause: (() -> Unit)? = if (automatic?.enabled == true && automatic.counting && command != null)
+        ({ command(if (automatic.paused) "resume" else "pause") }) else null
+    BackHandler(enabled = controls || pager.currentPage != 0) {
+        if (controls) controls = false else scope.launch { pager.scrollToPage(0) }
+    }
+    val gesture = wearWorkoutGesture(
+        enabled = !controls,
+        page = pager.currentPage,
+        onTap = { controls = true },
+        onPage = { page -> scope.launch { pager.scrollToPage(page) } },
+    )
+    Box(Modifier.fillMaxSize().then(gesture)) {
+        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), userScrollEnabled = false) { page ->
             Box(
                 Modifier.fillMaxSize()
                     .hierarchicalFocusGroup(active = pager.currentPage == page)
@@ -128,7 +148,7 @@ internal fun WorkoutPager(
                     Box(Modifier.fillMaxSize()) {
                         if (restRemaining > 0) RestRing(workout, restRemaining)
                         val onMenu = {
-                            scope.launch { pager.animateScrollToPage(1) }
+                            controls = true
                             Unit
                         }
                         if(workout.automation?.enabled==true && WearAutomaticEngine.timed(workout.exercise))
@@ -196,6 +216,9 @@ internal fun WorkoutPager(
                         restRemaining,
                         onFinish,
                         onHome,
+                        onDiscard = onDiscard,
+                        onBack = { scope.launch { pager.scrollToPage(0) } },
+                        onHealth = { scope.launch { pager.scrollToPage(2) } },
                     )
             }
         }
@@ -218,6 +241,18 @@ internal fun WorkoutPager(
                     )
                 }
             }
+        }
+        if (controls && pager.currentPage == 0) {
+            WearWorkoutControlOverlay(
+                workout = workout,
+                timerPause = timerPause,
+                onPrevious = { controls = false; onPrevious() },
+                onNext = { controls = false; onNext() },
+                onFinish = { controls = false; onFinish() },
+                onDiscard = { controls = false; onDiscard() },
+                onMore = { controls = false; scope.launch { pager.scrollToPage(1) } },
+                onDismiss = { controls = false },
+            )
         }
     }
 }
