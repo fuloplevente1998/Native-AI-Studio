@@ -31,22 +31,22 @@ nagy fájlok sorai frissülnek.
 ## Edzés fül, programok, naptár, könyvtár
 | Funkció | Fájl |
 |---|---|
-| Edzés fül, módcsempék, napkártyák | `ex/ui/screens/WorkoutAndPlanningScreens.kt` (`WorkoutTabScreen`), `WorkoutTabDayCards.kt` |
-| Programlista, programkártya, szerkesztő | `WorkoutAndPlanningScreens.kt` (`ProgramsListScreen`, `ProgramEditorScreen`); mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
-| Naptár tervező | `WorkoutAndPlanningScreens.kt` (`CalendarPlannerScreen`); logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
-| Gyakorlatkönyvtár, részletek, saját gyakorlat | `WorkoutAndPlanningScreens.kt` (`ExerciseLibraryScreen`, `ExerciseDetailScreen`, `AddCustomExerciseModalDialog`) |
+| Edzés fül, módcsempék, napkártyák | `ex/ui/screens/workout/WorkoutTabScreen.kt`, `ex/ui/screens/WorkoutTabDayCards.kt` |
+| Programlista, programkártya, szerkesztő | `ex/ui/screens/workout/ProgramsListScreen.kt`, `ex/ui/screens/workout/ProgramCard.kt`, `ex/ui/screens/workout/ProgramEditorScreen.kt`; mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
+| Naptár tervező | `ex/ui/screens/workout/CalendarPlannerScreen.kt`, `ex/ui/screens/workout/PlannerControls.kt`; logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
+| Gyakorlatkönyvtár, részletek, saját gyakorlat | `ex/ui/screens/workout/ExerciseLibraryScreen.kt`, `ex/ui/screens/workout/ExerciseDetailScreen.kt`, `ex/ui/screens/workout/AddCustomExerciseDialog.kt`; `trW` a `ex/ui/screens/workout/WorkoutScreenText.kt` |
 | Személyes tervező (első profil) | `ex/ui/components/StudioPersonalPlannerDialog.kt`, `TrainPilotCommonComponents.kt` (`PersonalPlannerModalDialog`) |
 
 ## Aktív edzés, mérés
 | Funkció | Fájl |
 |---|---|
-| Erő / időzített / kétoldalas / kültéri GPS képernyő | `ex/ui/screens/ActiveMeasurementScreens.kt` (`Active*WorkoutScreen`, `ActiveOutdoorGpsScreen`) (R3) |
+| Erő / időzített / kétoldalas / kültéri GPS képernyő | `ex/ui/screens/measure/Active{Strength,Timed,Bilateral}WorkoutScreen.kt`, `ex/ui/screens/measure/ActiveOutdoorGpsScreen.kt`, közös: `ex/ui/screens/measure/MeasurementShared.kt` |
 | Felső sáv, „Legutóbb” sor | `ex/ui/components/StudioActiveWorkoutTop.kt`, `StudioWorkoutHandoverBar.kt` |
 | Pihenő dokk / kompakt pihenő | `ex/ui/components/StudioRestTimerDock.kt`, `StudioCompactRestControls.kt`, `rf/StudioRestTimer.kt` |
 | Sorozatkártya | `ex/ui/components/StudioStrengthSetCard.kt` |
-| Intervallum | `ActiveMeasurementScreens.kt` (`IntervalSettingsScreen`), `rf/IntervalTimerService.kt` |
+| Intervallum | `ex/ui/screens/measure/IntervalSettingsScreen.kt`, `rf/IntervalTimerService.kt` |
 | GPS műszerfal, útvonal | `ex/ui/screens/OutdoorGpsDashboard.kt`, `rf/DistanceTrackingService.kt`, `rf/GpsRouteStore.kt` |
-| Edzésösszegzés | `ActiveMeasurementScreens.kt` (`WorkoutSummaryScreen`) |
+| Edzésösszegzés | `ex/ui/screens/measure/WorkoutSummaryScreen.kt` |
 | Motor, időzítő-tulajdonos, mentés/lezárás | `rf/PhoneWorkoutEngine.kt`, `rf/PhoneWorkoutExecutionStore.kt`, `rf/TrainPilotWorkoutFinalization.kt`, `rf/ActiveWorkoutStore.kt` |
 
 ## Napló, fejlődés, statisztika

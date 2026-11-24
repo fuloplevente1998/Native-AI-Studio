@@ -69,7 +69,7 @@ class Collector2804RegressionTest {
 
     @Test fun tickingASetDoesNotOpenTheLargeRestOnItsOwn() {
         // Large mode comes only from the user's drag or the arrow; the old automatic scroll trigger is gone.
-        val source = java.io.File("src/main/java/com/example/ui/screens/ActiveMeasurementScreens.kt").readText()
+        val source = java.io.File("src/main/java/com/example/ui/screens/measure/ActiveStrengthWorkoutScreen.kt").readText()
         val strength = source.substringAfter("fun ActiveStrengthWorkoutScreen(").substringBefore("fun ActiveTimedWorkoutScreen(")
         assertFalse(strength.contains("restTimerManualOverride ?: isScrolledDown"))
         assertTrue(strength.contains("NestedScrollSource.UserInput"))
