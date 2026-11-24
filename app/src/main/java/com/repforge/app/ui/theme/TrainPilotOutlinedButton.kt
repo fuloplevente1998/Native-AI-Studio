@@ -29,7 +29,11 @@ fun TrainPilotOutlinedButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit
 ) {
+    // 2808 #13: glass palettes drop neutral hairline outlines; semantic (accent/danger/success/warning) stay.
+    val palette = com.example.ui.theme.LocalTrainPilotPalette.current
+    val solid = border?.brush as? androidx.compose.ui.graphics.SolidColor
+    val effectiveBorder = if (solid != null && liquidGlassDropsFrame(palette, solid.value)) null else border
     TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        OutlinedButton(onClick, modifier.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+        OutlinedButton(onClick, modifier.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)
     }
 }

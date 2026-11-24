@@ -3,6 +3,7 @@ package com.repforge.app.ui.theme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Path
@@ -36,12 +37,28 @@ object TrainPilotFrames {
 
 /** Migrate existing palette frames without changing shape, padding, content or hit areas. */
 fun Modifier.trainPilotBorder(width: Dp, color: Color, shape: Shape = RectangleShape): Modifier =
-    border(TrainPilotFrames.stroke(width, color), shape)
+    composed { if (liquidGlassDropsFrame(LocalTrainPilotPalette.current, color)) Modifier
+        else Modifier.border(TrainPilotFrames.stroke(width, color), shape) }
 fun Modifier.trainPilotBorder(border: BorderStroke, shape: Shape = RectangleShape): Modifier =
-    this.border(TrainPilotFrames.stroke(border.width, border.brush), shape)
+    composed { val brush = border.brush
+        if (brush is SolidColor && liquidGlassDropsFrame(LocalTrainPilotPalette.current, brush.value)) Modifier
+        else Modifier.border(TrainPilotFrames.stroke(border.width, border.brush), shape) }
 
 fun Modifier.trainPilotBorder(width: Dp, brush: Brush, shape: Shape = RectangleShape): Modifier =
-    border(TrainPilotFrames.stroke(width, brush), shape)
+    composed { if (brush is SolidColor && liquidGlassDropsFrame(LocalTrainPilotPalette.current, brush.value)) Modifier
+        else Modifier.border(TrainPilotFrames.stroke(width, brush), shape) }
+
+/**
+ * 2808 #13: Liquid Glass palettes have no hairline frames – the glass rim/edge light defines the shape.
+ * Only neutral structural frames are dropped (card/section border, text-derived outlines); semantic
+ * frames (accent selection, danger, success, warning) stay so state never depends on the backdrop.
+ */
+fun liquidGlassDropsFrame(palette: com.example.ui.theme.TrainPilotPalette, color: Color): Boolean {
+    if (!palette.isLiquidGlass) return false
+    val semantic = listOf(palette.primary, palette.danger, palette.success, palette.warning)
+    if (semantic.any { it.copy(alpha = 1f) == color.copy(alpha = 1f) }) return false
+    return true
+}
 
 /** Static outer edge lighting for the eight Glow palettes. */
 @Composable
