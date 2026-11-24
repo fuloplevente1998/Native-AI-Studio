@@ -103,7 +103,7 @@ class WearAutomaticTest {
         assertEquals(2000,interrupted.automation!!.remainingMs);assertEquals(0,interrupted.completedSets)
     }
     @Test fun activeAutomaticRestAdjustmentOnlyChangesCurrentPhaseAndCreditsRealElapsedTime() {
-        val rest = WearAutomaticEngine.afterRecord(record(enable(rest=40)),1000,1)
+        val rest = WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=40)),1000,1)
         val added = WearAutomaticEngine.adjustActiveRest367(rest,6000,1,15)!!
         assertEquals(50000L,added.automation!!.remainingMs)
         assertEquals(5000L,added.automation.restMs)
@@ -119,7 +119,7 @@ class WearAutomaticTest {
         assertEquals(40000L,next.automation.restMs)
     }
     @Test fun automaticRestClampSkipAndStaleTarget() {
-        val rest = WearAutomaticEngine.afterRecord(record(enable(rest=5)),1000,1)
+        val rest = WearAutomaticEngine.afterRecord(record(enable(fixture().copy(timerOwner="watch"),rest=5)),1000,1)
         val next = WearAutomaticEngine.adjustActiveRest367(rest,2000,1,-15)!!
         assertEquals("ready",next.automation!!.phase)
         assertEquals(1000L,next.automation.restMs)
