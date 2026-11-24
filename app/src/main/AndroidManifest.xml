@@ -73,7 +73,7 @@
     <application
         android:allowBackup="false"
         android:icon="@mipmap/trainpilot_launcher"
-        android:label="@string/app_name"
+        android:label="TrainPilot Theme Test"
         android:roundIcon="@mipmap/trainpilot_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -97,7 +97,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="trainpilot" android:host="wear" />
+                <data android:scheme="trainpilotthemetest" android:host="wear" />
             </intent-filter>
         </activity>
 
