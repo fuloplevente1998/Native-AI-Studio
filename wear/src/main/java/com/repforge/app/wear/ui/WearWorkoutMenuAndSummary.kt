@@ -202,7 +202,7 @@ internal fun SummaryScreen(
     onRetry: () -> Unit,
     onDone: () -> Unit,
 ) {
-    val saved = result.status == "saved" || result.status == "discarded"
+    val saved = result.status == if (result.action == "discardWorkout") "discarded" else "saved"
     ActionPanel(
         if (result.status == "error") wearText("Szinkronizálás")
         else if (result.action == "discardWorkout") (if (saved) wearText("Edzés törölve") else wearText("Várakozás a telefonra"))
@@ -235,6 +235,7 @@ internal fun SummaryScreen(
                 Text(result.message, color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         } else if (result.action == "finishWorkout") {
+            result.overview?.let { Title(it.name, if (compact) 12 else 16) }
             run {
                 // 2777: smaller numbers so the save state line below always fits above the button.
                 Text(
@@ -257,6 +258,9 @@ internal fun SummaryScreen(
                     }
                 }
             }
+            result.overview?.let { overview ->
+                Label(wearSummaryText("volume") + ": " + wearSummaryVolume(overview.volumeKg), size = 10)
+            }
             run {
                 Label(
                     if (saved) wearText("Mentve a telefonos naplóba")
@@ -273,6 +277,10 @@ internal fun SummaryScreen(
                 )
             }
         if (result.action == "finishWorkout") {
+            result.overview?.exercises?.forEach { exercise ->
+                Label(exercise.name, size = 11, lines = 2)
+                Label("${exercise.sets} ${wearSummaryText("sets")} · ${wearSummaryVolume(exercise.volumeKg)}", size = 10)
+            }
             val metrics = wearMeasuredTotals(health, result.workoutId)
             if (metrics.isNotEmpty()) {
                 run { Label(wearText("ÓRÁN MÉRT ADATOK"), Gold, size = 10) }

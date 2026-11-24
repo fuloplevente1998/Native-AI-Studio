@@ -320,11 +320,13 @@ internal fun TrainPilotWearApp(
                             } else route = discardBackRoute
                         }
                     route == "finish" && active != null ->
-                        ConfirmationScreen(false, active.completedSets) {
-                            if (it) {
-                                onFinish()
+                        WearFinishPreview(active, health.value, onBack = { route = "workout" }) {
+                            onFinish()
+                            // A rejected close (for example pending ownership) must not navigate to success.
+                            if (workout.value == null)
                                 route = if (onWorkoutFeedback != null) "feedback" else "summary"
-                            } else route = "workout"
+                            else if (closure.value?.let { it.workoutId == active.workoutId && it.status == "error" } == true)
+                                route = "summary"
                         }
                     route == "editor" && active != null ->
                         ValueEditor(active, editorField, onChange) { route = "workout" }
