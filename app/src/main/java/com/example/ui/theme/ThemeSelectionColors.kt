@@ -32,6 +32,18 @@ internal fun TrainPilotPalette.selectionColors(): ThemeSelectionColors {
     return ThemeSelectionColors(selected, readable(4.5f), readable(3f))
 }
 
+/** Neutral outline for inputs: preserve the original border hue where possible. */
+internal fun TrainPilotPalette.fieldOutline(): Color {
+    val surfaces = listOf(surfaceCard, surfaceElevated)
+    val seed = cardBorder.compositeOver(surfaceCard)
+    val endpoint = if (isDark) Color.White else Color.Black
+    for (step in 0..100) {
+        val candidate = lerp(seed, endpoint, step / 100f)
+        if (surfaces.all { NativeThemeTokens.contrast(candidate, it) >= 3f }) return candidate
+    }
+    return endpoint
+}
+
 internal fun TrainPilotPalette.readablePrimaryLabel(): Color {
     if (NativeThemeTokens.contrast(onPrimary, primary) >= 4.5f) return onPrimary
     return if (NativeThemeTokens.contrast(Color.Black, primary) >=
