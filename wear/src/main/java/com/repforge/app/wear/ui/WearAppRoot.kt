@@ -98,11 +98,11 @@ internal fun TrainPilotWearApp(
     var editorField by rememberSaveable { mutableStateOf("reps") }
     var miniJournalId by rememberSaveable { mutableStateOf("") }
     var miniJournalBackRoute by rememberSaveable { mutableStateOf("journal") }
-    var journalBackRoute by rememberSaveable { mutableStateOf("menu") }
-    var calendarBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var journalBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="journal") "home" else "menu") }
+    var calendarBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="calendar") "home" else "menu") }
     var calendarDetail by remember { mutableStateOf(false) }
     var syncBackRoute by rememberSaveable { mutableStateOf("home") }
-    var metricsBackRoute by rememberSaveable { mutableStateOf("menu") }
+    var metricsBackRoute by rememberSaveable { mutableStateOf(if(initialRoute=="metrics") "home" else "menu") }
     var settingsBackRoute by rememberSaveable { mutableStateOf("home") }
     var returnWorkoutPage by rememberSaveable { mutableStateOf(0) }
     var discardBackRoute by rememberSaveable { mutableStateOf("home") }
@@ -207,7 +207,7 @@ internal fun TrainPilotWearApp(
                             backLabel = if (settingsBackRoute == "home") wearText("‹ Kezdőlap") else wearText("‹ Főmenü"),
                             onBack = { route = settingsBackRoute },
                         )
-                    route == "daily-details" || (route == "metrics" && metricsBackRoute != "home") ->
+                    route == "daily-details" ->
                         HealthScreen(
                             health.value,
                             measuring.value,
@@ -220,7 +220,7 @@ internal fun TrainPilotWearApp(
                             onRefreshJournal,
                             onOpenJournal = { openJournal(route) },
                             onSelectMeasurement = { openMeasurement(it, route) },
-                            onBack = { route = if (route == "daily-details") "metrics" else metricsBackRoute },
+                            onBack = { route = "metrics" },
                         )
                     route == "metrics" ->
                         WearDailyHealthScreen(daily, home.value?.dailyStepsGoal, health.value, active,

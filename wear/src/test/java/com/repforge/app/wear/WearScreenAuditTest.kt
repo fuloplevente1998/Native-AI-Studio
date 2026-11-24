@@ -59,6 +59,9 @@ class WearScreenAuditTest {
             .put("wear", JSONObject().put("source", "wear_health_services").put("averageHeartRate", 118).put("maxHeartRate", 151)
                 .put("activeCalories", 312).put("steps", 1820).put("activeDurationSeconds", 2900)))
         val calendar = JSONArray()
+        val today = java.time.LocalDate.now().toString()
+        calendar.put(JSONObject().put("date", today).put("status", "planned").put("scheduleId", "today-a")
+            .put("plannedStart", "${today}T10:00:00").put("programId", "home").put("dayId", "a"))
         listOf("2026-11-19" to "planned", "2026-11-20" to "rest", "2026-11-21" to "planned", "2026-11-17" to "completed").forEach { (d, s) ->
             calendar.put(JSONObject().put("date", d).put("status", s).put("scheduleId", "s$d").put("plannedStart", "${d}T10:00:00")
                 .put("programId", "home").put("dayId", "a"))
@@ -108,7 +111,10 @@ class WearScreenAuditTest {
             restRemaining = mutableStateOf(rest), onStart = { _, _ -> }, onStartQuick = {}, onAddQuick = {},
             onChange = { _, _ -> }, onComplete = {}, onPrevious = {}, onNext = {}, onSelectExercise = {}, onSkipRest = {},
             onFinish = {}, onDiscard = {}, onResumeWorkout = {}, onRetry = {}, onDismissClosure = {}, onOpenPhone = {},
-            onRefreshJournal = {}, health = mutableStateOf(JSONObject().put("heartRate", 128)), measuring = mutableStateOf(true),
+            onRefreshJournal = {}, health = mutableStateOf(JSONObject().put("heartRate", 128)
+                .put("workoutId",workout?.workoutId.orEmpty()).put("source","wear_health_services")
+                .put("updatedAt",System.currentTimeMillis()).put("state","active").put("averageHeartRate",118)
+                .put("activeCalories",120).put("totalCalories",145)), measuring = mutableStateOf(true),
             gpsEnabled = mutableStateOf(false), requestedRoute = mutableStateOf<String?>(null), onRouteConsumed = {},
             onEnableHealth = {}, onDisableHealth = {}, onToggleGps = {},
             phoneConnected = mutableStateOf(true), batteryLevel = mutableStateOf(64), initialRoute = route)

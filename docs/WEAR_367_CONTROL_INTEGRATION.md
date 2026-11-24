@@ -42,3 +42,7 @@
 
 ## Protocol 6: transferred timer on watch
 - Watch owner adjusts the current shared timeline override at a sampled monotonic position, preserves measured ledger, then uses the existing advance path at zero. Absolute checkpoint + proof is persisted in the existing durable watch control intent. Phone validates the exact before/after phase override by reconstructing the old timeline. Future rests and original plan unchanged. Both checkpoint readers preserve overrides for subsequent handoff. Device verification and CI pending.
+
+## UI audit round
+- Main calendar opens today-first weekly list with 48dp Pill controls and real cached schedule; detailed calendar remains available through existing navigation. HU/EN/DE/RO weekday and week labels use watch locale. Daily health is reachable from menu/settings as well as the main pager; detail/journal return route retained. Distance shown from local daily cache. Finish preview differentiates active and total measured energy, never substitutes missing data. Small home label slots compacted and menu bounds adjusted.
+- Screen audit expanded to 176/192/216dp, HU/EN/DE/RO and 1.3 font scale, main pages and actual rest fixture. These are generated render smoke tests, not completed manual visual/physical acceptance. Existing dense calendar grid outside main page still uses smaller controls; physical touch audit remains open.

@@ -38,6 +38,8 @@ internal fun wearSummaryText(key: String, language: String = java.util.Locale.ge
         "save" -> listOf("Mentés", "Save", "Speichern", "Salvează")
         "pending" -> listOf("Mentésre vár", "Not yet saved", "Noch nicht gespeichert", "Nesalvat încă")
         "pulse" -> listOf("Átlagpulzus", "Average heart rate", "Durchschnittspuls", "Puls mediu")
+        "activeCalories" -> listOf("Aktív energia", "Active energy", "Aktive Energie", "Energie activă")
+        "totalCalories" -> listOf("Összes energia", "Total energy", "Gesamtenergie", "Energie totală")
         else -> error("Unknown summary label")
     }
     return labels[when (language) { "hu" -> 0; "de" -> 2; "ro" -> 3; else -> 1 }]
@@ -60,7 +62,9 @@ internal fun WearFinishPreview(workout: WearWorkout, health: JSONObject?, onBack
         centerItem { Title(overview.name, 17) }
         centerItem { Label("${formatSeconds(workout.elapsedSeconds(now))} · ${overview.sets} ${wearSummaryText("sets")}", size = 12) }
         centerItem { Label(wearSummaryText("volume") + ": " + wearSummaryVolume(overview.volumeKg), size = 12) }
-        centerItem { Label("♥ " + (metric("averageHeartRate", 20.0, 250.0) ?: "–") + " bpm · " + (metric("totalCalories", 0.0, 100000.0) ?: "–") + " kcal") }
+        centerItem { Label("♥ " + wearSummaryText("pulse") + ": " + (metric("averageHeartRate", 20.0, 250.0) ?: "–") + " bpm", lines = 2) }
+        centerItem { Label(wearSummaryText("activeCalories") + ": " + (metric("activeCalories", 0.0, 100000.0) ?: "–") + " kcal", lines = 2) }
+        centerItem { Label(wearSummaryText("totalCalories") + ": " + (metric("totalCalories", 0.0, 100000.0) ?: "–") + " kcal", lines = 2) }
         centerItem { Pill(wearSummaryText("save"), modifier = Modifier.testTag("wear-summary-save"), enabled = canSave, onClick = onSave) }
         centerItem { Label(wearSummaryText("pending"), size = 10) }
         overview.exercises.forEach { exercise ->
