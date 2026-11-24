@@ -107,7 +107,7 @@ fun Modifier.trainPilotCombinedClickable(
 internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean): Modifier {
     if (!LocalTrainPilotPalette.current.isLiquidGlass || !LocalGlassOpticsEnabled.current) return this
     val held by source.collectIsPressedAsState()
-    val scale = animateFloatAsState(
+    val pressScale = animateFloatAsState(
         targetValue = if (enabled && held) .965f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow),
@@ -115,7 +115,7 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
     )
     // Draw-only scale leaves layout and the accessible touch bounds unchanged.
     return drawWithContent {
-        scale(scale.value, scale.value) { this@drawWithContent.drawContent() }
+        scale(pressScale.value, pressScale.value) { this@drawWithContent.drawContent() }
     }
 }
 
