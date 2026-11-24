@@ -5,7 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.scale
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -113,7 +113,10 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
             stiffness = Spring.StiffnessMediumLow),
         label = "glass press"
     )
-    return graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+    // Draw-only scale leaves layout and the accessible touch bounds unchanged.
+    return drawWithContent {
+        scale(scale.value, scale.value) { this@drawWithContent.drawContent() }
+    }
 }
 
 /** Paint on the visual child while the accessible parent retains the larger hit area. */
