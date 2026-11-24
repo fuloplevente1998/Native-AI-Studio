@@ -155,6 +155,7 @@ import com.example.ui.viewmodel.openLoggedWorkoutRouteMap
 import com.example.ui.viewmodel.openPlannedProgramDetails
 import com.example.ui.viewmodel.openProgramEditor
 import com.example.ui.viewmodel.openQuickWorkoutSheet
+import com.example.ui.viewmodel.launchPendingWatchMeasurement
 import com.example.ui.viewmodel.pauseOutdoorMeasurement
 import com.example.ui.viewmodel.planMonthlyWorkouts
 import com.example.ui.viewmodel.previewProgressionSettings
@@ -285,6 +286,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = TrainPilotStrings.forLanguage(uiState.language)
+    val measurementStart by viewModel.pendingWatchMeasurementStart.collectAsStateWithLifecycle()
+    LaunchedEffect(measurementStart) {
+        measurementStart?.let { viewModel.launchPendingWatchMeasurement(context as? android.app.Activity, it) }
+    }
     val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
     val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val health by nativeHealth.uiState.collectAsStateWithLifecycle()

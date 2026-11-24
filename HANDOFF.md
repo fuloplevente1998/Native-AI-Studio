@@ -10,3 +10,5 @@
   paletta 12/15 kiemelőszín ≥4,5:1 (#349 része).
 - Nyitott issue-k: #349 (32 téma közös kiemelés), #350 (saját témák + áttetszőség, leírás bővítve), #351 (óra mérés auto-indítás,
   jóváhagyásra vár), #359 (külső órás edzésimport – a refaktor feltétele teljesült).
+
+- #351 első rész (`fix/351-wear-auto-measurement`): új telefonos canonical edzéshez külön mérésindítás, meglévő Wear távoli Activity útvonal, élő mérési állapot; ownership nincs átadva. Draft, CI és fizikai óra még ellenőrizendő. Háttér-FGS engedélyezési út és újracsatlakozás külön további vizsgálat; #359/#367 kód érintetlen.

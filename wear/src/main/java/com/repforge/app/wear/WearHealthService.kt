@@ -235,7 +235,8 @@ class WearHealthService : Service(), ExerciseUpdateCallback {
     override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {}
     override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
         val data=summary ?: return
-        if(lifecycle?.finished==true || destroyed || data.optString("state")=="error")return
+        // A callback before the owned-exercise check/start future is not a measurement ACK.
+        if(lifecycle?.owned!=true || lifecycle?.finished==true || destroyed || data.optString("state")=="error")return
         lastUpdateReceivedAt=SystemClock.elapsedRealtime()
         val accumulator=WearHealthAccumulator(data)
         val currentOrigin=System.currentTimeMillis()-SystemClock.elapsedRealtime()
