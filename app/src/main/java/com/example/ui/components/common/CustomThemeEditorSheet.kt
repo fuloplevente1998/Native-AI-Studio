@@ -28,7 +28,8 @@ internal fun CustomThemeEditorSheet(
     language: AppLanguage,
     onSave: (CustomThemeDefinition) -> Unit,
     onDismiss: () -> Unit,
-    saving: Boolean = false
+    saving: Boolean = false,
+    saveFailed: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -110,6 +111,8 @@ internal fun CustomThemeEditorSheet(
                         { draft = resolved.suggestedDraft }, Modifier.fillMaxWidth().testTag("custom_theme_accept_correction"), enabled = !saving)
                 }
             }
+            if (saveFailed) Text(word("A mentés nem sikerült.", "Could not save theme.",
+                "Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată."), color = palette.danger)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainPilotSecondaryButton(word("Mégse", "Cancel", "Abbrechen", "Anulează"), ::cancel,
                     Modifier.weight(1f), enabled = !saving)
