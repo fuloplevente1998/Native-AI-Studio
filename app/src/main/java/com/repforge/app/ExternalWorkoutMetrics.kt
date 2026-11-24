@@ -19,15 +19,15 @@ internal object ExternalWorkoutMetrics {
     private const val SAMPLE_LIMIT = 20_000
     internal const val RECORD_LIMIT = 512
 
-    internal fun values(workout: ExternalWorkout, kind: Kind, rows: List<JSONObject>): Map<String, Double> {
-        if (rows.size > RECORD_LIMIT) return emptyMap()
-        val relevant = rows.filter {
+    private fun relevant(workout: ExternalWorkout, kind: Kind, rows: List<JSONObject>) = rows.filter {
             it.optString("channel") == workout.identity.provider && it.optString("source") == workout.identity.source &&
                 it.optString("type") == kind.type && it.optLong("startMs") < workout.endMs && it.optLong("endMs") > workout.startMs
         }
-        if (relevant.isEmpty()) return emptyMap()
-        if (kind.key in setOf("HeartRate", "Speed")) {
-            val samples = sortedMapOf<Long, Double>()
+
+    internal fun samples(workout: ExternalWorkout, kind: Kind, rows: List<JSONObject>): Map<Long, Double> {
+        if (rows.size > RECORD_LIMIT || kind.key !in setOf("HeartRate", "Speed")) return emptyMap()
+        val relevant = relevant(workout, kind, rows)
+        val samples = sortedMapOf<Long, Double>()
             val conflicts = mutableSetOf<Long>()
             var seen = 0
             for (row in relevant) {
@@ -46,6 +46,31 @@ internal object ExternalWorkoutMetrics {
                     if (prior != null && prior != v) { samples.remove(t); conflicts.add(t) }
                 }
             }
+        return samples
+    }
+
+    /** Count actual samples, not estimated time in zone. Explicit user-supplied maximum HR only. */
+    internal fun zones(samples: Collection<Double>, maxBpm: Int): List<Int>? {
+        if (maxBpm !in 80..250 || samples.isEmpty()) return null
+        val counts = MutableList(6) { 0 }
+        for (bpm in samples) {
+            if (!bpm.isFinite() || bpm <= 0) continue
+            val ratio = bpm / maxBpm
+            val zone = when {
+                ratio < .5 -> 0; ratio < .6 -> 1; ratio < .7 -> 2
+                ratio < .8 -> 3; ratio < .9 -> 4; else -> 5
+            }
+            counts[zone]++
+        }
+        return counts.takeIf { it.sum() > 0 }
+    }
+
+    internal fun values(workout: ExternalWorkout, kind: Kind, rows: List<JSONObject>): Map<String, Double> {
+        if (rows.size > RECORD_LIMIT) return emptyMap()
+        val relevant = relevant(workout, kind, rows)
+        if (relevant.isEmpty()) return emptyMap()
+        if (kind.key in setOf("HeartRate", "Speed")) {
+            val samples = samples(workout, kind, rows)
             if (samples.isEmpty()) return emptyMap()
             val values = samples.values
             return if (kind.key == "HeartRate") mapOf("averageHeartRate" to values.average(),
@@ -73,13 +98,8 @@ internal object ExternalWorkoutMetrics {
 internal fun HealthJournalStore.externalWorkoutMetrics(
     workout: ExternalWorkout, generation: Long, grants: Set<String>
 ): JSONObject? = synchronized(HealthJournalStore.LOCK) {
-    if (workout.identity.provider == HealthJournalStore.SAMSUNG) {
-        val values = JSONObject()
-        workout.sessionCalories?.let { values.put("workoutCalories", it) }
-        return@synchronized JSONObject().put("values", values).put("partial", true)
-            .put("method", "samsung_exercise_session")
-    }
-    if (workout.identity.provider != HealthJournalStore.HC || "READ_EXERCISE" !in grants) return@synchronized null
+    if (workout.identity.provider !in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG) ||
+        "READ_EXERCISE" !in grants) return@synchronized null
     val db = readableDatabase
     writable(db, generation)
     val args = arrayOf(workout.identity.provider, workout.identity.source, workout.endMs.toString(), workout.startMs.toString())
@@ -87,15 +107,24 @@ internal fun HealthJournalStore.externalWorkoutMetrics(
         AND type='ExerciseSessionRecord' AND record_id<>? LIMIT 1""", args + workout.identity.recordId)
         .use { it.moveToFirst() }
     val values = JSONObject()
+    val series = JSONObject()
+    if (workout.identity.provider == HealthJournalStore.SAMSUNG)
+        workout.sessionCalories?.let { values.put("workoutCalories", it) }
     if (!overlap) for (kind in ExternalWorkoutMetrics.kinds) {
-        if (kind.permission !in grants) continue
+        if (kind.permission !in grants || workout.identity.provider == HealthJournalStore.SAMSUNG && kind.key != "HeartRate") continue
         val rows = db.rawQuery("""SELECT json FROM records WHERE channel=? AND source=? AND start_ms<? AND end_ms>?
             AND type=? ORDER BY start_ms,record_id LIMIT ${ExternalWorkoutMetrics.RECORD_LIMIT + 1}""", args + kind.type)
             .use { cursor ->
                 buildList { while (cursor.moveToNext()) add(JSONObject(cursor.getString(0))) }
             }
         ExternalWorkoutMetrics.values(workout, kind, rows).forEach { (key, value) -> values.put(key, value) }
+        if (kind.key == "HeartRate" || kind.key == "Speed") {
+            val samples = ExternalWorkoutMetrics.samples(workout, kind, rows)
+            if (samples.isNotEmpty()) series.put(kind.key, JSONArray().apply {
+                for ((time, value) in samples) put(JSONObject().put("timeMs", time).put("value", value))
+            })
+        }
     }
-    JSONObject().put("values", values).put("partial", true).put("overlappingSession", overlap)
+    JSONObject().put("values", values).put("series", series).put("partial", true).put("overlappingSession", overlap)
         .put("method", "same_source_cached_evidence")
 }

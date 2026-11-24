@@ -80,6 +80,15 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         if (metrics.isEmpty()) Text(text.getString(com.repforge.app.R.string.journal_no_data), color = colors.muted)
         else {
             JournalHealthMetrics(metrics, "external", text, number)
+            metrics["averageSpeedMps"]?.takeIf { it > 0 }?.let { speed ->
+                val pace = (1000.0 / speed).takeIf { it.isFinite() && it < 86400 }?.toInt()
+                if (pace != null) Text(local("Tempó (a minták átlagsebességéből)", "Pace (from mean sampled speed)",
+                    "Tempo (aus mittlerer Stichprobengeschwindigkeit)", "Ritm (din viteza medie eșantionată)") +
+                    ": ${pace / 60}:${(pace % 60).toString().padStart(2, '0')} min/km", color = colors.muted)
+            }
+            source?.optJSONObject("metrics")?.optJSONObject("series")?.optJSONArray("HeartRate")?.let {
+                ExternalHeartRateZones(it, language)
+            }
             if (metrics.containsKey("workoutCalories")) Text(local("Edzésenergia, aktív/teljes bontás nélkül.",
                 "Session energy, active/total split unavailable.", "Trainingsenergie ohne Aktiv-/Gesamtaufteilung.",
                 "Energie sesiune fără separare activă/totală."), color = colors.muted)

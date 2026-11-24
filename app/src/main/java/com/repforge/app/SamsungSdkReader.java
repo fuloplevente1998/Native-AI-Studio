@@ -177,6 +177,7 @@ final class SamsungSdkReader {
                 Map<String, JSONObject> timed = new LinkedHashMap<>();
                 for (HealthDataPoint p : points(DataTypes.HEART_RATE::getReadDataRequestBuilder, start, end)) {
                     List<HeartRate> series = p.getValue(DataType.HeartRateType.SERIES_DATA);
+                    JSONArray pointSamples = new JSONArray();
                     if (series != null && !series.isEmpty()) {
                         // A sample is timestamped by its start, not by a parent interval overlap.
                         // Exclude pre-midnight and future-day samples at the [start, end) boundary.
@@ -187,6 +188,8 @@ final class SamsungSdkReader {
                             samples.put(key, new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
                             timed.put(key, new JSONObject().put("time", h.getStartTime().toString())
                                 .put("bpm", h.getHeartRate()).put("source", source(p)));
+                            pointSamples.put(new JSONObject().put("timeMs", h.getStartTime().toEpochMilli())
+                                .put("value", h.getHeartRate()));
                         }
                     } else if (!p.getStartTime().isBefore(start) && p.getStartTime().isBefore(end)) {
                         Float value = p.getValue(DataType.HeartRateType.HEART_RATE);
@@ -197,7 +200,18 @@ final class SamsungSdkReader {
                                 p.getValueOrDefault(DataType.HeartRateType.MAX_HEART_RATE, value)});
                             timed.put(key, new JSONObject().put("time", p.getStartTime().toString())
                                 .put("bpm", value).put("source", source(p)));
+                            pointSamples.put(new JSONObject().put("timeMs", p.getStartTime().toEpochMilli()).put("value", value));
                         }
+                    }
+                    if (pointSamples.length() > 0 && p.getUid() != null && !p.getUid().isEmpty()) {
+                        long first = Long.MAX_VALUE, last = Long.MIN_VALUE;
+                        for (int i = 0; i < pointSamples.length(); i++) {
+                            long stamp = pointSamples.getJSONObject(i).getLong("timeMs");
+                            first = Math.min(first, stamp); last = Math.max(last, stamp);
+                        }
+                        record(p, "HeartRateRecord", ":day:" + HealthJournalStore.day(start.toEpochMilli()),
+                            new JSONObject().put("samples", pointSamples).put("unit", "bpm"),
+                            Instant.ofEpochMilli(first), Instant.ofEpochMilli(last + 1));
                     }
                 }
                 double sum = 0, min = Double.POSITIVE_INFINITY, max = 0; int count = 0;

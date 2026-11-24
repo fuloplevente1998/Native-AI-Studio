@@ -102,7 +102,9 @@ internal object ExternalWorkoutAutoImport {
                         if (!ExternalWorkoutImport.hasReadGrant(app, provider, guard))
                             return@withContext Report(saved, overlap, skipped, failed = true, limited = limited)
                         val grants = if (provider == HealthJournalStore.HC)
-                            HealthConnectRepository.currentlyGrantedReadKeys(app) else emptySet()
+                            HealthConnectRepository.currentlyGrantedReadKeys(app)
+                        else SamsungHealthRepository.readGrantedKeys(app, guard)
+                        check("READ_EXERCISE" in grants)
                         for (seen in batch) {
                             guard()
                             // No provider IPC under the write lease. Verify the exact observed version.

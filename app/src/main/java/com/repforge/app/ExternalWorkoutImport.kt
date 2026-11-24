@@ -73,9 +73,11 @@ internal object ExternalWorkoutImport {
         NativeHealthForegroundAdmission.requireMainAdmission(app)
         val grants = if (identity.provider == HealthJournalStore.HC &&
             NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT))
-            HealthConnectRepository.currentlyGrantedReadKeys(app) else emptySet()
-        val allowed = if (identity.provider == HealthJournalStore.HC) "READ_EXERCISE" in grants
-            else hasReadGrant(app, identity.provider) { ticket.requireCurrent(app) }
+            HealthConnectRepository.currentlyGrantedReadKeys(app)
+        else if (identity.provider == HealthJournalStore.SAMSUNG && NativePrivacyControls.enabled(app, NativePrivacyControls.SAMSUNG_HEALTH))
+            SamsungHealthRepository.readGrantedKeys(app) { ticket.requireCurrent(app) }
+        else emptySet()
+        val allowed = "READ_EXERCISE" in grants
         if (!allowed) return@withContext Outcome.UNAVAILABLE
         val db = TrainPilotDatabase.getInstance(app)
         val outcome = NativeDataReplacement.mutate(app) {

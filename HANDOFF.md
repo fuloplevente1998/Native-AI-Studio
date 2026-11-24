@@ -25,3 +25,5 @@
 - #359 kézi átfedés-feloldás: meglévő edzéshez explicit társítás (önálló Room rekord nélkül), vagy külön edzésként explicit mentés; forrás azonosító tartós, saját gyakorlat és metrika változatlan, forrásadatok health-consent szerint szűrve. A társított mérés külön bizonyíték, nem automatikusan összesített érték. CI és eszközteszt ellenőrzendő.
 
 - #359 natív Egészség és Napló panel bekötése, device metaadat mindkét HC SDK-n, kör/szegmens kijelzés, Samsung session energia külön típusban, 30 napos külső Progress összesítő (nem szintetikus sorozat), kapcsolt forrás törlésjelzés és HC háttér törlésreconcile. Fizikai eszközteszt és CI még nincs igazolva.
+
+- #359: HC + Samsung azonos forrású pulzusminták, sebességminta alapú tempó, explicit megadott maxpulzus szerinti zónaminta-darabszám (nem zónaidő), Coach explicit külső edzés-effort és hiányjelzés. HC útvonal egyedi felhasználói kérésre, csak memóriában megtekintés; nincs háttér GPS vagy koordináta-mentés. Még CI/készülékteszt szükséges; teljes GPS mentés és új SDK strength/RPE/aktív idő nem állítható késznek.

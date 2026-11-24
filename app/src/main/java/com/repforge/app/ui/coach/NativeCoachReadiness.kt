@@ -14,7 +14,8 @@ import kotlin.math.roundToInt
 internal object NativeCoachReadiness {
     data class Result(val score: Double?, val trainpilotScore: Int?, val samsungScore: Double?,
         val samsungTime: String?, val samsungSource: String?, val sleepMinutes: Double?, val hrvMs: Double?,
-        val baselineMs: Double?, val load: Int?, val trainpilotObservations: Int, val pain: Boolean) {
+        val baselineMs: Double?, val load: Int?, val trainpilotObservations: Int, val pain: Boolean,
+        val externalCount: Int = 0, val externalWithoutEffort: Int = 0) {
         val mode: String get() = when { score == null -> "unknown"; score < 55 -> "light"; score < 75 -> "reduced"; else -> "normal" }
         val hasRecoverySignal: Boolean get() = sleepMinutes != null ||
             (hrvMs != null && hrvMs > 0 && baselineMs != null && baselineMs > 0)
@@ -29,13 +30,27 @@ internal object NativeCoachReadiness {
         var load = 100
         var loadParts = 0
         var pain = false
+        var externalCount = 0
+        var externalWithoutEffort = 0
         for (workout in recent) {
             val workoutEffort = com.repforge.app.StudioWorkoutFeedback.normalizeKnownEffort(
                 com.repforge.app.StudioWorkoutFeedback.readWorkoutEffort(workout)
             )
             if (workoutEffort == "pain" ||
                 workout.optJSONObject("feedback")?.optString("rating") == "pain") pain = true
-            val exercises = workout.optJSONArray("exercises") ?: continue
+            val exercises = workout.optJSONArray("exercises")
+            val external = workout.optString("originDevice") == "external"
+            if (external) {
+                externalCount++
+                if ((exercises?.length() ?: 0) == 0) {
+                    // A real explicit workout-level effort is one observation, never a fake set.
+                    val delta = when (workoutEffort) { "easy" -> 3; "light" -> 1; "good", "right" -> 0
+                        "challenging" -> -4; "hard" -> -8; "pain" -> -20; else -> null }
+                    if (delta == null) externalWithoutEffort++
+                    else { loadParts++; load += delta }
+                }
+            }
+            if (exercises == null) continue
             for (i in 0 until exercises.length()) {
                 val exercise = exercises.optJSONObject(i) ?: continue
                 val effort = com.repforge.app.StudioWorkoutFeedback.readExerciseEffort(exercise, workout)
@@ -83,7 +98,7 @@ internal object NativeCoachReadiness {
             (if (pain) minOf(blended, 54) else blended).toDouble()
         }
         return Result(score, ownScore, energy?.first, energy?.second, energy?.third, sleep, hrv, baseline,
-            if (loadParts > 0) load else null, parts, pain)
+            if (loadParts > 0) load else null, parts, pain, externalCount, externalWithoutEffort)
     }
 
     /** An explicit invalid timestamp never falls back to a different date. */

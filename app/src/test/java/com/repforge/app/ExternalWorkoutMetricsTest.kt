@@ -29,6 +29,13 @@ class ExternalWorkoutMetricsTest {
         assertTrue(ExternalWorkoutMetrics.values(workout, kind("activeCalories"), listOf(amount("activeCalories", 90, 120, 2.0))).isEmpty())
     }
 
+    @Test fun zoneCountsRequireExplicitMaxAndNeverEstimateDuration() {
+        assertNull(ExternalWorkoutMetrics.zones(listOf(100.0), 0))
+        assertNull(ExternalWorkoutMetrics.zones(emptyList(), 200))
+        assertEquals(listOf(1, 1, 1, 1, 1, 2),
+            ExternalWorkoutMetrics.zones(listOf(99.0, 100.0, 120.0, 140.0, 160.0, 180.0, 205.0), 200))
+    }
+
     @Test fun sampleConflictsAreExcludedAndMissingValuesStayAbsent() {
         fun s(t: Long, v: Int) = JSONObject().put("timeMs", t).put("value", v)
         val a = row("HeartRate", 90, 220, JSONObject().put("samples", JSONArray().put(s(110, 100)).put(s(120, 130)).put(s(200, 200))))
