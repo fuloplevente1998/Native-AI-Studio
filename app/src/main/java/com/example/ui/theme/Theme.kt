@@ -6,8 +6,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.remember
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 import com.repforge.app.ui.theme.TrainPilotExtendedColors
-import com.repforge.app.ui.theme.Card2Color
-import com.repforge.app.ui.theme.NativeThemeTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
