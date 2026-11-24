@@ -117,7 +117,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
     var showLangMenu by remember { mutableStateOf(false) }
 
     Surface(
-        color = palette.background,
+        color = palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
@@ -444,7 +444,7 @@ fun TrainPilotBottomNavigationBar(
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
-        color = palette.surface,
+        color = palette.cardPaint,
         tonalElevation = 8.dp,
         modifier = Modifier
             .fillMaxWidth()
