@@ -50,7 +50,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 import android.content.Context
-import androidx.compose.ui.graphics.toArgb
 import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.HealthBackgroundJob
 import com.repforge.app.HealthJournalStore
