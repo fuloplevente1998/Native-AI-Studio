@@ -1,6 +1,8 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import com.example.ui.theme.LocalTrainPilotPalette
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -42,13 +44,16 @@ internal fun TrainPilotModalBottomSheet(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = BottomSheetDefaults.ExpandedShape
+    val palette = LocalTrainPilotPalette.current
+    // Paint over a known gradient inside the sheet, not the unknown content/scrim behind it.
+    val customPaint = palette.customCardPaint != null && containerColor == palette.surface
     var handleHeight by remember { mutableIntStateOf(0) }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
         sheetState = sheetState,
         shape = shape,
-        containerColor = containerColor,
+        containerColor = if (customPaint) palette.background else containerColor,
         contentColor = contentColor,
         dragHandle = if (dragHandle == null) null else {
             { Box(Modifier.onSizeChanged { handleHeight = it.height }) { dragHandle() } }
@@ -60,6 +65,7 @@ internal fun TrainPilotModalBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(if (customPaint) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
                 .drawWithCache {
                     // Material moves and scales the sheet inside its caller modifier. Draw here
                     // so the stroke moves with the surface and extends around the drag handle.
