@@ -71,6 +71,7 @@ internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONO
         centerItem { Label(dailyText("Lépés · cél", "Steps · goal", "Schritte · Ziel", "Pași · obiectiv") + " " + (goal?.toString() ?: "–")) }
         centerItem { Label("♥ " + (pulse?.let { "$it bpm" } ?: passive?.let { "${it.bpm} bpm · " + dailyText("utolsó", "last", "zuletzt", "ultimul") } ?: "–")) }
         centerItem { Label((daily.data.calories?.let(::trimWearNumber) ?: "–") + " kcal · " + dailyText("összes", "total", "gesamt", "total")) }
+        centerItem { Label(dailyText("Távolság", "Distance", "Distanz", "Distanță") + " " + (daily.data.distanceMeters?.let { trimWearNumber(it / 1000.0) + " km" } ?: "–")) }
         centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " " + (daily.data.sleepIntervalMinutes?.let { "${it / 60} h ${it % 60} min" } ?: "–")) }
         if (daily.data.sleepIntervalMinutes != null) centerItem { Label(dailyText("Utolsó észlelt alvási szakasz", "Last observed sleep interval", "Letzte erkannte Schlafphase", "Ultimul interval de somn detectat"), size = 10, lines = 2) }
         centerItem { Label(dailyText("Órás napi adatok", "Watch daily data", "Tagesdaten der Uhr", "Date zilnice de pe ceas"), size = 10) }

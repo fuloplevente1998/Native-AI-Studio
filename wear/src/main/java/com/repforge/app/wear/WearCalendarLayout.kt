@@ -32,14 +32,25 @@ internal fun wearCalendarLayout(width: Float, height: Float): WearCalendarLayout
 
 internal data class WearCalendarCaption(val month: String, val dates: String)
 
-internal fun wearCalendarCaption(week: LocalDate, today: LocalDate): WearCalendarCaption {
+internal fun wearCalendarCaption(week: LocalDate, today: LocalDate, locale: java.util.Locale = java.util.Locale.forLanguageTag("hu")): WearCalendarCaption {
     val end=week.plusDays(6)
-    val locale=java.util.Locale.forLanguageTag("hu")
     val month=if(week.month==end.month && week.year==end.year)week.format(DateTimeFormatter.ofPattern("MMMM",locale))
         else "${week.format(DateTimeFormatter.ofPattern("MMM",locale))}–${end.format(DateTimeFormatter.ofPattern("MMM",locale))}"
     val year=if(end.year==today.year)"" else " ${end.year}"
-    return WearCalendarCaption(month+year,"${week.dayOfMonth}–${end.dayOfMonth}. · ${week.get(WeekFields.ISO.weekOfWeekBasedYear())}. hét")
+    val number=week.get(WeekFields.ISO.weekOfWeekBasedYear())
+    val label=when(locale.language) { "hu" -> "$number. hét"; "de" -> "KW $number"; "ro" -> "Săpt. $number"; else -> "Week $number" }
+    return WearCalendarCaption(month+year,"${week.dayOfMonth}–${end.dayOfMonth}. · $label")
 }
+
+internal fun wearCalendarDayLabel(index: Int, language: String): String = when(language) {
+    "hu" -> listOf("H","K","Sze","Cs","P","Szo","V")
+    "de" -> listOf("Mo","Di","Mi","Do","Fr","Sa","So")
+    "ro" -> listOf("Lu","Ma","Mi","Jo","Vi","Sâ","Du")
+    else -> listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+}[index]
+
+internal fun wearCalendarTodayEntries(entries: List<WatchCalendarEntry>, today: LocalDate) =
+    entries.filter { wearCalendarDate(it)==today }.sortedBy { it.plannedStart }
 
 internal fun wearCalendarMonday(date: LocalDate): LocalDate =
     date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))

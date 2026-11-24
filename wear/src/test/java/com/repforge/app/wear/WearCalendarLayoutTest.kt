@@ -72,4 +72,13 @@ class WearCalendarLayoutTest {
 
     private fun entry(date: String, status: String = "rest") = WatchCalendarEntry(date, "scheduled", "", status,
         WatchHomeDay("A", "Alap A", "p", "Otthoni", emptyList()))
+    @Test fun captionAndDayLabelsFollowFourWatchLanguages() {
+        val date=LocalDate.parse("2026-10-05")
+        for((language,week,day) in listOf(Triple("hu","41. hét","H"),Triple("en","Week 41","Mon"),Triple("de","KW 41","Mo"),Triple("ro","Săpt. 41","Lu"))) {
+            val caption=wearCalendarCaption(date,date,java.util.Locale.forLanguageTag(language))
+            assertTrue(caption.dates.endsWith(week))
+            assertEquals(day,wearCalendarDayLabel(0,language))
+        }
+        assertEquals(listOf(entry("2026-10-05","planned")),wearCalendarTodayEntries(listOf(entry("2026-10-06"),entry("2026-10-05","planned")),date))
+    }
 }

@@ -218,8 +218,8 @@ internal fun TrainPilotWearApp(
                             onToggleGps,
                             home.value,
                             onRefreshJournal,
-                            onOpenJournal = { openJournal("metrics") },
-                            onSelectMeasurement = { openMeasurement(it, "metrics") },
+                            onOpenJournal = { openJournal(route) },
+                            onSelectMeasurement = { openMeasurement(it, route) },
                             onBack = { route = if (route == "daily-details") "metrics" else metricsBackRoute },
                         )
                     route == "metrics" ->

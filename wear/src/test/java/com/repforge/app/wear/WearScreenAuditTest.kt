@@ -11,6 +11,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertTrue
@@ -98,11 +101,11 @@ class WearScreenAuditTest {
     }
 
     @Composable
-    private fun app(route: String, workout: WearWorkout? = null, closure: WearClosure? = null) {
+    private fun app(route: String, workout: WearWorkout? = null, closure: WearClosure? = null, rest: Int = 0) {
         val h = home()
         TrainPilotWearApp(
             workout = mutableStateOf(workout), home = mutableStateOf(h), closure = mutableStateOf(closure),
-            restRemaining = mutableStateOf(0), onStart = { _, _ -> }, onStartQuick = {}, onAddQuick = {},
+            restRemaining = mutableStateOf(rest), onStart = { _, _ -> }, onStartQuick = {}, onAddQuick = {},
             onChange = { _, _ -> }, onComplete = {}, onPrevious = {}, onNext = {}, onSelectExercise = {}, onSkipRest = {},
             onFinish = {}, onDiscard = {}, onResumeWorkout = {}, onRetry = {}, onDismissClosure = {}, onOpenPhone = {},
             onRefreshJournal = {}, health = mutableStateOf(JSONObject().put("heartRate", 128)), measuring = mutableStateOf(true),
@@ -116,6 +119,8 @@ class WearScreenAuditTest {
     private val workoutRoutes = listOf("workout", "editor", "timer", "finish", "discard", "ownership193", "gpsRoute193")
 
     private fun all(round: Boolean, suffix: String) {
+        val previousLocale=Locale.getDefault()
+        try {
         Locale.setDefault(Locale.forLanguageTag("hu"))
         val h = home()
         val strength = h.createWorkout(h.days.first(), "", started)
@@ -126,10 +131,39 @@ class WearScreenAuditTest {
         shoot("$suffix-summary", round) { app("summary", closure = WearClosure("c", "w1", "finishWorkout", "done", "", 3120, 3, 8)) }
         val written = File("build/test-results/wear-screens").listFiles()?.count { it.name.startsWith(suffix) } ?: 0
         assertTrue("screens written: $written", written >= routes.size + workoutRoutes.size)
+        } finally { Locale.setDefault(previousLocale) }
     }
 
     @Config(sdk = [34], qualifiers = "w192dp-h192dp-round-watch-xhdpi")
     @Test fun roundViewport() = all(round = true, suffix = "round")
+
+    private fun compactAudit(suffix: String, language: String, scale: Float) {
+        val previous=Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag(language))
+            val h=home()
+            val workout=h.createWorkout(h.days.first(),"",started)
+            val rest=workout.copy(restEndAt=System.currentTimeMillis()+90000L)
+            for(route in listOf("home","calendar","metrics","journal","workout","finish")) {
+                shoot("$suffix-$route",true) {
+                    val density=LocalDensity.current
+                    CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {
+                        app(route,if(route in listOf("workout","finish"))workout else null)
+                    }
+                }
+            }
+            shoot("$suffix-rest",true) { app("workout",rest,rest=90) }
+        } finally { Locale.setDefault(previous) }
+    }
+
+    @Config(sdk = [34], qualifiers = "w176dp-h176dp-round-watch-xhdpi")
+    @Test fun compactEnglishLargeText()=compactAudit("compact-en-130","en",1.3f)
+
+    @Config(sdk = [34], qualifiers = "w216dp-h216dp-round-watch-xhdpi")
+    @Test fun largeGerman()=compactAudit("large-de","de",1f)
+
+    @Config(sdk = [34], qualifiers = "w192dp-h192dp-round-watch-xhdpi")
+    @Test fun romanianLargeText()=compactAudit("round-ro-130","ro",1.3f)
 
     @Config(sdk = [34], qualifiers = "w192dp-h560dp-notround-watch-xhdpi")
     @Test fun tallLists() = all(round = false, suffix = "tall")

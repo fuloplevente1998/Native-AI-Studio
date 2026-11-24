@@ -95,7 +95,7 @@ internal fun WearHomeDashboard(
         when (model.action) {
             HomeAction.START -> wearText("Edzés indítása")
             HomeAction.RESUME -> wearText("Edzés folytatása")
-            HomeAction.DAYS -> "Program napjai"
+            HomeAction.DAYS -> WearMenu216.text("days")
             HomeAction.RESULT -> wearText("Edzés mentésének állapota")
             HomeAction.PHONE -> wearText("Telefon megnyitása a folytatáshoz")
         }
@@ -116,12 +116,14 @@ internal fun WearHomeDashboard(
         val diameter = minOf(maxWidth, maxHeight)
         val origin = (maxHeight - diameter) / 2
         val compact = diameter < 190.dp
+        val tiny = diameter < 176.dp
+        val lineHeight = if (tiny) 9.dp else 12.dp
         val primarySize = if (diameter >= 172.dp) 56.dp else 48.dp
         val side = 48.dp
         val gap = if (diameter >= 190.dp) 5.dp else 2.dp
         val actionsWidth = side * 2 + primarySize + gap * 2
-        val actionsTop = origin + (diameter - primarySize - 47.dp).coerceAtLeast(48.dp)
-        val bodyTop = origin + diameter * .095f
+        val actionsTop = origin + (diameter - primarySize - 48.dp).coerceAtLeast(40.dp)
+        val bodyTop = origin + diameter * if (tiny) .055f else .095f
         val bodyHeight = (actionsTop - bodyTop - 2.dp).coerceAtLeast(1.dp)
         Canvas(Modifier.align(Alignment.Center).size(diameter)) {
             val inset = 7.dp.toPx()
@@ -142,15 +144,15 @@ internal fun WearHomeDashboard(
                 .width(diameter * .72f).height(bodyHeight).testTag("wear-fixed-body"),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            HomeFitText("$connection $phoneCaption ↗", Modifier.fillMaxWidth().height(12.dp),
-                10f, if (phoneConnected == true) theme.secondaryColor else HomeMuted)
+            HomeFitText("$connection $phoneCaption ↗", Modifier.fillMaxWidth().height(lineHeight),
+                if (tiny) 8f else 10f, if (phoneConnected == true) theme.secondaryColor else HomeMuted)
             HomeFitText(clock, Modifier.fillMaxWidth().weight(1f).testTag("wear-home-clock"),
-                if (compact) 28f else 38f, HomeWhite, weight = FontWeight.Bold, mono = true)
-            HomeFitText("${wearText(model.title)} · $status", Modifier.fillMaxWidth().height(13.dp).testTag("wear-home-title"),
+                if (tiny) 24f else if (compact) 30f else 38f, HomeWhite, weight = FontWeight.Bold, mono = true)
+            HomeFitText("${wearText(model.title)} · $status", Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-title"),
                 10f, HomeMuted)
             HomeFitText(
                 if (pulse != null) "♥ $pulse bpm · ${wearText("Mérés aktív")}" else if (lastPulse != null) "♥ ${lastPulse.bpm} bpm · ${wearText("Korábbi adat")}" else "♥ – · ${wearText(model.measurement)}",
-                Modifier.fillMaxWidth().height(13.dp).testTag("wear-home-measurement"),
+                Modifier.fillMaxWidth().height(lineHeight).testTag("wear-home-measurement"),
                 10f, theme.secondaryColor, weight = FontWeight.SemiBold,
             )
         }
