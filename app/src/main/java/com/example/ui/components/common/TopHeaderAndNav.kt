@@ -253,9 +253,11 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
+                    .then(if (palette.isLiquidGlass) Modifier.background(palette.surface.copy(alpha = .22f), RoundedCornerShape(50))
+                        .trainPilotGlassRim(palette, RoundedCornerShape(50)).padding(2.dp) else Modifier)
                     .testTag("top_nav_row")
                     .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(if (palette.isLiquidGlass) 2.dp else 6.dp)
             ) {
                 val itemModifier = Modifier.weight(1f).fillMaxHeight()
 
@@ -320,30 +322,35 @@ internal fun TopNavPillItem(
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
-    val glowModifier = if (selected) Modifier.trainPilotSoftGlow(palette.primary, RoundedCornerShape(12.dp)) else Modifier
     val glass = palette.isLiquidGlass && LocalGlassOpticsEnabled.current
-    val target = if (selected) selection.surface else palette.surface
+    val shape = RoundedCornerShape(if (glass) 50 else 20)
+    val legacyShape = RoundedCornerShape(12.dp)
+    val itemShape = if (glass) shape else legacyShape
+    val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
+    val target = if (glass) (if (selected) palette.primary.copy(alpha = .10f) else Color.Transparent)
+        else if (selected) selection.surface else palette.surface
     val fill = if (glass) animateColorAsState(target,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "glass selected pill").value else target
     val source = remember { MutableInteractionSource() }
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-        .trainPilotGlassRim(palette, RoundedCornerShape(12.dp))
+        .then(if (selected || compact) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
+        .then(if (selected || compact) Modifier.trainPilotGlassRim(palette, itemShape) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = itemShape,
         color = fill,
         modifier = modifier
             .then(glowModifier)
             .heightIn(min = 48.dp)
-            .trainPilotBorder(
+            .then(if (glass && !selected && !compact) Modifier else Modifier.trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) selection.border else palette.cardBorder,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
+                color = if (selected) selection.border else palette.cardBorder.copy(alpha = if (glass) .45f else palette.cardBorder.alpha),
+                shape = itemShape
+            ))
+            .clip(itemShape)
             .then(selectedModifier)
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
     ) {
