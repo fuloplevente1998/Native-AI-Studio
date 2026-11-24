@@ -154,6 +154,9 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -2926,6 +2929,58 @@ fun StudioGoogleCloudSyncCard(
         }
     }
 
+    // #352: one status for the header, judged per service (Drive / Calendar) and never from a stale date of
+    // a manual-only sync. The app has no automatic Google sync, so "late" cannot occur yet (expectedAuto = false).
+    val connected = gs.connectedEmail.isNotEmpty()
+    val feedback = settingsState.googleActionFeedback
+    val driveStatus = cloudServiceStatus(connected, gs.lastDriveSyncIso, feedback?.failed == true && feedback.action == "drive", expectedAuto = false)
+    val calendarStatus = cloudServiceStatus(connected, gs.lastCalendarSyncIso, feedback?.failed == true && feedback.action == "calendar", expectedAuto = false)
+    val headerStatus = if (connected && !gs.errorMessage.isNullOrBlank()) CloudSyncStatus.ERROR
+        else cloudSyncHeaderStatus(listOf(driveStatus, calendarStatus))
+    val busyAny = gs.isBusy || settingsState.replacementBusy || settingsState.maintenanceBusy
+    fun statusLabel(st: CloudSyncStatus) = when (st) {
+        CloudSyncStatus.OK -> tr(lang, "Szinkron rendben", "Sync OK", "Sync in Ordnung", "Sincronizare în regulă")
+        CloudSyncStatus.LATE -> tr(lang, "Több mint 3 napja nem volt sikeres szinkron", "No successful sync for more than 3 days", "Seit über 3 Tagen kein erfolgreicher Sync", "Nicio sincronizare reușită de peste 3 zile")
+        CloudSyncStatus.ERROR -> tr(lang, "Hiba – újrakapcsolás szükséges", "Error – reconnect needed", "Fehler – erneut verbinden", "Eroare – reconectare necesară")
+        CloudSyncStatus.NEUTRAL -> if (connected) tr(lang, "Még nincs szinkron", "No sync yet", "Noch kein Sync", "Încă nicio sincronizare")
+            else tr(lang, "Nincs összekötve", "Not connected", "Nicht verbunden", "Neconectat")
+    }
+    @Composable fun StatusDot(st: CloudSyncStatus, modifier: Modifier = Modifier) {
+        val (bg, fg, glyph) = when (st) {
+            CloudSyncStatus.OK -> Triple(palette.success.copy(alpha = 0.18f), palette.success, "✓")
+            CloudSyncStatus.LATE -> Triple(palette.warning.copy(alpha = 0.18f), palette.warning, "⏱")
+            CloudSyncStatus.ERROR -> Triple(palette.danger.copy(alpha = 0.18f), palette.danger, "!")
+            CloudSyncStatus.NEUTRAL -> Triple(palette.surfaceElevated, palette.textSecondary, "–")
+        }
+        Box(modifier.size(28.dp).clip(CircleShape).background(bg).semantics { contentDescription = statusLabel(st) },
+            contentAlignment = Alignment.Center) {
+            if (gs.isBusy) CircularProgressIndicator(Modifier.size(16.dp), color = palette.primary, strokeWidth = 2.dp)
+            else Text(glyph, color = fg, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+    @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String) {
+        Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceElevated, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
+                    Text(when (st) {
+                        CloudSyncStatus.OK -> "✓ " + tr(lang, "Rendben", "OK", "In Ordnung", "În regulă")
+                        CloudSyncStatus.LATE -> "⏱ " + tr(lang, "Késik", "Late", "Verspätet", "Întârziat")
+                        CloudSyncStatus.ERROR -> "! " + tr(lang, "Hiba", "Error", "Fehler", "Eroare")
+                        CloudSyncStatus.NEUTRAL -> "– " + tr(lang, "Még nem futott", "Not run yet", "Noch nicht gelaufen", "Nu a rulat încă")
+                    }, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                        color = when (st) { CloudSyncStatus.OK -> palette.success; CloudSyncStatus.LATE -> palette.warning
+                            CloudSyncStatus.ERROR -> palette.danger; CloudSyncStatus.NEUTRAL -> palette.textSecondary })
+                }
+                if (lastIso.isNotBlank()) Text("${tr(lang, "Utolsó siker", "Last success", "Letzter Erfolg", "Ultimul succes")}: ${lastIso.take(19).replace('T', ' ')}$extra",
+                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                if (st == CloudSyncStatus.ERROR) (feedback?.message ?: gs.errorMessage)?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = palette.danger)
+                }
+            }
+        }
+    }
+
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = palette.surfaceCard,
@@ -2939,105 +2994,75 @@ fun StudioGoogleCloudSyncCard(
             modifier = Modifier.padding(if (compact) 4.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // #352: one row – icon, title, a small status mark and the arrow; the whole row toggles.
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .testTag("settings_google_expand").trainPilotClickable(RoundedCornerShape(10.dp)) { cloudExpanded = !cloudExpanded },
+                    .testTag("settings_google_expand").trainPilotClickable(RoundedCornerShape(10.dp)) { cloudExpanded = !cloudExpanded }
+                    .semantics { stateDescription = if (cloudExpanded) tr(lang, "Lenyitva", "Expanded", "Aufgeklappt", "Extins")
+                        else tr(lang, "Összecsukva", "Collapsed", "Zugeklappt", "Restrâns") },
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                if (!compact) Box(
+                    modifier = Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(palette.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (!compact) Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(palette.primary.copy(alpha = 0.18f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (gs.connectedEmail.isNotEmpty()) Icons.Default.CloudDone else Icons.Default.CloudSync,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(if (compact) 8.dp else 12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (compact) "Google Drive" else tr(lang, "Google Cloud Szinkron", "Google Cloud Sync", "Google Cloud-Synchronisierung", "Sincronizare Google Cloud"),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
-                        )
-                        if (!compact) Text(
-                            text = if (gs.connectedEmail.isNotEmpty()) {
-                                gs.connectedEmail
-                            } else {
-                                tr(lang, "Google Drive felhőmentés és Google Naptár szinkron", "Google Drive cloud backup & Google Calendar sync", "Google Drive Cloud-Backup & Google Kalender-Sync", "Backup Google Drive și sincronizare Google Calendar")
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (gs.connectedEmail.isNotEmpty()) palette.primary else palette.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Icon(if (connected) Icons.Default.CloudDone else Icons.Default.CloudSync, null, tint = palette.primary, modifier = Modifier.size(22.dp))
                 }
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (gs.connectedEmail.isNotEmpty()) palette.success.copy(alpha = 0.16f) else palette.surfaceElevated,
-                    modifier = Modifier.trainPilotBorder(
-                        1.dp,
-                        if (gs.connectedEmail.isNotEmpty()) palette.success.copy(alpha = 0.55f) else palette.cardBorder,
-                        RoundedCornerShape(10.dp)
-                    )
-                ) {
-                    Text(
-                        text = (if (gs.connectedEmail.isNotEmpty()) tr(lang, "Csatlakoztatva", "Connected", "Verbunden", "Conectat") else tr(lang, "Nincs belépve", "Signed out", "Nicht angemeldet", "Neconectat")) + if (cloudExpanded) " ▴" else " ▾",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (gs.connectedEmail.isNotEmpty()) palette.success else palette.textSecondary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+                Text(
+                    text = if (compact) "Google Drive" else tr(lang, "Google Cloud Szinkron", "Google Cloud Sync", "Google Cloud-Synchronisierung", "Sincronizare Google Cloud"),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                )
+                StatusDot(headerStatus, Modifier.testTag("settings_google_status_${headerStatus.name.lowercase()}"))
+                Icon(if (cloudExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
             }
 
             if (cloudExpanded) {
-                Column(Modifier.testTag("settings_google_expanded"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (gs.connectedEmail.isNotEmpty()) {
-                if (gs.connectedName.isNotBlank()) {
-                    Text(
-                        text = "${tr(lang, "Fiók", "Account", "Konto", "Cont")}: ${gs.connectedName} (${gs.connectedEmail})",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.textPrimary
-                    )
-                }
-                if (gs.lastDriveSyncIso.isNotEmpty()) {
-                    Text(
-                        text = "${tr(lang, "Utolsó Drive szinkron", "Last Drive sync", "Letzter Drive-Sync", "Ultima sincronizare Drive")}: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.textSecondary
-                    )
-                }
-                if (gs.lastCalendarSyncIso.isNotEmpty()) {
-                    val countSuffix = gs.lastCalendarSyncCount?.let { cnt ->
-                        " • " + tr(lang, "Szinkronizált események: $cnt", "Synced events: $cnt", "Synchronisierte Termine: $cnt", "Evenimente sincronizate: $cnt")
-                    }.orEmpty()
-                    Text(
-                        text = "${tr(lang, "Utolsó Naptár szinkron", "Last Calendar sync", "Letzter Kalender-Sync", "Ultima sincronizare Calendar")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}$countSuffix",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.textSecondary,
-                        modifier = Modifier.testTag("settings_google_last_calendar_sync")
-                    )
+                Column(Modifier.testTag("settings_google_expanded"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (connected) {
+                Text(
+                    text = "${tr(lang, "Fiók", "Account", "Konto", "Cont")}: " +
+                        (if (gs.connectedName.isNotBlank()) "${gs.connectedName} (${gs.connectedEmail})" else gs.connectedEmail),
+                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = palette.textPrimary
+                )
+                ServiceBox(tr(lang, "Google Drive mentés", "Google Drive backup", "Google Drive-Sicherung", "Backup Google Drive"),
+                    driveStatus, gs.lastDriveSyncIso, "", "settings_google_drive_status")
+                val countSuffix = gs.lastCalendarSyncCount?.let { cnt ->
+                    " • " + tr(lang, "$cnt esemény", "$cnt events", "$cnt Termine", "$cnt evenimente")
+                }.orEmpty()
+                ServiceBox(tr(lang, "Google Naptár", "Google Calendar", "Google Kalender", "Google Calendar"),
+                    calendarStatus, gs.lastCalendarSyncIso, countSuffix, "settings_google_last_calendar_sync")
+
+                if (headerStatus == CloudSyncStatus.ERROR) TrainPilotOutlinedButton(
+                    onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
+                    enabled = !busyAny && activity != null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.danger.copy(alpha = 0.16f)),
+                    border = BorderStroke(1.dp, palette.danger),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_reconnect_btn")
+                ) {
+                    Text(tr(lang, "Fiók újrakapcsolása", "Reconnect account", "Konto neu verbinden", "Reconectează contul"),
+                        color = palette.danger, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                 }
 
+                // Everyday actions, one under the other (#352).
+                Button(
+                    onClick = { activity?.let { settingsViewModel.syncDriveCloud(it) } },
+                    enabled = !busyAny && activity != null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_drive_sync_btn")
+                ) {
+                    Icon(Icons.Default.CloudSync, null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(tr(lang, "Drive szinkron", "Drive Sync", "Drive-Sync", "Sincronizare Drive"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                }
+                // The merge option belongs to the Drive sync above (it is not a separate action).
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { settingsViewModel.setRecoverEarlierBackups(!settingsState.recoverEarlierBackupsChecked) }
-                        .padding(vertical = 2.dp),
+                        .testTag("settings_google_recover_earlier"),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
@@ -3046,112 +3071,55 @@ fun StudioGoogleCloudSyncCard(
                         colors = CheckboxDefaults.colors(checkedColor = palette.primary)
                     )
                     Text(
-                        text = tr(lang, "Korábbi felhőmentések keresése és összefésülése", "Search and merge earlier cloud backups", "Frühere Cloud-Backups suchen und zusammenführen", "Caută și îmbină backup-urile cloud anterioare"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
+                        text = tr(lang, "Szinkronnál korábbi mentések összefésülése is", "Also merge earlier backups when syncing", "Beim Sync auch frühere Sicherungen zusammenführen", "La sincronizare îmbină și backup-urile anterioare"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary
                     )
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                TrainPilotOutlinedButton(
+                    onClick = { activity?.let { settingsViewModel.syncCalendarCloud(it) } },
+                    enabled = !busyAny && activity != null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_calendar_sync_btn")
                 ) {
-                    Button(
-                        onClick = { activity?.let { settingsViewModel.syncDriveCloud(it) } },
-                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .testTag("settings_google_drive_sync_btn")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = tr(lang, "Drive szinkron", "Drive Sync", "Drive-Sync", "Sincronizare Drive"),
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                    TrainPilotOutlinedButton(
-                        onClick = { activity?.let { settingsViewModel.syncCalendarCloud(it) } },
-                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
-                        border = BorderStroke(1.dp, palette.cardBorder),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .testTag("settings_google_calendar_sync_btn")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = tr(lang, "Naptár szinkron", "Calendar Sync", "Kalender-Sync", "Sincronizare Calendar"),
-                            color = palette.textPrimary,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
+                    Icon(Icons.Default.CalendarMonth, null, tint = palette.primary, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(tr(lang, "Naptár szinkron", "Calendar Sync", "Kalender-Sync", "Sincronizare Calendar"),
+                        color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                }
+                TrainPilotOutlinedButton(
+                    onClick = { showMaintenanceOptions = !showMaintenanceOptions },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_maintenance_toggle")
+                ) {
+                    Text(tr(lang, "Felhő karbantartás", "Cloud Maintenance", "Cloud-Wartung", "Mentenanță cloud"),
+                        color = palette.textPrimary, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                    Icon(if (showMaintenanceOptions) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.textSecondary)
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TrainPilotOutlinedButton(
-                        onClick = { settingsViewModel.disconnectGoogle() },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
-                        border = BorderStroke(1.dp, palette.danger.copy(alpha = 0.45f)),
-                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy,
-                        modifier = Modifier
-                            .heightIn(min = 48.dp)
-                            .testTag("settings_google_disconnect_btn")
-                    ) {
-                        Text(
-                            text = tr(lang, "Google-fiók lekapcsolása", "Disconnect Google Account", "Google-Konto trennen", "Deconectează contul Google"),
-                            color = palette.danger,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                    TrainPilotOutlinedButton(
-                        onClick = { showMaintenanceOptions = !showMaintenanceOptions },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
-                        border = BorderStroke(1.dp, palette.cardBorder),
-                        modifier = Modifier.heightIn(min = 48.dp)
-                    ) {
-                        Text(
-                            text = if (showMaintenanceOptions) tr(lang, "Karbantartás elrejtése", "Hide Maintenance", "Wartung ausblenden", "Ascunde mentenanța") else tr(lang, "Felhő karbantartás", "Cloud Maintenance", "Cloud-Wartung", "Mentenanță cloud"),
-                            color = palette.textSecondary,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-
+                // Rarely used, destructive actions live here, each with its own confirmation.
                 if (showMaintenanceOptions) {
-                    HorizontalDivider(color = palette.cardBorder)
-                    NativeGoogleMaintenanceControls(
-                        language = settingsState.settings.language,
-                        busy = settingsState.maintenanceBusy || gs.isBusy || settingsState.replacementBusy,
-                        open = settingsViewModel::openGoogleMaintenance
-                    )
+                    Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceCard,
+                        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.danger.copy(alpha = 0.4f), RoundedCornerShape(12.dp))) {
+                        Column(Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+                            com.repforge.app.ui.theme.TrainPilotTextButton(
+                                onClick = { settingsViewModel.disconnectGoogle() },
+                                enabled = !busyAny,
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_disconnect_btn")
+                            ) {
+                                Text(tr(lang, "Google-fiók lekapcsolása", "Disconnect Google Account", "Google-Konto trennen", "Deconectează contul Google"),
+                                    color = palette.danger, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            }
+                            NativeGoogleMaintenanceControls(
+                                language = settingsState.settings.language,
+                                busy = busyAny,
+                                open = settingsViewModel::openGoogleMaintenance
+                            )
+                        }
+                    }
                 }
             } else {
                 Text(
@@ -3165,30 +3133,32 @@ fun StudioGoogleCloudSyncCard(
                 )
                 Button(
                     onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
-                    enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
+                    enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .testTag("settings_google_login_btn")
+                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("settings_google_login_btn")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CloudSync,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Default.CloudSync, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google"),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google"), fontWeight = FontWeight.Bold)
                 }
             }
 
+            if (!compact) Text(driveHealthBackupSummary(lang), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
+                Surface(shape = RoundedCornerShape(10.dp), color = palette.primary.copy(alpha = 0.14f),
+                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")) {
+                    Text(gs.stageMessage, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
+                        color = palette.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                }
+            }
+            if (!compact && !gs.errorMessage.isNullOrBlank()) {
+                Surface(shape = RoundedCornerShape(10.dp), color = palette.danger.copy(alpha = 0.14f),
+                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")) {
+                    Text(gs.errorMessage, style = MaterialTheme.typography.labelMedium, color = palette.danger,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                }
+            }
                 }
             }
 
@@ -3198,28 +3168,6 @@ fun StudioGoogleCloudSyncCard(
                 count = settingsState.maintenanceCompleted
             )
 
-            if (!compact) Text(
-                driveHealthBackupSummary(lang),
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.textSecondary
-            )
-
-            if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = palette.primary.copy(alpha = 0.14f),
-                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")
-                ) {
-                    Text(
-                        text = gs.stageMessage,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.primary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-            }
-
             if (compact && !gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastDriveSyncIso.isNotBlank()) {
                 Text(
                     text = "${tr(lang, "Utolsó mentés", "Last backup", "Letzte Sicherung", "Ultimul backup")}: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
@@ -3228,50 +3176,30 @@ fun StudioGoogleCloudSyncCard(
                     modifier = Modifier.padding(horizontal = 8.dp).testTag("backup_drive_last_sync")
                 )
             }
-            if (!compact && !gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastCalendarSyncIso.isNotBlank()) {
-                val syncedCountLabel = gs.lastCalendarSyncCount?.let { cnt ->
-                    " • " + tr(lang, "$cnt esemény szinkronizálva", "$cnt events synced", "$cnt Termine synchronisiert", "$cnt evenimente sincronizate")
-                }.orEmpty()
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = palette.success.copy(alpha = 0.14f),
-                    modifier = Modifier.fillMaxWidth().testTag("settings_google_calendar_sync_success")
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = tr(lang, "Naptár szinkron sikeres", "Calendar sync successful", "Kalender-Sync erfolgreich", "Sincronizare calendar reușită") + syncedCountLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.success
-                        )
-                        Text(
-                            text = "${tr(lang, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.textSecondary
-                        )
-                    }
-                }
-            }
-
-            if (!compact && !gs.errorMessage.isNullOrBlank()) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = Color(0xFFEF4444).copy(alpha = 0.14f),
-                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")
-                ) {
-                    Text(
-                        text = gs.errorMessage,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFFEF4444),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-            }
         }
     }
+}
+
+/** #352: health of one Google service. NEUTRAL = not connected or never run; LATE only for an expected automatic sync. */
+internal enum class CloudSyncStatus { OK, LATE, ERROR, NEUTRAL }
+
+internal fun cloudServiceStatus(connected: Boolean, lastSuccessIso: String, lastAttemptFailed: Boolean, expectedAuto: Boolean,
+    now: java.time.Instant = java.time.Instant.now()): CloudSyncStatus {
+    if (!connected) return CloudSyncStatus.NEUTRAL
+    if (lastAttemptFailed) return CloudSyncStatus.ERROR
+    val last = runCatching { java.time.Instant.parse(lastSuccessIso) }.getOrNull()
+        ?: runCatching { java.time.LocalDateTime.parse(lastSuccessIso.take(19)).atZone(java.time.ZoneId.systemDefault()).toInstant() }.getOrNull()
+    if (last == null) return if (expectedAuto) CloudSyncStatus.LATE else CloudSyncStatus.NEUTRAL
+    // A manual-only (or switched-off) sync never turns yellow just because its date is old.
+    return if (expectedAuto && java.time.Duration.between(last, now).toHours() > 72) CloudSyncStatus.LATE else CloudSyncStatus.OK
+}
+
+/** The header shows the most serious relevant state: error > late > ok > neutral. */
+internal fun cloudSyncHeaderStatus(services: List<CloudSyncStatus>): CloudSyncStatus = when {
+    CloudSyncStatus.ERROR in services -> CloudSyncStatus.ERROR
+    CloudSyncStatus.LATE in services -> CloudSyncStatus.LATE
+    CloudSyncStatus.OK in services -> CloudSyncStatus.OK
+    else -> CloudSyncStatus.NEUTRAL
 }
 
 private fun driveHealthBackupSummary(language: AppLanguage) = tr(language,

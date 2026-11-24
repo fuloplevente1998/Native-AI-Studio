@@ -11,6 +11,9 @@ import com.example.ui.components.StudioRestTimerDock
 import com.example.ui.components.isActiveMeasurementScreen
 import com.example.ui.components.lastSetDiffers
 import com.example.ui.components.sheetHostState
+import com.example.ui.screens.CloudSyncStatus
+import com.example.ui.screens.cloudServiceStatus
+import com.example.ui.screens.cloudSyncHeaderStatus
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.NavRoute
@@ -116,5 +119,27 @@ class Collector2804RegressionTest {
                     assertTrue("palette ${p.id}: ${NativeThemeTokens.contrast(fg, bg)}", NativeThemeTokens.contrast(fg, bg) >= 4.5f)
             assertTrue(NativeThemeTokens.contrast(p.onPrimary, p.primary) >= 4.5f)
         }
+    }
+
+    // ---- #352 ----
+
+    @Test fun cloudStatusIsJudgedPerServiceAndNeverFromAnOldManualDate() {
+        val now = java.time.Instant.parse("2026-11-24T12:00:00Z")
+        val old = "2026-11-10T08:00:00Z"
+        assertEquals(CloudSyncStatus.NEUTRAL, cloudServiceStatus(false, old, false, false, now))
+        assertEquals(CloudSyncStatus.NEUTRAL, cloudServiceStatus(true, "", false, false, now))
+        assertEquals("manual sync: an old date is no warning", CloudSyncStatus.OK, cloudServiceStatus(true, old, false, false, now))
+        assertEquals(CloudSyncStatus.LATE, cloudServiceStatus(true, old, false, true, now))
+        assertEquals(CloudSyncStatus.OK, cloudServiceStatus(true, "2026-11-23T08:00:00Z", false, true, now))
+        assertEquals(CloudSyncStatus.ERROR, cloudServiceStatus(true, "2026-11-24T08:00:00Z", true, false, now))
+        assertEquals(CloudSyncStatus.OK, cloudServiceStatus(true, "2026-11-23 04:04:33", false, false, now))
+    }
+
+    @Test fun cloudHeaderShowsTheMostSeriousRelevantState() {
+        assertEquals(CloudSyncStatus.ERROR, cloudSyncHeaderStatus(listOf(CloudSyncStatus.ERROR, CloudSyncStatus.OK)))
+        assertEquals(CloudSyncStatus.LATE, cloudSyncHeaderStatus(listOf(CloudSyncStatus.OK, CloudSyncStatus.LATE)))
+        assertEquals("a never-run calendar does not hide a good Drive", CloudSyncStatus.OK,
+            cloudSyncHeaderStatus(listOf(CloudSyncStatus.OK, CloudSyncStatus.NEUTRAL)))
+        assertEquals(CloudSyncStatus.NEUTRAL, cloudSyncHeaderStatus(listOf(CloudSyncStatus.NEUTRAL, CloudSyncStatus.NEUTRAL)))
     }
 }
