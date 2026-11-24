@@ -28,6 +28,7 @@ import androidx.compose.runtime.DisposableEffect
 import com.example.localization.LocalTrainPilotStrings
 import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.readablePrimaryLabel
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ActiveWorkoutStore
 
@@ -70,7 +71,7 @@ fun MeasurementModeSwitcherRow(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (selected) palette.onPrimary else palette.textSecondary
+                        color = if (selected) palette.readablePrimaryLabel() else palette.textSecondary
                     )
                 }
             }
