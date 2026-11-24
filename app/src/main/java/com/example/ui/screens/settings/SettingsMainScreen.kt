@@ -143,7 +143,7 @@ fun SettingsMainScreen(
             state = settingsListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .background(palette.pageBrush)
                 .testTag("settings_main_screen"),
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -173,7 +173,7 @@ fun SettingsMainScreen(
             }
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
+                color = palette.cardPaint,
                 modifier = Modifier.fillMaxWidth()
                     .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
                     .trainPilotAnimatedExpansion()
@@ -219,7 +219,7 @@ fun SettingsMainScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
+                color = palette.cardPaint,
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
@@ -257,7 +257,7 @@ fun SettingsMainScreen(
 
         item {
             Surface(
-                shape = RoundedCornerShape(22.dp), color = palette.surfaceCard,
+                shape = RoundedCornerShape(22.dp), color = palette.cardPaint,
                 modifier = Modifier.fillMaxWidth().testTag("settings_workout_group")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
