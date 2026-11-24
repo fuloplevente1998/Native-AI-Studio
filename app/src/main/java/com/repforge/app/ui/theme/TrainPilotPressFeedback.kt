@@ -3,6 +3,11 @@ package com.repforge.app.ui.theme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.drawscope.scale
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -97,6 +102,23 @@ fun Modifier.trainPilotCombinedClickable(
         )
 }
 
+/** Glass-only press spring. Compose respects the platform animation duration scale. */
+@Composable
+internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean): Modifier {
+    if (!LocalTrainPilotPalette.current.isLiquidGlass || !LocalGlassOpticsEnabled.current) return this
+    val held by source.collectIsPressedAsState()
+    val pressScale = animateFloatAsState(
+        targetValue = if (enabled && held) .965f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow),
+        label = "glass press"
+    )
+    // Draw-only scale leaves layout and the accessible touch bounds unchanged.
+    return drawWithContent {
+        scale(pressScale.value, pressScale.value) { this@drawWithContent.drawContent() }
+    }
+}
+
 /** Paint on the visual child while the accessible parent retains the larger hit area. */
 @Composable
 internal fun Modifier.trainPilotPressIndication(
@@ -104,7 +126,7 @@ internal fun Modifier.trainPilotPressIndication(
 ): Modifier {
     val alpha = interactionAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    return clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
+    return glassPressMotion(source, enabled).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
 }
 
 /** A held press covers the whole painted outline, including wide buttons. */

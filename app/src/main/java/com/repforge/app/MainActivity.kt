@@ -31,6 +31,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.example.ui.components.CustomThemeAccess
+import com.example.ui.components.LocalCustomThemeAccess
+import com.example.ui.components.GlassThemeAccess
+import com.example.ui.components.LocalGlassThemeAccess
+import com.example.ui.theme.withGlassClarity
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.isCustomThemeKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -102,7 +111,7 @@ class MainActivity : ComponentActivity() {
                 initialValue = com.repforge.app.data.store.TrainPilotUserSettings()
             )
 
-            LaunchedEffect(settings) {
+            LaunchedEffect(settings.language, settings.themeKey, settings.restSeconds, settings.soundEnabled, settings.vibrationEnabled) {
                 viewModel.syncNativeSettings(
                     languageCode = settings.language,
                     themeKey = settings.themeKey,
@@ -113,7 +122,49 @@ class MainActivity : ComponentActivity() {
             }
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val currentPalette = TrainPilotPalettes.getById(uiState.selectedPaletteId)
+            var glassPreview by remember { mutableStateOf<Int?>(null) }
+            var glassWriteJob by remember { mutableStateOf<Job?>(null) }
+            val clarity = glassPreview ?: settings.glassClarity
+            LaunchedEffect(settings.glassClarity, glassPreview) {
+                if (glassPreview == settings.glassClarity && glassWriteJob?.isActive != true) glassPreview = null
+            }
+            val glassAccess = GlassThemeAccess(clarity,
+                preview = { glassPreview = it },
+                commit = { value ->
+                    val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(applicationContext) }.getOrNull()
+                    if (ticket != null) {
+                        val previous = glassWriteJob
+                        previous?.cancel()
+                        glassWriteJob = lifecycleScope.launch {
+                            try {
+                                previous?.join()
+                                withContext(Dispatchers.IO) { settingsStore.setGlassClarityForDataset(value, ticket) }
+                                if (glassPreview == value) glassPreview = null
+                            } catch (cancelled: CancellationException) { throw cancelled }
+                            catch (_: Exception) { if (glassPreview == value) glassPreview = null }
+                        }
+                    } else glassPreview = null
+                })
+            val currentPalette = if (isCustomThemeKey(settings.themeKey)) {
+                remember(settings.themeKey, settings.customThemesJson) { settings.resolvedThemePalette() }
+            } else remember(uiState.selectedPaletteId, clarity) {
+                TrainPilotPalettes.getById(uiState.selectedPaletteId).withGlassClarity(clarity)
+            }
+            val customThemeAccess = remember(settings.themeKey, settings.customThemesJson) {
+                CustomThemeAccess(settings.customThemes(), settings.themeKey,
+                    save = { definition ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.saveCustomThemeForDataset(definition, ticket) }
+                    },
+                    apply = { key ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.applyCustomThemeForDataset(key, ticket) }
+                    },
+                    delete = { key ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.deleteCustomThemeForDataset(key, ticket) }
+                    })
+            }
             SideEffect { PaletteSystemBars.apply(window, currentPalette) }
 
             com.example.ui.theme.TrainPilotTheme(
@@ -136,7 +187,10 @@ class MainActivity : ComponentActivity() {
                         startupScreen.markNativeReady()
                     }
                     com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
-                        TrainPilotAppRoot(viewModel = viewModel)
+                        CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
+                            LocalGlassOpticsEnabled provides !uiState.isWorkoutSessionActive) {
+                            TrainPilotAppRoot(viewModel = viewModel)
+                        }
                     }
                 } else if (migrationFailure) {
                     LaunchedEffect(Unit) {
@@ -251,7 +305,7 @@ class MainActivity : ComponentActivity() {
                 catch (_: Exception) { null } ?: return@launch
             viewModel.syncNativeSettings(stored.language, stored.themeKey, stored.restSeconds,
                 stored.soundEnabled, stored.vibrationEnabled)
-            PaletteSystemBars.apply(window, TrainPilotPalettes.getById(viewModel.uiState.value.selectedPaletteId))
+            PaletteSystemBars.apply(window, stored.resolvedThemePalette())
         }
         if (!migrationReady) return
         HealthBackgroundService.stop(this)

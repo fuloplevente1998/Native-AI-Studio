@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.PageLayoutHorizontalRow
 import com.example.ui.components.PageLayoutCard
 import androidx.compose.runtime.key
@@ -86,6 +89,8 @@ import com.example.localization.LocalizedStrings
 import com.example.model.HomeDemoMode
 import com.example.ui.components.TrainPilotMountainLogo
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
+import com.example.ui.theme.readablePrimaryLabel
 import com.example.ui.viewmodel.TrainPilotUiState
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -138,14 +143,14 @@ fun HomeScreen(
     PageLayoutFrame(layout, state.language, blocks, scrollState, 5.dp) {
     com.example.ui.components.TrainPilotScrollableBox(
         scrollState = scrollState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().background(palette.pageBrush).trainPilotGlassScene(palette)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 4.dp, bottom = 6.dp),
+                .padding(top = 4.dp + LocalGlassTopInset.current, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
         layout.order.forEach { id ->
@@ -156,9 +161,9 @@ fun HomeScreen(
                             // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.surface,
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
                                     .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                                     .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenPersonalPlanner() }
@@ -205,9 +210,9 @@ fun HomeScreen(
                             // 3. HERO WORKOUT CARD (Mockup 1/4 #1: "Szüneteltetve • Teljes test A • 8 gyakorlat • kb. 60 perc • ▶ Folytatás")
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = palette.surface,
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                                     .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp))
                                     .trainPilotBorder(
                                         width = 1.dp,
@@ -304,7 +309,7 @@ fun HomeScreen(
 
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
-                                                color = palette.tintedSurface(0.12f),
+                                                color = palette.selectionColors().surface,
                                                 modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                             ) {
                                                 Text(
@@ -314,7 +319,7 @@ fun HomeScreen(
                                                     } else currentDay?.localizedDayCode(state.language) ?: tr("A nap", "Day A", "Tag A", "Ziua A"),
                                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold,
                                                         fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.1f),
-                                                    color = palette.primary,
+                                                    color = palette.selectionColors().foreground,
                                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).testTag("home_planned_day")
                                                 )
                                             }
@@ -374,7 +379,7 @@ fun HomeScreen(
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = palette.primary,
-                                            contentColor = palette.onPrimary
+                                            contentColor = palette.readablePrimaryLabel()
                                         ),
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -454,8 +459,8 @@ fun HomeScreen(
                             val todayShape = RoundedCornerShape(20.dp)
                             Surface(
                                 shape = todayShape,
-                                color = palette.surfaceCard,
-                                modifier = Modifier.fillMaxWidth()
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, todayShape)
                                     .trainPilotSoftGlow(palette.primary, todayShape)
                                     .border(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
                                     .testTag("home_today_status_group")

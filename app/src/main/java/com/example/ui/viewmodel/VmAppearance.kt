@@ -51,6 +51,7 @@ fun TrainPilotViewModel.selectPalette(paletteId: Int) {
                 PaletteCategory.CONTRAST -> "contrast"
                 PaletteCategory.GLOW, PaletteCategory.VIVID -> "glow"
                 PaletteCategory.LIGHT -> "light"
+                PaletteCategory.LIQUID_GLASS -> "glass"
                 else -> "matte"
             },
             nameDe = pal.nameDe,

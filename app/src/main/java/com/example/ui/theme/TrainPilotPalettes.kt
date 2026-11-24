@@ -1,6 +1,8 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -13,7 +15,8 @@ enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmo
     GLOW("Fényes / Glow témák", "Glossy & Glow", "✨"),
     LIGHT("Világos témák", "Light Themes", "☀️"),
     BASIC("Alap témák", "Basic Themes", "🌑"),
-    VIVID("Vivid témák", "Vivid Themes", "✨");
+    VIVID("Vivid témák", "Vivid Themes", "✨"),
+    LIQUID_GLASS("Liquid Glass", "Liquid Glass", "💎");
 }
 
 /** Preserve approved matte/contrast semantics; make colored readings readable on new surfaces. */
@@ -63,7 +66,10 @@ data class TrainPilotPalette(
     val sleepAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF818CF8) else Color(0xFF4F46E5), id, background, surface, surfaceElevated, primary),
     val heartAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFB7185) else Color(0xFFE11D48), id, background, surface, surfaceElevated, primary),
     val stepsAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF34D399) else Color(0xFF059669), id, background, surface, surfaceElevated, primary),
-    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706), id, background, surface, surfaceElevated, primary)
+    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706), id, background, surface, surfaceElevated, primary),
+    val customCardPaint: Color? = null,
+    val customPageEnd: Color? = null,
+    val glassClarity: Int = 65
 ) {
     // 4 distinct theme families requested by user:
     // 1..8   = Matt témák (valódi matt, alacsony telítettségű, bársonyos felületek)
@@ -76,9 +82,13 @@ data class TrainPilotPalette(
             in 9..16 -> PaletteCategory.CONTRAST
             in 17..24 -> PaletteCategory.GLOW
             in 25..32 -> PaletteCategory.LIGHT
-            else -> PaletteCategory.MATTE
+            in 33..40 -> PaletteCategory.LIQUID_GLASS
+            else -> if (id == -1 && key.startsWith("custom:") && category in setOf(
+                PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT
+            )) category else PaletteCategory.MATTE
         }
 
+    val isLiquidGlass: Boolean get() = subGroup == PaletteCategory.LIQUID_GLASS
     val hasGlow: Boolean get() = subGroup == PaletteCategory.GLOW
     val isHighContrast: Boolean get() = subGroup == PaletteCategory.CONTRAST
     val isMatte: Boolean get() = subGroup == PaletteCategory.MATTE
@@ -86,10 +96,13 @@ data class TrainPilotPalette(
 
     val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary.copy(alpha = 0.50f), 0.50f)
     val surfaceCard: Color get() = surface
+    /** Only top-level cards over a known page backdrop should use the raw paint. */
+    val cardPaint: Color get() = customCardPaint ?: surfaceCard
+    val pageBrush: Brush get() = if (isLiquidGlass) glassPageBrush() else customPageEnd?.let { Brush.verticalGradient(listOf(background, it)) } ?: SolidColor(background)
 
     /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
     fun tintedSurface(alpha: Float): Color = primary.copy(alpha = alpha).let {
-        if (isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
+        if (id == -1 || isLiquidGlass || isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
     }
     val textMuted: Color = textSecondary.copy(alpha = 0.90f)
 
@@ -715,9 +728,11 @@ object TrainPilotPalettes {
         )
     )
 
+    val selectablePalettes: List<TrainPilotPalette> get() = allPalettes + LiquidGlassPalettes.all
+
     fun getById(id: Int): TrainPilotPalette =
-        allPalettes.firstOrNull { it.id == id } ?: allPalettes.first()
+        selectablePalettes.firstOrNull { it.id == id } ?: allPalettes.first()
 
     fun getByKey(key: String): TrainPilotPalette? =
-        allPalettes.firstOrNull { it.key.equals(key, ignoreCase = true) }
+        selectablePalettes.firstOrNull { it.key.equals(key, ignoreCase = true) }
 }

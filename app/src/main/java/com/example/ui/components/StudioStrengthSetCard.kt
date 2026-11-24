@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.model.ExerciseSetItem
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.fieldOutline
+import com.example.ui.theme.selectionColors
 import com.repforge.app.ui.theme.TrainPilotNegativeButton
 import com.repforge.app.ui.theme.TrainPilotFrames
 import java.text.NumberFormat
@@ -177,6 +179,8 @@ private fun WorkoutSetValuePicker(
     onSelect: (String) -> Unit
 ) {
     val p = LocalTrainPilotPalette.current
+    val selection = remember(p) { p.selectionColors() }
+    val outline = remember(p) { p.fieldOutline() }
     var expanded by remember(identity, enabled) { mutableStateOf(false) }
     var custom by remember(identity, enabled) { mutableStateOf(false) }
     var draft by remember(identity, value) { mutableStateOf(value) }
@@ -188,7 +192,7 @@ private fun WorkoutSetValuePicker(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Surface(color = p.surface, shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(0.5.dp, p.cardBorder),
+                border = BorderStroke(0.5.dp, outline),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .trainPilotClickable(RoundedCornerShape(10.dp), enabled = enabled) { custom = false; expanded = true }
                     .testTag(tag)) {
@@ -199,7 +203,7 @@ private fun WorkoutSetValuePicker(
                         Text(display(value), color = p.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
                             fontWeight = FontWeight.Bold, maxLines = 1)
                     }
-                    Icon(Icons.Default.ExpandMore, null, tint = p.primary, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Default.ExpandMore, null, tint = p.textSecondary, modifier = Modifier.size(14.dp))
                 }
             }
             val density = LocalDensity.current
@@ -210,11 +214,11 @@ private fun WorkoutSetValuePicker(
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
                 scrollState = scroll, modifier = Modifier.heightIn(max = 300.dp).background(p.surface).testTag("${tag}_menu")) {
                 if (customValid != null) DropdownMenuItem(
-                    text = { Text(tr("Egyedi érték…", "Custom value…", "Eigener Wert…", "Valoare personalizată…"), color = p.primary) },
+                    text = { Text(tr("Egyedi érték…", "Custom value…", "Eigener Wert…", "Valoare personalizată…"), color = selection.foreground) },
                     modifier = Modifier.testTag("${tag}_custom"),
                     onClick = { expanded = false; draft = value; custom = true })
                 choices.forEach { option ->
-                    DropdownMenuItem(text = { Text(display(option), color = if (option == value) p.primary else p.textPrimary,
+                    DropdownMenuItem(text = { Text(display(option), color = if (option == value) selection.foreground else p.textPrimary,
                         fontWeight = if (option == value) FontWeight.Bold else FontWeight.Normal) },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_option_$option"),
                         onClick = { expanded = false; onSelect(option) })

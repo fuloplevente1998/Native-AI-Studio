@@ -24,7 +24,10 @@ data class WearHomeTheme(
             val hex = Regex("#[0-9a-fA-F]{6}")
             if (!hex.matches(accent) || !hex.matches(accent2)) return DEFAULT
             return WearHomeTheme(
-                value!!.optString("key").take(32),
+                value!!.optString("key").let { key ->
+                    if (Regex("custom:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(key)) key
+                    else key.take(32)
+                },
                 accent,
                 accent2,
                 value.optString("family").takeIf { it in setOf("basic", "vivid", "matte", "contrast", "glow", "light") } ?: "basic",

@@ -18,6 +18,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.readablePrimaryLabel
+import com.repforge.app.ui.theme.NativeThemeTokens
 
 /** A single 48dp row. Optional adjustments live in the expanded timer when space is tight. */
 @Composable
@@ -79,7 +81,8 @@ internal fun StudioCompactRestControls(
                         modifier = Modifier.width(IntrinsicSize.Max), maxLines = 1, softWrap = false)
                 }
                 action("toggle", toggle, highlighted = true, click = onToggle) {
-                    Icon(if (running) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = p.onPrimary)
+                    Icon(if (running) Icons.Default.Pause else Icons.Default.PlayArrow, null,
+                        tint = if (running) p.readablePrimaryLabel() else NativeThemeTokens.onFill(p.success))
                 }
                 if (adjustments) action("plus", "+15 s", click = { onAdjust(15) }) {
                     Text("+15", color = p.textPrimary, style = MaterialTheme.typography.labelSmall,

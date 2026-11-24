@@ -1,6 +1,7 @@
 package com.repforge.app.ui.theme
 
 import androidx.compose.foundation.BorderStroke
+import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
@@ -61,7 +62,7 @@ fun TrainPilotButton(
 
     val materialButton: @Composable () -> Unit = {
         TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-            Button(onClick, surface, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+            Button(onClick, surface.glassPressMotion(source, enabled).trainPilotGlassRim(palette, shape), enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
         }
     }
     if (paintedGlow) {

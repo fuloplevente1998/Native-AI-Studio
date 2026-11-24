@@ -2,6 +2,14 @@ package com.example.ui.components
 
 import com.repforge.app.ui.theme.trainPilotClickable
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.trainPilotGlassRim
+import com.repforge.app.ui.theme.glassPressMotion
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -68,6 +76,7 @@ import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
 import com.example.model.MainTab
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.heightIn
@@ -112,12 +121,14 @@ fun TrainPilotGlobalTopHeaderAndNav(
     onOpenSettings: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val selection = remember(palette) { palette.selectionColors() }
     var showLangMenu by remember { mutableStateOf(false) }
 
     Surface(
-        color = palette.background,
+        color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
+            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
@@ -190,12 +201,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
 
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
+                        color = if (isCalendarActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
-                            .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
@@ -205,7 +216,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             Icon(
                                 imageVector = Icons.Default.CalendarMonth,
                                 contentDescription = strings.navCalendar,
-                                tint = if (isCalendarActive) palette.onPrimary else palette.textPrimary,
+                                tint = if (isCalendarActive) selection.foreground else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -214,12 +225,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     // 3. Beállítások (Settings) Icon Button
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
+                        color = if (isSettingsActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
-                            .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
@@ -229,7 +240,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = strings.settingsTitle,
-                                tint = if (isSettingsActive) palette.onPrimary else palette.textPrimary,
+                                tint = if (isSettingsActive) selection.foreground else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -242,9 +253,11 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
+                    .then(if (palette.isLiquidGlass) Modifier.background(palette.surface.copy(alpha = .22f), RoundedCornerShape(50))
+                        .trainPilotGlassRim(palette, RoundedCornerShape(50)).padding(2.dp) else Modifier)
                     .testTag("top_nav_row")
                     .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(if (palette.isLiquidGlass) 2.dp else 6.dp)
             ) {
                 val itemModifier = Modifier.weight(1f).fillMaxHeight()
 
@@ -308,26 +321,37 @@ internal fun TopNavPillItem(
     compact: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
-    val glowModifier = if (selected) Modifier.trainPilotSoftGlow(palette.primary, RoundedCornerShape(12.dp)) else Modifier
+    val selection = remember(palette) { palette.selectionColors() }
+    val glass = palette.isLiquidGlass && LocalGlassOpticsEnabled.current
+    val shape = RoundedCornerShape(if (glass) 50 else 20)
+    val legacyShape = RoundedCornerShape(12.dp)
+    val itemShape = if (glass) shape else legacyShape
+    val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
+    val target = if (glass) (if (selected) palette.primary.copy(alpha = .10f) else Color.Transparent)
+        else if (selected) selection.surface else palette.surface
+    val fill = if (glass) animateColorAsState(target,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "glass selected pill").value else target
+    val source = remember { MutableInteractionSource() }
+    val selectedModifier = if (glass) Modifier.glassPressMotion(source, true)
+        .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
+        .then(if (selected || compact) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
+        .then(if (selected || compact) Modifier.trainPilotGlassRim(palette, itemShape) else Modifier)
+    else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (selected) palette.tintedSurface(if (palette.isDark) 0.22f else 0.16f) else palette.surface,
+        shape = itemShape,
+        color = fill,
         modifier = modifier
             .then(glowModifier)
             .heightIn(min = 48.dp)
-            .trainPilotBorder(
+            .then(if (glass && !selected && !compact) Modifier else Modifier.trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) palette.primary else palette.cardBorder,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
-            .selectable(
-                selected = selected,
-                enabled = true,
-                role = Role.Tab,
-                onClick = onClick
-            )
+                color = if (selected) selection.border else palette.cardBorder.copy(alpha = if (glass) .45f else palette.cardBorder.alpha),
+                shape = itemShape
+            ))
+            .clip(itemShape)
+            .then(selectedModifier)
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
     ) {
         Column(
@@ -341,7 +365,7 @@ internal fun TopNavPillItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) palette.primary else palette.textSecondary,
+                tint = if (selected) selection.foreground else palette.textSecondary,
                 modifier = Modifier.size(if (compact) 16.dp else 18.dp)
             )
             Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
@@ -349,7 +373,7 @@ internal fun TopNavPillItem(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 fontSize = 10.sp
             )
-            val labelColor = if (selected) palette.primary else palette.textPrimary
+            val labelColor = if (selected) selection.foreground else palette.textPrimary
             if (compact) TrainPilotFitText(label, style = labelStyle, color = labelColor,
                 minSize = 8.sp, textAlign = TextAlign.Center)
             else Text(label, style = labelStyle, color = labelColor, maxLines = 2,
@@ -441,10 +465,11 @@ fun TrainPilotBottomNavigationBar(
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
-        color = palette.surface,
-        tonalElevation = 8.dp,
+        color = if (palette.isLiquidGlass) Color.Transparent else palette.cardPaint,
+        tonalElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 1.dp, color = palette.cardBorder.copy(alpha = 0.6f))
     ) {
         Row(
@@ -469,11 +494,13 @@ fun TrainPilotBottomNavigationBar(
 
             items.forEach { (tab, label, icon) ->
                 val isSelected = currentTab == tab
-                val tint = if (isSelected) palette.primary else palette.textSecondary
+                val selection = remember(palette) { palette.selectionColors() }
+                val tint = if (isSelected) selection.foreground else palette.textSecondary
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectTab(tab) }
+                        .background(if (isSelected) selection.surface else Color.Transparent, RoundedCornerShape(12.dp))
+                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelectTab(tab) })
                         .padding(vertical = 6.dp)
                         .testTag("bottom_nav_${tab.name.lowercase()}"),
                     horizontalAlignment = Alignment.CenterHorizontally,
