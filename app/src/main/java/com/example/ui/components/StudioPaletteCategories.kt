@@ -24,7 +24,7 @@ import com.example.ui.theme.TrainPilotPalettes
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 
-private val families = listOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT)
+private val families = listOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT, PaletteCategory.LIQUID_GLASS)
 
 @Composable
 internal fun StudioPaletteCategories(
@@ -70,11 +70,11 @@ internal fun StudioPaletteCategories(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(titles[index], Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text(if (family == PaletteCategory.LIQUID_GLASS) "Liquid Glass" else titles[index], Modifier.weight(1f), fontWeight = FontWeight.Bold)
                         Text(count, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
                         Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                     }
-                    if (open) TrainPilotPalettes.allPalettes.filter { it.subGroup == family }.chunked(4).forEach { row ->
+                    if (open) TrainPilotPalettes.selectablePalettes.filter { it.subGroup == family }.chunked(4).forEach { row ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                             row.forEach { option ->
                                 val active = selectedId == option.id
@@ -100,6 +100,7 @@ internal fun StudioPaletteCategories(
                             }
                         }
                     }
+                    if (open && family == PaletteCategory.LIQUID_GLASS) LiquidGlassControl(language, selectedId)
                 }
             }
         }
