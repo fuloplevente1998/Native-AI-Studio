@@ -123,18 +123,18 @@ class MainActivity : ComponentActivity() {
             } else TrainPilotPalettes.getById(uiState.selectedPaletteId)
             val customThemeAccess = remember(settings.themeKey, settings.customThemesJson) {
                 CustomThemeAccess(settings.customThemes(), settings.themeKey,
-                    save = { definition -> withContext(Dispatchers.IO) {
-                        settingsStore.saveCustomThemeForDataset(definition,
-                            NativeDataReplacement.continuationForCurrentData(applicationContext))
-                    } },
-                    apply = { key -> withContext(Dispatchers.IO) {
-                        settingsStore.applyCustomThemeForDataset(key,
-                            NativeDataReplacement.continuationForCurrentData(applicationContext))
-                    } },
-                    delete = { key -> withContext(Dispatchers.IO) {
-                        settingsStore.deleteCustomThemeForDataset(key,
-                            NativeDataReplacement.continuationForCurrentData(applicationContext))
-                    } })
+                    save = { definition ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.saveCustomThemeForDataset(definition, ticket) }
+                    },
+                    apply = { key ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.applyCustomThemeForDataset(key, ticket) }
+                    },
+                    delete = { key ->
+                        val ticket = NativeDataReplacement.continuationForCurrentData(applicationContext)
+                        withContext(Dispatchers.IO) { settingsStore.deleteCustomThemeForDataset(key, ticket) }
+                    })
             }
             SideEffect { PaletteSystemBars.apply(window, currentPalette) }
 
