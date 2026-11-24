@@ -6,6 +6,9 @@ import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import com.repforge.app.ui.health.NativeHealthForegroundAdmission
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -17,6 +20,18 @@ import java.time.Instant
  */
 internal object ExternalWorkoutImport {
     enum class Outcome { IMPORTED, ALREADY_IMPORTED, LOCALLY_DELETED, REVIEW_OVERLAP, UNAVAILABLE, CHANGED }
+
+    private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val imported = changes.asSharedFlow()
+
+    internal suspend fun hasReadGrant(app: Context, provider: String, guard: () -> Unit): Boolean =
+        when (provider) {
+            HealthJournalStore.HC -> NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT) &&
+                "READ_EXERCISE" in HealthConnectRepository.currentlyGrantedReadKeys(app)
+            HealthJournalStore.SAMSUNG -> NativePrivacyControls.enabled(app, NativePrivacyControls.SAMSUNG_HEALTH) &&
+                "READ_EXERCISE" in SamsungHealthRepository.readGrantedKeys(app, guard)
+            else -> false
+        }
 
     // Provider + package + record ID, length-framed to avoid delimiter collisions.
     fun localId(identity: ExternalWorkoutIdentity): String {
@@ -49,17 +64,13 @@ internal object ExternalWorkoutImport {
         val journal = HealthJournalStore.get(app)
         val generation = journal.generation()
         // Live provider grants, not only a cached health dashboard status.
-        val allowed = when (identity.provider) {
-            HealthJournalStore.HC -> NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT) &&
-                "READ_EXERCISE" in HealthConnectRepository.currentlyGrantedReadKeys(app)
-            HealthJournalStore.SAMSUNG -> NativePrivacyControls.enabled(app, NativePrivacyControls.SAMSUNG_HEALTH) &&
-                "READ_EXERCISE" in SamsungHealthRepository.readGrantedKeys(app) { ticket.requireCurrent(app) }
-            else -> false
-        }
+        NativeHealthForegroundAdmission.requireMainAdmission(app)
+        val allowed = hasReadGrant(app, identity.provider) { ticket.requireCurrent(app) }
         if (!allowed) return@withContext Outcome.UNAVAILABLE
         val db = TrainPilotDatabase.getInstance(app)
-        NativeDataReplacement.mutate(app) {
+        val outcome = NativeDataReplacement.mutate(app) {
             ticket.requireCurrent(app)
+            check(NativeHealthForegroundAdmission.safeOffMain(app)) { "Health import is not admitted" }
             check(NativeHealthBackupGate.available()) { "Backup is in progress" }
             val workout = journal.externalWorkoutRecord(identity, generation)
                 ?: return@mutate Outcome.UNAVAILABLE
@@ -74,8 +85,11 @@ internal object ExternalWorkoutImport {
                     "External workout changed; refresh and retry"
                 }
                 check(NativeHealthBackupGate.available())
+                check(NativeHealthForegroundAdmission.safeOffMain(app))
             }
         }
+        if (outcome == Outcome.IMPORTED) changes.tryEmit(Unit)
+        outcome
     }
 
     /** Internal transactional boundary, also exercised with an isolated Room DB in tests.

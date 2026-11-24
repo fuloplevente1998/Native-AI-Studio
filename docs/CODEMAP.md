@@ -74,7 +74,8 @@ nagy fájlok sorai frissülnek.
 | Szinkron ütemezés (előtér/háttér percek, Google auto) | `rf/NativeSyncSchedule.kt` |
 | HC háttér job, BLE óra szolgáltatás | `rf/HealthBackgroundServices.kt` |
 | Health Connect / Samsung olvasás, napló tár | `rf/HealthConnectRepository.kt`, `rf/SamsungHealthRepository.kt`, `rf/NativeHealthSync.kt` · napló tár: `rf/HealthJournalStore.kt` (séma, meta, tranzakció, beállítás, sync-állapot), `rf/HealthJournalIngest.kt` (rekord/nap írás), `rf/HealthJournalQueries.kt` (projection, page, forrásnap), `rf/HealthJournalBackup.kt` (export, restore, erase) |
-| Külső edzés #359 (közös HC session modell, nyers Samsung jelöltek, explicit Room import alapja; még nincs UI bekötés) | `rf/ExternalWorkout.kt`, `rf/ExternalWorkoutImport.kt`, `rf/HealthConnectJournal.kt`, `rf/HealthConnectLegacyBridge.kt`, `rf/HealthConnectRepository.kt`, `rf/SamsungSdkReader.java` |
+| Külső edzés #359 (közös HC session modell, nyers Samsung jelöltek, explicit Room import és egészségforrás panel) | `rf/ExternalWorkout.kt`, `rf/ExternalWorkoutImport.kt`, `rf/HealthConnectJournal.kt`, `rf/HealthConnectLegacyBridge.kt`, `rf/HealthConnectRepository.kt`, `rf/SamsungSdkReader.java` |
+| Külső edzés kézi import panel, négy nyelv | `ex/ui/screens/health/ExternalWorkoutImportPanel.kt` (meglévő szinkronból tárolt jelöltek) |
 | Kalória/energia | `rf/HealthProjectionsAndEnergy.kt` |
 | Coach képernyő, készenlét | `ex/ui/screens/health/CoachDetailScreen.kt`, `rf/ui/coach/NativeCoachReadiness.kt` |
 

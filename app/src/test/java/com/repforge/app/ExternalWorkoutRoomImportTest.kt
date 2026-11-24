@@ -32,7 +32,8 @@ class ExternalWorkoutRoomImportTest {
 
     @Test fun roomImportIsIdempotentAndNeverMergesOverlapOrResurrectsDeletion() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build().use { db ->
+        val db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        try {
             val a = workout("record")
             val id = ExternalWorkoutImport.localId(a.identity)
             suspend fun save(w: ExternalWorkout) = ExternalWorkoutImport.persist(context, db, w) {}
@@ -49,7 +50,7 @@ class ExternalWorkoutRoomImportTest {
             db.workoutHistoryDao().deleteWorkoutById(id)
             assertEquals(ExternalWorkoutImport.Outcome.LOCALLY_DELETED, save(a))
             assertNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id))
-        }
+        } finally { db.close() }
         Unit
     }
 

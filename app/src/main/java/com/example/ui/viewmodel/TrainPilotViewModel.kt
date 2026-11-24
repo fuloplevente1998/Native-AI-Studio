@@ -747,6 +747,12 @@ class TrainPilotViewModel : ViewModel() {
                 }
         }
 
+        observersScope.launch {
+            com.repforge.app.ExternalWorkoutImport.imported.collect {
+                refreshClosedWorkoutHistory(context, database, observersScope)
+            }
+        }
+
         observersScope.launch(Dispatchers.Main.immediate) {
             val warnedUnknownSelections = mutableSetOf<Pair<String, String?>>()
             var lastAppliedRemoteRestEndAt = 0L
@@ -920,6 +926,8 @@ class TrainPilotViewModel : ViewModel() {
         val dbWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
         return dbWorkouts.map { detail ->
             val w = detail.workout
+            val external = if (w.originDevice == "external")
+                runCatching { JSONObject(w.rawJson).optJSONObject("externalWorkout359") }.getOrNull() else null
             val exerciseNames = detail.exercises.joinToString(", ") { exWithSets ->
                 val ex = exWithSets.exercise
                 ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
@@ -963,7 +971,7 @@ class TrainPilotViewModel : ViewModel() {
                 dayName = if (w.quickWorkout) "" else w.dayName,
                 scheduleId = w.scheduleId.orEmpty(),
                 durationMinutes = realDurationMin,
-                workTimeLabel = realWorkLabel,
+                workTimeLabel = if (w.originDevice == "external") "—" else realWorkLabel,
                 restTimeLabel = "—",
                 totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else completedDbSets.size,
                 totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
@@ -981,6 +989,8 @@ class TrainPilotViewModel : ViewModel() {
                     "%d:%02d /km".format(secondsPerKm / 60, secondsPerKm % 60)
                 } ?: "—",
                 originDevice = w.originDevice,
+                externalSource = external?.optString("source")?.takeIf { it.isNotBlank() },
+                externalProvider = external?.optString("provider")?.takeIf { it.isNotBlank() },
                 savedStartIso = w.started,
                 savedFinishIso = w.finished,
                 photoCount = detail.photos.size,

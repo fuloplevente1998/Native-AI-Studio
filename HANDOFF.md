@@ -13,3 +13,5 @@
 
 ## #359 – külső edzésimport (részleges, draft ág)
 - `feature/359-external-workout-import`, draft #369, base `0affd420`: első commit `43ea62c` CI zöld (45454282119). Közös HC modell, lapozott olvasás; Samsung napi egyértelmű UID-jű session jelöltek, explicit Room import tranzakció stabil ID-val, tombstone és adatcsere védelemmel. Átfedés esetén felülvizsgálat, nincs automatikus összevonás. A Room import még nincs UI/automatikus szinkronba kapcsolva; késői módosítás/törlés, metrikák, teljes dedup, Samsung többsession UID, adatvédelmi/backup end-to-end, lokalizáció és készülékteszt hátra. #367/#351 változatlan.
+
+- #359 harmadik fázis: a második commit CI tesztfordítási hibáját (Room nem Closeable) javítja; kézi import a Health forráspanelben, 7/30 napos, lapozott jelöltlista, forrás és eredmény lokalizáció, Room projection frissítése, Napló jelölés. Automatikus import, módosítás/törlés propagáció, részmetrikák és társítás továbbra is nyitott. Új CI ellenőrzendő.

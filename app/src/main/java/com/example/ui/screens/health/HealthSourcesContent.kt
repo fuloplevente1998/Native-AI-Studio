@@ -158,6 +158,7 @@ internal fun HealthSourcesContent(
             }
         }
 
+        ExternalWorkoutImportPanel(uiState.language, enabled = !uiState.healthSyncBusy)
         Spacer(Modifier.height(10.dp))
         Surface(
             shape = RoundedCornerShape(20.dp),
