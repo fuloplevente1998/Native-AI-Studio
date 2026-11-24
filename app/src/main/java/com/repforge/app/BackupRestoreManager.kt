@@ -707,6 +707,7 @@ class BackupRestoreManager(context: Context) {
         // #163 / #193: Prune local GPS route files that are no longer referenced after confirmed restore
         val restoredWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
         pruneRoutesAfterRestore(previousWorkouts.map { it.workout.rawJson }, restoredWorkouts.map { it.workout.rawJson })
+        ExternalRouteStore(appContext.noBackupFilesDir).prune(database.workoutHistoryDao())
         WearSyncRepository.refreshWatchHomeAsync(appContext)
     }
 
@@ -793,6 +794,9 @@ class BackupRestoreManager(context: Context) {
                 removeRecursive(transactionsDir())
                 val gpsRoutesDir = File(appContext.noBackupFilesDir, "gps_routes")
                 if (gpsRoutesDir.exists()) removeRecursive(gpsRoutesDir)
+                val externalRoutesDir = File(appContext.noBackupFilesDir, ExternalRouteStore.DIRECTORY)
+                if (externalRoutesDir.exists()) removeRecursive(externalRoutesDir)
+                check(ExternalWorkoutAutoImport.setEnabled(appContext, false)) { "Cannot reset external workout import consent." }
                 val wearRoutesDir = File(appContext.noBackupFilesDir, "wear_routes193")
                 if (wearRoutesDir.exists()) removeRecursive(wearRoutesDir)
 

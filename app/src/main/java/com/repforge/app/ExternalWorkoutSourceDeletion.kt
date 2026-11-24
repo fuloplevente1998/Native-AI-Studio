@@ -118,6 +118,10 @@ internal object ExternalWorkoutSourceDeletion {
                 }
                 after = ids.last()
             }
+            NativeDataReplacement.mutate(app) {
+                guard()
+                ExternalRouteStore(app.noBackupFilesDir).prune(dao)
+            }
             Report(removed, retained)
         } finally {
             if (removed + retained > 0) ExternalWorkoutImport.notifyImported()
