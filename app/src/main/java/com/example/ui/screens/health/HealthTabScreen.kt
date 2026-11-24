@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassScene
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -465,9 +467,9 @@ fun HealthTabScreen(
             "today" -> {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = palette.cardPaint,
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(24.dp))
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
                 ) {
                     Column(
@@ -570,8 +572,8 @@ fun HealthTabScreen(
                 val shape = RoundedCornerShape(20.dp)
                 Surface(
                     shape = shape,
-                    color = palette.cardPaint,
-                    modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+                    modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, shape).trainPilotBorder(1.dp, palette.cardBorder, shape)
                 ) {
                     Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         StudioBodyFitnessTiles(uiState, layout) { key, reading ->
@@ -584,9 +586,9 @@ fun HealthTabScreen(
             "weight" -> {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.cardPaint,
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                         .testTag("health_weight_card")
                         .trainPilotBorder(
                             width = 1.dp,
@@ -715,7 +717,7 @@ fun HealthTabScreen(
             state = healthListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.pageBrush)
+                .background(palette.pageBrush).trainPilotGlassScene(palette)
                 .testTag("health_tab_screen"),
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
