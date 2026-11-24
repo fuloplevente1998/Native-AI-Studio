@@ -146,4 +146,16 @@ class WearHomeDashboardStateTest {
         assertEquals(57f / 255f, button.green, 1f / 255f)
         assertEquals(73f / 255f, button.blue, 1f / 255f)
     }
+    @Test fun homePulseNeverPromotesStaleOrForeignSessionSamples() {
+        val data = metrics(workout.workoutId)
+        assertEquals(97, wearHomeLivePulse(data, workout.workoutId, true, now))
+        assertNull(wearHomeLivePulse(data, "other", true, now))
+        assertNull(wearHomeLivePulse(data, workout.workoutId, false, now))
+        assertNull(wearHomeLivePulse(data, workout.workoutId, true, now + 16000L))
+        data.put("heartRateAvailability", "unavailable")
+        assertNull(wearHomeLivePulse(data, workout.workoutId, true, now))
+        data.remove("heartRateAvailability")
+        data.put("state", "paused")
+        assertNull(wearHomeLivePulse(data, workout.workoutId, true, now))
+    }
 }

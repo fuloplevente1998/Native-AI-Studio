@@ -75,7 +75,7 @@ internal fun WearMainNavigation(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 repeat(wearMainRoutes.size) { page ->
-                    Box(Modifier.size(5.dp).background(
+                    Box(Modifier.width(if (page == index) 12.dp else 5.dp).height(5.dp).background(
                         if (page == index) theme.accentColor else theme.outlineColor,
                         CircleShape,
                     ))
