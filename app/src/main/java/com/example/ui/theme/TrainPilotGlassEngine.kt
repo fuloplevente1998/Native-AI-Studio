@@ -50,18 +50,21 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
     val sceneWidth = with(density) { configuration.screenWidthDp.dp.toPx() }.coerceAtLeast(1f)
     val sceneHeight = with(density) { configuration.screenHeightDp.dp.toPx() }.coerceAtLeast(1f)
     var origin by remember { mutableStateOf(Offset.Zero) }
+    val painter = remember(effectsEnabled, shape != null) {
+        if (effectsEnabled && Build.VERSION.SDK_INT >= 33) runCatching { GlassShader33(shape != null) }.getOrNull() else null
+    }
     return onGloballyPositioned { coordinates -> origin = coordinates.positionInRoot() }
         .drawWithCache {
             val path = shape?.let { Path().apply { addOutline(it.createOutline(size, layoutDirection, this@drawWithCache)) } }
             val optics = GlassOptics.from(palette.glassClarity)
-            val painter = if (effectsEnabled && Build.VERSION.SDK_INT >= 33) runCatching {
-                GlassShader33(palette, optics, origin, sceneWidth, sceneHeight, size.width, size.height, shape != null)
-            }.getOrNull() else null
+            val configured = painter != null && Build.VERSION.SDK_INT >= 33 && runCatching {
+                painter.configure(palette, optics, origin, sceneWidth, sceneHeight, size.width, size.height)
+            }.isSuccess
             val fallback = Brush.verticalGradient(listOf(palette.background, palette.customPageEnd ?: palette.background))
             val rim = Brush.verticalGradient(listOf(Color.White.copy(alpha = .7f),
                 palette.cardBorder.copy(alpha = .32f), palette.primary.copy(alpha = .55f)))
             fun DrawScope.paint() {
-                val painted = painter != null && Build.VERSION.SDK_INT >= 33 && runCatching {
+                val painted = configured && painter != null && Build.VERSION.SDK_INT >= 33 && runCatching {
                     drawIntoCanvas { canvas ->
                         check(canvas.nativeCanvas.isHardwareAccelerated)
                         painter.draw(canvas.nativeCanvas)
@@ -83,21 +86,21 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
 
 /** Public Android APIs only. AGSL strings are original TrainPilot code. */
 @RequiresApi(33)
-private class GlassShader33(
-    palette: TrainPilotPalette, optics: GlassOptics, origin: Offset,
-    sceneWidth: Float, sceneHeight: Float, width: Float, height: Float, lens: Boolean
-) {
+private class GlassShader33(lens: Boolean) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val w = width
-    private val h = height
-    init {
-        val scene = RuntimeShader(SCENE)
+    private val scene = RuntimeShader(SCENE)
+    private val lensShader = if (lens) RuntimeShader(LENS).apply { setInputShader("scene", scene) } else null
+    private var w = 0f
+    private var h = 0f
+    fun configure(palette: TrainPilotPalette, optics: GlassOptics, origin: Offset,
+        sceneWidth: Float, sceneHeight: Float, width: Float, height: Float) {
+        w = width
+        h = height
         scene.setFloatUniform("screen", sceneWidth, sceneHeight)
         scene.setFloatUniform("origin", origin.x, origin.y)
         scene.setColorUniform("base", palette.background.toArgb())
         scene.setColorUniform("accent", palette.primary.toArgb())
-        paint.shader = if (!lens) scene else RuntimeShader(LENS).apply {
-            setInputShader("scene", scene)
+        lensShader?.apply {
             setFloatUniform("extent", width.coerceAtLeast(1f), height.coerceAtLeast(1f))
             setFloatUniform("screen", sceneWidth, sceneHeight)
             setFloatUniform("spread", optics.blur)
@@ -106,6 +109,9 @@ private class GlassShader33(
             setFloatUniform("clarity", optics.clarity)
             setColorUniform("tint", palette.surface.toArgb())
         }
+        // Rebind the source after uniform updates; never compile the AGSL again on scrolling.
+        lensShader?.setInputShader("scene", scene)
+        paint.shader = lensShader ?: scene
     }
     fun draw(canvas: android.graphics.Canvas) { canvas.drawRect(0f, 0f, w, h, paint) }
 
