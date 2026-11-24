@@ -97,6 +97,9 @@ internal object ExternalWorkoutImport {
                 check(current != null && current.summary().toString() == workout.summary().toString()) {
                     "External workout changed; refresh and retry"
                 }
+                check(journal.externalWorkoutMetrics(workout, generation, grants)?.toString() == metrics?.toString()) {
+                    "External workout measurements changed; refresh and retry"
+                }
                 check(NativeHealthBackupGate.available())
                 check(NativeHealthForegroundAdmission.safeOffMain(app))
             }
@@ -130,8 +133,22 @@ internal object ExternalWorkoutImport {
                     if (previous != null && previous.optLong("lastModifiedMs") > workout.modifiedMs)
                         return@withTransaction Outcome.ALREADY_IMPORTED
                     val next = sourceSnapshot(workout, metrics)
-                    // Keep the local timeline, including user edits. Changed source windows require review.
-                    if (w.startedEpochMs != workout.startMs || w.finishedEpochMs != workout.endMs) {
+                    // Only a pristine imported copy may adopt a corrected provider interval.
+                    // A user annotation, exercise, photo or explicit association is never overwritten.
+                    val moved = w.startedEpochMs != workout.startMs || w.finishedEpochMs != workout.endMs
+                    if (moved && ExternalWorkoutSourceDeletion.pureCopy(existing, raw) &&
+                        !dao.hasExternalImportOverlap(id, workout.startMs, workout.endMs)) {
+                        val start = Instant.ofEpochMilli(workout.startMs).toString()
+                        val end = Instant.ofEpochMilli(workout.endMs).toString()
+                        val duration = (workout.elapsedMs / 1000).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                        raw.put("started", start).put("finished", end).put("durationSeconds", duration)
+                            .put("externalWorkout359", next)
+                        check(dao.updateExternalWorkoutWindow(id, w.rawJson, raw.toString(), start, end,
+                            workout.startMs, workout.endMs, duration) == 1)
+                        guard()
+                        return@withTransaction Outcome.UPDATED
+                    }
+                    if (moved) {
                         next.put("windowChanged", true)
                         next.remove("metrics")
                     }

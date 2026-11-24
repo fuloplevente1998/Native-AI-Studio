@@ -123,7 +123,9 @@ internal fun HealthJournalStore.externalWorkoutMetrics(
         val measured = ExternalWorkoutMetrics.values(workout, kind, rows)
         // Do not splice the SDK's session HR aggregate with the journal's partial HR samples.
         val directHeart = kind.key == "HeartRate" && directKeys.any { it in setOf("averageHeartRate", "minHeartRate", "maxHeartRate") }
-        measured.forEach { (key, value) -> if (!directHeart || key == "heartRateSamples") values.put(key, value) }
+        // Sample count belongs to the series; do not use it as a denominator for
+        // a different session-level aggregate (e.g. weighted Coach HR averages).
+        measured.forEach { (key, value) -> if (!directHeart && key !in directKeys) values.put(key, value) }
         if (kind.key == "HeartRate" || kind.key == "Speed") {
             val samples = ExternalWorkoutMetrics.samples(workout, kind, rows)
             if (samples.isNotEmpty()) series.put(kind.key, JSONArray().apply {

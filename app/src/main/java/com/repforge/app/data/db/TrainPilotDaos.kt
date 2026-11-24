@@ -459,6 +459,12 @@ interface WorkoutHistoryDao {
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected AND originDevice = 'external'")
     suspend fun updateExternalWorkoutJson(id: String, expected: String, updated: String): Int
 
+    @Query("""UPDATE workout_history SET rawJson=:updated, started=:start, finished=:end,
+        startedEpochMs=:startMs, finishedEpochMs=:endMs, durationSeconds=:duration
+        WHERE id=:id AND rawJson=:expected AND originDevice='external'""")
+    suspend fun updateExternalWorkoutWindow(id: String, expected: String, updated: String, start: String, end: String,
+        startMs: Long, endMs: Long, duration: Int): Int
+
     // UPDATE keeps existing exercises, sets and photos: REPLACE cascades their deletion.
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected")
     suspend fun updateJournalPhotoJson(id: String, expected: String, updated: String): Int

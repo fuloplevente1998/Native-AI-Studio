@@ -21,9 +21,9 @@ class ExternalSessionEvidenceTest {
     class Weight { fun getInGrams() = 2500.0 }
     class Absent {
         fun hasSetIndex() = false
-        fun getSetIndex() = error("absent")
+        fun getSetIndex(): Int = error("absent")
         fun hasRateOfPerceivedExertion() = false
-        fun getRateOfPerceivedExertion() = error("absent")
+        fun getRateOfPerceivedExertion(): Float = error("absent")
     }
     @Test fun optionalFieldsKeepRealZeroAndNeverInventMissing() {
         val out = JSONObject()

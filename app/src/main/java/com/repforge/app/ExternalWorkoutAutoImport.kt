@@ -105,6 +105,7 @@ internal object ExternalWorkoutAutoImport {
                 val guard = {
                     coroutine.ensureActive()
                     syncGuard()
+                    NativePrivacyControls.requireEnabled(app, provider)
                     ticket.requireCurrent(app)
                     check(matches(app, revision, create)) { "Automatic import consent changed" }
                     check(journal.generation() == generation && journal.pendingRestore().isEmpty())
@@ -138,6 +139,7 @@ internal object ExternalWorkoutAutoImport {
                                         check("READ_EXERCISE" in grants && grants.all { HealthConnectRepository.isAllowed(app, it) })
                                     val current = journal.externalWorkoutRecord(seen.identity, generation)
                                     check(current != null && current.summary().toString() == row.summary().toString())
+                                    check(journal.externalWorkoutMetrics(row, generation, grants)?.toString() == metrics?.toString())
                                 }
                             }
                             when (outcome) {

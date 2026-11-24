@@ -630,6 +630,20 @@ class HealthBackgroundJob : JobService() {
                         throw IllegalStateException("Background sync stopped")
                     }
                 }
+                val ticket = NativeDataReplacement.continuationForCurrentData(this)
+                // Reuse the existing writer fence. No SDK IO under this short publication lease.
+                access.readCommit = { writer ->
+                    kotlinx.coroutines.runBlocking {
+                        NativeDataReplacement.mutate(this@HealthBackgroundJob) {
+                            NativeHealthBackupGate.publish {
+                                ticket.requireCurrent(this@HealthBackgroundJob)
+                                access.requireForeground()
+                                check(store.generation() == epoch)
+                                writer()
+                            }
+                        }
+                    }
+                }
                 access.requireForeground()
                 val today = LocalDate.now()
                 val automatic = ExternalWorkoutAutoImport.admitRefresh(this, HealthJournalStore.HC, today, ZoneId.systemDefault())
@@ -656,7 +670,7 @@ class HealthBackgroundJob : JobService() {
                     val at = Instant.now().toString()
                     meta.put("lastSyncAt", at).put("lastSyncAt_${HealthJournalStore.HC}", at)
                 }
-                store.syncMeta(meta)
+                access.readCommit { store.syncMeta(meta) }
                 val report = kotlinx.coroutines.runBlocking {
                     automatic.publish(this@HealthBackgroundJob, epoch) {
                         access.requireForeground()

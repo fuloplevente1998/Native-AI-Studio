@@ -401,10 +401,10 @@ final class SamsungSdkReader {
                         .put("clientRecordId", p.getClientDataId());
                     // Session-specific SDK values, never daily aggregates. Optional fields remain absent.
                     JSONObject evidence = new JSONObject();
-                    evidence.put("exerciseTypeName", s.getExerciseType().name());
-                    evidence.put("countTypeName", s.getCountType().name());
+                    if (s.getExerciseType() != null) evidence.put("exerciseTypeName", s.getExerciseType().name());
+                    if (s.getCountType() != null) evidence.put("countTypeName", s.getCountType().name());
                     if (s.getCount() != null && s.getCount() > 0) evidence.put("count", s.getCount());
-                    long duration = s.getDuration().toMillis();
+                    long duration = s.getDuration() == null ? 0L : s.getDuration().toMillis();
                     if (duration > 0 && duration <= Duration.between(a, b).toMillis())
                         evidence.put("sessionDurationSeconds", duration / 1000.0);
                     ExternalSessionEvidence.putPositive(evidence, "distanceMeters", s.getDistance());
@@ -416,8 +416,7 @@ final class SamsungSdkReader {
                     ExternalSessionEvidence.putPositive(evidence, "vo2Max", s.getVo2Max());
                     data.put("sessionEvidence", evidence);
                     // The SDK session energy is explicitly neither active nor total energy.
-                    if (Double.isFinite(s.getCalories()) && s.getCalories() > 0)
-                        data.put("sessionCalories", s.getCalories());
+                    ExternalSessionEvidence.putPositive(data, "sessionCalories", s.getCalories());
                     record(p, "ExerciseSessionRecord", "", data, a, b);
                     sessions.put(new JSONObject().put("id", p.getUid()).put("source", source(p))
                         .put("start", a.toString()).put("end", b.toString())

@@ -120,6 +120,32 @@ class ExternalWorkoutRoomImportTest {
         assertEquals(listOf(link), ExternalWorkoutAssociation.linkedIds(sanitized))
     }
 
+    @Test fun uneditedSourceWindowCorrectionUpdatesCanonicalTimeline() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        try {
+            val first = workout("corrected")
+            assertEquals(ExternalWorkoutImport.Outcome.IMPORTED, ExternalWorkoutImport.persist(context, db, first) {})
+            val id = ExternalWorkoutImport.localId(first.identity)
+            val corrected = first.copy(startMs = first.startMs + 1000, modifiedMs = first.modifiedMs + 1)
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED,
+                ExternalWorkoutImport.persist(context, db, corrected, allowCreate = false) {})
+            val row = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id)).workout
+            assertEquals(corrected.startMs, row.startedEpochMs)
+            assertEquals(59, row.durationSeconds)
+            assertFalse(JSONObject(row.rawJson).getJSONObject("externalWorkout359").optBoolean("windowChanged"))
+            val edited = JSONObject(row.rawJson).put("note", "My note")
+            assertEquals(1, db.workoutHistoryDao().updateJournalPhotoJson(id, row.rawJson, edited.toString()))
+            val again = corrected.copy(startMs = corrected.startMs + 1000, modifiedMs = corrected.modifiedMs + 1)
+            assertEquals(ExternalWorkoutImport.Outcome.UPDATED, ExternalWorkoutImport.persist(context, db, again) {})
+            val preserved = requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById(id)).workout
+            assertEquals(corrected.startMs, preserved.startedEpochMs)
+            assertTrue(JSONObject(preserved.rawJson).getJSONObject("externalWorkout359").optBoolean("windowChanged"))
+            assertEquals("My note", JSONObject(preserved.rawJson).getString("note"))
+        } finally { db.close() }
+        Unit
+    }
+
     @Test fun externalSessionCanBeAnnotatedWithoutInventingExercise() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
