@@ -8,14 +8,15 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
   modelltábla Claude Code-ra nem vonatkozik; alagens csak felhasználói kérésre.
 - Részletes szerződések: `.specify/memory/constitution.md`, dizájn: `docs/FRAME_DESIGN_SYSTEM.md`,
   issue-folyamat: `docs/ISSUE_WORKFLOW_FUNCTION_DESIGN.md`.
-- `docs/CURRENT_STATUS.md`, `docs/WORK_HANDOFF.md` és a ~100 `docs/*` fájl
-  történeti napló: alapból NE olvasd; csak célzott `rg`-vel, ha a feladat kéri.
+- **Kódtérkép: [docs/CODEMAP.md](docs/CODEMAP.md)** – funkció → fájl. Előbb ezt olvasd, utána csak a
+  megnevezett fájlt (nagy fájlban `rg -n` + célzott sortartomány). Új funkció/fájl → CODEMAP sor is.
+- `docs/archive/` (régi státusz, átadók, kiadási naplók, AI Studio export) történeti: alapból NE olvasd;
+  a `.ignore` miatt az `rg` sem keres benne (kell: `rg -uu`). Szétszedési terv: `docs/REFACTOR_PLAN.md`.
 
 ## Architektúra
 - `app/` telefon, Kotlin/Compose, package `com.example` (applicationId `com.TrainPilot.com`).
-  Nagy fájlok (csak célzott részlet!): `ui/viewmodel/TrainPilotViewModel.kt` (~5.4k sor),
-  `ui/screens/{HealthCoachAndSettings,WorkoutAndPlanning,ActiveMeasurement}Screens.kt`,
-  `ui/components/TrainPilotCommonComponents.kt`, `MainActivity.kt`.
+  Az élő UI a `com.example` fa (`TrainPilotAppRoot`); a `com.repforge.app` a motor, tárolók, ViewModelek.
+  Fájlméret: ≤600 sor cél, >900 sor új fájlnál tilos (`SourceSizeGuardTest`); áthelyezés `scripts/verify_move.py`.
 - `wear/` Wear OS, `com.repforge.app.wear`. `shared/` közös szinkronszerződések (`com.repforge`).
 - Telefon ↔ óra: egyetlen natív motor és időzítő-tulajdonos; ownership/epoch/ACK,
   stabil workout/set ID, finalization/discard, receipt, tombstone, restore generation.

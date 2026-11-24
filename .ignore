@@ -1,0 +1,3 @@
+# Token-saving search scope: history and exported copies are not live code.
+docs/archive/
+public/assets/aistudio/
