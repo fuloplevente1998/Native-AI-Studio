@@ -441,6 +441,9 @@ interface WorkoutHistoryDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertNewJournalPhoto(photo: WorkoutPhotoEntity)
 
+    @Query("SELECT id FROM workout_history WHERE originDevice = 'external' AND id > :after ORDER BY id LIMIT :limit")
+    suspend fun pageExternalWorkoutIds(after: String, limit: Int): List<String>
+
     @Query("UPDATE workout_history SET rawJson = :updated WHERE id = :id AND rawJson = :expected AND originDevice = 'external'")
     suspend fun updateExternalWorkoutJson(id: String, expected: String, updated: String): Int
 

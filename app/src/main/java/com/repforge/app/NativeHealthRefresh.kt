@@ -267,6 +267,18 @@ internal object NativeHealthRefresh {
                 catch (_: Exception) { ExternalWorkoutAutoImport.Report(failed = true) }
                 result.put("externalImport359", report.json())
             }
+            // Source deletions are independent of auto-import consent; only actual HC tombstones
+            // can remove a pure imported copy. A denied scope or missing snapshot is not deletion.
+            if (prepared.provider == HealthJournalStore.HC && "READ_EXERCISE" in prepared.healthGrants && fullSync != null) {
+                val report = try {
+                    ExternalWorkoutSourceDeletion.reconcile(context, prepared.journalGeneration) {
+                        requirePermissionIdentity()
+                        requireCommitIdentity()
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { ExternalWorkoutSourceDeletion.Report(failed = true) }
+                result.put("externalDeletion359", report.json())
+            }
             Result.success(result)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { Result.failure(failure) }

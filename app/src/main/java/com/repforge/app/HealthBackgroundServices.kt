@@ -632,6 +632,7 @@ class HealthBackgroundJob : JobService() {
                 }
                 access.requireForeground()
                 val today = LocalDate.now()
+                val automatic = ExternalWorkoutAutoImport.admit(this, HealthJournalStore.HC, today, ZoneId.systemDefault())
                 var complete = true
                 for (i in 1 downTo 0) {
                     val date = today.minusDays(i.toLong())
@@ -642,6 +643,7 @@ class HealthBackgroundJob : JobService() {
                             access,
                             JSONObject().put("start", start.toString()).put("end", end.toString())
                         )
+                        if (access.allowed("READ_EXERCISE")) automatic?.observe(date, day)
                         if (day.optJSONArray("warnings")?.let { it.length() > 0 } == true) {
                             complete = false
                         }
@@ -655,6 +657,15 @@ class HealthBackgroundJob : JobService() {
                     meta.put("lastSyncAt", at).put("lastSyncAt_${HealthJournalStore.HC}", at)
                 }
                 store.syncMeta(meta)
+                if (automatic != null) {
+                    val report = kotlinx.coroutines.runBlocking {
+                        automatic.publish(this@HealthBackgroundJob, epoch) {
+                            access.requireForeground()
+                            check(store.generation() == epoch)
+                        }
+                    }
+                    retry = report.failed && !stopped.get() && permitted(this)
+                }
             } catch (_: Exception) {
                 retry = !stopped.get() && NativePrivacyControls.enabled(this, NativePrivacyControls.HEALTH_CONNECT) && permitted(this)
             } finally {

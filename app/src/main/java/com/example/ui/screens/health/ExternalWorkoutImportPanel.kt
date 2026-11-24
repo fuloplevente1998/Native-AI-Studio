@@ -36,10 +36,10 @@ internal fun ExternalWorkoutImportPanel(language: AppLanguage, enabled: Boolean)
         Column(Modifier.weight(1f)) {
             Text(tr(language, "Automatikus edzésimport", "Automatic workout import", "Automatischer Trainingsimport", "Import automat de antrenamente"))
             Text(tr(language,
-                "A következő előtéri egészségszinkronok során beolvasott, legfeljebb 30 napos edzések. Átfedésnél nincs mentés.",
-                "Workouts up to 30 days old read by subsequent foreground health syncs. Overlaps are not saved.",
-                "Bis zu 30 Tage alte Trainings aus folgenden Gesundheitssynchronisierungen im Vordergrund. Überschneidungen werden nicht gespeichert.",
-                "Antrenamente de cel mult 30 de zile citite la următoarele sincronizări în prim-plan. Suprapunerile nu sunt salvate."))
+                "Legfeljebb 30 napos edzések az egészségszinkronból; engedélyezett Health Connect háttérszinkronban is. Átfedésnél nincs mentés.",
+                "Workouts up to 30 days old from health sync, including permitted Health Connect background sync. Overlaps are not saved.",
+                "Bis zu 30 Tage alte Trainings aus der Gesundheitssynchronisierung, auch bei erlaubtem Health-Connect-Hintergrundsync. Überschneidungen werden nicht gespeichert.",
+                "Antrenamente de cel mult 30 de zile din sincronizare, inclusiv Health Connect în fundal dacă este permis. Suprapunerile nu sunt salvate."))
         }
         Switch(checked = auto, onCheckedChange = { value ->
             saveError = !ExternalWorkoutAutoImport.setEnabled(context, value)

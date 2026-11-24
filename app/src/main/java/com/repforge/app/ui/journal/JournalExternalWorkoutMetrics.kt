@@ -34,7 +34,8 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         Instant.parse(source.getString("start")) == Instant.parse(workout.started) &&
             Instant.parse(source.getString("end")) == Instant.parse(workout.finished)
     }.getOrDefault(false)
-    val values = if (matches && source?.optBoolean("windowChanged") != true)
+    val deleted = source?.optBoolean("sourceDeleted") == true
+    val values = if (matches && !deleted && source?.optBoolean("windowChanged") != true)
         source?.optJSONObject("metrics")?.optJSONObject("values") else null
     val metrics = values?.keys()?.asSequence()?.mapNotNull { key ->
         (values.opt(key) as? Number)?.toDouble()?.takeIf { it.isFinite() && it >= 0 }?.let { key to it }
@@ -45,6 +46,9 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
             style = MaterialTheme.typography.titleMedium, color = colors.text)
         source?.optString("source")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
         source?.optString("title")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.text) }
+        if (deleted) Text(local("A forrás törölte az edzést; a helyi naplóadatok megmaradtak.",
+            "Source deleted the workout; local journal data was kept.", "Quelle hat das Training gelöscht; lokale Protokolldaten bleiben erhalten.",
+            "Sursa a șters antrenamentul; datele locale au fost păstrate."), color = colors.muted)
         if (source != null && !matches) Text(local("A forrás és a helyi edzés időablaka eltér. Ellenőrzés szükséges.",
             "Source and local workout windows differ. Review required.", "Quell- und lokales Zeitfenster unterscheiden sich. Prüfung erforderlich.",
             "Intervalele sursei și antrenamentului local diferă. Necesită verificare."), color = colors.muted)
