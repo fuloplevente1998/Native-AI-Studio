@@ -3,6 +3,7 @@ package com.example.ui.components
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassHeaderMaterial
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -121,7 +122,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
         color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotGlassMaterial(palette, RoundedCornerShape(0.dp))
+            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
