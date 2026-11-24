@@ -3,6 +3,7 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import com.repforge.app.ui.theme.NativeThemeTokens
 
 /** #350: one pure resolver for editor preview and eventual applied theme.
@@ -31,7 +32,8 @@ internal fun resolveCustomTheme(draft: CustomThemeDraft, key: String): ResolvedC
     fun contrast(a: Color, b: Color) = NativeThemeTokens.contrast(a, b)
     fun move(seed: Color, destination: Color, accepts: (Color) -> Boolean): Color {
         for (step in 0..100) {
-            val color = lerp(seed, destination, step / 100f)
+            // Validate the exact 8-bit color that the HEX editor will persist.
+            val color = Color(lerp(seed, destination, step / 100f).toArgb())
             if (accepts(color)) return color
         }
         return destination
