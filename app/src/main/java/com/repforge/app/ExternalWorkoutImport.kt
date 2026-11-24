@@ -24,6 +24,8 @@ internal object ExternalWorkoutImport {
     private val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val imported = changes.asSharedFlow()
 
+    internal fun notifyImported() { changes.tryEmit(Unit) }
+
     internal suspend fun hasReadGrant(app: Context, provider: String, guard: () -> Unit): Boolean =
         when (provider) {
             HealthJournalStore.HC -> NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT) &&

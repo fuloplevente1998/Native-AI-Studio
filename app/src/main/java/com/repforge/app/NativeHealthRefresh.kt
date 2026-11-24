@@ -173,9 +173,11 @@ internal object NativeHealthRefresh {
             }
             val samsungGrants = if (prepared.provider == HealthJournalStore.SAMSUNG)
                 SamsungHealthRepository.readGrantScope(context, guard) else emptySet()
+            val automatic = if (fullSync != null) ExternalWorkoutAutoImport.admit(context, prepared.provider,
+                prepared.localDay, prepared.zone) else null
             suspend fun read(target: LocalDate): JSONObject {
                 val (startInstant, endInstant) = dayWindow(target, prepared.zone, java.time.Instant.now())
-                return if (prepared.provider == HealthJournalStore.SAMSUNG) {
+                val value = if (prepared.provider == HealthJournalStore.SAMSUNG) {
                     SamsungHealthRepository.readHealthDayScoped(context, startInstant.toString(), endInstant.toString(),
                         target.toString(), guard, expectedGeneration = prepared.journalGeneration,
                         readCommit = commitRead, expectedGrantScope = samsungGrants).getOrThrow()
@@ -190,6 +192,9 @@ internal object NativeHealthRefresh {
                             prepared.journalGeneration, commitRead, stepsEnd = stepsEnd)
                     }
                 }
+                if ("READ_EXERCISE" in (if (prepared.provider == HealthJournalStore.HC) prepared.healthGrants else samsungGrants))
+                    automatic?.observe(target, value)
+                return value
             }
             val result = if (fullSync == null) read(day) else {
                 val store = HealthJournalStore.get(context)
@@ -250,6 +255,18 @@ internal object NativeHealthRefresh {
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }
             withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
+            // A successful exercise read may coexist with missing unrelated health permissions.
+            // Only the explicitly observed sessions are considered, not old cached journal pages.
+            if (automatic != null) {
+                val report = try {
+                    automatic.publish(context, prepared.journalGeneration) {
+                        requirePermissionIdentity()
+                        requireCommitIdentity()
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { ExternalWorkoutAutoImport.Report(failed = true) }
+                result.put("externalImport359", report.json())
+            }
             Result.success(result)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { Result.failure(failure) }

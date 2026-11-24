@@ -389,6 +389,7 @@ final class SamsungSdkReader {
                     record(p, "ExerciseSessionRecord", "", data, a, b);
                     sessions.put(new JSONObject().put("id", p.getUid()).put("source", source(p))
                         .put("start", a.toString()).put("end", b.toString())
+                        .put("lastModifiedMs", (p.getUpdateTime() == null ? a : p.getUpdateTime()).toEpochMilli())
                         .put("title", s.getCustomTitle()));
                 }
                 out.put("exerciseSessions", sessions);

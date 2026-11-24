@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +30,23 @@ import java.time.format.DateTimeFormatter
 internal fun ExternalWorkoutImportPanel(language: AppLanguage, enabled: Boolean) {
     val context = LocalContext.current.applicationContext
     var open by remember { mutableStateOf(false) }
+    var auto by remember { mutableStateOf(ExternalWorkoutAutoImport.enabled(context)) }
+    var saveError by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(tr(language, "Automatikus edzésimport", "Automatic workout import", "Automatischer Trainingsimport", "Import automat de antrenamente"))
+            Text(tr(language,
+                "A következő előtéri egészségszinkronok során beolvasott, legfeljebb 30 napos edzések. Átfedésnél nincs mentés.",
+                "Workouts up to 30 days old read by subsequent foreground health syncs. Overlaps are not saved.",
+                "Bis zu 30 Tage alte Trainings aus folgenden Gesundheitssynchronisierungen im Vordergrund. Überschneidungen werden nicht gespeichert.",
+                "Antrenamente de cel mult 30 de zile citite la următoarele sincronizări în prim-plan. Suprapunerile nu sunt salvate."))
+        }
+        Switch(checked = auto, onCheckedChange = { value ->
+            saveError = !ExternalWorkoutAutoImport.setEnabled(context, value)
+            auto = ExternalWorkoutAutoImport.enabled(context)
+        }, modifier = Modifier.testTag("external_workout_auto_import"))
+    }
+    if (saveError) Text(tr(language, "A beállítás nem menthető.", "Setting could not be saved.", "Einstellung konnte nicht gespeichert werden.", "Setarea nu a putut fi salvată."))
     TrainPilotOutlinedButton(onClick = { open = true }, enabled = enabled,
         modifier = Modifier.fillMaxWidth().testTag("external_workout_import")) {
         Text(tr(language, "Külső edzések importálása", "Import external workouts", "Externe Trainings importieren", "Importă antrenamente externe"))
