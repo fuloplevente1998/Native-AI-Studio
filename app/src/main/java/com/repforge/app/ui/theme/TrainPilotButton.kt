@@ -82,15 +82,22 @@ fun TrainPilotButton(
     }
 }
 
-/** Standard primary actions only: callers must let the Material button supply its foreground. */
-internal fun useGlassPrimaryAction(palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors): Boolean =
-    palette.isLiquidGlass && enabled && colors.containerColor == palette.primary &&
-        colors.contentColor == palette.onPrimary
+/**
+ * Only audited primary actions opt in. Color equality alone cannot identify semantic intent:
+ * contrast adjustment can make danger/success and primary colors identical.
+ */
+internal fun useGlassPrimaryAction(
+    palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors,
+    preserveSemanticPaint: Boolean = false,
+): Boolean = !preserveSemanticPaint && palette.isLiquidGlass && enabled &&
+    colors.containerColor == palette.primary && colors.contentColor == palette.onPrimary
 
-internal fun glassPrimaryActionColors(palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors): ButtonColors =
-    if (useGlassPrimaryAction(palette, enabled, colors))
-        colors.copy(containerColor = Color.Transparent, contentColor = palette.textPrimary)
-    else colors
+internal fun glassPrimaryActionColors(
+    palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors,
+    preserveSemanticPaint: Boolean = false,
+): ButtonColors = if (useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint))
+    colors.copy(containerColor = Color.Transparent, contentColor = palette.textPrimary)
+else colors
 
 /**
  * Shared primary action material for audited call sites. Uses the same Button/press feedback and
@@ -110,16 +117,17 @@ fun TrainPilotGlassPrimaryButton(
     border: BorderStroke? = null,
     contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
+    preserveSemanticPaint: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val palette = LocalTrainPilotPalette.current
-    val glass = useGlassPrimaryAction(palette, enabled, colors)
+    val glass = useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint)
     TrainPilotButton(
         onClick = onClick,
         modifier = if (glass) modifier.trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Button) else modifier,
         enabled = enabled,
         shape = shape,
-        colors = glassPrimaryActionColors(palette, enabled, colors),
+        colors = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint),
         elevation = if (glass) null else elevation,
         border = border,
         contentPadding = contentPadding,
