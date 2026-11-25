@@ -32,6 +32,32 @@ internal object GlassPrograms33 {
     private var sceneLensProgram: RuntimeShader? = null
     private var contentLensProgram: RuntimeShader? = null
 
+    // UI-thread, one-entry caches. Uniforms are still rebound for every surface/root origin.
+    private var toneAccent: Color? = null
+    private var toneValues = IntArray(0)
+    private var blobWidth = 0f
+    private var blobHeight = 0f
+    private var blobSeconds = Float.NaN
+    private var blobValues = emptyList<GlassBlob>()
+
+    private fun toneArgb(palette: TrainPilotPalette): IntArray {
+        if (toneAccent != palette.primary) {
+            toneValues = GlassScene.tones(palette).map { it.toArgb() }.toIntArray()
+            toneAccent = palette.primary
+        }
+        return toneValues
+    }
+
+    private fun frameBlobs(width: Float, height: Float, seconds: Float): List<GlassBlob> {
+        if (width != blobWidth || height != blobHeight || seconds != blobSeconds) {
+            blobValues = GlassScene.blobs(width, height, seconds)
+            blobWidth = width
+            blobHeight = height
+            blobSeconds = seconds
+        }
+        return blobValues
+    }
+
     private fun compile(source: String): RuntimeShader? {
         if (failed) return null
         return runCatching { RuntimeShader(source) }.onFailure { failed = true }.getOrNull()
@@ -59,10 +85,10 @@ internal object GlassPrograms33 {
             shader.setInputShader("photo", photo)
             return shader
         }
-        val tones = GlassScene.tones(palette)
-        GlassScene.blobs(sceneWidth, sceneHeight, seconds).forEachIndexed { i, blob ->
+        val tones = toneArgb(palette)
+        frameBlobs(sceneWidth, sceneHeight, seconds).forEachIndexed { i, blob ->
             shader.setFloatUniform("blob$i", blob.x, blob.y, blob.radius, blob.strength)
-            shader.setColorUniform("tone$i", tones[i].toArgb())
+            shader.setColorUniform("tone$i", tones[i])
         }
         return shader
     }
