@@ -129,7 +129,7 @@ internal fun TrainPilotModalBottomSheet(
             }
         }
         if (optical) {
-            KyantWindowOverlay(palette, shape) { backdrop -> panel(backdrop) }
+            KyantWindowOverlay(palette, shape, staticSheet = true) { backdrop -> panel(backdrop) }
         } else {
             CompositionLocalProvider(LocalGlassOverlay provides glass) { panel(Modifier) }
         }

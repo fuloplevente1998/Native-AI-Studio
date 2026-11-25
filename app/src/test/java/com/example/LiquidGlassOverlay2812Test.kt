@@ -9,6 +9,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LiquidGlassOverlay2812Test {
+    @Test fun sheetSceneDoesNotFollowRootClock() {
+        val root = GlassSceneState().apply { seconds = 12f }
+        val frozen = freezeSheetScene(root)
+        root.seconds = 48f
+        assertNotSame(root, frozen)
+        assertEquals(12f, frozen.seconds, 0f)
+        assertEquals(0f, freezeSheetScene(null).seconds, 0f)
+    }
+
     @Test fun everySheetColorFollowsPaletteNotColor() {
         for (p in LiquidGlassPalettes.all + TrainPilotPalettes.allPalettes) {
             for (color in listOf(p.background, p.surface, p.surfaceCard, p.surfaceElevated,

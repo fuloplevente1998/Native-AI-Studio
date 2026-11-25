@@ -76,7 +76,7 @@ fun WatchAndSyncScreen(
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        item {
+        item(key = "header") {
             SubScreenTopBar(
                 title = strings.watchAndSyncTitle,
                 onBack = onBack,
@@ -85,7 +85,7 @@ fun WatchAndSyncScreen(
         }
 
         // Section 1: Órakapcsolat (Mockup 4/4 #2)
-        item {
+        item(key = "connected") {
             Text(
                 text = strings.watchConnectedSub,
                 style = MaterialTheme.typography.titleMedium,
@@ -94,7 +94,7 @@ fun WatchAndSyncScreen(
             )
         }
 
-        item {
+        item(key = "watch-info") {
             StudioWatchInformationCard(
                 data = uiState.watchInfoCardData.copy(loading = uiState.watchInfoLoading || uiState.watchInfoCardData.loading),
                 onRefresh = onRefreshWatchInfo
@@ -102,7 +102,7 @@ fun WatchAndSyncScreen(
         }
 
         // Section 2: Aktív edzés vezérlése (Mockup 4/4 #2 side-by-side mode cards + gold button + bullets)
-        item {
+        item(key = "workout-control") {
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = palette.glassTile(palette.surfaceCard),
@@ -287,7 +287,7 @@ fun WatchAndSyncScreen(
         }
 
         // Section 3: Egészségügyi szinkron (Mockup 4/4 #2: Health Connect & Samsung Health cards)
-        item {
+        item(key = "health-sync") {
             Text(
                 text = tr(uiState.language, "Egészségügyi szinkron", "Health Sync", "Gesundheitssynchronisierung", "Sincronizare sănătate"),
                 style = MaterialTheme.typography.titleMedium,
@@ -296,7 +296,7 @@ fun WatchAndSyncScreen(
             )
         }
 
-        item {
+        item(key = "health-connect") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.glassTile(palette.surfaceCard),
@@ -346,7 +346,7 @@ fun WatchAndSyncScreen(
             }
         }
 
-        item {
+        item(key = "samsung") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.glassTile(palette.surfaceCard),

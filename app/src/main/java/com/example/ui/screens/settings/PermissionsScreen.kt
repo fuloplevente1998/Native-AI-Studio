@@ -73,11 +73,11 @@ fun PermissionsScreen(
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        item {
+        item(key = "header") {
             SubScreenTopBar(title = strings.permissionsTitle, onBack = onBack,
                 onOpenSettings = onOpenSettings)
         }
-        item {
+        item(key = "health-connect") {
             PermissionSettingsGroup("Health Connect") {
                 PermissionToggleRow(
                     tr(uiState.language, "Adatok olvasása", "Read data", "Daten lesen", "Citire date"),
@@ -126,7 +126,7 @@ fun PermissionsScreen(
                     "privacy_manage_health_connect") { onManagePermission("hc_manage") }
             }
         }
-        item {
+        item(key = "samsung") {
             PermissionSettingsGroup("Samsung Health") {
                 PermissionToggleRow(
                     tr(uiState.language, "Közvetlen szinkron", "Direct sync", "Direkt-Sync", "Sincronizare directă"),
@@ -144,7 +144,7 @@ fun PermissionsScreen(
                     "privacy_manage_samsung") { onManagePermission("samsung_manage") }
             }
         }
-        item {
+        item(key = "gps-notifications") {
             PermissionSettingsGroup(tr(uiState.language, "GPS és értesítések",
                 "GPS & notifications", "GPS und Benachrichtigungen", "GPS și notificări")) {
                 PermissionToggleRow(

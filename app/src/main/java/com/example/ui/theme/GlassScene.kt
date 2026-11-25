@@ -196,6 +196,12 @@ internal class GlassSceneState {
     }
 }
 
+/** A sheet captures the scene once; the root drift clock cannot invalidate that capture. */
+internal fun freezeSheetScene(source: GlassSceneState?): GlassSceneState = GlassSceneState().apply {
+    seconds = source?.seconds ?: 0f
+    image = source?.image
+}
+
 internal val LocalGlassScene = staticCompositionLocalOf<GlassSceneState?> { null }
 
 /**
