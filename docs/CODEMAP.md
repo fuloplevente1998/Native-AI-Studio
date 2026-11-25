@@ -134,3 +134,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | K3 scene paint cache | `ex/ui/theme/GlassScenePaintCache.kt` (bounded last-value slots), `GlassScene.kt` (host-owned cache), `KyantK3CacheTest.kt` (reuse/invalidation) |
 
 | K3 single root scene | `ex/ui/theme/KyantGlass.kt` (`KyantSceneBackground`, reuse same captured layer), `GlassAwareScaffold.kt` (empty sibling before scaffold), `KyantK3CacheTest.kt` (source contract) |
+
+| K3 battery saver | `ex/ui/theme/GlassPowerSave.kt` (host-only power mode observer), `GlassScene.kt` (static drift gate), `KyantK3CacheTest.kt` (mode matrix) |

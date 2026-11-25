@@ -11,6 +11,22 @@ class KyantK3CacheTest {
     private val p = LiquidGlassPalettes.all.first()
     private val cap = GlassScene.lumaCap
 
+    @Test fun powerSavingFreezesOnlyTheGlassDriftAndPreservesOtherGates() {
+        for (glass in listOf(false, true)) for (optics in listOf(false, true))
+            for (motion in listOf(false, true)) for (saving in listOf(false, true)) {
+                val expected = when {
+                    !glass || !optics -> GlassBackdropMode.OFF
+                    !motion || saving -> GlassBackdropMode.STATIC
+                    else -> GlassBackdropMode.LIVING
+                }
+                val actual = GlassScene.mode(glass, optics, motion, saving)
+                assertEquals(expected, actual)
+                assertEquals(expected == GlassBackdropMode.LIVING, GlassScene.ticks(actual, visible = true))
+                assertFalse(GlassScene.ticks(actual, visible = false))
+                assertFalse(GlassScene.ticks(actual, visible = true, hasPhoto = true))
+            }
+    }
+
     @Test fun guardedTonesReuseOnlyTheSameColorAndCap() {
         val cache = GlassScenePaintCache()
         val first = cache.guardedTones(p, cap)
