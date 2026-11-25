@@ -1,5 +1,8 @@
 package com.example.ui.components
 import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.sheetUsesGlass
+import com.example.ui.theme.glassOverlayFill
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.KyantGlass
@@ -52,7 +55,7 @@ internal fun TrainPilotAlertDialog(
     )
     Dialog(onDismissRequest = onDismissRequest, properties = properties) {
         // Keep third-party backdrop types out of the common dialog's JVM bytecode.
-        val glass = p.isLiquidGlass && (background == p.surfaceCard || background == p.surface || background == p.background)
+        val glass = sheetUsesGlass(p, background)
         val panel: @Composable (Modifier, Color) -> Unit = { overlay, fill ->
             MaterialTheme(typography = compactType) {
                 Surface(color = fill, shape = shape, tonalElevation = tonalElevation,
@@ -94,7 +97,9 @@ internal fun TrainPilotAlertDialog(
         if (glass && KyantGlass.active(p) && LocalGlassOpticsEnabled.current) {
             KyantWindowOverlay(p, shape) { overlay -> panel(overlay, Color.Transparent) }
         } else {
-            panel(Modifier, background)
+            CompositionLocalProvider(LocalGlassOverlay provides glass) {
+                panel(Modifier, if (glass) p.glassOverlayFill(background) else background)
+            }
         }
     }
 }

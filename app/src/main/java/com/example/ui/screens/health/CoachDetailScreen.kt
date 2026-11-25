@@ -57,6 +57,7 @@ import com.example.ui.components.SubScreenTopBar
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
@@ -99,7 +100,9 @@ internal fun CoachDetailScreen(
             .fillMaxSize()
             .trainPilotScreenBackdrop(palette)
             .testTag("coach_detail_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        // Both Coach routes share this scrollable safe area, including the optional back bar.
+        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
+            end = TrainPilotCardSpacing.ScreenGutter, top = 16.dp + LocalGlassTopInset.current, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {

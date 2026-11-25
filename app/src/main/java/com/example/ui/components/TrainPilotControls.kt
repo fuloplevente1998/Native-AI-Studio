@@ -34,6 +34,9 @@ import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.selectionColors
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.glassTile
 import androidx.compose.ui.graphics.Color
@@ -72,9 +75,12 @@ fun TrainPilotFilterChip(
     }
     // Use bounded translucent control paint even during active measurement.
     val glassChip = enabled && p.isLiquidGlass
+    val overlay = glassChip && LocalGlassOverlay.current
+    val role = if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button
     Surface(
         shape = shape,
         color = when {
+            overlay -> p.overlayRoleFill(p.surfaceCard, role)
             glassChip && selected -> p.glassControlFill(selection.surface, GlassMaterialRole.Selection)
             selected -> selection.surface
             glassChip -> p.glassTile(p.surfaceCard)
@@ -82,7 +88,8 @@ fun TrainPilotFilterChip(
         },
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
         modifier = modifier.heightIn(min = if (p.isLiquidGlass) 48.dp else 40.dp)
-            .trainPilotGlassRim(p, shape, if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Tile)
+            .then(if (overlay) Modifier.overlayRoleRim(p, shape, role)
+                else Modifier.trainPilotGlassRim(p, shape, if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Tile))
             .semantics { this.selected = selected }
             .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {

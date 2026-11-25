@@ -1,5 +1,16 @@
 package com.example.ui.components
-import com.example.ui.theme.KyantStaticSheetBackdrop
+import com.example.ui.theme.KyantWindowOverlay
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.sheetUsesGlass
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.dismiss
+import androidx.compose.ui.semantics.expand
+import androidx.compose.ui.semantics.collapse
+import androidx.compose.material3.SheetValue
+import kotlinx.coroutines.launch
 import com.example.ui.theme.glassOverlayFill
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.LocalGlassOpticsEnabled
@@ -54,7 +65,9 @@ internal fun TrainPilotModalBottomSheet(
     val palette = LocalTrainPilotPalette.current
     // Paint over a known gradient inside the sheet, not the unknown content/scrim behind it.
     val customPaint = palette.customCardPaint != null && containerColor == palette.surface
-    val glass = palette.isLiquidGlass && (customPaint || containerColor == palette.background || containerColor == palette.surfaceCard)
+    val glass = sheetUsesGlass(palette, containerColor)
+    val optical = glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current
+    val scope = rememberCoroutineScope()
     val fill = if (glass) palette.glassOverlayFill(containerColor) else if (customPaint) palette.background else containerColor
     var handleHeight by remember { mutableIntStateOf(0) }
     ModalBottomSheet(
@@ -62,17 +75,16 @@ internal fun TrainPilotModalBottomSheet(
         modifier = modifier,
         sheetState = sheetState,
         shape = shape,
-        containerColor = fill,
+        containerColor = if (optical) Color.Transparent else fill,
         contentColor = contentColor,
-        dragHandle = if (dragHandle == null) null else {
+        dragHandle = if (glass || dragHandle == null) null else {
             { Box(Modifier.onSizeChanged { handleHeight = it.height }) { dragHandle() } }
         },
         // The phone sheets use bottom-only insets or handle their own. Include the same inset
         // padding in the outlined area so the stroke reaches the physical edge of the panel.
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
-        // The Material surface owns the continuous fill, including the native drag handle.
-        // Only the body needs a recorded static source for child lenses.
+        // Glass paints the handle and body in one surface; legacy retains Material's native handle.
         val panel: @Composable (Modifier) -> Unit = { backdrop ->
             Column(
                 modifier = Modifier
@@ -82,7 +94,7 @@ internal fun TrainPilotModalBottomSheet(
                     .drawWithCache {
                         // Material moves and scales the sheet inside its caller modifier. Draw here
                         // so the stroke moves with the surface and extends around the drag handle.
-                        val top = if (dragHandle == null) 0f else handleHeight.toFloat()
+                        val top = if (glass || dragHandle == null) 0f else handleHeight.toFloat()
                         val outline = shape.createOutline(Size(size.width, size.height + top), layoutDirection, this)
                         val path = Path().apply { addOutline(outline) }
                         val color = outlineColor.copy(alpha = outlineColor.alpha * 0.22f)
@@ -100,13 +112,26 @@ internal fun TrainPilotModalBottomSheet(
                     }
                     .windowInsetsPadding(contentWindowInsets())
             ) {
+                if (glass && dragHandle != null) {
+                    Box(Modifier.fillMaxWidth().semantics {
+                        dismiss {
+                            scope.launch { sheetState.hide(); if (!sheetState.isVisible) onDismissRequest() }
+                            true
+                        }
+                        if (sheetState.currentValue == SheetValue.PartiallyExpanded) {
+                            expand { scope.launch { sheetState.expand() }; true }
+                        } else if (sheetState.hasPartiallyExpandedState) {
+                            collapse { scope.launch { sheetState.partialExpand() }; true }
+                        }
+                    }, contentAlignment = Alignment.Center) { dragHandle() }
+                }
                 content()
             }
         }
-        if (glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current) {
-            KyantStaticSheetBackdrop(fill) { backdrop -> panel(backdrop) }
+        if (optical) {
+            KyantWindowOverlay(palette, shape) { backdrop -> panel(backdrop) }
         } else {
-            panel(Modifier)
+            CompositionLocalProvider(LocalGlassOverlay provides glass) { panel(Modifier) }
         }
     }
 }

@@ -4,6 +4,14 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.programDayGlassRole
+import com.example.ui.theme.programDayFill
+import com.example.ui.theme.programDayTextColor
+import com.example.ui.theme.programDaySelectionAccent
+import com.example.ui.theme.programDaySelectionGlow
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.semantics.selected
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.key
 
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -194,29 +202,45 @@ internal fun ProgramEditorContent(
         ) {
             program.days.forEachIndexed { idx, d ->
                 val selected = idx == dayIndex
+                val shape = RoundedCornerShape(12.dp)
+                val role = programDayGlassRole(selected)
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (selected) palette.primary else palette.surface,
+                    shape = shape,
+                    color = palette.programDayFill(selected),
+                    // A static rim/outline: no backdrop capture or blur per day button.
+                    border = if (palette.isLiquidGlass) BorderStroke(
+                        0.5.dp, if (selected) programDaySelectionAccent.copy(alpha = .75f)
+                        else palette.textPrimary.copy(alpha = .16f)
+                    ) else null,
                     modifier = Modifier
                         .widthIn(min = 76.dp)
                         .heightIn(min = 48.dp)
-                        .trainPilotBorder(
-                            1.dp,
-                            if (selected) palette.primary else palette.cardBorder,
-                            RoundedCornerShape(12.dp)
-                        )
-                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDayIndex(idx) }
+                        .then(if (palette.isLiquidGlass) Modifier
+                            .programDaySelectionGlow(palette, selected, shape)
+                            .trainPilotGlassRim(palette, shape, role)
+                            .semantics { this.selected = selected }
+                            else Modifier.trainPilotBorder(
+                                1.dp, if (selected) palette.primary else palette.cardBorder, shape
+                            ))
+                        .trainPilotClickable(shape) { onSelectDayIndex(idx) }
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
                     ) {
-                        Text(
-                            text = d.localizedDayCode(state.language),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (selected) palette.onPrimary else palette.textPrimary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = d.localizedDayCode(state.language),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.programDayTextColor(selected),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (palette.isLiquidGlass && selected) Icon(
+                                Icons.Default.Check, contentDescription = null,
+                                tint = palette.programDayTextColor(true), modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -243,7 +267,7 @@ internal fun ProgramEditorContent(
                 color = palette.glassTile(palette.surface),
                 modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                     .fillMaxWidth()
-                    .trainPilotReorderItem(exerciseReorder, ex.id, index)
+                    .trainPilotReorderItem(exerciseReorder, ex.id, index, layerWhenIdle = false)
                     .trainPilotAnimatedExpansion()
                     .trainPilotBorder(
                         width = if (isExpanded) 1.5.dp else 1.dp,

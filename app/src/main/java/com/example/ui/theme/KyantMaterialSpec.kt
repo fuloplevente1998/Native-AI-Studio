@@ -72,7 +72,7 @@ internal data class KyantMaterialSpec(
             return KyantMaterialSpec(baseBlur * blur, baseHeight * lens, baseAmount * lens,
                 coat, saturation, scale, sceneScale,
                 if (role == GlassMaterialRole.Selection) .45f + .45f * t else .35f + .35f * t,
-                role == GlassMaterialRole.Panel)
+                role == GlassMaterialRole.Panel || role == GlassMaterialRole.Overlay)
         }
     }
 }
