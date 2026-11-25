@@ -83,7 +83,8 @@ internal object GlassScene {
     }
 
     /** The drift clock runs only for a living backdrop on a started (visible) screen. */
-    fun ticks(mode: GlassBackdropMode, visible: Boolean): Boolean = mode == GlassBackdropMode.LIVING && visible
+    fun ticks(mode: GlassBackdropMode, visible: Boolean, hasPhoto: Boolean = false): Boolean =
+        mode == GlassBackdropMode.LIVING && visible && !hasPhoto
 
     /** The user image is only decoded and drawn for the glass family. */
     fun usesImage(isLiquidGlass: Boolean, path: String): Boolean = isLiquidGlass && path.isNotEmpty()
@@ -162,24 +163,35 @@ internal object GlassScene {
 @Stable
 internal class GlassSceneState {
     var seconds by mutableFloatStateOf(0f)
-    var image by mutableStateOf<Bitmap?>(null)
+    private var currentImage by mutableStateOf<Bitmap?>(null)
+    var image: Bitmap?
+        get() = currentImage
+        set(value) {
+            if (currentImage === value) return
+            // Clear references, but never recycle a bitmap still held by a recorded frame.
+            cachedImage = null
+            cachedFor = null
+            shader = null
+            currentImage = value
+        }
     val imageBitmap: ImageBitmap? get() = image?.let { bitmap -> cachedImage?.takeIf { cachedFor === bitmap }
         ?: bitmap.asImageBitmap().also { cachedImage = it; cachedFor = bitmap } }
     private var cachedImage: ImageBitmap? = null
     private var cachedFor: Bitmap? = null
     private var shader: BitmapShader? = null
-    private var shaderKey: Triple<Bitmap, Float, Float>? = null
+    private var shaderWidth = 0f
+    private var shaderHeight = 0f
 
     /** UI thread only. One shader per image and scene size; each draw call snapshots it. */
     fun imageShader(sceneWidth: Float, sceneHeight: Float): Shader? {
         val bitmap = image ?: return null
-        val key = Triple(bitmap, sceneWidth, sceneHeight)
-        if (key != shaderKey) {
+        if (shader == null || sceneWidth != shaderWidth || sceneHeight != shaderHeight) {
             val (scale, at) = GlassScene.crop(bitmap.width, bitmap.height, sceneWidth, sceneHeight)
             shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
                 setLocalMatrix(Matrix().apply { setScale(scale, scale); postTranslate(at.x, at.y) })
             }
-            shaderKey = key
+            shaderWidth = sceneWidth
+            shaderHeight = sceneHeight
         }
         return shader
     }
@@ -198,7 +210,8 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
     val state = remember { GlassSceneState() }
     val mode = GlassScene.mode(palette.isLiquidGlass, LocalGlassOpticsEnabled.current, rememberGlassMotionEnabled())
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED))
+    // A loaded photo has no moving blobs. Resume drift if loading fails or the photo is removed.
+    val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED), hasPhoto = state.image != null)
     val wantImage = GlassScene.usesImage(palette.isLiquidGlass, imagePath)
     LaunchedEffect(wantImage, imagePath) {
         state.image = if (!wantImage) null else withContext(Dispatchers.IO) { runCatching { loadImage(imagePath) }.getOrNull() }
