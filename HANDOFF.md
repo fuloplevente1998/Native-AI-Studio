@@ -24,4 +24,4 @@
 - **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
   → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
 
-- **Liquid Glass 2.0 önálló jelölt** `design/liquid-glass-2` (#380, base `43036875`): G1 zöld, SHA `4ddaded6`, run 45595955920; telefon 972 + Wear 248 = 1220, 0 failure/error/skipped, shared noSource; R8 zöld. G2 naptárcsempe, kiválasztó lencse, mai nap, mezők és akciógombok kódjelölt + `CalendarGlass2Test` felpusholva; G2 CI és vizuális elfogadás nyitott. G3–G6 hátra; #379 alternatíva, nem merge-elhető együtt.
+- **Liquid Glass 2.0 önálló jelölt** `design/liquid-glass-2` (#380, base `43036875`): G1 zöld (1220), G2 zöld `89fad23f`, run 45598149136, telefon 974 + Wear 248 = 1222, 0 failure/error/skipped, shared noSource, R8 zöld. G3 közös primary gombadapter (naptár, program, edzés shortcut), chip/Input/Overlay/rim + `GlassControlsG3Test` felpusholva. G3 CI, teljes call-site audit (G0/G4), G4–G6, készülékes elfogadás nyitott; #379 alternatíva, nem merge-elhető együtt.
