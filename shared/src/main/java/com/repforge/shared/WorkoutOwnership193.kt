@@ -9,6 +9,18 @@ object WorkoutOwnership193 {
     const val PATH: String = "/trainpilot/ownership193/"
     const val PROTOCOL: Int = 1
 
+    /**
+     * 2809: optional field of a phone terminal snapshot, written only by an explicit, confirmed
+     * phone discard (the phone has already tombstoned the ID). Older peers ignore it.
+     */
+    const val PHONE_DISCARD_2809: String = "phoneDiscard2809"
+
+    /** 2809: that explicit phone discard targets exactly this workout; owner/epoch do not fence it. */
+    @JvmStatic
+    fun phoneDiscardTargets(terminal: JSONObject?, workoutId: String?): Boolean =
+        terminal != null && !terminal.optBoolean("active", true) && terminal.optBoolean(PHONE_DISCARD_2809) &&
+            !workoutId.isNullOrBlank() && terminal.optString("workoutId") == workoutId
+
     private val ID_REGEX = Regex("[A-Za-z0-9._:-]{1,128}")
 
     @JvmStatic

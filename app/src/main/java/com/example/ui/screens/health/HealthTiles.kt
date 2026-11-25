@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -136,10 +138,11 @@ internal fun HealthSectionLauncher(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
+        color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
             .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
+            .trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen)
     ) {
@@ -201,7 +204,7 @@ internal fun SummarySmallPill(label: String, value: String, modifier: Modifier =
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = palette.surfaceElevated,
+        color = palette.glassTile(palette.surfaceElevated, elevated = true),
         modifier = modifier
     ) {
         Column(modifier = Modifier.padding(10.dp)) {

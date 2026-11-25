@@ -837,6 +837,7 @@ class LegacyWebViewMigrator(
                     .put("themeKey", settings.themeKey)
                     .put("customThemes350", JSONArray(com.example.ui.theme.CustomThemeCodec.encode(settings.customThemes())))
                     .put("glassClarity350", settings.glassClarity)
+                    .put(com.repforge.app.GlassBackdropImages.PORTABLE_KEY, com.repforge.app.GlassBackdropImages.portable(settings.glassBackdropImage))
                     .put("fontScaleMultiplier", settings.fontScaleMultiplier)
                     .put("compactPhoneMode", settings.compactPhoneMode)
                     .put("intervalRestSeconds", settings.intervalRestSeconds)

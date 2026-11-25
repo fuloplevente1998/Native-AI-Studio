@@ -17,7 +17,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import com.repforge.app.ui.theme.trainPilotFrame
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -572,7 +572,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     .fillMaxSize()
                     .widthIn(max = contentMaxWidth)
                     .padding(4.dp)
-                    .border(TrainPilotFrames.page(palette.cardBorder, palette.primary), RoundedCornerShape(24.dp))
+                    .trainPilotFrame(TrainPilotFrames.page(palette.cardBorder, palette.primary), RoundedCornerShape(24.dp))
                     .padding(1.dp)
             ) {
                 // #347: same host rule, so Next keeps working and its state survives an open sheet.

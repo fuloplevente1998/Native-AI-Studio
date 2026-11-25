@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -52,7 +53,7 @@ internal fun TrainPilotAlertDialog(
                 modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
                     .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
                     .trainPilotSoftGlow(p.primary, shape, 4.dp)
-                    .border(TrainPilotFrames.page(p.sectionBorder, p.primary), shape)) {
+                    .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape)) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (title != null || icon != null) Row(Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

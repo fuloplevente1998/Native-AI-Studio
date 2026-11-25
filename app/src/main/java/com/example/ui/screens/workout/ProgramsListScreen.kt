@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import androidx.compose.runtime.key
 
 import com.example.ui.components.TrainPilotModalBottomSheet
@@ -461,7 +463,7 @@ fun ProgramsListScreen(
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = palette.surface,
+                color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
@@ -514,7 +516,7 @@ fun ProgramsListScreen(
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.surface,
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
@@ -554,7 +556,7 @@ fun ProgramsListScreen(
             if (filteredPrograms.isEmpty() && state.programsTabCustomOnly) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.surface,
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
@@ -598,12 +600,13 @@ fun ProgramsListScreen(
                 val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surface,
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         // Lift first so the frame moves with the card while dragging (2772).
                         .trainPilotReorderItem(programReorder, program.id, index)
                         .trainPilotAnimatedExpansion()
+                        .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
                         .trainPilotBorder(
                             if (program.isActive || isExpanded) 1.5.dp else 1.dp,
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,

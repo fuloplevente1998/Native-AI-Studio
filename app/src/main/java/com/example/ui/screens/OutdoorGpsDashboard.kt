@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.example.ui.components.WorkoutControlAppearance
 
@@ -336,7 +337,7 @@ private fun OutdoorManualDistanceCard(state: OutdoorGpsDisplay, actions: Outdoor
                         .height(48.dp)
                         .clip(fieldShape)
                         .background(palette.background)
-                        .border(1.dp, palette.cardBorder, fieldShape)
+                        .trainPilotFrame(1.dp, palette.cardBorder, fieldShape)
                         .testTag("outdoor_manual_distance_input"),
                     decorationBox = { inner ->
                         Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {

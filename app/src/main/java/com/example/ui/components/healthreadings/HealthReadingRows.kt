@@ -127,7 +127,7 @@ fun HealthPulseDayRow(
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = palette.surfaceElevated,
-        border = BorderStroke(1.dp, palette.cardBorder),
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, palette.cardBorder)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
@@ -219,7 +219,7 @@ fun HealthRecoveryRow(reading: RecoveryDayReading, modifier: Modifier = Modifier
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = palette.surfaceElevated,
-        border = BorderStroke(1.dp, palette.cardBorder),
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, palette.cardBorder)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(

@@ -28,6 +28,7 @@ import com.example.ui.theme.GlassMotion
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.rememberGlassMotionEnabled
+import com.example.ui.theme.trainPilotGlassRim
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -57,7 +58,7 @@ internal fun BoxScope.GlassSelectionPill(
     selectedIndex: Int,
     shape: Shape,
     palette: TrainPilotPalette,
-    outline: Color
+    @Suppress("UNUSED_PARAMETER") outline: Color
 ) {
     val target = track.bounds[selectedIndex]
     val motion = rememberGlassMotionEnabled()
@@ -93,7 +94,8 @@ internal fun BoxScope.GlassSelectionPill(
             }
             .clip(shape)
             .glassHeaderMaterial(palette, shape)
-            .border(1.dp, outline, shape)
+            // 2809/2: rim light instead of a selection hairline; the label keeps the selected foreground.
+            .trainPilotGlassRim(palette, shape)
             .testTag("glass_selection_pill")
     )
 }

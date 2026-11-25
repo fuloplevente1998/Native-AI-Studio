@@ -349,7 +349,7 @@ fun ExerciseLibraryScreen(
                                         onDismissRequest = { rowMenuOpen = false },
                                         containerColor = palette.surfaceCard,
                                         shape = RoundedCornerShape(14.dp),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder)
+                                        border = com.repforge.app.ui.theme.trainPilotFrameStroke(androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder))
                                     ) {
                                         val videoLabel = "${strings.videoLabel}: $name"
                                         DropdownMenuItem(

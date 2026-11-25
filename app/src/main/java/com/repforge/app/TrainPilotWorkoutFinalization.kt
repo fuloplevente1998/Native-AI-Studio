@@ -35,10 +35,13 @@ internal class TrainPilotWorkoutFinalization(
                 val frozen = withContext(Dispatchers.Main.immediate) {
                     val current = requireNotNull(ActiveWorkoutStore.current(context))
                     check(current.optBoolean("active") && current.optString("workoutId") == id &&
-                        current.optLong("generation") == input.optLong("generation") &&
-                        current.optString("timerOwner", "phone") == "phone" && !WorkoutOwnership193.pending(current)) {
+                        current.optLong("generation") == input.optLong("generation")) {
                         "Az edzés tulajdonosa vagy állapota megváltozott."
                     }
+                    // 2809: an explicit, confirmed phone discard also ends a watch-owned or stuck
+                    // handoff workout. The tombstone below makes every later replay inert, and the
+                    // marked terminal projection lets the watch apply it across owner/epoch changes.
+                    val watchSide = phoneDiscardOfWatchSide2809(current)
                     check(!current.optBoolean("finalizationPending") || current.optBoolean("discardPending")) {
                         "A mentés alatt álló edzés nem vethető el."
                     }
@@ -46,8 +49,9 @@ internal class TrainPilotWorkoutFinalization(
                     check(!execution.restoreBlocked()) { "Adat-visszaállítás van folyamatban." }
                     val frame = execution.snapshot()
                     check(frame == null || (frame.optString("workoutId") == id &&
-                        frame.optLong("generation") == current.optLong("generation"))) { "A natív edzés megváltozott." }
-                    check(!execution.commandsSuspended() || current.optBoolean("discardPending")) { "Az edzésvezérlés foglalt." }
+                        frame.optLong("generation") == current.optLong("generation")) ||
+                        watchSide && !frame.optBoolean("active")) { "A natív edzés megváltozott." }
+                    check(!execution.commandsSuspended() || current.optBoolean("discardPending") || watchSide) { "Az edzésvezérlés foglalt." }
                     // The existing durable finish fence already blocks edits/resume/handoff. The
                     // discriminator permits only explicit discard retry after a storage/process failure.
                     val pending = JSONObject(current.toString()).put("finalizationPending", true)
@@ -77,7 +81,9 @@ internal class TrainPilotWorkoutFinalization(
                 val closed = withContext(Dispatchers.Main.immediate) {
                     val execution = PhoneWorkoutExecution.store(context)
                     val frame = execution.snapshot()
-                    if (frame != null) {
+                    // A watch-side workout may leave an unrelated, already inactive phone frame.
+                    if (frame != null && (!phoneDiscardOfWatchSide2809(frozen) || frame.optString("workoutId") == id &&
+                            frame.optLong("generation") == frozen.optLong("generation"))) {
                         check(frame.optString("workoutId") == id && frame.optLong("generation") == frozen.optLong("generation")) {
                             "A natív edzés megváltozott."
                         }
@@ -92,7 +98,7 @@ internal class TrainPilotWorkoutFinalization(
                     // Clear the command flag while the durable discard draft still permits retry.
                     // The native frame is already inactive, so it cannot accept another recording.
                     execution.suspendCommands(false)
-                    ActiveWorkoutStore.clear(context)
+                    ActiveWorkoutStore.clear(context, phoneDiscard = true)
                 }
                 // Both phone UIs use this durable boundary; transport failure must not undo deletion.
                 withContext(Dispatchers.Main.immediate) {
@@ -336,3 +342,7 @@ internal object NativeWorkoutEventMerge {
         session.put("automaticTime162", automatic)
     }
 }
+
+/** 2809: the phone discard ends a workout the watch owns or that is stuck in a handoff. */
+internal fun phoneDiscardOfWatchSide2809(current: JSONObject): Boolean =
+    current.optString("timerOwner", "phone") != "phone" || WorkoutOwnership193.pending(current)

@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTile
 
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutHorizontalRow
@@ -124,7 +125,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             // 1. EDZÉSVOLUMEN: compact trend + one-row periods; full trend expands in place.
                             Surface(
                                 shape = RoundedCornerShape(18.dp),
-                                color = palette.surfaceCard,
+                                color = palette.glassTile(palette.surfaceCard),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .trainPilotAnimatedExpansion()
@@ -270,7 +271,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             )
                                             Surface(
                                                 shape = RoundedCornerShape(12.dp),
-                                                color = palette.surfaceElevated,
+                                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                                 modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                             ) {
                                                 Text(
@@ -371,7 +372,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
                                 Surface(
                                     shape = RoundedCornerShape(18.dp),
-                                    color = palette.surfaceCard,
+                                    color = palette.glassTile(palette.surfaceCard),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
@@ -420,7 +421,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
                                                                 .clip(RoundedCornerShape(10.dp))
-                                                                .background(palette.surfaceElevated)
+                                                                .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                                                                 .testTag("stats_pr_record_row"),
                                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -469,7 +470,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
                                                                 .clip(RoundedCornerShape(10.dp))
-                                                                .background(palette.surfaceElevated)
+                                                                .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
                                                                 .padding(8.dp),
@@ -505,7 +506,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
                                                                 .clip(RoundedCornerShape(10.dp))
-                                                                .background(palette.surfaceElevated)
+                                                                .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
                                                                 .padding(8.dp),
@@ -541,7 +542,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
                                                                 .clip(RoundedCornerShape(10.dp))
-                                                                .background(palette.surfaceElevated)
+                                                                .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
                                                                 .padding(8.dp),
@@ -581,7 +582,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             // 4. COMPACT EXPANDABLE "Fejlődési javaslat" CARD AT BOTTOM (`Screenshot_2026-10-27-15-00-06-481_com.repforge.app.jpg`)
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = palette.surfaceCard,
+                                color = palette.glassTile(palette.surfaceCard),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .trainPilotBorder(
@@ -743,7 +744,7 @@ internal fun ExpandableStatSummaryTile(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.surfaceCard,
+        color = palette.glassTile(palette.surfaceCard),
         modifier = modifier
             .trainPilotBorder(
                 width = if (selected) 1.5.dp else 1.dp,

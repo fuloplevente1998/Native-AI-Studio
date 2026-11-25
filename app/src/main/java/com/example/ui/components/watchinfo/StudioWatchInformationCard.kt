@@ -1,4 +1,5 @@
 package com.example.ui.components.watchinfo
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import androidx.compose.foundation.border
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -56,7 +57,7 @@ fun StudioWatchInformationCard(
     val shape = RoundedCornerShape(20.dp)
     Surface(
         modifier = modifier.fillMaxWidth()
-            .border(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape)
+            .trainPilotFrame(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape)
             .testTag("watch_device_info_card")
             .trainPilotClickable(shape, enabled = !data.loading, onClick = onRefresh),
         shape = shape,
@@ -153,7 +154,7 @@ private fun WatchInfoPanel(title: String, tag: String, modifier: Modifier = Modi
     val shape = RoundedCornerShape(12.dp)
     Column(
         modifier.fillMaxWidth()
-            .border(TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, palette.sectionBorder), shape)
+            .trainPilotFrame(TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, palette.sectionBorder), shape)
             .testTag(tag)
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp)

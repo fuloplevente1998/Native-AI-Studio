@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -160,7 +161,7 @@ fun BackupRestoreScreen(
         )
     }
 
-    Column(Modifier.then(com.example.ui.components.sheetAwareFillMaxSize()).background(palette.background)) {
+    Column(Modifier.then(com.example.ui.components.sheetAwareFillMaxSize()).trainPilotScreenBackdrop(palette)) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth().weight(1f, fill = !inSheet)
@@ -169,7 +170,8 @@ fun BackupRestoreScreen(
                 .then(if (inSheet)
                     Modifier.heightIn(min = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.78f)
                     else Modifier)
-                .background(palette.background)
+                // 2809/1: the outer column already paints the (glass) backdrop.
+                .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.background))
                 .testTag("backup_restore_screen"),
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)

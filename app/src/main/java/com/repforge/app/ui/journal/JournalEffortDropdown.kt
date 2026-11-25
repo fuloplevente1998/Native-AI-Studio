@@ -34,7 +34,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
         Surface(onClick = { expanded = true }, enabled = enabled,
             shape = RoundedCornerShape(12.dp),
             color = if (answer != null) selectedFill else colors.card2,
-            border = TrainPilotFrames.control(if (answer != null) colors.accent else colors.line, selected = answer != null),
+            border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(if (answer != null) colors.accent else colors.line, selected = answer != null)),
             modifier = Modifier.fillMaxWidth().testTag(tag)) {
             Row(Modifier.heightIn(min = 48.dp).background(Brush.horizontalGradient(listOf(
                 if (answer != null) selectedFill else colors.card2, colors.card)))

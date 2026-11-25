@@ -90,8 +90,8 @@ internal fun StudioExerciseFeedbackReview(effort: String?, note: String, languag
     var editing by rememberSaveable(tag) { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
     Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = palette.surfaceCard,
-        shape = RoundedCornerShape(14.dp), border = com.repforge.app.ui.theme.TrainPilotFrames.control(
-            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
+        shape = RoundedCornerShape(14.dp), border = com.repforge.app.ui.theme.trainPilotFrameStroke(com.repforge.app.ui.theme.TrainPilotFrames.control(
+            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, color = palette.textPrimary, style = MaterialTheme.typography.labelLarge)
             Text(feedbackChoiceLabel(effort, language), color = if (effort == "pain") palette.danger else palette.primary,
@@ -117,8 +117,8 @@ internal fun StudioWorkoutOverallFeedback(effort: String?, note: String, languag
     val optionalWord = feedbackText(language, "Opcionális", "Optional", "Optional", "Opțional")
     val secondaryText = if (effort != null) "$optionalWord • ${feedbackChoiceLabel(effort, language)}" else optionalWord
     Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
-        border = com.repforge.app.ui.theme.TrainPilotFrames.control(
-            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(com.repforge.app.ui.theme.TrainPilotFrames.control(
+            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder))) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(
                 onClick = { expanded = !expanded },

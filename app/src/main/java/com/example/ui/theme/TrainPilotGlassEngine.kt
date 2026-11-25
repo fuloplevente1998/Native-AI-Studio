@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
 import android.graphics.Paint
+import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
@@ -36,6 +37,7 @@ private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
 @Composable
 private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?): Modifier {
     val effectsEnabled = LocalGlassOpticsEnabled.current
+    val scene = LocalGlassScene.current
     val configuration = LocalConfiguration.current
     val localDensity = LocalDensity.current
     val sceneWidth = with(localDensity) { configuration.screenWidthDp.dp.toPx() }.coerceAtLeast(1f)
@@ -56,11 +58,23 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     val native = canvas.nativeCanvas
                     if (native.isHardwareAccelerated && Build.VERSION.SDK_INT >= 33) painted = runCatching {
                         val at = origin.value
+                        // 2809/1: drift time and image are read while drawing, so a tick only redraws.
+                        val seconds = scene?.seconds ?: 0f
+                        val photo = scene?.imageShader(sceneWidth, sceneHeight)
                         drawGlass33(native, size.width, size.height, shape != null, radii, sceneWidth, sceneHeight,
-                            at, palette, optics, localDensity.density)
+                            at, palette, optics, localDensity.density, seconds, photo)
                     }.getOrDefault(false)
                 }
                 return painted
+            }
+            /** API 31–32 (no AGSL): the same backdrop drawn with Compose brushes, no blur or capture. */
+            fun DrawScope.paintComposeScene(): Boolean {
+                if (!effectsEnabled || Build.VERSION.SDK_INT < 31) return false
+                var hardware = false
+                drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
+                if (!hardware) return false
+                drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight)
+                return true
             }
             onDrawWithContent {
                 val painted = if (path == null) paintMaterial() else {
@@ -69,18 +83,17 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     drawn
                 }
                 if (!painted) {
-                    // Opaque fallback: API < 33, software rendering, compile failure or an active measurement
+                    // Opaque fallback: API < 31, software rendering, compile failure or an active measurement
                     // screen. 2808/10: the cheap vector rim/sheen stays there too (light glass, no shader/blur).
-                    if (path == null) drawRect(fallback) else clipPath(path) {
-                        drawRect(fallback)
+                    // 2809/1: API 31–32 paints the guarded backdrop with Compose brushes instead of the flat gradient.
+                    if (path == null) { if (!paintComposeScene()) drawRect(fallback) } else clipPath(path) {
+                        if (!paintComposeScene()) drawRect(fallback)
                         drawRect(palette.cardPaint)
                         drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
+                // 2809/2: no neutral hairline frame here either; the rim highlight above defines the shape.
                 drawContent()
-                if (path != null && !effectsEnabled) {
-                    drawPath(path, palette.cardBorder.copy(alpha = .55f), style = Stroke(1.dp.toPx()))
-                }
             }
         }
 }
@@ -88,11 +101,11 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
 @RequiresApi(33)
 private fun drawGlass33(canvas: android.graphics.Canvas, width: Float, height: Float, lens: Boolean, radii: FloatArray,
     sceneWidth: Float, sceneHeight: Float, origin: Offset, palette: TrainPilotPalette, optics: GlassOptics,
-    density: Float): Boolean {
-    val shader = if (!lens) GlassPrograms33.scene()?.also {
-        GlassPrograms33.bindScene(it, sceneWidth, sceneHeight, origin.x, origin.y, palette)
-    } else GlassPrograms33.sceneMaterial(width, height, radii, sceneWidth, sceneHeight,
-        origin.x, origin.y, palette, optics, density, 0f)
+    density: Float, seconds: Float, photo: Shader?): Boolean {
+    val shader = if (!lens) GlassPrograms33.boundScene(sceneWidth, sceneHeight, origin.x, origin.y, palette,
+        seconds, photo, guard = true)
+    else GlassPrograms33.sceneMaterial(width, height, radii, sceneWidth, sceneHeight,
+        origin.x, origin.y, palette, optics, density, 0f, seconds, photo)
     if (shader == null) return false
     glassPaint.shader = shader
     canvas.drawRect(0f, 0f, width, height, glassPaint)

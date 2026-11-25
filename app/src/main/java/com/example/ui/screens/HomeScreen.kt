@@ -1,6 +1,8 @@
 package com.example.ui.screens
+import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.PageLayoutHorizontalRow
 import com.example.ui.components.PageLayoutCard
@@ -143,7 +145,7 @@ fun HomeScreen(
     PageLayoutFrame(layout, state.language, blocks, scrollState, 5.dp) {
     com.example.ui.components.TrainPilotScrollableBox(
         scrollState = scrollState,
-        modifier = Modifier.fillMaxSize().background(palette.pageBrush).trainPilotGlassScene(palette)
+        modifier = Modifier.fillMaxSize().trainPilotPageBackdrop(palette)
     ) {
         Column(
             modifier = Modifier
@@ -462,7 +464,7 @@ fun HomeScreen(
                                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                                 modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, todayShape)
                                     .trainPilotSoftGlow(palette.primary, todayShape)
-                                    .border(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
+                                    .trainPilotFrame(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
                                     .testTag("home_today_status_group")
                             ) {
                                 Box(Modifier.padding(8.dp)) {
@@ -511,7 +513,7 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
     title: String, subtitle: String, onClick: () -> Unit, enabled: Boolean = true, connected: Boolean? = null) {
     val p = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(14.dp)
-    Surface(color = p.surface, shape = shape,
+    Surface(color = p.glassTile(p.surface), shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
             .trainPilotClickable(shape, enabled = enabled, onClick = onClick)) {

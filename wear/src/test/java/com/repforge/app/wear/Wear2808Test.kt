@@ -110,11 +110,16 @@ class Wear2808Test {
             palette("basic", "#111111", "#333333", "#202020", "#303030"),
             palette("contrast", "#7f7f7f", "#808080", "#7a7a7a", "#858585"),
             palette("vivid", "#0b0f14", "#f6f8fb", "#ff3366", "#00e5ff"),
+            // 2809: a custom light theme (not the light family) with light text on white.
+            palette("basic", "#ffffff", "#f0f0f0", "#ffeb3b", "#e0f7fa"),
         )
         for (raw in palettes) {
             val t = raw.forWatch()
             val surfaces = listOf(t.backgroundColor, t.surfaceColor, t.elevatedColor)
-            assertTrue("dark watch base ${raw.background}", surfaces.all { it.luminance() <= .18f })
+            // 2809: light palettes stay genuinely light on the watch, dark palettes keep the dark base.
+            if (raw.family == "light" || raw.backgroundColor.luminance() >= .4f)
+                assertTrue("light watch base ${raw.background}", surfaces.all { it.luminance() >= .4f })
+            else assertTrue("dark watch base ${raw.background}", surfaces.all { it.luminance() <= .18f })
             for (s in surfaces) {
                 assertTrue("text ${raw.text}", wearContrast(t.textColor, s) >= 4.5f)
                 assertTrue("muted ${raw.muted}", wearContrast(t.mutedColor, s) >= 4.5f)
@@ -136,8 +141,13 @@ class Wear2808Test {
         assertEquals(WearHomeTheme.DEFAULT.backgroundColor, watch.backgroundColor)
         assertEquals(WearHomeTheme.DEFAULT.textColor, watch.textColor)
         val light = palette("light", "#ffffff", "#151b26", "#2563eb", "#1d4ed8")
-        light.forWatch()
+        val lightWatch = light.forWatch()
         assertEquals(Color.White, light.backgroundColor)
+        // 2809: the light theme is light on the watch too; its readable ink/accent are kept as they are.
+        assertEquals(Color.White, lightWatch.backgroundColor)
+        assertEquals(Color.White, lightWatch.surfaceColor)
+        assertEquals(light.textColor, lightWatch.textColor)
+        assertEquals(light.accentColor, lightWatch.accentColor)
         assertEquals(light, WearHomeTheme.parse(light.toJson()))
     }
 }

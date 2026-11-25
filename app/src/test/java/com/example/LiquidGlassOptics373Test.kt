@@ -129,10 +129,15 @@ class LiquidGlassOptics373Test {
             .findAll(source).map { it.groupValues[1] }.toSet()
         val material = setOf("extent", "radii", "px", "bend", "bevel", "dispersion", "frost", "coat",
             "saturation", "specular", "shade", "peak", "lightDir", "tint")
-        assertEquals(setOf("screen", "origin", "accentMax", "base", "accent"), uniforms(GlassShaderSource.SCENE))
+        // 2809/1: living backdrop (four drifting blobs) and the optional user image share one guard.
+        val sceneCommon = setOf("screen", "origin", "lumaCap", "knee", "guard", "base")
+        assertEquals(sceneCommon + (0 until GlassScene.blobCount).flatMap { listOf("blob$it", "tone$it") },
+            uniforms(GlassShaderSource.SCENE))
+        assertEquals(sceneCommon + "photo", uniforms(GlassShaderSource.SCENE_PHOTO))
         assertEquals(material + "scene", uniforms(GlassShaderSource.SCENE_LENS))
         assertEquals(material + "underlay", uniforms(GlassShaderSource.CONTENT_LENS))
-        for (source in listOf(GlassShaderSource.SCENE, GlassShaderSource.SCENE_LENS, GlassShaderSource.CONTENT_LENS)) {
+        for (source in listOf(GlassShaderSource.SCENE, GlassShaderSource.SCENE_PHOTO, GlassShaderSource.SCENE_LENS,
+            GlassShaderSource.CONTENT_LENS)) {
             assertFalse("unexpanded template", source.contains('$'))
             assertEquals(source.count { it == '{' }, source.count { it == '}' })
             assertEquals(source.count { it == '(' }, source.count { it == ')' })

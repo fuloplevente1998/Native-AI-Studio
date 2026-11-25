@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -42,7 +43,7 @@ internal fun CompactCalendarDialog(
         Surface(color = palette.surfaceCard, shape = shape,
             modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f).heightIn(max = maximumHeight)
                 .trainPilotSoftGlow(palette.primary, shape)
-                .border(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape).testTag(tag)) {
+                .trainPilotFrame(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape).testTag(tag)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,

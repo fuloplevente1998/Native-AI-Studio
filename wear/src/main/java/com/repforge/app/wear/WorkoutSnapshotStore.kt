@@ -102,11 +102,37 @@ object WorkoutSnapshotStore {
     private const val PREFS = "trainpilot_wear_snapshot"
     private const val SNAPSHOT = "snapshot"
 
+    /**
+     * 2809: process scoped. False after an app update, reboot or process start until the phone's
+     * Data Layer state has been applied once; a phone-owned copy restored from disk alone does
+     * not start a recording (see [wearMayAutoRecord2809]).
+     */
+    @Volatile var phoneStateApplied: Boolean = false
+        private set
+
     @Synchronized
-    fun save(context: Context, raw: String?): WearWorkout? {
+    fun save(context: Context, raw: String?): WearWorkout? =
+        saveEvaluated(context, raw).also { if (!raw.isNullOrBlank()) phoneStateApplied = true }
+
+    private fun saveEvaluated(context: Context, raw: String?): WearWorkout? {
         val current = load(context)
         if (raw.isNullOrBlank()) return current
         val root = try { JSONObject(raw) } catch (_: Exception) { return current }
+        // 2809: the explicit phone discard of this exact workout wins over owner/epoch fences.
+        if (WearPhoneClosure2809.phoneDiscard(current, root)) return applyPhoneDiscard2809(context, current!!)
+        // 2809: a phone closure of a workout this watch does not hold is remembered, so a later
+        // replay of an older active snapshot of it can never install it again.
+        val closedId = root.optString("workoutId")
+        if (!root.optBoolean("active", true) && closedId.isNotBlank() && closedId != current?.workoutId)
+            runCatching { WearClosureStore.rememberClosed193(context, closedId) }
+        // 2809: a phone-owned mirror the phone has already moved past is tombstoned and dropped,
+        // then the incoming state is judged against an empty watch (it never stays stuck).
+        if (current != null && WearPhoneClosure2809.mirrorSuperseded(current, root)) {
+            if (runCatching { WearClosureStore.rememberClosed193(context, current.workoutId) }.isFailure) return current
+            if (!context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(SNAPSHOT).commit()) return current
+            runCatching { WearStopwatchStore.clear(context) }
+            return saveEvaluated(context, raw)
+        }
         if(current==null&&root.optLong("ownerEpoch193")>0)return null // Recovery must use this watch's durable consent journal.
         if(current!=null&&root.optLong("ownerEpoch193")>current.ownerEpoch193)return current // Only the acknowledged transfer installs a new epoch.
         if(current!=null&&current.ownerEpoch193>0&&!root.optBoolean("active",true)&&
@@ -142,6 +168,21 @@ object WorkoutSnapshotStore {
             return saveWorkout(context,preserveWorkoutPause(current.copy(revision=maxOf(current.revision,parsed.revision)),parsed))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(SNAPSHOT, encode(parsed).toString()).commit()
         return load(context)
+    }
+
+    /**
+     * 2809: the phone has already tombstoned this workout. Tombstone it here first, queue the
+     * durable acknowledgement while the draft still exists, then drop the local copy. Services
+     * stop through the callers' existing "no snapshot" checks.
+     */
+    private fun applyPhoneDiscard2809(context: Context, current: WearWorkout): WearWorkout? {
+        if (runCatching { WearClosureStore.rememberClosed193(context, current.workoutId) }.isFailure) return current
+        if (current.ownershipProtocol193 == 1) runCatching { WearGps193.discard(context, current) }
+        runCatching { WearCommandOutbox.enqueue(context, WearPhoneClosure2809.acknowledgement(current,
+            java.util.UUID.randomUUID().toString(), System.currentTimeMillis())) }
+        if (!context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(SNAPSHOT).commit()) return current
+        runCatching { WearStopwatchStore.clear(context) }
+        return null
     }
 
     @Synchronized

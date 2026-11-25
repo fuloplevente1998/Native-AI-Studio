@@ -1,4 +1,5 @@
 package com.repforge.app.ui.journal
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.example.ui.components.trainPilotAnimatedExpansion
 
@@ -75,7 +76,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
-        .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
+        .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -85,7 +86,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).heightIn(min = 72.dp)
-                        .border(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
+                        .trainPilotFrame(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
                         .trainPilotClickable(MaterialTheme.shapes.medium, enabled = enabled) {
                             expandedSource = if (expanded) null else source
                         }.semantics {

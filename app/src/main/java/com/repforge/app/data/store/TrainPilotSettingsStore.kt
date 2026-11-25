@@ -84,7 +84,9 @@ data class TrainPilotUserSettings(
     /** Unmodified settings.trainingModes197 JSON, including unknown portable extensions. */
     val trainingModes197Json: String? = null,
     val customThemesJson: String = "[]",
-    val glassClarity: Int = DEFAULT_GLASS_CLARITY
+    val glassClarity: Int = DEFAULT_GLASS_CLARITY,
+    /** 2809/1 B: relative private path of the optional glass background image, "" = living backdrop. */
+    val glassBackdropImage: String = ""
 ) {
     fun timerConfiguration(): JSONObject = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
         .put("work", workSeconds).put("rest", intervalRestSeconds).put("rounds", rounds)
@@ -132,6 +134,7 @@ class TrainPilotSettingsStore(private val context: Context,
         val KEY_THEME_FAMILY = stringPreferencesKey("themeFamily")
         internal val KEY_CUSTOM_THEMES = stringPreferencesKey("customThemes350")
         internal val KEY_GLASS_CLARITY = intPreferencesKey("glassClarity350")
+        internal val KEY_GLASS_BACKDROP_IMAGE = stringPreferencesKey(com.repforge.app.GlassBackdropImages.PORTABLE_KEY)
         val KEY_REST_SECONDS = intPreferencesKey("restSeconds")
         val KEY_INTERVAL_REST_SECONDS = intPreferencesKey("intervalRestSeconds")
         val KEY_WORK_SECONDS = intPreferencesKey("workSeconds")
@@ -257,7 +260,8 @@ class TrainPilotSettingsStore(private val context: Context,
             }.getOrDefault(emptyMap()),
             trainingModes197Json = prefs[KEY_TRAINING_MODES_197],
             customThemesJson = prefs[KEY_CUSTOM_THEMES] ?: "[]",
-            glassClarity = (prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY).coerceIn(0, 100)
+            glassClarity = (prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY).coerceIn(0, 100),
+            glassBackdropImage = com.repforge.app.GlassBackdropImages.portable(prefs[KEY_GLASS_BACKDROP_IMAGE].orEmpty())
         )
     }
 
@@ -401,6 +405,20 @@ class TrainPilotSettingsStore(private val context: Context,
             }
         }
         if (active) publishThemeAfterCommit()
+    }
+
+    /** 2809/1 B: "" clears. Returns the previous path so the caller deletes that file only after commit. */
+    internal suspend fun setGlassBackdropImageForDataset(path: String, ticket: NativeDataReplacement.Continuation): String {
+        require(path.isEmpty() || com.repforge.app.GlassBackdropImages.isValidPath(path))
+        var previous = ""
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                previous = com.repforge.app.GlassBackdropImages.portable(prefs[KEY_GLASS_BACKDROP_IMAGE].orEmpty())
+                if (path.isEmpty()) prefs.remove(KEY_GLASS_BACKDROP_IMAGE) else prefs[KEY_GLASS_BACKDROP_IMAGE] = path
+            }
+        }
+        return previous
     }
 
     /** Save alone does not apply a new theme. Editing the active theme refreshes it atomically. */
@@ -719,6 +737,11 @@ class TrainPilotSettingsStore(private val context: Context,
                 importedClarity.toDouble() == importedClarity.toInt().toDouble() && importedClarity.toInt() in 0..100) {
                 prefs[KEY_GLASS_CLARITY] = importedClarity.toInt()
             } else if (replaceTrainingModesOnMissing) prefs[KEY_GLASS_CLARITY] = DEFAULT_GLASS_CLARITY
+            // 2809/1 B: only a validated private path (never image data); missing on a full restore = none.
+            val importedBackdrop = source.opt(com.repforge.app.GlassBackdropImages.PORTABLE_KEY)
+            if (importedBackdrop is String && (importedBackdrop.isEmpty() || com.repforge.app.GlassBackdropImages.isValidPath(importedBackdrop))) {
+                if (importedBackdrop.isEmpty()) prefs.remove(KEY_GLASS_BACKDROP_IMAGE) else prefs[KEY_GLASS_BACKDROP_IMAGE] = importedBackdrop
+            } else if (replaceTrainingModesOnMissing) prefs.remove(KEY_GLASS_BACKDROP_IMAGE)
             val previousCustomThemes = CustomThemeCodec.decode(prefs[KEY_CUSTOM_THEMES] ?: "[]")
             val customThemes = when {
                 replaceTrainingModesOnMissing -> incomingCustomThemes ?: emptyList()

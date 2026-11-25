@@ -92,10 +92,17 @@ class WearCommandListenerService : WearableListenerService() {
         // Settings are independent of an active workout: reconnect also republishes the latest palette.
         WearSyncRepository.refreshWatchHomeAsync(this)
         // Retry the durable terminal projection when a previous Data Layer write failed.
+        // 2809: an active draft is not re-pushed here (the Data Layer syncs it by itself), and a
+        // measurement is re-requested only for a start this process made. A reconnect after an
+        // app update/reboot therefore never makes the watch start or resurrect a workout.
         val current = ActiveWorkoutStore.current(this) ?: return
-        if(current.optString("workoutId").isNotBlank())
-            runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(this,current) }
-        PhoneMeasurementReconnect351.send(applicationContext,peer.id)
+        when (PhoneMeasurementReconnect351.plan(this)) {
+            PhoneMeasurementReconnect351.ReconnectPlan.TERMINAL ->
+                runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(this, current) }
+            PhoneMeasurementReconnect351.ReconnectPlan.MEASUREMENT ->
+                PhoneMeasurementReconnect351.send(applicationContext, peer.id)
+            PhoneMeasurementReconnect351.ReconnectPlan.NONE -> Unit
+        }
     }
 
     override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
