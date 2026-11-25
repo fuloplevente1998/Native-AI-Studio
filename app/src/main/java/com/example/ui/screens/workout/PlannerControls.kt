@@ -1,4 +1,13 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.RowScope
+import com.repforge.app.ui.theme.TrainPilotButton
+import com.example.ui.theme.kyantStateTile
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -41,6 +50,48 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
+
+/** Date state is independent of the displayed month selection; only selected days need a lens. */
+internal data class CalendarDayAppearance(
+    val fill: Color,
+    val selectedLens: Boolean,
+    val lightRim: Boolean,
+    val underlineToday: Boolean,
+)
+
+internal fun calendarDayAppearance(
+    palette: TrainPilotPalette,
+    selected: Boolean,
+    today: Boolean,
+    planned: Boolean,
+): CalendarDayAppearance {
+    val legacy = if (planned) palette.primary.copy(alpha = .12f) else palette.surface
+    if (!palette.isLiquidGlass) return CalendarDayAppearance(legacy, false, false, false)
+    return CalendarDayAppearance(
+        fill = if (selected) Color.Transparent else if (planned) palette.kyantStateTile(palette.primary, legacy) else palette.glassTile(legacy),
+        selectedLens = selected,
+        lightRim = !selected,
+        underlineToday = today,
+    )
+}
+
+/** Only enabled glass actions replace the filled paint. Material semantics and disabled colors stay native. */
+@Composable
+internal fun CalendarPrimaryGlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val palette = LocalTrainPilotPalette.current
+    val glass = palette.isLiquidGlass && enabled
+    TrainPilotButton(onClick = onClick, modifier = modifier, enabled = enabled,
+        shape = shape, colors = ButtonDefaults.buttonColors(
+            containerColor = if (glass) palette.kyantStateTile(palette.primary, palette.primary, strong = true) else palette.primary,
+            contentColor = if (glass) palette.textPrimary else palette.onPrimary),
+        elevation = if (glass) null else ButtonDefaults.buttonElevation(), content = content)
+}
 
 @Composable
 internal fun CalendarActionChip(
@@ -96,9 +147,10 @@ internal fun PlannerFieldTile(
         Box(modifier = Modifier.fillMaxWidth()) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = palette.surfaceElevated,
+                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
                     .trainPilotBorder(
                         1.dp,
                         if (expanded) palette.primary else palette.cardBorder,
