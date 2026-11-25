@@ -248,4 +248,4 @@ jobs:
           gradle-version: '9.3.1'
           cache-read-only: true
       - name: Verify debug D8 dexing (no APK upload)
-        run: gradle --no-daemon --stacktrace :app:mergeProjectDexDebug :app:mergeExtDexDebug :app:mergeLibDexDebug
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
