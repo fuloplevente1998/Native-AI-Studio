@@ -1,6 +1,9 @@
 package com.repforge.app.ui.theme
 
 import com.example.ui.theme.glassTouchBubble
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,7 +34,9 @@ fun TrainPilotOutlinedButton(
 ) {
     // 2808 #13: glass palettes drop neutral hairline outlines; semantic (accent/danger/success/warning) stay.
     val effectiveBorder = trainPilotFrameStroke(border)
+    val palette = LocalTrainPilotPalette.current
+    val surface = if (enabled) modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button) else modifier
     TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        OutlinedButton(onClick, modifier.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)
+        OutlinedButton(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)
     }
 }
