@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.selectionColors
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
@@ -99,9 +101,9 @@ internal fun StudioHealthMetricsBrowser(
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { selected ->
             com.example.ui.components.TrainPilotFilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
-                colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
-                    labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
-                    selectedLabelColor = palette.onPrimary),
+                colors = FilterChipDefaults.filterChipColors(containerColor = palette.glassTile(palette.surfaceCard),
+                    labelColor = palette.textPrimary, selectedContainerColor = palette.glassStateTile(palette.primary, palette.primary, strong = true),
+                    selectedLabelColor = if (palette.isLiquidGlass) palette.selectionColors().foreground else palette.onPrimary),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, if (provider == selected) palette.primary else palette.cardBorder)),
                 label = { Text(NativeWorkoutHealthSource.label(selected)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("journal_provider_$selected"))
@@ -238,9 +240,9 @@ internal fun StudioHealthMetricsBrowser(
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             filters.forEach { (filterType, filterLabel) ->
                                 com.example.ui.components.TrainPilotFilterChip(selected = type == filterType, onClick = { type = filterType },
-                                    colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
-                                        labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
-                                        selectedLabelColor = palette.onPrimary),
+                                    colors = FilterChipDefaults.filterChipColors(containerColor = palette.glassTile(palette.surfaceCard),
+                                        labelColor = palette.textPrimary, selectedContainerColor = palette.glassStateTile(palette.primary, palette.primary, strong = true),
+                                        selectedLabelColor = if (palette.isLiquidGlass) palette.selectionColors().foreground else palette.onPrimary),
                                     label = { Text(filterLabel) },
                                     modifier = Modifier.heightIn(min = 48.dp).testTag(
                                         if (filterType.isEmpty()) "journal_records_all_$date" else "journal_records_filter_${date}_$filterType"))

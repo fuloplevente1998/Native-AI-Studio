@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassStateTile
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -160,8 +162,8 @@ fun ExerciseDetailScreen(
             // Metadata table: Eszköz, Fő izmok, Másodlagos izmok
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = palette.surface,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surface),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                     .testTag("exercise_detail_metadata_card")
@@ -267,7 +269,7 @@ fun ExerciseDetailScreen(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = palette.surfaceElevated,
+                        color = palette.glassTile(palette.surfaceElevated, elevated = true),
                         modifier = Modifier.size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {

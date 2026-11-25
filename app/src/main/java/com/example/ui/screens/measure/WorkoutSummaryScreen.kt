@@ -409,7 +409,7 @@ fun WorkoutSummaryScreen(
                         if (attachedPhotos.isNotEmpty()) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true)
                             ) {
                                 Text(
                                     text = "${attachedPhotos.size}",

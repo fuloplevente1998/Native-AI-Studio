@@ -103,4 +103,25 @@ class LiquidGlassSurfaces2811Test {
             "ui/screens/log/LogWorkoutDetailScreen.kt", "ui/screens/health/HealthTabScreen.kt"))
             assertTrue(path, src(path).contains("trainPilotGlassMaterial(palette, "))
     }
+
+    /**
+     * 2811 device round 3 sweep: no opaque palette fill (surface / surfaceCard / surfaceElevated / cardPaint) is
+     * left on the live screens except the intentional opaque ones: separate dialog windows, map overlays (over
+     * map tiles), dropdown menus, the custom-theme preview, the scroll-to-top button over content, the legacy
+     * sheet branch and the replan dialog.
+     */
+    @Test fun noAccidentalOpaqueFillIsLeftOnTheLiveScreens() {
+        val allowed = setOf("CompactCalendarDialog.kt", "ExerciseVideoDialog.kt", "StudioStrengthSetCard.kt",
+            "TrainPilotModalBottomSheet.kt", "CustomThemePreview.kt", "PersonalPlannerModal.kt", "ScrollHelpers.kt",
+            "MapAppearanceSelector.kt", "WorkoutRouteMapBox.kt", "StudioWorkoutModesDialog.kt", "LogRouteMapScreen.kt",
+            "AddCustomExerciseDialog.kt", "CalendarPlannerScreen.kt")
+        val opaque = Regex("""\bcolor = (palette|p)\.(surface|surfaceCard|surfaceElevated|cardPaint)\b|\.background\((palette|p)\.(surface|surfaceCard|surfaceElevated|cardPaint)\)""")
+        val offenders = java.io.File("src/main/java/com/example/ui").walkTopDown()
+            .filter { it.isFile && it.extension == "kt" && "/theme/" !in it.invariantSeparatorsPath && it.name !in allowed }
+            .flatMap { f -> f.readLines().mapIndexedNotNull { i, line -> if (opaque.containsMatchIn(line)) "${f.name}:${i + 1}" else null } }
+            .toList()
+        assertTrue(offenders.joinToString("\n"), offenders.isEmpty())
+        // Only the replan dialog stays opaque in the calendar (its window is a dialog).
+        assertEquals(1, opaque.findAll(java.io.File("src/main/java/com/example/ui/screens/workout/CalendarPlannerScreen.kt").readText()).count())
+    }
 }

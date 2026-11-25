@@ -91,3 +91,27 @@ fejléc bal fele alatt (sáv min. folt-súly ≥ 0,27), sáv = semleges csempe-t
 ## 6. Készülékes (nem igazolható itt)
 Tényleges képi hatás 0/50/65/100%-on, AGSL fordítás Samsung Skián, A57 frame time (görgetés, pill, csúszka; az 5. folt
 ~25% több jelenet-számítás pixelenként), API 31–32 Compose út, világos saját háttérkép.
+
+## 7. Teljes söprés (2811, eszköz 3. kör után) – mi lett üveg, mi marad opak
+Módszer: `rg` a `color = palette.surface|surfaceCard|surfaceElevated|cardPaint`, `.background(palette.…)`, `containerColor = …`,
+alacsony alfájú akcentus- és sötét fátyol-kitöltésekre a `com.example.ui` alatt (theme kivételével). Őr: `LiquidGlassSurfaces2811Test.noAccidentalOpaqueFillIsLeftOnTheLiveScreens`.
+
+| Fájl / elem | Volt tömör? | Most |
+|---|---|---|
+| Fejléc minden útvonalon (`GlassContentBackdrop.kt`) | I (sötét sáv eszközön) | Navigation jelenet-lencse (= Naptár) + homályos tartalom-réteg |
+| Felső sáv nem-alányúló útvonalon (`GlassAwareScaffold.kt`, pl. aktív edzés „Vezérlés” sáv körül) | I (scaffold szín, téglalap sáv) | lap-jelenet a teljes felső sáv mögött |
+| Nav-elemek, Coach/Napló gombok mérőképernyőn (`TopHeaderAndNav.kt`) | I | csempe / kijelölés-tónus |
+| „Milyen volt?” chipek, visszajelzés kártyák (`ExerciseFeedbackChips.kt`) | I | állapot-tónus / csempe |
+| Témák stílus-sorai (`StudioPaletteCategories.kt`) | I | csempe + Tile perem |
+| Kapcsolt eszközök: Galaxy Watch kártya (`StudioWatchInformationCard.kt`) | I | Panel anyag, mint a többi kártya |
+| Engedélyek, mentés/visszaállítás, intervallum, összegzés, gyakorlat-részlet, izomtérkép kártya, egészség-leolvasás sorok, GPS műszerfal, illusztráció háttér | I | Panel anyag (külső) / csempe (belső) |
+| Egészség mai lap és súly kártyák (0,7 alfa), forrás-chipek (`StudioHealthMetricsBrowser.kt`) | részben | csempe / akcentus állapot-tónus |
+| Piros/türkiz 16%-os jelvények (mai lap, óra) | részben (plafon fölé emelhetett) | állapot-tónus |
+| Naptár: mai nap | gyenge | akcentus gyűrű + szám; alcím 2 sorba törhet |
+
+Szándékosan opak (indok): külön ablakú párbeszédablakok (`AddCustomExerciseDialog`, `StudioWorkoutModesDialog`, `ExerciseVideoDialog`,
+`CompactCalendarDialog`, `PersonalPlannerModal`, Naptár újratervezés-dialógus – a 2810-es teszt is így rögzíti), legördülő menük
+(`StudioStrengthSetCard` menük; külön popup-ablak), térkép fölötti vezérlők (`LogRouteMapScreen`, `MapAppearanceSelector`,
+`WorkoutRouteMapBox` – térképcsempe fölött az olvashatósághoz), saját téma előnézet (`CustomThemePreview` – saját téma opak),
+görgetés-a-tetejére gomb tartalom fölött (`ScrollHelpers`), fotó fölötti címke (`WorkoutSummaryScreen` 0,85 fátyol), dekoratív
+ikon/illusztráció színek (`IntegrationBadges`, `WorkoutModeArt`), kiválasztott akcentus gomb sheetben (szemantikus, onPrimary felirat).

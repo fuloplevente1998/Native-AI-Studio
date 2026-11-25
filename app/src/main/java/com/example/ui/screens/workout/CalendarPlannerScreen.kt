@@ -554,8 +554,11 @@ fun CalendarPlannerScreen(
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
 
                                         // G2: glass day cell = tile / state tint; selected day = Selection lens.
+                                        val isTodayCell = today == displayedYearMonth.atDay(dayNumber)
+                                        // 2811/7a: glass = today gets its own accent ring (legacy unchanged).
+                                        val todayRing = palette.isLiquidGlass && isTodayCell && !isSelected
                                         val cellState = glassCalendarCell(palette, isSelected,
-                                            isToday = today == displayedYearMonth.atDay(dayNumber),
+                                            isToday = isTodayCell,
                                             planned = plannedEv != null, completed = completedEv != null)
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
@@ -565,8 +568,8 @@ fun CalendarPlannerScreen(
                                                 .height(calendarCellHeight)
                                                 .then(cellState.material)
                                                 .trainPilotBorder(
-                                                    width = if (isSelected) 1.8.dp else 1.dp,
-                                                    color = if (isSelected) palette.primary else palette.cardBorder,
+                                                    width = if (isSelected) 1.8.dp else if (todayRing) 1.4.dp else 1.dp,
+                                                    color = if (isSelected || todayRing) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
                                                 )
                                                 .testTag("calendar_day_$dayNumber")
@@ -638,9 +641,10 @@ fun CalendarPlannerScreen(
                             Text(activeProgramTitle, color = palette.textPrimary,
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            // 2811/7b: glass = the subtitle may wrap instead of being cut next to Undo + Replan.
                             Text("${localizeCadenceLabel(state.planningCadenceHu)} • ${state.planningTime}",
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                maxLines = if (palette.isLiquidGlass) 2 else 1, overflow = TextOverflow.Ellipsis)
                         }
                         if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {

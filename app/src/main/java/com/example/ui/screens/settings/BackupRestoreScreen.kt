@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -225,8 +228,8 @@ fun BackupRestoreScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassCardFill(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
@@ -335,7 +338,7 @@ fun BackupRestoreScreen(
             }
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = palette.surfaceElevated,
+                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
                     .testTag("backup_operation_status").semantics { liveRegion = LiveRegionMode.Polite }
             ) {

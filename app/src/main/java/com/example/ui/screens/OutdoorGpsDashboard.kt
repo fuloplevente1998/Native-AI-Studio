@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.example.ui.components.WorkoutControlAppearance
@@ -226,7 +229,7 @@ internal fun OutdoorGpsDashboard(
                         .testTag("outdoor_dashboard_body"),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Surface(shape = RoundedCornerShape(20.dp), color = palette.surfaceCard,
+                    Surface(shape = RoundedCornerShape(20.dp), color = palette.glassTile(palette.surfaceCard),
                         modifier = Modifier.fillMaxWidth()
                             .height(compactMapHeight).testTag("outdoor_compact_map_card")
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(20.dp))) {
@@ -287,8 +290,8 @@ private fun OutdoorManualDistanceCard(state: OutdoorGpsDisplay, actions: Outdoor
     }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surfaceCard,
-        modifier = Modifier
+        color = palette.glassCardFill(palette.surfaceCard),
+        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
             .fillMaxWidth()
             .trainPilotBorder(
                 1.dp,
@@ -423,7 +426,7 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
         }
         else -> state.title
     }
-    Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
+    Surface(shape = RoundedCornerShape(16.dp), color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier.trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fullscreen) {
@@ -479,7 +482,7 @@ private fun ActivityPicker(state: OutdoorGpsDisplay, actions: OutdoorGpsActions,
 private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, showTimer: Boolean) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard) {
+    Surface(shape = RoundedCornerShape(18.dp), color = palette.glassTile(palette.surfaceCard)) {
         Column(Modifier.fillMaxWidth().padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (showTimer) Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -506,7 +509,7 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
 @Composable
 private fun MetricTile(metric: Triple<String, String, String>, highlighted: Boolean, modifier: Modifier) {
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(12.dp), color = palette.background,
+    Surface(shape = RoundedCornerShape(12.dp), color = palette.glassTile(palette.background),
         modifier = modifier.trainPilotBorder(1.dp, if (highlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
             RoundedCornerShape(12.dp))) {
         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -524,7 +527,7 @@ private fun MetricTile(metric: Triple<String, String, String>, highlighted: Bool
 private fun DashboardControls(state: OutdoorGpsDisplay, strings: LocalizedStrings, actions: OutdoorGpsActions) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard) {
+    Surface(shape = RoundedCornerShape(16.dp), color = palette.glassTile(palette.surfaceCard)) {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(6.dp)) {
             val stack = maxWidth < 300.dp || LocalDensity.current.fontScale > 1.35f
             if (!state.started) Button(actions.start, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)

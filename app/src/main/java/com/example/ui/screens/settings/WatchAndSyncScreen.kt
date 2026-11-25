@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
@@ -359,7 +360,7 @@ fun WatchAndSyncScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF14B8A6).copy(alpha = 0.16f),
+                        color = palette.glassStateTile(Color(0xFF14B8A6), Color(0xFF14B8A6).copy(alpha = 0.16f)),
                         modifier = Modifier
                             .size(46.dp)
                             .border(1.dp, Color(0xFF14B8A6).copy(alpha = 0.45f), RoundedCornerShape(14.dp))

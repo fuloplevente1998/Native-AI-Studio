@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.runtime.remember
@@ -248,8 +251,8 @@ fun AnatomicalMuscleHeatmapCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
-        modifier = Modifier
+        color = palette.glassCardFill(palette.surfaceCard),
+        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
             .fillMaxWidth()
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
@@ -282,7 +285,7 @@ fun AnatomicalMuscleHeatmapCard(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier.size(41.dp)
                                 .trainPilotPressIndication(RoundedCornerShape(10.dp), periodInteraction)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
@@ -375,7 +378,7 @@ fun AnatomicalMuscleHeatmapCard(
                                     .weight(1f)
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(palette.surfaceElevated)
+                                    .background(palette.glassTile(palette.surfaceElevated))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -456,7 +459,7 @@ fun AnatomicalMuscleHeatmapCard(
                 }
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("muscle_selected_summary")

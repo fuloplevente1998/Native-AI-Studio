@@ -299,7 +299,7 @@ internal fun StudioTodayStatusDetailSheet(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = Color(0xFFEF4444).copy(alpha = 0.16f),
+                                    color = palette.glassStateTile(Color(0xFFEF4444), Color(0xFFEF4444).copy(alpha = 0.16f)),
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -343,7 +343,7 @@ internal fun StudioTodayStatusDetailSheet(
                             // Full-width dark sparkline box with red wave curve (Screenshot 9)
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.surfaceCard.copy(alpha = 0.7f),
+                                color = palette.glassTile(palette.surfaceCard.copy(alpha = 0.7f)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(54.dp)

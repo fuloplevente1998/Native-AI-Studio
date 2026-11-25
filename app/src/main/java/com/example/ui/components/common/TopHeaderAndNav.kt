@@ -370,7 +370,8 @@ internal fun TopNavPillItem(
     val quick = glass && compact && !hosted
     val target = if (quick) palette.glassTile(palette.surface, elevated = selected)
         else if (glass) (if (selected && !hosted) palette.primary.copy(alpha = .10f) else Color.Transparent)
-        else if (selected) selection.surface else palette.surface
+        // 2811/2: glass palette on the measurement screen (no optics): a translucent tile, never the opaque card.
+        else if (selected) selection.surface else palette.glassTile(palette.surface)
     val fill = if (glass) animateColorAsState(target,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "glass selected pill").value else target

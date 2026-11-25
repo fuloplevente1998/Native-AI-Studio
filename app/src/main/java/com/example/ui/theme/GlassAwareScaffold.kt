@@ -43,7 +43,12 @@ internal fun GlassAwareScaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop) {
-                topBar()
+                // 2811/2: without underlap (calendar, sub-screens, active workout) nothing of the page lies under
+                // the top bar, so the scaffold colour showed as a solid band around e.g. the control strip: the
+                // same page scene is painted behind the whole top bar (root coordinates, continuous with the page).
+                if (palette.isLiquidGlass && !glassUnderlap) androidx.compose.foundation.layout.Box(
+                    Modifier.trainPilotGlassScene(palette)) { topBar() }
+                else topBar()
             }
         }
     ) { innerPadding ->

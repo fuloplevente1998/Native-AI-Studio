@@ -285,7 +285,7 @@ internal fun WeightLogBody(
             }
         }
     }
-    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceCard.copy(alpha = 0.7f)),
         modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
