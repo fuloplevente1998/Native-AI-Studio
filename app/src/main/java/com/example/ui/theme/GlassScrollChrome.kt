@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 /** Measured fixed bars and a separate scroll source. Only the list is captured, never its lenses. */
@@ -27,9 +27,11 @@ internal fun GlassScrollChrome(
     bottom: (@Composable () -> Unit)? = null,
     content: @Composable (Modifier, Dp, Dp) -> Unit
 ) {
-    val scene = LocalKyantScene.current.forThisWindow()
-    val live = enabled && LocalGlassChromeUnderlap.current && scene != null
-    if (!live || scene == null) {
+    // Only a real window-local scene layer can be combined with the list capture.
+    // A combined Backdrop is not itself a LayerBackdrop; retain the padded fallback in that case.
+    val sceneLayer = LocalKyantScene.current.forThisWindow()?.backdrop as? LayerBackdrop
+    val live = enabled && LocalGlassChromeUnderlap.current && sceneLayer != null
+    if (!live || sceneLayer == null) {
         Column(modifier) {
             if (rootInset > 0.dp) Spacer(Modifier.height(rootInset))
             top?.invoke()
@@ -40,7 +42,7 @@ internal fun GlassScrollChrome(
     }
 
     val layer = rememberLayerBackdrop()
-    val chrome = rememberKyantScene(rememberCombinedBackdrop(scene.backdrop, layer), samplesContent = true)
+    val chrome = rememberKyantHeaderScene(sceneLayer, layer)
     SubcomposeLayout(modifier) { constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight

@@ -7,6 +7,7 @@
 - Aktív erő/időzített/kétoldali: felső navigáció + órás sáv és alsó dock mögött gördülő tartalom.
 - Külön chrome-optika; a mérési kártyák, press, mozgás és adatmotor régi kapuja változatlan; GPS térkép és energiatakarékos fallback érintetlen.
 - Új `GlassScrollChrome.kt`: a listát rögzíti, a sávok nem mintavételezik önmagukat, felső/alsó in-scroll padding mérve.
+- CI #786: debug és release Kotlin-fordítási hiba (Backdrop vs LayerBackdrop). A listalencse most típusbiztos, ablakhoz kötött LayerBackdropot használ, egyébként a régi paddinges fallbacket.
 - Regresszió: `GlassScrollChrome2813Test.kt`, `LiquidGlass2810Test.kt`; a teljes CI az aktuális PR head-en ellenőrizendő.
 - Készüléken vizsgálandó: nyitási ugrás, valódi áttetszőség, teljesítmény, nagy betűméret, utolsó sor és vezérlőgombok.
 - Nincs merge, aláírás vagy verzióemelés, nincs tároló/motor/Wear/shared változás.
