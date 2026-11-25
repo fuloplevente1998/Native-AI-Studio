@@ -7,12 +7,8 @@ import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.LocalGlassOpticsEnabled
-import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassEffectsActive
 import com.repforge.app.ui.theme.glassPressMotion
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -368,7 +364,8 @@ internal fun TopNavPillItem(
     val source = remember { MutableInteractionSource() }
     val ownGlass = !hosted && (selected || compact)
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
-        .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
+        .selectable(selected, interactionSource = source,
+            indication = if (LocalGlassOpticsEnabled.current) null else ripple(), role = Role.Tab, onClick = onClick)
         .then(if (ownGlass) Modifier.glassHeaderControl(palette, itemShape,
             if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
