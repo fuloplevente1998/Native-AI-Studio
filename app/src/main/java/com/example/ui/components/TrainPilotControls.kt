@@ -36,6 +36,8 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.glassEffectsActive
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.glassTile
 import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
@@ -70,16 +72,23 @@ fun TrainPilotFilterChip(
         selected -> selection.foreground
         else -> p.textPrimary
     }
-    // Liquid Glass: an unselected chip is a small glass lens; the selected one keeps its opaque,
-    // contrast-tested selection fill (plus rim) so the state never depends on the backdrop.
-    val glassChip = enabled && !selected && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
+    // Only the selected chip needs a lens. Other chips use cheap translucent tile paint.
+    // Keep the semantic outline and bold label on selection, including the reduced optics path.
+    val glassChip = enabled && p.isLiquidGlass
+    val glassSelection = glassChip && selected && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
     Surface(
         shape = shape,
-        color = if (selected) selection.surface else if (glassChip) Color.Transparent else p.surfaceCard,
+        color = when {
+            glassSelection -> Color.Transparent
+            selected -> selection.surface
+            glassChip -> p.glassTile(p.surfaceCard)
+            else -> p.surfaceCard
+        },
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
-        modifier = modifier.heightIn(min = 40.dp)
-            .then(if (glassChip) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
-            .trainPilotGlassRim(p, shape).semantics { this.selected = selected }
+        modifier = modifier.heightIn(min = if (p.isLiquidGlass) 48.dp else 40.dp)
+            .then(if (glassSelection) Modifier.trainPilotGlassMaterial(p, shape, GlassMaterialRole.Selection)
+                else Modifier.trainPilotGlassRim(p, shape, if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Tile))
+            .semantics { this.selected = selected }
             .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {
         CompositionLocalProvider(
@@ -105,8 +114,8 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
     return OutlinedTextFieldDefaults.colors(
         focusedTextColor = p.textPrimary, unfocusedTextColor = p.textPrimary,
         disabledTextColor = p.textSecondary, errorTextColor = p.textPrimary,
-        focusedContainerColor = p.surfaceCard, unfocusedContainerColor = p.surfaceCard,
-        disabledContainerColor = p.surfaceCard, errorContainerColor = p.surfaceCard,
+        focusedContainerColor = p.glassTile(p.surfaceCard, elevated = true), unfocusedContainerColor = p.glassTile(p.surfaceCard),
+        disabledContainerColor = p.surfaceCard, errorContainerColor = p.glassTile(p.surfaceCard),
         cursorColor = p.primary, errorCursorColor = p.danger,
         // 2809/2: glass fields keep their filled container; the neutral outline vanishes, focus and error stay.
         focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
@@ -199,11 +208,11 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (glass) p.primary.copy(alpha = .12f) else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
+    Surface(shape = shape, color = if (glass) Color.Transparent else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
         border = if (glass) BorderStroke(1.dp, p.selectionColors().border) else null,
         modifier = modifier.heightIn(min = 48.dp)
-            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
-            .trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape, GlassMaterialRole.Button) else Modifier)
+            .trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                 color = if (glass) p.textPrimary else p.readablePrimaryLabel(), maxLines = 1)
@@ -219,8 +228,8 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
     Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, p.cardBorder)),
         modifier = modifier.heightIn(min = 48.dp)
-            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
-            .trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+            .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape, GlassMaterialRole.Button) else Modifier)
+            .trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                 color = if (enabled) p.textPrimary else p.textSecondary, maxLines = 1)
