@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.GlassMaterialRole
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -68,7 +69,7 @@ internal fun TrainPilotModalBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
-                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
+                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Overlay) else Modifier)
                 // 2810/5: a Liquid Glass sheet on the page colour paints the same procedural backdrop, so
                 // its inner glass panels have colour to refract (sheets are separate windows).
                 .then(if (palette.isLiquidGlass && !customPaint && containerColor == palette.background)
