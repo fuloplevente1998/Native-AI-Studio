@@ -28,8 +28,12 @@ internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier
     if (palette.isLiquidGlass) glassSceneModifier(palette, null) else this
 
 @Composable
-internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, shape) else this
+internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier {
+    if (!palette.isLiquidGlass) return this
+    if (role == GlassMaterialRole.Tile) return trainPilotGlassRim(palette, shape)
+    return kyantGlassOrNull(palette, shape, role) ?: glassSceneModifier(palette, shape)
+}
 
 /** UI-thread only; the paint is reused, the shader it carries is snapshotted by each draw call. */
 private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
