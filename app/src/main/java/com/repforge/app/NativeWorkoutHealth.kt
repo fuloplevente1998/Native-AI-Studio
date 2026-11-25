@@ -38,7 +38,9 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
         }
     }
 
-    internal suspend fun attach(request: Request, response: JSONObject, provider: String = HealthJournalStore.HC) = NativeDataReplacement.mutate(context) {
+    internal suspend fun attach(request: Request, response: JSONObject, provider: String = HealthJournalStore.HC,
+        requirePublication: () -> Unit = {}) = NativeDataReplacement.mutate(context) {
+        requirePublication()
         currentCoroutineContext().ensureActive()
         request.ticket.requireCurrent(context)
         val expected = request.expected
@@ -57,6 +59,7 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             val health = JSONObject(response.toString()).put("windowStart", current.started).put("windowEnd", current.finished)
                 .put("syncedAt", Instant.now().toString())
             check(matchesWindow(health, current)) { "Provider returned different active workout intervals" }
+            requirePublication()
             val merged = NativeWorkoutHealthSource.attach(current.health240Json?.let { JSONObject(it) }, provider, health)
             val raw = LegacyWebViewMigrator.workoutJson(latest).put("health240", merged)
             // All other fields come from the latest row, including edits made while the SDK was reading.
@@ -68,7 +71,8 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
         }
     }
 
-    suspend fun refresh(activity: Activity, expected: WorkoutHistoryEntity, provider: String = HealthJournalStore.HC): Result<Unit> = withContext(Dispatchers.Main.immediate) {
+    suspend fun refresh(activity: Activity, expected: WorkoutHistoryEntity, provider: String = HealthJournalStore.HC,
+        automatic: Boolean = false, requireAutoGuard: () -> Unit = {}): Result<Unit> = withContext(Dispatchers.Main.immediate) {
         val owner = activity as? LifecycleOwner
             ?: return@withContext Result.failure(IllegalStateException("Foreground lifecycle required"))
         val foreground = AtomicBoolean(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
@@ -85,7 +89,12 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
                         "READ_TOTAL_CALORIES_BURNED","READ_EXERCISE","READ_DISTANCE","READ_SPEED")
                 }) throw SecurityException("Health Connect read permission required")
             val request = withContext(Dispatchers.IO) { prepare(expected) }
-            val guard = { check(foreground.get()) { "Foreground health read interrupted" }; request.ticket.requireCurrent(context); Unit }
+            val guard = {
+                check(foreground.get()) { "Foreground health read interrupted" }
+                request.ticket.requireCurrent(context)
+                if (automatic) requireAutoGuard()
+                Unit
+            }
             guard()
             // No metadata lease, Room transaction or snapshot monitor is held over provider IPC.
             val workout = JSONObject().put("started", request.expected.started).put("finished", request.expected.finished)
@@ -99,7 +108,14 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
                 },
                 samsung = { window -> guard(); SamsungHealthRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard) })
             guard()
-            withContext(Dispatchers.IO) { attach(request, response, provider) }
+            if (automatic) {
+                val prior = NativeWorkoutHealthSource.snapshot(request.expected.health240Json?.let { JSONObject(it) }, provider)
+                if (!WorkoutHealthAutoPolicy.accept(prior, response)) return@withContext Result.success(Unit)
+                com.repforge.app.ui.health.NativeHealthForegroundAdmission.requireMainAdmission(context)
+            }
+            withContext(Dispatchers.IO) { attach(request, response, provider) {
+                if (automatic) guard()
+            } }
             Result.success(Unit)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { Result.failure(failure) }

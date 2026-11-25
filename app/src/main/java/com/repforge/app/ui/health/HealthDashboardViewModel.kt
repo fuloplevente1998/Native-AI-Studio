@@ -626,6 +626,17 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                             refreshRevision = it.refreshRevision + if (value.publishedDay == LocalDate.now()) 1L else 0L) }
                     }, onPermissionFinished = { manualSamsungPermissionVisible = false }, requireScreenGuard = guard,
                     providerOverride = requestedProvider)
+                // Reuse this single foreground SDK flight, after daily publication. An edzés
+                // is already durable; reconciliation failure cannot undo it or fail daily sync.
+                if (result.isSuccess && sceneCurrent() && day == LocalDate.now() &&
+                    _uiState.value.autoOnOpen) {
+                    try {
+                        com.repforge.app.WorkoutHealthAutoReconcile.recent(context, activity,
+                            if (allProviders) providerAvailability.filterValues { it }.keys else setOf(snapshot.provider),
+                            guard)
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { /* Next visible sync may retry; no health values fabricated. */ }
+                }
                 val failed = result.isFailure || result.getOrNull()?.optBoolean("failed") == true
                 val partial = !failed && result.getOrNull()?.optBoolean("partial") == true
                 val failure = result.exceptionOrNull()

@@ -147,3 +147,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | Liquid Drop 2814 (L1–L6) | `ex/ui/theme/LiquidDropMaterial.kt` (policy, bounded paint, same-window lens), `KyantMaterialSpec.kt`, `KyantGlass.kt`, `TrainPilotGlassEngine.kt` (cached bevel); common `TrainPilotControls.kt`, `rf/ui/theme/TrainPilot{Button,OutlinedButton,ActionButtons}.kt`; teszt `LiquidDrop2814Test.kt` |
 
 | 2814/4 edzés-egészségadat audit | `docs/WORKOUT_HEALTH_2814.md`; `rf/NativeLiveWorkoutHealth.kt`, `StudioWorkoutSummaryPresentation.kt`, `NativeWorkoutHealth.kt`, `NativeWorkoutActiveWindows.kt`, `NativeWorkoutHealthSummary.kt`, `SamsungSdkReader.java`, `SamsungHealthRepository.kt`; teszt `WorkoutHealth2814ContractTest.kt` |
+
+| 2814 H2 automatikus edzés-egészség visszaolvasás | `rf/WorkoutHealthAutoReconcile.kt`, `rf/NativeWorkoutHealth.kt`, `rf/ui/health/HealthDashboardViewModel.kt`, `rf/data/db/TrainPilotDaos.kt`; teszt `WorkoutHealthAuto2814Test.kt` |
