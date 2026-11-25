@@ -108,3 +108,11 @@ Saját motor, új motor/függőség nélkül; csak a 33–40 család. Audit: `do
   Menük, párbeszédablakok: opak (külön ablak, indokolt).
 - **G4:** `tintedSurface`, natív kártyák (`nativeStudioColors`), mérőképernyők háttere (közös, ott statikus háttér), dokkok/sávok, felsorolt
   kártyák a közös anyagon. Tesztek: `LiquidGlassSurfaces2811Test`.
+
+## V10 (2811 G5–G6) – optimalizálás, regresszió, elfogadás
+- Mérőképernyő: `GlassRole.resolve` → Performance minden felületen (a lappal folytonos fejléc kivételével), a háttér statikus, óra nincs.
+- Energiatakarékos mód: `GlassScene.mode(..., powerSave)` → STATIC (nincs ~12 fps újrarajzolás), a kinézet azonos.
+- Egy háttér, sok mintavétel: a kártyák a közös jelenet-programot mintázzák, a fejléc/nav egyetlen rögzített rétegből; nincs
+  felesleges második lencse. Programok egyszer fordulnak, uniformok stabilak, `GlassOptics.from(step, role)` cache.
+- Nyitott (csak készüléken mérhető): pill + fejléc két platform-blur menete közös blur-réteggé vonható-e; A57 frame time.
+- Kézi elfogadás: `docs/LIQUID_GLASS_2_ACCEPTANCE.md`. Teszt: `LiquidGlassPerformance2811Test`.

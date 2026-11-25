@@ -28,5 +28,7 @@
 - **2811 G2–G4 (ugyanott):** fejléc 2. kör (lappal folytonos Navigation, nincs lépcső; Napló/Coach a fejléc alatt), naptár
   napcellák/gombok üveg, közös gombok/mezők/kijelölés üveg-tónus (`GlassSurfaces.kt`), képernyők tömör kártyái/aktív edzés panel
   üveg úton. `docs/FIXES_2811.md` 1, 10–13, `docs/LIQUID_GLASS_THEMES.md` V8–V9.
-- **Hátra:** G4 CI zöld → G5 (Performance, gyorsítás) → G6 (regresszió, kézi elfogadási lista) → végső CI → készülékes teszt-APK.
+- **2811 G5–G6:** Performance szerep a mérőképernyőn, energiatakarékos módban álló háttér, regressziós tesztek
+  (`LiquidGlass*2811Test`), kézi lista `docs/LIQUID_GLASS_2_ACCEPTANCE.md`.
+- **Hátra:** végső CI zöld → készülékes teszt-APK és elfogadás a listán (0/50/65/100%, A57 frame time, API 31–32).
   Main merge, verzió és kiadás csak jóváhagyással (#377 már main-en).

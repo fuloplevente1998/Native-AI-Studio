@@ -88,9 +88,10 @@ internal object GlassScene {
     val lumaCap: Float = GlassOptics.SURFACE_LUMA_MAX * .96f
 
     /** Off for legacy palettes and on the active measurement screens; static when motion is off. */
-    fun mode(isLiquidGlass: Boolean, opticsEnabled: Boolean, motionEnabled: Boolean): GlassBackdropMode = when {
+    fun mode(isLiquidGlass: Boolean, opticsEnabled: Boolean, motionEnabled: Boolean, powerSave: Boolean = false): GlassBackdropMode = when {
         !isLiquidGlass || !opticsEnabled -> GlassBackdropMode.OFF
-        !motionEnabled -> GlassBackdropMode.STATIC
+        // 2811/G5: battery saver freezes the drift (no ~12 fps redraw of every glass surface); look unchanged.
+        !motionEnabled || powerSave -> GlassBackdropMode.STATIC
         else -> GlassBackdropMode.LIVING
     }
 
@@ -208,7 +209,8 @@ internal val LocalGlassScene = staticCompositionLocalOf<GlassSceneState?> { null
 internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bitmap?, content: @Composable () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val state = remember { GlassSceneState() }
-    val mode = GlassScene.mode(palette.isLiquidGlass, LocalGlassOpticsEnabled.current, rememberGlassMotionEnabled())
+    val mode = GlassScene.mode(palette.isLiquidGlass, LocalGlassOpticsEnabled.current, rememberGlassMotionEnabled(),
+        rememberGlassPowerSave())
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED))
     val wantImage = GlassScene.usesImage(palette.isLiquidGlass, imagePath)
