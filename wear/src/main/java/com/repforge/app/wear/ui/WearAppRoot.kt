@@ -225,6 +225,7 @@ internal fun TrainPilotWearApp(
                         )
                     route == "metrics" ->
                         WearDailyHealthScreen(daily, home.value?.dailyStepsGoal, health.value, active,
+                            phoneSleep = home.value?.sleepSummary,
                             onDetails = { route = "daily-details" },
                             onBack = { route = metricsBackRoute })
                     route == "save-sync" -> SaveSyncScreen(saveSync?.value,

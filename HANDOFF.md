@@ -1,44 +1,40 @@
 # Aktuális átadó
 
-- Main: 1.5.0 · 280600/280602 (#361), teljes refaktor után (R0–R8). Előbb `docs/CODEMAP.md`, utána csak a megnevezett fájl.
-  Méretőr `SourceSizeGuardTest`; áthelyezés `scripts/split_kotlin.py`, `scripts/verify_move.py`. ViewModel: állapot + mag, funkciók `Vm*.kt`.
-- **Integrációs jelölt:** `integration/wear-health-themes` = main `0affd420` + #369 → #370 → #368 → #371 (ebben a sorrendben).
-  Szöveges ütközés csak a HANDOFF.md-ben volt; a 10 közös kódfájl automatikusan összefésülődött. Ellenőrizve: dupla deklaráció nincs
-  (1 dupla import törölve), MainActivity 1388/1393 sor, méretőr-plafonok rendben, verzió 1.5.1 · 280700/280702. A teljes közös CI dönt.
-- **#369 külső edzésimport** (#359): HC + Samsung Room-import (kézi/opt-in auto), stabil forrásazonosító, duplikáció/tombstone, késői metrikák,
-  privát GPS (`noBackupFilesDir`). Egyetlen health sync út, nincs új worker. Korlát: Samsung törlésfeed, gyártói export, HC route-consent készüléken.
-- **#370 automatikus órás mérés** (#351): célzott kérés (workout ID/revision/epoch/15 s TTL), source node ellenőrzés, ACK csak valós HS start után,
-  előtéri fallback; API 33–35 `BODY_SENSORS_BACKGROUND`, 36+ `READ_HEALTH_DATA_IN_BACKGROUND`. Az óra nem veszi át a vezérlést. `docs/WEAR_AUTO_MEASUREMENT_351.md`.
-- **#368 Wear dizájn/vezérlés** (#367): v3 kezdőlap (akku-/lépésív), 4 főlap, korona/gesztus, v2 edzésfelület, 3 mp vezérlő-overlay, érintészár,
-  pihenő ±15 s, 10 s előjelzés. Szerződés: `controlProtocol367=6`, `dailyStepsGoal`, `restOverridesMs367`, `watchControl367`, `phonePause367`,
-  `phoneRest367`, `pauseRevision`, `restRevision`. `docs/WEAR_367_CONTROL_INTEGRATION.md`.
-- **#371 témák + Liquid Glass** (#349/#350): 32 gyári téma (ID/kulcs változatlan), 8 glass téma (33–40), saját témák (UUID, színkerék/HEX,
-  név Mentés után, teljes képernyős előnézet), Frosted–Clear csúszka csak glass családnál, Wear opak színek. `docs/CUSTOM_THEME_EDITOR_350.md`,
-  `docs/LIQUID_GLASS_THEMES.md`. **#372 (theme-test APK) soha nem merge-elhető.**
-- **#373 Liquid Glass befejezés:** saját AGSL motor (SDF peremi fénytörés, spekuláris perem, belső árnyék, csak peremi kromatikus szél,
-  `LENS_PEAK` kontrasztőr), folytonos 0–100 csúszka élő előnézettel, egyszer fordított programok, valódi backdrop fejléc + csúszó nav pill alatt,
-  rugós pill/nyomás, csökkentett mozgás, API31–32/opak fallback, aktív edzésnél nincs üveg. `docs/LIQUID_GLASS_THEMES.md` V4, `LiquidGlassOptics373Test`.
-- **2810 gyűjtő (`fix/collector-2810`, draft #377):** saját motor iOS-szerű hangolás (fehéres tónus 40→6%, homály 32→20 dp,
-  telítés, vékony perem, árnyék; kontraszt a háttér fénysűrűség-korláttal, `GlassContrast.kt`), több felület glass úton, fejléc alatt
-  mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
-- **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
-  → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
+- Main: `43036875` (2810, #377 merge). R0–R8 refaktor kész; előbb `docs/CODEMAP.md`, utána csak a megnevezett fájl.
+  Méretőr `SourceSizeGuardTest`; áthelyezés `scripts/split_kotlin.py`, `scripts/verify_move.py`.
+- **Kyant Liquid Glass (#388, `feat/kyant-glass`):** `docs/KYANT_GLASS_PLAN.md`; Kyant 1.0.6, Kotlin 2.3.10 (globális), telefon Compose BOM 2026.02.00, Wear BOM marad;
+  1.5.2 · 280800/280802 verzióemelés ezen az ágon; main beolvasztva, K3 teljesítmény és készülékes elfogadás hátra. #372/#378 soha nem merge; `docs/handoff-2811` (#387) külön.
 
-- **Kyant (2026-11-25, #388, `feat/kyant-glass` main `43036875`-ből):** `docs/KYANT_GLASS_PLAN.md`; K0 `763f2552` / CI #747 `45644836925` zöld: 971 telefon + 248 Wear, 0 failure/error/skipped; shared NO-SOURCE; app+Wear R8 és D8 zöld. Kotlin 2.3.10, telefon Compose BOM 2026.02.00, Kyant 1.0.6, Wear BOM marad. Felhasználó döntése: eredeti package és tartós release signer a végső APK-hoz; nincs main merge/Play külön jóváhagyás nélkül.
-- **K1 kódjelölt:** `KyantMaterialSpec.kt` 7 közös szerep, `KyantGlass.kt` egy ablakhoz kötött scene, fejléc külön scene+content, 0–100 és kontrasztőr. `GlassAwareScaffold`, `TrainPilotGlassEngine`, `GlassContentBackdrop`, fő route host, nav/pill, sheet, előnézet, Tile alpha, AGSL press bubble nem fut Kyant forrás mellett. Body nem mintavételezi önmagát; külön ablak fallback. Új szerep-/kontraszttesztek. K1 CI #45647217350 zöld: 973 phone + 248 Wear = 1221, 0 failure/error/skipped, shared NO-SOURCE; R8 és DEX zöld. K2: #379/#380/#386 teljes felületi port, gomb/input/overlay szerepek bekötése, dialogok és képernyőaudit. K3 fizikai teljesítmény, K4 teljes CI, K5 eredeti package+signer, web licenc, APK. Nincs készülékes vagy teljes vizuális elfogadás.
+## `fix/359-367-phone-wear-refinements` (draft PR) – 1. fázis: telefon + alvás
+- **#359/2.1 név:** importált külső edzés a meglévő naplószerkesztőben átnevezhető (`journal_editor_title`, ≤80 kar.).
+  Tárolás `rawJson.userTitle359`, a `externalWorkout359` forrás-pillanatképen kívül → auto-/újraszinkron nem írja felül;
+  forrásazonosító és mérés változatlan. Üres név → alapcímke „Külső edzés”.
+- **#359/2.2 forrás:** nincs tárolt generált forrásszöveg (az import soha nem írt jegyzetet/leírást; a forrás csak a listasorban
+  és a fejlécben volt *kiszámolva*) → nincs migráció. Most csak a részletek Forrás fülén látszik (`log_detail_external_source`).
+- **#359/2.3 auto-import:** kódszinten ellenőrizve, hiba nem igazolt, nincs módosítás. Út: előtéri health refresh
+  (`NativeHealthRefresh`) + HC háttér job (Android 14+, `hcBackground`); Samsung csak előtérben. Stabil ID, tombstone,
+  átfedés → review (nem duplikál), késői metrika `allowCreate=false` frissítéssel.
+- **#359/2.4 Wear nélküli adat:** kódszinten ellenőrizve, nincs módosítás. Telefonos edzés: HC/Samsung ablak-olvasás a napló
+  részleteinél (előtér); külső edzés: azonos forrású minták/session-összesítő. Edzésterhelést egyik forrás sem ad, nem számolunk.
+  Kockázat (készüléken nézendő): ha az első részletnyitáskor már van pl. lépés, a később érkező pulzust csak a kézi frissítés hozza.
+  Samsung több-sessionös pont az adott nap auto-importját visszatartja (szándékos óvatosság).
+- **#367/9 alvás:** közös `shared/SleepNightTotal` unió (telefon `NativeDailyHealthDetails.sleepMinutes` is ezt használja).
+  A telefon a Today-csempe értékét küldi a home snapshotban (`sleepSummary367`: dátum, perc, provider); az óra a mai értéket
+  mutatja forráscímkével, enélkül a saját észlelt szakaszait összegzi (nem csak az utolsót). Más nap értéke soha nem „mai”.
 
-- **K2 integrációs jelölt**: #379 teljes felületi diff és #380 G0–G8 célzott port az azonos mainből, #386 könnyített minta. Sűrű belső elemek Tile/state paint + vektorperem; egy fejléc capture, könnyített vezérlők és aktív mérés; fotó clock/cache. Naptár, program, home, coach, napló, egészség, progress, beállítások, aktív mérés, secondary panelek. K2 regressziók, CI és teljes felületi/overlay elfogadás nyitott; K3–K5 nem kész. #379/#380/#386 lezárva, rögzített SHA-kból referencia; csak #388 nyitott. Main/signing változatlan.
+## 2. fázis KÉSZ (CI zöld 70f30f1f, JVM app 977 / wear 268 / shared 3, 0 hiba): Wear UI #367/3.1–3.8 – készülékes ellenőrzés hátra
+- **3.1/3.4/3.6:** minden edzésképernyő egy 56 dp elsődleges gombot használ 4 dp-re a pereme alatt (`wearFooterState`: Kész/Mentés → Kihagyás →
+  Következő / Befejezés csak rögzített sorozat után); Előző/Következő/korai Befejezés/Elvetés a vezérlő-overlayben. Fix 14 dp pulzussor a gomb felett,
+  Legutóbb-sor elsőként tűnik el. Stopper: fix méretű arc (28 sp, 44 dp, rajzolt ▶/Ⅱ/✓), állapotváltáskor nem mozog.
+- **3.2 overlay:** minden gomb felirattal (Előző, Szünet/Folytatás/Telefon, Következő, Befejezés = előnézet+mentés, Elvetés = megerősítés, Menü).
+- **3.3 pulzus:** élő érték; szünetnél/rövid kiesésnél az utolsó valódi minta halványan ≤120 mp-ig; különben „–” (nincs 0/kitalált). Pihenő képernyőn nincs.
+- **3.5 zár:** valós folyamatos 3 mp; ok: ujjmozgás (slop) csendben újraindította a tartást → 16 dp tűrés, visszaszámlálás, „megszakítás nélkül 3 mp”.
+- **3.7/3.8** `WearPageSwipe367.kt`: tap bárhol nyit; húzás-kezdés jobbra 24 dp bal sáv (rendszer-vissza), balra csak 6 dp perem (volt 24+24);
+  36 dp teljes elmozdulás VAGY ≥16 dp és ≥450 dp/s lökés, vízszintes/függőleges ≥1,5. Menüből nyíló naptár-pager alap Compose pager, nem érintve.
+- Teszt `Wear367Phase2Test`; `WearScreenAuditTest` új képek (overlay, plank).
+- **Készüléken (este):** gomb/pulzus 176/192/216 mm-en nincs levágva; stopper stabil Start/Pause/Stop; 3 mp tartás old, 2,5 mp nem; szél-tap, balra húzás jobb szélről.
+- **Átnézői javítások (utólag):** telefon-alvás csak friss `computedAt`-tal (≤3 ó, `WEAR_PHONE_SLEEP_FRESH_MS`) nyer, különben az óra saját összege;
+  `Edzés: %s` mozgássor 4 nyelven (`wearText`); lapozás iránya a slopnál dől el (`wearSwipePageDirection`); `wearMainSwipeCanStart` törölve.
 
-- **K2 follow-up candidate:** audited CI #45652102978 all three jobs green on fc35f2b9 (user reported raw 1233/1233). Common switch paint applied to 11 identified phone source files; mode and language selection bounded tint + selected semantics; default sheet handle theme; shared standard-color alert dialog own-window scene/tint + rim, fallback opaque. No callback/storage/signing/version changes. Candidate CI and device visual review pending; sheet background continuity, remaining menus/snackbars and K3 performance still open.
-
-- **K2 CI #754 / 45654761010** on f1e78f49: 984 phone (19 failures, all UnsupportedClassVersionError), 249 Wear green, total 1233 (1214 passed), 0 error/skipped, shared NO-SOURCE; R8 and DEX green. Likely cause: common alert dialog directly referenced Kyant LayerBackdrop in its composable bytecode on JDK17. Candidate isolates Kyant references in KyantWindowOverlay, invoked only behind existing glass/API/optics gates; legacy path preserves opaque dialog and callbacks. Full rerun required; no tests disabled/changed. K3 held until green.
-
-- **K2 regression correction accepted**: CI #755 / 45657287846 on 57939920: 984 phone + 249 Wear = 1233/1233, 0 failures/errors/skipped; shared NO-SOURCE, R8 and DEX success. Next K2 candidate: continuous static guarded bottom-sheet fill (handle included), body-only static Kyant source, common matte popup menu for 12 audited phone files, status banner overlay and contrast test. New CI and visual/device acceptance pending. No external workout functional changes; K3 profiling remains open.
-
-- **K2 code gate green**: CI #756 / 45659012270 on 6afeb7cc, raw XML 985 phone + 249 Wear = 1234/1234, 0 failure/error/skipped, shared NO-SOURCE; R8 and DEX green. K3 first candidate: bounded UI-thread last-value caches for guarded tones, base and blob brushes (exact geometry/time/color/cap), photo crop and dim filter. No bitmap/view/readback retained, visual math and clock gates unchanged. Three new cache regression tests; new full CI required. Duplicate backdrop recording API audit and physical A/B still pending. No measured speedup claimed.
-
-- **K3 cache accepted**: CI #757 / 45660862014 on e5cf9235: 988 phone + 249 Wear = 1237/1237, zero failures/errors/skipped; R8 and DEX green. K3 root-scene candidate: inspected exact upstream Kyant 1.0.6 LayerBackdrop.kt and LayerBackdropModifier.kt; its node draws content then records its custom draw. An empty root sibling records scene-only and displays the same GraphicsLayer before the scaffold, eliminating the second procedural/photo draw without extra capture or graphics layer. Stable scaffold composition position across optics toggles; legacy and measurement render paths preserved; dialog and static sheet remain on existing separate-window routes. Source-contract test added. New CI and physical visual/performance A/B required; no performance gain measured.
-
-- **K3 root scene accepted**: CI #758 / 45662639861 on 20ed7c04, 989 phone + 249 Wear = 1238/1238, zero failures/errors/skipped, shared NO-SOURCE; R8 and DEX green. K3 power-saving candidate: one glass-only host observer of system battery saver (broadcast + lifecycle refresh), static drift when enabled, no polling; preserves photo, reduced-motion, legacy, measurement gates and optics. Exhaustive mode regression added. Main checked via main/ref/PR base and reverse compare: 43036875, zero commits ahead of feature at observation; user reports newer fixes, recheck before final integration. Do not merge main or claim device results. New CI pending.
-
-- **K3/K4 automated gate**: CI #763 / 45669806639 on f7b56f15 green: 990 phone + 249 Wear = 1239/1239; 0 failures/errors/skipped, shared NO-SOURCE; R8, debug DEX, fonts and video checks green. Physical acceptance remains pending. User explicitly requested version 1.5.2 with internal version bump: phone 280800 and Wear 280802 (release 2808, suffixes 00/02); package and signer unchanged. Version-only candidate requires CI for new SHA. Main still 43036875 at observation, recheck before authorized integration; no merge or signing yet.
+## Hátra
+- Készülékes ellenőrzés (fenti + 1. fázis: átnevezés, auto-import, Wear nélküli adat, óra alvás = telefon alvás). Merge/verzió/kiadás csak jóváhagyással.

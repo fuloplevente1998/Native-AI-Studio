@@ -154,13 +154,6 @@ fun LogWorkoutDetailScreen(
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (workout.originDevice == "external") {
-                                Text(listOfNotNull(workout.externalProvider?.let {
-                                    if (it == "health_connect") "Health Connect" else if (it == "samsung_health") "Samsung Health" else it
-                                }, workout.externalSource).joinToString(" · ").ifBlank {
-                                    trL(uiState.language, "Forrásadat nem elérhető", "Source unavailable", "Quelle nicht verfügbar", "Sursă indisponibilă")
-                                }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                            }
                         }
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "subscreen_back_button")
                     }
@@ -368,6 +361,11 @@ fun LogWorkoutDetailScreen(
                             else -> trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
                         }
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
+                        // #359: an imported workout's source lives here, not in its name or description.
+                        if (workout.originDevice == "external") Text("• ${trL(uiState.language, "Forrás", "Source", "Quelle", "Sursă")}: " +
+                            com.example.model.externalSourceLabel(workout.externalProvider, workout.externalSource).ifBlank {
+                                trL(uiState.language, "Forrásadat nem elérhető", "Source unavailable", "Quelle nicht verfügbar", "Sursă indisponibilă")
+                            }, color = palette.textPrimary, modifier = Modifier.testTag("log_detail_external_source"))
                     }
                 }
             }

@@ -60,6 +60,8 @@ data class WatchHomeSnapshot(
     val ownershipProtocol193: Int = 0,
     val dailyStepsGoal: Int? = null,
     val controlProtocol367: Int = 0,
+    /** #367/9: phone-aggregated sleep total of the selected provider (same value as the phone Today tile). */
+    val sleepSummary: WatchPhoneSleepSummary? = null,
 ) {
     fun toWearExercise(exercise: WatchHomeExercise): WearExercise = WearExercise(
         id = exercise.id,
@@ -203,7 +205,8 @@ object WatchHomeStore {
                 ownershipProtocol193 = if(root.optInt("ownershipProtocol193")==1)1 else 0,
                 pendingFeedback = WatchWorkoutFeedback.parse(root.optJSONObject("pendingFeedback")),
                 dailyStepsGoal = root.optInt("dailyStepsGoal", 0).takeIf { it > 0 },
-                controlProtocol367 = root.optInt("controlProtocol367", 0)
+                controlProtocol367 = root.optInt("controlProtocol367", 0),
+                sleepSummary = WatchPhoneSleepSummary.parse(root.optJSONObject(com.repforge.shared.SleepNightTotal.HOME_KEY))
             )
         } catch (_: Exception) { null }
     }

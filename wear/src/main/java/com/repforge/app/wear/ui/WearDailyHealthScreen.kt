@@ -62,7 +62,7 @@ private fun dailyText(hu: String, en: String, de: String, ro: String) = when (ja
 }
 
 @Composable
-internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONObject?, active: WearWorkout?, onDetails: () -> Unit, onBack: () -> Unit) {
+internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONObject?, active: WearWorkout?, phoneSleep: WatchPhoneSleepSummary? = null, onDetails: () -> Unit, onBack: () -> Unit) {
     val now = System.currentTimeMillis()
     // 2808: same stable pulse presentation as the home page (live, recent, earlier with time, or "–").
     val pulse = wearHomePulse(wearHomeLivePulse(health, active?.workoutId, true, now), daily.pulse, now)
@@ -78,8 +78,14 @@ internal fun WearDailyHealthScreen(daily: WearDailyUi, goal: Int?, health: JSONO
         centerItem { Label("♥ " + wearHomePulseText(pulse)) }
         centerItem { Label((daily.data.calories?.let(::trimWearNumber) ?: "–") + " kcal · " + dailyText("összes", "total", "gesamt", "total")) }
         centerItem { Label(dailyText("Távolság", "Distance", "Distanz", "Distanță") + " " + (daily.data.distanceMeters?.let { trimWearNumber(it / 1000.0) + " km" } ?: "–")) }
-        centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " " + (daily.data.sleepIntervalMinutes?.let { "${it / 60} h ${it % 60} min" } ?: "–")) }
-        if (daily.data.sleepIntervalMinutes != null) centerItem { Label(dailyText("Utolsó észlelt alvási szakasz", "Last observed sleep interval", "Letzte erkannte Schlafphase", "Ultimul interval de somn detectat"), size = 10, lines = 2) }
+        // #367/9: the phone's aggregated total (same source/window) or the sum of the watch's observed intervals.
+        val sleep = wearSleepDisplay(phoneSleep, daily.data.sleepIntervalMinutes, now, java.time.ZoneId.systemDefault())
+        centerItem { Label(dailyText("Alvás", "Sleep", "Schlaf", "Somn") + " " + (sleep?.minutes?.let { "${it / 60} h ${it % 60} min" } ?: "–")) }
+        if (sleep != null) centerItem { Label(when (sleep.origin) {
+            WearSleepOrigin.PHONE_SAMSUNG -> dailyText("Összesen · Samsung Health", "Total · Samsung Health", "Gesamt · Samsung Health", "Total · Samsung Health")
+            WearSleepOrigin.PHONE_HEALTH_CONNECT -> dailyText("Összesen · Health Connect", "Total · Health Connect", "Gesamt · Health Connect", "Total · Health Connect")
+            WearSleepOrigin.WATCH_OBSERVED -> dailyText("Órán észlelt szakaszok összesen", "Watch-observed intervals, total", "Von der Uhr erkannte Phasen gesamt", "Intervale detectate de ceas, total")
+        }, size = 10, lines = 2) }
         centerItem { Label(dailyText("Órás napi adatok", "Watch daily data", "Tagesdaten der Uhr", "Date zilnice de pe ceas"), size = 10) }
         if (daily.enabled && daily.registered == false) centerItem {
             Label(dailyText("Nem elérhető · ellenőrizd az engedélyt", "Unavailable · check permission", "Nicht verfügbar · Berechtigung prüfen", "Indisponibil · verifică permisiunea"), lines = 2)

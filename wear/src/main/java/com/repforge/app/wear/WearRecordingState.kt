@@ -153,7 +153,10 @@ internal fun wearRecordingRequestForWorkout(workout: WearWorkout, gps: Boolean):
 }
 
 /** Compact workout rows show measured session totals, separate from set targets. */
-internal fun wearLiveWorkoutRows(data: JSONObject?, workoutId: String, now: Long): List<String> {
+internal fun wearLiveWorkoutRows(
+    data: JSONObject?, workoutId: String, now: Long,
+    language: String = java.util.Locale.getDefault().language,
+): List<String> {
     if (data == null || workoutId.isBlank() || data.optString("workoutId") != workoutId ||
         data.optString("source") != "wear_health_services") return emptyList()
     fun value(key: String, unit: String, minimum: Double = 0.0): String? {
@@ -161,7 +164,7 @@ internal fun wearLiveWorkoutRows(data: JSONObject?, workoutId: String, now: Long
         return if (!number.isFinite() || number < minimum) null else "${trimWearNumber(number)} $unit"
     }
     val primary = listOfNotNull(value("heartRate", "bpm", 20.0), value("totalCalories", "kcal"))
-    val movement = listOfNotNull(value("steps", "lépés"), value("distanceMeters", "m"))
+    val movement = listOfNotNull(value("steps", wearText("lépés", language)), value("distanceMeters", "m"))
     if (primary.isEmpty() && movement.isEmpty()) return emptyList()
     val isDelayed = (now - data.optLong("updatedAt") > 20000L) ||
         (data.has("heartRate") && data.optLong("lastSampleAt") > 0L && now - data.optLong("lastSampleAt") > 20000L) ||
@@ -177,7 +180,7 @@ internal fun wearLiveWorkoutRows(data: JSONObject?, workoutId: String, now: Long
     }
     return listOfNotNull(
         primary.takeIf { it.isNotEmpty() }?.joinToString(" · "),
-        movement.takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { "Edzés: $it" },
+        movement.takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { wearLiveMovementLabel(it, language) },
         status
     )
 }
@@ -235,3 +238,9 @@ internal fun wearRecordingStatus(data: JSONObject?, enabled: Boolean, hasWorkout
     }
     else -> if (!enabled) "Mérés kikapcsolva" else if(hasWorkout) "Az aktuális edzés mérése még nem indult" else "Mérés a következő edzésnél"
 }
+
+/** Localized "Workout: <values>" prefix row; the dashboard recognises it by [wearLiveMovementPrefix]. */
+internal fun wearLiveMovementLabel(values: String, language: String): String =
+    java.lang.String.format(java.util.Locale.ROOT, wearText("Edzés: %s", language), values)
+
+internal fun wearLiveMovementPrefix(language: String): String = wearText("Edzés: %s", language).substringBefore("%s")

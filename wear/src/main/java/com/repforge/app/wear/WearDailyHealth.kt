@@ -11,9 +11,12 @@ import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.PassiveListenerConfig
 import androidx.health.services.client.data.UserActivityInfo
 import androidx.health.services.client.data.UserActivityState
+import com.repforge.shared.SleepNightTotal
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import org.json.JSONObject
 
 internal data class WearDailyHealth(val steps: Long? = null, val calories: Double? = null, val distanceMeters: Double? = null, val sleepIntervalMinutes: Long? = null,
     /** Time of the cumulative daily step total; lets the UI tell an old total from a current one. */
@@ -42,6 +45,71 @@ internal fun wearDailyAccept(previousAt: Long, sampleAt: Long, now: Long, zone: 
 /** Only a completed, ordered sleep transition can produce an interval, never a daily total. */
 internal fun wearObservedSleepMinutes(start: Long, end: Long): Long? =
     if (start > 0 && end > start && end - start <= 24 * 60 * 60 * 1000L) (end - start) / 60000L else null
+
+/** #367/9: aggregated sleep total of the phone's selected provider, for the local day it ends on. */
+data class WatchPhoneSleepSummary(val date: String, val minutes: Long, val provider: String,
+    /** Phone clock time the total was computed at (`computedAt`); null when the phone did not send it. */
+    val computedAt: Long? = null) {
+    companion object {
+        fun parse(source: JSONObject?): WatchPhoneSleepSummary? {
+            source ?: return null
+            val date = source.optString("date").takeIf { runCatching { LocalDate.parse(it) }.isSuccess } ?: return null
+            val minutes = source.optLong("minutes", -1L).takeIf { it in 1L..(24L * 60L) } ?: return null
+            val provider = source.optString("provider").takeIf { it == "samsung_health" || it == "health_connect" } ?: return null
+            val computedAt = source.optLong("computedAt", 0L).takeIf { it > 0L }
+            return WatchPhoneSleepSummary(date, minutes, provider, computedAt)
+        }
+    }
+}
+
+/**
+ * #367/9: the phone only publishes the home snapshot on events (app start, workout finish, edits),
+ * not periodically, and a night can still be partial right after waking. A phone total older than
+ * this stops overriding the watch's own measurement (same bound as the daily step total).
+ */
+internal const val WEAR_PHONE_SLEEP_FRESH_MS = WEAR_DAILY_STEPS_FRESH_MS
+/** Phone/watch clock difference tolerated for a `computedAt` slightly ahead of the watch clock. */
+internal const val WEAR_PHONE_SLEEP_SKEW_MS = 10L * 60L * 1000L
+
+internal fun wearPhoneSleepFresh(phone: WatchPhoneSleepSummary, now: Long): Boolean {
+    val computedAt = phone.computedAt ?: return false
+    return now - computedAt in -WEAR_PHONE_SLEEP_SKEW_MS..WEAR_PHONE_SLEEP_FRESH_MS
+}
+
+internal enum class WearSleepOrigin { PHONE_SAMSUNG, PHONE_HEALTH_CONNECT, WATCH_OBSERVED }
+internal data class WearSleepDisplay(val minutes: Long, val origin: WearSleepOrigin)
+
+/**
+ * The phone total (same source/window as the phone Today tile) wins for today while it is fresh
+ * ([wearPhoneSleepFresh]); a stale total or one without `computedAt` may still be a partial night,
+ * so the watch's own observed intervals of the same wake-up day (summed by the same shared union)
+ * are used instead. A summary of another day is never shown as today's sleep; nothing → null
+ * ("–"), never 0.
+ */
+internal fun wearSleepDisplay(phone: WatchPhoneSleepSummary?, watchMinutes: Long?, now: Long, zone: ZoneId): WearSleepDisplay? {
+    val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString()
+    if (phone != null && phone.date == today && wearPhoneSleepFresh(phone, now)) return WearSleepDisplay(phone.minutes,
+        if (phone.provider == "samsung_health") WearSleepOrigin.PHONE_SAMSUNG else WearSleepOrigin.PHONE_HEALTH_CONNECT)
+    return watchMinutes?.takeIf { it > 0 }?.let { WearSleepDisplay(it, WearSleepOrigin.WATCH_OBSERVED) }
+}
+
+/**
+ * Adds one completed watch-observed asleep interval to the spans of its wake-up day and returns
+ * the new spans. Spans of another day are dropped (each night is summed on its own); duplicates
+ * and overlaps stay harmless because the total is a union ([SleepNightTotal]).
+ */
+internal fun wearSleepSpansAfter(storedDay: String?, stored: List<Pair<Long, Long>>, start: Long, end: Long, zone: ZoneId): Pair<String, List<Pair<Long, Long>>> {
+    val day = Instant.ofEpochMilli(end).atZone(zone).toLocalDate().toString()
+    val kept = if (storedDay == day) stored else emptyList()
+    return day to (kept + (start to end)).distinct().takeLast(48)
+}
+
+internal fun wearSleepSpansEncode(spans: List<Pair<Long, Long>>): String = spans.joinToString(",") { "${it.first}-${it.second}" }
+internal fun wearSleepSpansDecode(raw: String?): List<Pair<Long, Long>> = raw.orEmpty().split(',').mapNotNull { part ->
+    val bits = part.split('-')
+    val a = bits.getOrNull(0)?.toLongOrNull(); val b = bits.getOrNull(1)?.toLongOrNull()
+    if (bits.size == 2 && a != null && b != null && b > a) a to b else null
+}
 
 internal object WearDailyHealthStore {
     private val registrationLock = Any()
@@ -100,7 +168,13 @@ internal object WearDailyHealthStore {
                 if (start == 0L || !sameBoot) edit.putLong("sleepStart", at).putLong("sleepBoot", boot)
             }
             UserActivityState.USER_ACTIVITY_PASSIVE, UserActivityState.USER_ACTIVITY_EXERCISE -> {
-                if (sameBoot) wearObservedSleepMinutes(start, at)?.let { write(context, "sleep", it.toDouble(), at, now) }
+                // #367/9: sum every observed interval of the night, not only the last one.
+                if (sameBoot && wearObservedSleepMinutes(start, at) != null) {
+                    val (day, spans) = wearSleepSpansAfter(prefs.getString("sleepSpansDay", null),
+                        wearSleepSpansDecode(prefs.getString("sleepSpans", null)), start, at, ZoneId.systemDefault())
+                    edit.putString("sleepSpansDay", day).putString("sleepSpans", wearSleepSpansEncode(spans))
+                    SleepNightTotal.unionMinutes(spans)?.let { write(context, "sleep", it.toDouble(), at, now) }
+                }
                 edit.remove("sleepStart").remove("sleepBoot")
             }
             else -> edit.remove("sleepStart").remove("sleepBoot")

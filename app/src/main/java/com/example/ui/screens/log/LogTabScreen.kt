@@ -628,8 +628,8 @@ internal fun LogWorkoutCard(
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     text = if (entry.originDevice == "external") {
-                        "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")}" +
-                            (entry.externalSource?.let { " · $it" } ?: "")
+                        // #359: the source is shown only in the workout's Forrás tab, never in this line.
+                        "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")}"
                     } else if (entry.isOutdoorRun) {
                         "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.distanceKm} km · ${entry.paceLabel}"
                     } else {
