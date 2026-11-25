@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -325,10 +327,10 @@ fun LogTabScreen(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = palette.glassTile(palette.surfaceCard),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .size(48.dp)
-                        .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
+                        .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
@@ -388,10 +390,10 @@ fun LogTabScreen(
                 }
                 Surface(
                     shape = CircleShape,
-                    color = palette.glassTile(palette.surfaceCard),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .size(48.dp)
-                        .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
+                        .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
@@ -604,8 +606,8 @@ internal fun LogWorkoutCard(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         shape = shape,
-        color = palette.glassTile(palette.surfaceCard),
-        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, shape, GlassMaterialRole.Tile)
+        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+        modifier = Modifier.fillMaxWidth().liquidDropMaterial(palette, shape, GlassMaterialRole.Tile, live = false)
             .trainPilotBorder(1.dp, palette.sectionBorder, shape)
             .clip(shape)
             .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }

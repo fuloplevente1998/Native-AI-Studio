@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.GlassMaterialRole
@@ -146,10 +148,10 @@ internal fun PlannerFieldTile(
         Box(modifier = Modifier.fillMaxWidth()) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
+                    .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
                     .trainPilotBorder(
                         1.dp,
                         if (expanded) palette.primary else palette.cardBorder,

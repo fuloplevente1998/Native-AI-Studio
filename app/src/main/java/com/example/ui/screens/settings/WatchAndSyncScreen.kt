@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.GlassMaterialRole
+
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassStateTile
@@ -105,8 +109,8 @@ fun WatchAndSyncScreen(
         item(key = "workout-control") {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.glassTile(palette.surfaceCard),
-                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(22.dp), GlassMaterialRole.Tile, live = false)
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
@@ -299,8 +303,8 @@ fun WatchAndSyncScreen(
         item(key = "health-connect") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.glassTile(palette.surfaceCard),
-                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile, live = false)
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc_permission") }
@@ -349,8 +353,8 @@ fun WatchAndSyncScreen(
         item(key = "samsung") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.glassTile(palette.surfaceCard),
-                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile, live = false)
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("samsung") }

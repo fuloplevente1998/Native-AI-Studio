@@ -143,3 +143,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | 2813 görgethető tartalom és mért fix glass sávok | `ex/ui/theme/GlassScrollChrome.kt`, `MeasuredScrollChrome.kt`, `GlassAwareScaffold.kt`, `GlassContentBackdrop.kt` (külön chrome gate, list capture, in-scroll top/bottom padding); teszt `GlassScrollChrome2813Test.kt` |
 
 | 2814 edzés-prompt és értékmenü | `ex/ui/components/WorkoutFeedbackPopup.kt`, `WorkoutEditorAppearance.kt`, `StudioActiveWorkoutPresentation.kt`, `TrainPilotAlertDialog.kt`, `TrainPilotDropdownMenu.kt`, `StudioStrengthSetCard.kt`; teszt `WorkoutEditorAppearance2814Test.kt` |
+
+| Liquid Drop 2814 (L1–L6) | `ex/ui/theme/LiquidDropMaterial.kt` (policy, bounded paint, same-window lens), `KyantMaterialSpec.kt`, `KyantGlass.kt`, `TrainPilotGlassEngine.kt` (cached bevel); common `TrainPilotControls.kt`, `rf/ui/theme/TrainPilot{Button,OutlinedButton,ActionButtons}.kt`; teszt `LiquidDrop2814Test.kt` |

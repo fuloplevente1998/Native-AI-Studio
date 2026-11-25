@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -449,10 +451,10 @@ fun CalendarPlannerScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                             modifier = Modifier
                                 .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
-                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                                .liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                                 .testTag("calendar_prev_month")
@@ -475,10 +477,10 @@ fun CalendarPlannerScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                                 modifier = Modifier
                                     .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
-                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                                .liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                                     .testTag("calendar_next_month")

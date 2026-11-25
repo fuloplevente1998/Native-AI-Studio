@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import androidx.compose.ui.semantics.semantics
 
 import androidx.compose.foundation.BorderStroke
@@ -253,11 +255,12 @@ fun SettingsMainScreen(
                             val selected = uiState.language == lang
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (selected) palette.glassControlFill(palette.primary, GlassMaterialRole.Selection) else palette.glassTile(palette.surfaceElevated, elevated = true),
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else if (selected) palette.primary else palette.surfaceElevated,
                                 border = if (palette.isLiquidGlass && selected) BorderStroke(1.dp, palette.primary) else null,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .trainPilotGlassRim(palette, RoundedCornerShape(10.dp))
+                                    .liquidDropMaterial(palette, RoundedCornerShape(10.dp), if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button,
+                                        accent = if (selected) palette.primary else null, live = selected)
                                     .semantics { this.selected = selected }
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
                             ) {

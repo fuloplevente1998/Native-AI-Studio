@@ -1,4 +1,8 @@
 package com.example.ui.screens
+
+import com.example.ui.theme.GlassMaterialRole
+
+import com.example.ui.theme.liquidDropMaterial
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
@@ -164,8 +168,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
                         val trendKind = exerciseTrendKind(record)
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
-                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
-                            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
+                        Surface(shape = MaterialTheme.shapes.large, color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                            modifier = Modifier.fillMaxWidth().liquidDropMaterial(palette, MaterialTheme.shapes.large, GlassMaterialRole.Tile, live = false)
                                 .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -1,10 +1,9 @@
 # TrainPilot Native – 2814 átadó
 
-- Main alap: `dc5c361e` (#399 merge); ág `fix/collector-2814`, draft PR #400; verzió 1.5.3 (280900/280902).
-- Felhasználó mindkét (glass és matt) visszajelző mockupot jóváhagyta; `docs/FIXES_2814.md`.
-- Kompakt, külön post-exercise feedback popup: szemantikus színek, explicit pipa, adaptív 3/2/1 oszlop, közvetlen jegyzet, törlés, két akció; eredeti session/generation/gyakorlat kulcs és callbacks.
-- Célzott, statikus saját üvegablak csak megfelelő route/API/optika mellett; mattra visszaesés; nem nyitjuk meg a teljes mérés optikai kapuját.
-- Súly/ismétlés/RIR/törlés dropdown: valódi 14 dp popup shape, 1 dp perem, glass/Glow peremfény; négyszögletes modifier-háttér elhagyva. Kétoldali editor is célzott ablakstílus.
-- A korábbi inline, summary és napló visszajelző nem változik. Az azonnali sorozattörlő gomb helyett a meglévő menü marad; mentés/adatok/motor/Wear változatlan.
-- Regresszió: `WorkoutEditorAppearance2814Test.kt` és a meglévő StudioActiveFeedbackRegressionTest; CI ellenőrizendő. Fizikai készülékes megjelenés, IME, nagy betű és optika külön ellenőrzendő.
-- Nincs merge, verzióemelés vagy signed build.
+- Alap main `dc5c361e`, #399 merge; ág `fix/collector-2814`, draft #400, 1.5.3 / 280900–280902.
+- #790 zöld (1287/0/0/0, R8); a korábbi kompakt visszajelző és súly/ismétlés/RIR/törlés 14 dp / 1 dp menü változatlanul megmarad.
+- Jóváhagyott teljes telefonos Liquid Drop audit: `docs/FIXES_2814.md`, L0–L8. Kyant Button/Selection erősebb lencse, depth és shadow; közös `LiquidDropMaterial` saját ablak/route/power/API kapu, olcsó cache-elt domború perem sűrű listákon.
+- Közös gombok, input határ, chipek, aktív sorozat/stopper/pihenő/dokk, health/Home, program, Coach, napló, naptár, progress/statisztika, settings célzott felületei.
+- API 31–32 blur, 33+ lens; energiatakarékos és külön ablak belső vezérlők olcsó paint; GPS map, Wear és motor változatlan; nem minden csempe önálló lencse.
+- Korábbi regressziók megtartva, új `LiquidDrop2814Test.kt`. Közös CI az új head-en ellenőrizendő; fizikai 8 paletta/slider/IME/jank és GPU-mérés még hátravan. Egyedi grafikonvezérlők, témaeditor, kapcsoló thumb és GPS további készülékes auditja szükséges.
+- Nincs merge, verzióemelés, aláírt build.
