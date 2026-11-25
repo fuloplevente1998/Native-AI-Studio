@@ -103,6 +103,21 @@ internal fun glassTileAlpha(clarity: Int): Float = .16f - .06f * clarity.coerceI
 internal fun glassTilePaint(clarity: Int, elevated: Boolean): Color =
     (if (elevated) GLASS_TILE_ELEVATED else GLASS_TILE).copy(alpha = glassTileAlpha(clarity))
 
+/** Lightweight control paint; shared by navigation, chips, form actions and segments.
+ * All three paints stay below the bounded scene luminance, even when nested.
+ */
+internal fun glassControlPaint(clarity: Int, role: GlassMaterialRole): Color {
+    val t = clarity.coerceIn(0, 100) / 100f
+    return when (role) {
+        GlassMaterialRole.Selection -> GlassContrast.grey(GlassOptics.SURFACE_LUMA_MAX).copy(alpha = .36f - .12f * t)
+        GlassMaterialRole.Navigation -> glassTilePaint(clarity, false).copy(alpha = .08f - .04f * t)
+        else -> glassTilePaint(clarity, true)
+    }
+}
+
+internal fun TrainPilotPalette.glassControlFill(legacy: Color, role: GlassMaterialRole): Color =
+    if (isLiquidGlass) glassControlPaint(glassClarity, role) else legacy
+
 /**
  * 2809/3: colour of an inner tile (Sleep/Steps, program card, journal row, coach panel). Liquid Glass:
  * the low-opacity tile tint, so the glass card behind shows through; all other palettes and custom
