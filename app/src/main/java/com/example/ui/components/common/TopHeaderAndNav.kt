@@ -5,6 +5,7 @@ import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassEffectsActive
@@ -206,7 +207,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (palette.isLiquidGlass) Color.Transparent else if (isCalendarActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(10.dp),
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, RoundedCornerShape(10.dp),
                                 if (isCalendarActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
@@ -232,7 +233,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (palette.isLiquidGlass) Color.Transparent else if (isSettingsActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(10.dp),
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, RoundedCornerShape(10.dp),
                                 if (isSettingsActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
@@ -271,8 +272,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
-                    .then(if (palette.isLiquidGlass && pillTrack == null) Modifier.background(palette.surface.copy(alpha = .22f), trackShape)
-                        .trainPilotGlassRim(palette, trackShape).padding(2.dp) else Modifier)
+                    .then(if (palette.isLiquidGlass && pillTrack == null) Modifier.glassHeaderControl(palette, trackShape, GlassMaterialRole.Navigation)
+                        .padding(2.dp) else Modifier)
                     .testTag("top_nav_row")
                     .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(if (palette.isLiquidGlass) 2.dp else 6.dp)
@@ -331,7 +332,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
             }
             }
             if (pillTrack != null) {
-                Box(Modifier.fillMaxWidth().glassHeaderMaterial(palette, trackShape, GlassMaterialRole.Navigation)
+                Box(Modifier.fillMaxWidth().glassHeaderControl(palette, trackShape, GlassMaterialRole.Navigation)
                     .padding(2.dp)) {
                     GlassSelectionPill(pillTrack, tabSelected.indexOf(true), trackShape, palette, selection.border)
                     navRow()
@@ -356,22 +357,19 @@ internal fun TopNavPillItem(
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
-    val glass = palette.glassEffectsActive(LocalGlassOpticsEnabled.current)
+    // Material family is independent from the expensive optics gate (active measurement).
+    val glass = palette.isLiquidGlass
     val hosted = glass && pillTrack != null
     val shape = RoundedCornerShape(if (glass) 50 else 20)
     val legacyShape = RoundedCornerShape(12.dp)
     val itemShape = if (glass) shape else legacyShape
     val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
-    val target = if (glass) (if (selected && !hosted) palette.primary.copy(alpha = .10f) else Color.Transparent)
-        else if (selected) selection.surface else palette.surface
-    val fill = if (glass) animateColorAsState(target,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "glass selected pill").value else target
+    val fill = if (glass) Color.Transparent else if (selected) selection.surface else palette.surface
     val source = remember { MutableInteractionSource() }
     val ownGlass = !hosted && (selected || compact)
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape,
+        .then(if (ownGlass) Modifier.glassHeaderControl(palette, itemShape,
             if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
@@ -382,7 +380,7 @@ internal fun TopNavPillItem(
             .glassPillSlot(if (hosted) pillTrack else null, pillIndex)
             .then(glowModifier)
             .heightIn(min = 48.dp)
-            .then(if (glass && !ownGlass) Modifier else Modifier.trainPilotBorder(
+            .then(if (glass) Modifier else Modifier.trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
                 color = if (selected) selection.border else palette.cardBorder.copy(alpha = if (glass) .45f else palette.cardBorder.alpha),
                 shape = itemShape
