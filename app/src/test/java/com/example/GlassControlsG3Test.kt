@@ -25,7 +25,15 @@ class GlassControlsG3Test {
             assertEquals(original.disabledContentColor, glass.disabledContentColor)
             assertSame(original, glassPrimaryActionColors(p, false, original))
             val danger = ButtonColors(p.danger, Color.Black, p.surface, p.textSecondary)
-            assertSame(danger, glassPrimaryActionColors(p, true, danger))
+            assertFalse(useGlassPrimaryAction(p, true, danger, preserveSemanticPaint = true))
+            assertSame(danger, glassPrimaryActionColors(p, true, danger, preserveSemanticPaint = true))
+            if (danger.containerColor != p.primary || danger.contentColor != p.onPrimary)
+                assertSame(danger, glassPrimaryActionColors(p, true, danger))
+            // Even identical RGBA values must not erase the action's explicitly semantic paint.
+            assertFalse(useGlassPrimaryAction(p, true, original, preserveSemanticPaint = true))
+            assertSame(original, glassPrimaryActionColors(p, true, original, preserveSemanticPaint = true))
+            val success = ButtonColors(p.success, Color.Black, p.surface, p.textSecondary)
+            assertSame(success, glassPrimaryActionColors(p, true, success, preserveSemanticPaint = true))
             val explicit = ButtonColors(p.primary, p.textPrimary, p.surface, p.textSecondary)
             if (p.textPrimary != p.onPrimary) assertSame(explicit, glassPrimaryActionColors(p, true, explicit))
         }
