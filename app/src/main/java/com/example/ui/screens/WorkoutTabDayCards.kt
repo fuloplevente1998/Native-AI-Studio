@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import com.example.ui.components.PageLayoutState
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutHorizontalRow
@@ -161,8 +163,9 @@ internal fun WorkoutTabDayCards(
                     val shape = RoundedCornerShape(18.dp)
                     Surface(
                         shape = shape,
-                        color = palette.surface,
+                        color = palette.glassTile(palette.surface),
                         modifier = modifier.fillMaxHeight()
+                            .trainPilotGlassRim(palette, shape)
                             .trainPilotBorder(if (primary) 1.5.dp else 1.dp, if (primary) palette.primary else palette.cardBorder, shape)
                             .trainPilotClickable(shape) { onOpenProgramEditor(program.id, index) }
                             .testTag("workout_tab_day_card_$index")
@@ -178,7 +181,7 @@ internal fun WorkoutTabDayCards(
                                 Text(it, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
-                            Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceElevated) {
+                            Surface(shape = RoundedCornerShape(8.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true)) {
                                 Text(programEquipmentSummary(day.exercises.ifEmpty { days.flatMap { it.exercises } },
                                     program.tagsHu.firstOrNull().orEmpty(), language),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = palette.primary,
