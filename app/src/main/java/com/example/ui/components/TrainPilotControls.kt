@@ -119,9 +119,9 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
         focusedContainerColor = p.glassTile(p.surfaceCard, elevated = true), unfocusedContainerColor = p.glassTile(p.surfaceCard),
         disabledContainerColor = p.surfaceCard, errorContainerColor = p.glassTile(p.surfaceCard),
         cursorColor = p.primary, errorCursorColor = p.danger,
-        // 2809/2: glass fields keep their filled container; the neutral outline vanishes, focus and error stay.
+        // Input boundaries are functional, not decorative: keep a visible quiet outline, focus and error.
         focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
-        unfocusedBorderColor = if (com.repforge.app.ui.theme.liquidGlassDropsFrame(p, outline)) Color.Transparent else outline,
+        unfocusedBorderColor = if (p.isLiquidGlass) p.cardBorder.copy(alpha = .60f) else outline,
         disabledBorderColor = if (p.isLiquidGlass) Color.Transparent else p.cardBorder.copy(alpha = 0.5f), errorBorderColor = p.danger,
         focusedLabelColor = selection.foreground, unfocusedLabelColor = p.textSecondary,
         disabledLabelColor = p.textSecondary, errorLabelColor = p.danger,

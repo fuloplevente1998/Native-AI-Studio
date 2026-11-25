@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -55,9 +57,9 @@ internal fun MainTodayStatusTile(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
+        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.background.copy(alpha = 0.55f),
         modifier = modifier
-            .trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Tile)
+            .liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Tile, live = false)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
@@ -208,8 +210,8 @@ internal fun SummarySmallPill(label: String, value: String, modifier: Modifier =
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = palette.glassTile(palette.surfaceElevated, elevated = true),
-        modifier = modifier
+        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
+        modifier = modifier.liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Tile, live = false)
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)

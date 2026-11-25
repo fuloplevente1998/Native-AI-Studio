@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.theme.TrainPilotActionAppearance
-import com.repforge.app.ui.theme.TrainPilotButton
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 private fun bb(lang: AppLanguage, hu: String, en: String, de: String, ro: String) = when (lang) {
@@ -80,7 +80,7 @@ fun ActiveWorkoutBottomBar(
             Text(bb(language, "Befejezés", "Finish", "Beenden", "Finalizare"), fontWeight = FontWeight.SemiBold, maxLines = 1,
                 overflow = TextOverflow.Ellipsis)
         }
-        TrainPilotButton(
+        TrainPilotGlassPrimaryButton(
             onClick = onNext, enabled = enabled, shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
             modifier = Modifier.weight(1f).height(48.dp).testTag("${tagPrefix}_next_exercise_btn")

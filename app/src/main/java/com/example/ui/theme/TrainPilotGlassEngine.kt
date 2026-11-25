@@ -179,14 +179,14 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
             0f to Color.White.copy(alpha = strength),
             .5f to Color.White.copy(alpha = strength * .40f),
             1f to Color.White.copy(alpha = strength * .27f))
+        // Cache the brushes with the outline, not once per draw during a ticking workout.
+        val bevel = Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = .02f),
+            .50f to Color.Black.copy(alpha = .06f),
+            1f to Color.Black.copy(alpha = .32f))
         onDrawWithContent {
             drawContent()
             clipPath(path) {
-                // A dark inner bevel under the specular rim gives depth even without a GPU lens.
-                val bevel = Brush.verticalGradient(
-                    0f to Color.Black.copy(alpha = .02f),
-                    .50f to Color.Black.copy(alpha = .06f),
-                    1f to Color.Black.copy(alpha = .32f))
                 drawPath(path, bevel, style = Stroke(6.dp.toPx()))
                 drawPath(path, shine, style = Stroke(2.dp.toPx()))
             }

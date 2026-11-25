@@ -56,6 +56,7 @@ internal fun WorkoutFeedbackPopup(
                             val shape = RoundedCornerShape(12.dp)
                             Surface(shape = shape, color = paint.fill, border = BorderStroke(1.dp, paint.border),
                                 modifier = Modifier.weight(1f).heightIn(min = 54.dp)
+                                    .trainPilotGlassRim(p, shape, if (chosen) GlassMaterialRole.Selection else GlassMaterialRole.Button)
                                     .selectable(chosen, enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
                                     .testTag("${tag}_$key")) {
                                 Row(Modifier.padding(horizontal = 5.dp, vertical = 8.dp),

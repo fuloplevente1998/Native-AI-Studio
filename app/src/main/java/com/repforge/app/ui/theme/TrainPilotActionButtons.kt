@@ -1,5 +1,9 @@
 package com.repforge.app.ui.theme
 
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.GlassMaterialRole
+
 import com.example.ui.theme.glassTouchBubble
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -52,7 +56,7 @@ fun TrainPilotActionButton(positive: Boolean, onClick: () -> Unit, modifier: Mod
     contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding, content: @Composable RowScope.() -> Unit) {
     val colors = if (positive) TrainPilotActionAppearance.saveColors() else TrainPilotActionAppearance.negativeColors()
     TrainPilotPressFeedback(colors, enabled, null) { feedbackColors, source ->
-    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).glassTouchBubble(source, enabled, shape), enabled, shape,
+    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).trainPilotGlassRim(LocalTrainPilotPalette.current, shape, GlassMaterialRole.Button).glassTouchBubble(source, enabled, shape), enabled, shape,
         interactionSource = source, colors = feedbackColors,
         border = if (positive) TrainPilotActionAppearance.saveBorder(enabled) else TrainPilotActionAppearance.negativeBorder(enabled),
         contentPadding = contentPadding, content = content)
@@ -64,7 +68,7 @@ fun TrainPilotSaveButton(onClick: () -> Unit, modifier: Modifier = Modifier, ena
     shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
     TrainPilotPressFeedback(TrainPilotActionAppearance.saveColors(), enabled, interactionSource) { feedbackColors, source ->
-    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).glassTouchBubble(source, enabled, shape), enabled, shape,
+    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).trainPilotGlassRim(LocalTrainPilotPalette.current, shape, GlassMaterialRole.Button).glassTouchBubble(source, enabled, shape), enabled, shape,
         colors = feedbackColors, border = TrainPilotActionAppearance.saveBorder(enabled),
         contentPadding = contentPadding, interactionSource = source, content = content)
     }
@@ -75,7 +79,7 @@ fun TrainPilotNegativeButton(onClick: () -> Unit, modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
     TrainPilotPressFeedback(TrainPilotActionAppearance.negativeColors(), enabled, interactionSource) { feedbackColors, source ->
-    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).glassTouchBubble(source, enabled, shape), enabled, shape,
+    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).trainPilotGlassRim(LocalTrainPilotPalette.current, shape, GlassMaterialRole.Button).glassTouchBubble(source, enabled, shape), enabled, shape,
         colors = feedbackColors, border = TrainPilotActionAppearance.negativeBorder(enabled),
         contentPadding = contentPadding, interactionSource = source, content = content)
     }

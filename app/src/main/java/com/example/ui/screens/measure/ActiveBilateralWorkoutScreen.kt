@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
+
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.example.ui.theme.GlassScrollChrome
 import com.example.ui.theme.LocalGlassChromeUnderlap
@@ -344,9 +350,10 @@ fun ActiveBilateralWorkoutScreen(
                 val isLeftRecordedInTarget = targetSetObj?.leftRecorded == true || targetSetObj?.completed == true
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.glassTile(palette.surfaceCard, elevated = true),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .liquidDropMaterial(palette, RoundedCornerShape(20.dp), GlassMaterialRole.Panel, live = false)
                         .trainPilotBorder(
                             width = if (leftRunning) 2.dp else 1.dp,
                             color = if (leftRunning) palette.primary else palette.cardBorder,
@@ -421,7 +428,8 @@ fun ActiveBilateralWorkoutScreen(
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
-                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Input)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
                                     seconds = leftSec,
@@ -439,7 +447,7 @@ fun ActiveBilateralWorkoutScreen(
 
                         // Left stopwatch controls
                         StudioAdaptiveControlRow {
-                            Button(
+                            TrainPilotGlassPrimaryButton(
                                 onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "left") } },
                             enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
@@ -505,9 +513,10 @@ fun ActiveBilateralWorkoutScreen(
                 val isRightRecordedInTarget = targetSetObj?.rightRecorded == true || targetSetObj?.completed == true
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.glassTile(palette.surfaceCard, elevated = true),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .liquidDropMaterial(palette, RoundedCornerShape(20.dp), GlassMaterialRole.Panel, live = false)
                         .trainPilotBorder(
                             width = if (rightRunning) 2.dp else 1.dp,
                             color = if (rightRunning) palette.primary else palette.cardBorder,
@@ -582,7 +591,8 @@ fun ActiveBilateralWorkoutScreen(
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
-                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Input)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
                                     seconds = rightSec,
@@ -600,7 +610,7 @@ fun ActiveBilateralWorkoutScreen(
 
                         // Right stopwatch controls
                         StudioAdaptiveControlRow {
-                            Button(
+                            TrainPilotGlassPrimaryButton(
                                 onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "right") } },
                             enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
@@ -664,9 +674,10 @@ fun ActiveBilateralWorkoutScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.glassTile(palette.surfaceCard, elevated = true),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .liquidDropMaterial(palette, RoundedCornerShape(20.dp), GlassMaterialRole.Panel, live = false)
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(
@@ -743,9 +754,10 @@ fun ActiveBilateralWorkoutScreen(
                 val diff = kotlin.math.abs(compareLeft - compareRight)
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.glassTile(palette.surfaceCard, elevated = true),
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Panel, live = false)
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

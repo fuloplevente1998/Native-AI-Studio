@@ -21,9 +21,9 @@ internal fun liquidDropPaints(palette: TrainPilotPalette, role: GlassMaterialRol
     val base = GlassContrast.limit(accent ?: GLASS_TILE, GLASS_TILE_LUMA)
     val alpha = when (role) {
         GlassMaterialRole.Selection -> (.36f - .12f * palette.glassClarity / 100f)
-        GlassMaterialRole.Panel -> .24f
-        GlassMaterialRole.Input -> .20f
-        else -> .20f
+        GlassMaterialRole.Panel -> .28f - .10f * palette.glassClarity / 100f
+        GlassMaterialRole.Input -> .24f - .08f * palette.glassClarity / 100f
+        else -> .24f - .10f * palette.glassClarity / 100f
     }
     return listOf(base.copy(alpha = (alpha + .08f).coerceAtMost(.45f)),
         base.copy(alpha = alpha * .50f), base.copy(alpha = alpha))
