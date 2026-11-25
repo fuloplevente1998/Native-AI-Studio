@@ -82,18 +82,19 @@ fun ProgressTabScreen(
     val palette = LocalTrainPilotPalette.current
     val statisticsLabel = com.repforge.app.ui.text.nativeResources(androidx.compose.ui.platform.LocalContext.current,
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
-    val sections = listOf(0 to strings.navProgress, 2 to statisticsLabel)
+    val sections = remember(strings.navProgress, statisticsLabel) { listOf(0 to strings.navProgress, 2 to statisticsLabel) }
     val activeSection = if (uiState.progressMainSection == 2) 2 else 0
     val selection = remember(palette) { palette.selectionColors() }
 
-    val layoutBlocks = listOf(
+    val layoutBlocks = remember(uiState.language, strings, statisticsLabel) { listOf(
         PageLayoutBlock("photos", trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto")),
         PageLayoutBlock("volume", strings.totalVolumeTitle),
         PageLayoutBlock("metrics", statisticsLabel),
         PageLayoutBlock("muscles", strings.muscleLoadTitle),
         PageLayoutBlock("advice", strings.progressAdviceTitle)
-    )
-    val layout = rememberPageLayout("progress", layoutBlocks.map { it.id })
+    ) }
+    val blockIds = remember(layoutBlocks) { layoutBlocks.map { it.id } }
+    val layout = rememberPageLayout("progress", blockIds)
     val overviewListState = rememberLazyListState()
     PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
     Column(
@@ -178,7 +179,7 @@ fun ProgressTabScreen(
                     contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 0.dp, bottom = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    item(key = "progress_overview") {
+                    item(key = "progress_overview", contentType = "overview") {
                         MainProgressVolumeAndMuscleSection(
                             uiState = uiState,
                             onSelectRange = onSelectRange,
@@ -223,7 +224,7 @@ fun ProgressTabScreen(
                             }
                         )
                     }
-                    item(key = "customize") { PageLayoutFooter(layout, uiState.language) }
+                    item(key = "customize", contentType = "footer") { PageLayoutFooter(layout, uiState.language) }
                 }
             }
 

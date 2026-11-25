@@ -103,7 +103,7 @@ internal fun ProgramCardContent(
                     modifier = Modifier.testTag("${tagPrefix}program_title_${program.id}")
                 )
                 Text(
-                    text = programCardShortSubtitle(program, language),
+                    text = remember(program, language) { programCardShortSubtitle(program, language) },
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
                     maxLines = 2,

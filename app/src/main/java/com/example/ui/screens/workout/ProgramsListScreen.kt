@@ -55,7 +55,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,7 +100,7 @@ fun ProgramsListScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
-    val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
+    val activeProgram = remember(state.programs) { state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull() }
     val filteredPrograms = remember(state.programs, state.programsTabCustomOnly, activeProgram?.id) {
         if (state.programsTabCustomOnly) {
             state.programs.filter { it.isCustom }
@@ -476,12 +475,12 @@ fun ProgramsListScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
-                    val builtinCount = state.programs.count { !it.isCustom }
-                    val customCount = state.programs.count { it.isCustom }
-                    val tabs = listOf(
+                    val builtinCount = remember(state.programs) { state.programs.count { !it.isCustom } }
+                    val customCount = state.programs.size - builtinCount
+                    val tabs = remember(state.language, builtinCount, customCount) { listOf(
                         false to trW(state.language, "Alap programok ($builtinCount)", "Built-in programs ($builtinCount)", "Standardprogramme ($builtinCount)", "Programe de bază ($builtinCount)"),
                         true to trW(state.language, "Saját programok ($customCount)", "Custom programs ($customCount)", "Eigene Programme ($customCount)", "Programe proprii ($customCount)")
-                    )
+                    ) }
                     tabs.forEach { (isCustom, label) ->
                         val selected = state.programsTabCustomOnly == isCustom
                         Surface(
@@ -524,10 +523,11 @@ fun ProgramsListScreen(
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.glassCardFill(palette.surface),
+                    color = if (activeExpanded) palette.glassTile(palette.surface) else palette.glassCardFill(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
+                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp),
+                            if (activeExpanded) GlassMaterialRole.Tile else GlassMaterialRole.Panel)
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .testTag("programs_active_program_card")
                 ) {
@@ -604,20 +604,21 @@ fun ProgramsListScreen(
                 }
             }
 
-            filteredPrograms.forEachIndexed { index, program ->
-                var dragAccumY by remember(program.id, index) { mutableFloatStateOf(0f) }
+            // Reorder requires measured neighbours, including offscreen cards. Keep its existing
+            // scroll container and stable composition identity; repeated cards use paint, not a lens.
+            filteredPrograms.forEachIndexed { index, program -> key(program.id) {
                 val progName = program.localizedName(state.language)
                 val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassCardFill(palette.surface),
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         // Lift first so the frame moves with the card while dragging (2772).
-                        .trainPilotReorderItem(programReorder, program.id, index)
+                        .trainPilotReorderItem(programReorder, program.id, index, layerWhenIdle = false)
                         .trainPilotAnimatedExpansion()
                         // 2810/4: the glass material draws the rim; no extra outline stroke.
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
+                        .trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile)
                         .trainPilotBorder(
                             if (program.isActive || isExpanded) 1.5.dp else 1.dp,
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
@@ -663,7 +664,7 @@ fun ProgramsListScreen(
                         }
                     )
                 }
-            }
+            } }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
