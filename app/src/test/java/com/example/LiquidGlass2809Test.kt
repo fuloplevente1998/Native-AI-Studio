@@ -130,7 +130,7 @@ class LiquidGlass2809Test {
         for (p in glass) {
             val selection = p.selectionColors()
             for (neutral in listOf(BorderStroke(1.dp, p.cardBorder), BorderStroke(1.dp, p.sectionBorder),
-                BorderStroke(.5.dp, p.fieldOutline()), BorderStroke(1.dp, selection.border),
+                BorderStroke(.5.dp, p.fieldOutline()),
                 TrainPilotFrames.page(p.cardBorder, p.primary), TrainPilotFrames.control(p.cardBorder),
                 TrainPilotFrames.stroke(1.dp, p.textPrimary),
                 BorderStroke(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = .55f), p.cardBorder))))) {
@@ -144,6 +144,8 @@ class LiquidGlass2809Test {
                 }
                 assertFalse(liquidGlassDropsStroke(p, TrainPilotFrames.control(semantic, selected = true)))
             }
+            // FIXES_2809 #2: selection is semantic in glass (accent-derived) and keeps its frame.
+            assertFalse("${p.key} keeps selection", liquidGlassDropsStroke(p, BorderStroke(1.dp, selection.border)))
             assertFalse("no stroke, nothing to drop", liquidGlassDropsStroke(p, null))
         }
     }

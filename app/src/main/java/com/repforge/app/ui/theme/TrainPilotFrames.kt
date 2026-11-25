@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.ClipOp
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.selectionColors
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -64,13 +65,12 @@ fun trainPilotFrameStroke(border: BorderStroke?): BorderStroke? =
 
 /**
  * 2808 #13: Liquid Glass palettes have no hairline frames – the glass rim/edge light defines the shape.
- * Only neutral structural frames are dropped (card/section border, text-derived outlines, selection
- * hairlines whose state is also carried by fill/foreground); semantic frames (accent, danger, success,
- * warning, save/delete action outlines) stay so state never depends on the backdrop.
+ * Only neutral structural frames are dropped (card/section border, text-derived outlines);
+ * semantic frames (accent/selection, danger, success, warning, save/delete action outlines) stay so state never depends on the backdrop.
  */
 fun liquidGlassDropsFrame(palette: com.example.ui.theme.TrainPilotPalette, color: Color): Boolean {
     if (!palette.isLiquidGlass) return false
-    val semantic = listOf(palette.primary, palette.danger, palette.success, palette.warning,
+    val semantic = listOf(palette.primary, palette.selectionColors().border, palette.danger, palette.success, palette.warning,
         TrainPilotActionAppearance.DARK_SAVE_OUTLINE, TrainPilotActionAppearance.DARK_NEGATIVE_OUTLINE)
     if (semantic.any { it.copy(alpha = 1f) == color.copy(alpha = 1f) }) return false
     return true
