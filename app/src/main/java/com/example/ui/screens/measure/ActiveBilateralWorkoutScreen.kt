@@ -270,7 +270,8 @@ fun ActiveBilateralWorkoutScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp, glass = palette.isLiquidGlass)
-                .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                    else Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp)))
         ) {
             Column(
                 modifier = Modifier

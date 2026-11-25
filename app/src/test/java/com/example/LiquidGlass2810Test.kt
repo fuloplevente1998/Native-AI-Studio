@@ -191,6 +191,14 @@ class LiquidGlass2810Test {
         assertFalse("no per-tab allow-list left", scaffold.contains("setOf(MainTab.HOME, MainTab.HEALTH)"))
     }
 
+    @Test fun activeScrollingChromeDoesNotEnablePerCardMeasurementOptics() {
+        for (screen in SubScreen.entries) {
+            val expected = screen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL)
+            assertEquals(screen.name, expected, glassMeasurementChromeRoute(screen))
+            if (expected) assertFalse(glassOpticsEnabledFor(screen))
+        }
+    }
+
     @Test fun lightTextIsTheOnlyRiskAndTheCeilingCoversIt() {
         // Contrast against a surface depends only on its luminance: the grey worst case equals any hue.
         val grey = GlassOptics.lensWorstCase

@@ -17,6 +17,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
+internal val LocalGlassPowerSave = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /** Only the glass scene host observes power saving. No per-card receivers or polling.
  * Re-read on resume as well as the system broadcast; unregister on disposal.
  */

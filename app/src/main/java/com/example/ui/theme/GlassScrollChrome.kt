@@ -22,11 +22,11 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 internal fun GlassScrollChrome(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    rootInset: Dp = LocalGlassTopInset.current,
     top: (@Composable () -> Unit)? = null,
     bottom: (@Composable () -> Unit)? = null,
     content: @Composable (Modifier, Dp, Dp) -> Unit
 ) {
-    val rootInset = LocalGlassTopInset.current
     val scene = LocalKyantScene.current.forThisWindow()
     val live = enabled && LocalGlassChromeUnderlap.current && scene != null
     if (!live || scene == null) {
@@ -55,7 +55,9 @@ internal fun GlassScrollChrome(
         val body = subcompose("body") {
             // The initial and terminal safe areas live INSIDE the scrolling viewport. The
             // measured heights are available in the same layout pass, including large font/rest dock.
-            content(Modifier.fillMaxSize().layerBackdrop(layer), (inset + upper.height).toDp(), lower.height.toDp())
+            Box(Modifier.fillMaxSize().layerBackdrop(layer)) {
+                content(Modifier.fillMaxSize(), (inset + upper.height).toDp(), lower.height.toDp())
+            }
         }.single().measure(Constraints.fixed(width, height))
         layout(width, height) {
             body.placeRelative(0, 0)

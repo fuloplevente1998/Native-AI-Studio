@@ -102,6 +102,7 @@ fun ProgressTabScreen(
     GlassScrollChrome(
         modifier = Modifier.fillMaxSize().trainPilotPageBackdrop(palette).testTag("progress_tab_screen"),
         enabled = layout.draft == null,
+        rootInset = LocalGlassTopInset.current,
         top = {
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),

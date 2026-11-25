@@ -41,7 +41,7 @@ internal fun GlassAwareScaffold(
     // Measurement keeps the expensive general optics gate closed. Only its fixed chrome
     // samples content, on supported glass devices outside battery saver.
     val measurementChrome = KyantGlass.active(palette) &&
-        glassMeasurementChromeRoute(glassHost.currentSubScreen) && !rememberGlassPowerSave(palette.isLiquidGlass)
+        glassMeasurementChromeRoute(glassHost.currentSubScreen) && !LocalGlassPowerSave.current
     val glassUnderlap = measurementChrome || (palette.glassEffectsActive(LocalGlassOpticsEnabled.current) &&
         Build.VERSION.SDK_INT >= 31 && glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen))
     val kyant = KyantGlass.active(palette) && (LocalGlassOpticsEnabled.current || measurementChrome)

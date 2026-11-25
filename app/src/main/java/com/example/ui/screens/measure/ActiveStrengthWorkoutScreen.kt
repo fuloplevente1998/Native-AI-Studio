@@ -148,7 +148,8 @@ fun ActiveStrengthWorkoutScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp, glass = palette.isLiquidGlass)
-                .glassHeaderMaterial(palette, RoundedCornerShape(20.dp))
+                .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(20.dp))
+                    else Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp)))
                 .pointerInput(isRestTimerLargeMode) {
                     detectVerticalDragGestures { _, dragAmount ->
                         if (dragAmount < -12f) {
