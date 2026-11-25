@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.runtime.remember
@@ -248,9 +251,10 @@ fun AnatomicalMuscleHeatmapCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
+        color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .trainPilotAnimatedExpansion()
@@ -282,8 +286,9 @@ fun AnatomicalMuscleHeatmapCard(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier.size(41.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(10.dp))
                                 .trainPilotPressIndication(RoundedCornerShape(10.dp), periodInteraction)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                 .testTag("muscle_heatmap_period_visual")
@@ -456,9 +461,10 @@ fun AnatomicalMuscleHeatmapCard(
                 }
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
                         .testTag("muscle_selected_summary")
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .trainPilotClickable(RoundedCornerShape(14.dp)) { selectedMuscleId = "all" }
