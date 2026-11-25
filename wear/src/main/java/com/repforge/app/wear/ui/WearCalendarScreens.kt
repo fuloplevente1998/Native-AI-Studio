@@ -205,7 +205,8 @@ internal fun CalendarWeekPage(
             val marker =
                 when {
                     "planned" in status -> Gold
-                    "completed" in status -> Color(0xFF7FD4BA)
+                    // 2809: the completed mint stays >= 3:1 on light watch palettes too.
+                    "completed" in status -> wearEnsureContrast(Color(0xFF7FD4BA), listOf(Black), WEAR_CONTROL_CONTRAST)
                     "skipped" in status -> Muted
                     else -> null
                 }

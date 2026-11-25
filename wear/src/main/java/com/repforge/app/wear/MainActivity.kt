@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     private var remoteWorkoutAccepted=false
     private var remoteOwnershipRequested=false
     private var remoteOwnershipSent=false
+    private var userHealthRequest2809=false // explicit measurement action in this Activity (2809 gate)
     private var lastRemoteRefreshAt=0L
     private fun releaseRemoteStart() {
         remoteStartFinished=true;uiHandler.removeCallbacks(remoteStartTimeout)
@@ -236,7 +237,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         // An explicit measurement action uses the current durable workout. A
         // previous phone launch must not keep a later workout behind its guard.
         workout.value=WorkoutSnapshotStore.load(this)
-        remoteMeasurementRequested=false;remoteMeasurementStart=null;releaseRemoteStart()
+        remoteMeasurementRequested=false;remoteMeasurementStart=null;releaseRemoteStart();userHealthRequest2809=true
         WearHealthStore.gps(this,gps)
         if(workout.value?.let { WearHealthStore.load(this,it.workoutId) }?.let(::wearHasLocationFailure)==true)
             WearHealthStore.requireProviderLocation(this)
@@ -280,6 +281,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             releaseRemoteStart()
         }
         if(current.workoutPaused)return
+        // 2809: a restored phone-owned copy waits for the phone's current state (refreshFromDataLayer re-runs this).
+        if(!wearMayAutoRecord2809(current,WorkoutSnapshotStore.phoneStateApplied,remoteMeasurementRequested||userHealthRequest2809))return
         if(!wearMeasurementMayStart(remoteMeasurementRequested,remoteWorkoutAccepted,remoteMeasurementStart,current.workoutId,current.revision))return
         if(remoteMeasurementRequested)remoteWorkoutAccepted=true
         var previous=WearHealthStore.load(this,current.workoutId)

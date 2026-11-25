@@ -86,12 +86,20 @@ data class WearHomeTheme(
     }
 
     /**
-     * 2808: the display palette of the watch. The stored phone palette stays untouched (it is
-     * persisted and round-tripped as received); only rendering uses this copy. A light or
-     * custom phone background becomes the dark watch base, accents are kept, and every colour
-     * is lightened only as far as needed for text >= 4.5:1 and controls >= 3:1 on all surfaces.
+     * 2808/2809: the display palette of the watch. The stored phone palette stays untouched (it is
+     * persisted and round-tripped as received); only rendering uses this copy.
+     * Dark palettes: a light surface becomes the dark watch base, accents are kept (2808, unchanged).
+     * Light palettes (light family or a genuinely light custom background): the watch keeps a light
+     * background and light cards; text and controls are darkened only as far as needed. Either way
+     * text >= 4.5:1 and controls >= 3:1 on every surface.
      */
-    fun forWatch(): WearHomeTheme {
+    fun forWatch(): WearHomeTheme = if (wearLightPalette()) forLightWatch() else forDarkWatch()
+
+    /** A light family, or a custom/phone background that is genuinely light (not a mid grey). */
+    internal fun wearLightPalette(): Boolean =
+        family == "light" || backgroundColor.luminance() >= WEAR_LIGHT_BASE
+
+    private fun forDarkWatch(): WearHomeTheme {
         val darkBase = backgroundColor.luminance() > WEAR_LIGHT_SURFACE
         fun surface(value: Color, dark: Color, tint: Float) =
             if (!darkBase && value.luminance() <= WEAR_LIGHT_SURFACE) value else mix(dark, accentColor, tint)
@@ -116,6 +124,32 @@ data class WearHomeTheme(
         )
     }
 
+    /** 2809: light stays light. Only text/controls move (toward black), never the background. */
+    private fun forLightWatch(): WearHomeTheme {
+        fun surface(value: Color, light: Color, tint: Float) =
+            if (value.luminance() >= WEAR_LIGHT_BASE) value else mix(light, accentColor, tint)
+        val bg = wearOpaque(surface(backgroundColor, Color(0xFFF4F7FB), 0f))
+        val card = wearOpaque(surface(surfaceColor, Color.White, .04f))
+        val raised = wearOpaque(surface(elevatedColor, Color(0xFFE5EBF3), .08f))
+        val all = listOf(bg, card, raised)
+        fun ink(value: Color, minimum: Float, on: List<Color> = all) =
+            wearEnsureContrast(value, on, minimum, towardLight = false)
+        fun readable(value: Color, fallback: Color) =
+            ink(if (value.luminance() > WEAR_LIGHT_BASE) fallback else value, WEAR_TEXT_CONTRAST)
+        val accentOut = ink(ink(accentColor, WEAR_TEXT_CONTRAST, listOf(bg, card)), WEAR_CONTROL_CONTRAST, listOf(raised))
+        val onAccentOut = color(onAccent, Color.White).takeIf { wearContrast(it, accentOut) >= WEAR_TEXT_CONTRAST }
+            ?: listOf(Color.White, Color.Black).maxBy { wearContrast(it, accentOut) }
+        return copy(
+            accent = wearHex(accentOut),
+            accent2 = wearHex(ink(secondaryColor, WEAR_TEXT_CONTRAST)),
+            background = wearHex(bg), surface = wearHex(card), elevated = wearHex(raised),
+            text = wearHex(readable(textColor, Color(0xFF151B26))),
+            muted = wearHex(readable(mutedColor, Color(0xFF48566C))),
+            outline = wearHex(ink(frame, WEAR_CONTROL_CONTRAST, listOf(bg, card))),
+            onAccent = wearHex(onAccentOut),
+        )
+    }
+
     // Same gamma-encoded sRGB interpolation as the phone's CSS color-mix(in srgb).
     private fun mix(a: Color, b: Color, amount: Float): Color =
         Color(
@@ -128,6 +162,8 @@ data class WearHomeTheme(
 internal const val WEAR_TEXT_CONTRAST = 4.5f
 internal const val WEAR_CONTROL_CONTRAST = 3f
 private const val WEAR_LIGHT_SURFACE = .18f
+/** 2809: relative luminance from which a watch surface counts as genuinely light. */
+internal const val WEAR_LIGHT_BASE = .4f
 
 /** WCAG 2.x contrast ratio of two opaque colours. */
 internal fun wearContrast(a: Color, b: Color): Float {
@@ -145,11 +181,15 @@ internal fun wearHex(color: Color): String =
 
 private fun wearOpaque(color: Color): Color = Color(0xFF000000L or wearHex(color).substring(1).toLong(16))
 
-/** Moves a colour toward white (dark surfaces) or black just far enough; checked after sRGB rounding. */
-internal fun wearEnsureContrast(color: Color, surfaces: List<Color>, minimum: Float): Color {
+/**
+ * Moves a colour toward white (dark surfaces) or black just far enough; checked after sRGB rounding.
+ * [towardLight] fixes the direction (2809 light watch palettes always darken text/controls).
+ */
+internal fun wearEnsureContrast(color: Color, surfaces: List<Color>, minimum: Float, towardLight: Boolean? = null): Color {
     val start = wearOpaque(color)
     if (surfaces.all { wearContrast(start, it) >= minimum }) return start
-    val target = if (surfaces.map { it.luminance() }.average() < .5) Color.White else Color.Black
+    val light = towardLight ?: (surfaces.map { it.luminance() }.average() < .5)
+    val target = if (light) Color.White else Color.Black
     for (step in 1..40) {
         val amount = step / 40f
         val candidate = wearOpaque(Color(

@@ -33,6 +33,8 @@ internal fun TrainPilotViewModel.queueWatchMeasurementStart(frame: JSONObject) {
     _uiState.update { it.copy(watchMeasurementStatusId = id, watchMeasurementStatus =
         tr("Órás mérés ellenőrzése…", "Checking watch recording…", "Uhrmessung wird geprüft…", "Se verifică măsurarea ceasului…")) }
     pendingWatchMeasurementStart.value = id
+    // 2809: only this explicit new start may later be re-requested on a watch reconnect.
+    com.repforge.app.PhoneMeasurementReconnect351.arm(id)
 }
 
 /** Remote open is not a recording receipt. The existing live-health channel is authoritative. */

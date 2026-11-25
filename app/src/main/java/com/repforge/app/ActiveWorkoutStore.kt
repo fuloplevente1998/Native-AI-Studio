@@ -89,17 +89,23 @@ internal object ActiveWorkoutStore {
         return snapshot
     }
 
+    /**
+     * [phoneDiscard] (2809) marks the terminal projection of an explicit, confirmed phone discard.
+     * The watch then applies it to that exact workout even across an owner/epoch change. Older
+     * watches ignore the extra field and keep the existing epoch-scoped closure rule.
+     */
     @JvmStatic
+    @JvmOverloads
     @Throws(Exception::class)
-    fun clear(context: Context): JSONObject {
+    fun clear(context: Context, phoneDiscard: Boolean = false): JSONObject {
         synchronized(PhoneOwnership193.journal(context)) {
-            return clearOwned(context)
+            return clearOwned(context, phoneDiscard)
         }
     }
 
     @Synchronized
     @Throws(Exception::class)
-    private fun clearOwned(context: Context): JSONObject {
+    private fun clearOwned(context: Context, phoneDiscard: Boolean): JSONObject {
         val previous = current(context)
         if (previous != null) {
             PhoneOwnership193.journal(context).close(previous.optString("workoutId"))
@@ -112,6 +118,8 @@ internal object ActiveWorkoutStore {
             .put("workoutId", previous?.optString("workoutId").orEmpty())
             .put("ownerEpoch193", previous?.optLong("ownerEpoch193") ?: 0L)
             .put("syncedAt", System.currentTimeMillis())
+        if (phoneDiscard && snapshot.optString("workoutId").isNotBlank())
+            snapshot.put(com.repforge.shared.WorkoutOwnership193.PHONE_DISCARD_2809, true)
         val saved = prefs(context).edit()
             .putLong(REVISION, revision)
             .putString(SNAPSHOT, snapshot.toString())
