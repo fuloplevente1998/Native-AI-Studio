@@ -99,6 +99,20 @@ internal fun glassTilePaint(clarity: Int, elevated: Boolean): Color =
 internal fun TrainPilotPalette.glassTile(legacy: Color, elevated: Boolean = false): Color =
     if (isLiquidGlass) glassTilePaint(glassClarity, elevated) else legacy
 
+/**
+ * A lightweight state tint for Kyant inner controls. Preserve the accent hue, but bound each
+ * channel by the existing lens peak; no backdrop capture or additional shader.
+ * Legacy and custom palettes retain their original paint.
+ */
+internal fun TrainPilotPalette.kyantStateTile(accent: Color, legacy: Color, strong: Boolean = false): Color {
+    if (!isLiquidGlass) return legacy
+    val peak = maxOf(accent.red, accent.green, accent.blue)
+    val scale = if (peak > GlassOptics.LENS_PEAK) GlassOptics.LENS_PEAK / peak else 1f
+    val t = glassClarity.coerceIn(0, 100) / 100f
+    val alpha = if (strong) .52f - .16f * t else .35f - .12f * t
+    return Color(accent.red * scale, accent.green * scale, accent.blue * scale, alpha)
+}
+
 internal fun TrainPilotPalette.glassPageBrush(): Brush {
     val end = customPageEnd ?: background
     // A visibly colored, monotonic gradient. No claim of sampling other app content.
