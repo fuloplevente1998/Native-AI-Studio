@@ -1,5 +1,10 @@
 package com.example.ui.theme
 
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.repforge.app.ui.theme.NativeThemeTokens
@@ -47,4 +52,56 @@ internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
     val tint = GlassContrast.limit(primary.copy(alpha = 1f), GlassOptics.SURFACE_LUMA_MAX)
     val coat = KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, glassClarity).tintAlpha
     return lerp(base, tint, coat)
+}
+
+
+/** A window is the sole optical surface; descendants use paint and vector rims. */
+internal val LocalGlassOverlay = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/** Window material selection is independent of the caller's legacy fill. JVM-safe. */
+internal fun sheetUsesGlass(palette: TrainPilotPalette, @Suppress("UNUSED_PARAMETER") containerColor: Color): Boolean =
+    palette.isLiquidGlass
+
+/** Contrasting, bounded paint for nested window roles; capped for text contrast. */
+internal fun glassOverlayRolePaint(clarity: Int, role: GlassMaterialRole): Color {
+    val tile = KyantMaterialSpec.forRole(GlassMaterialRole.Tile, clarity).tintAlpha
+    val neutral = GlassContrast.grey(GlassContrast.target)
+    return when (role) {
+        GlassMaterialRole.Selection -> GlassContrast.limit(Color(0xFF579BFF), GlassContrast.target)
+            .copy(alpha = (tile * GLASS_STATE_STRONG).coerceIn(.28f, .45f))
+        GlassMaterialRole.Button -> neutral.copy(alpha = tile + .04f)
+        else -> neutral.copy(alpha = tile)
+    }
+}
+
+@androidx.compose.runtime.Composable
+internal fun TrainPilotPalette.overlayRoleFill(legacy: Color, role: GlassMaterialRole): Color =
+    if (isLiquidGlass && LocalGlassOverlay.current) glassOverlayRolePaint(glassClarity, role) else legacy
+
+/** Vector-only top highlight and blue selection edge/glow; no backdrop capture. */
+@androidx.compose.runtime.Composable
+internal fun androidx.compose.ui.Modifier.overlayRoleRim(
+    palette: TrainPilotPalette, shape: androidx.compose.ui.graphics.Shape, role: GlassMaterialRole
+): androidx.compose.ui.Modifier {
+    if (!palette.isLiquidGlass || !LocalGlassOverlay.current) return this
+    val strength = KyantMaterialSpec.forRole(role, palette.glassClarity).highlightAlpha
+    return this.drawWithCache {
+        val path = androidx.compose.ui.graphics.Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
+        val selected = role == GlassMaterialRole.Selection
+        val alpha = strength * when (role) {
+            GlassMaterialRole.Selection -> 1f
+            GlassMaterialRole.Button -> .8f
+            else -> .55f
+        }
+        val edge = if (selected) Color(0xFFB6D8FF) else Color.White
+        val rim = androidx.compose.ui.graphics.Brush.verticalGradient(
+            0f to edge.copy(alpha = alpha), 1f to edge.copy(alpha = alpha * .4f))
+        onDrawWithContent {
+            drawContent()
+            clipPath(path) {
+                if (selected) drawPath(path, edge.copy(alpha = .12f), style = Stroke(5.dp.toPx()))
+                drawPath(path, rim, style = Stroke(2.dp.toPx()))
+            }
+        }
+    }
 }
