@@ -34,7 +34,7 @@ class WearHomeDashboardStateTest {
         source: WatchHomeSnapshot? = home,
         result: WearClosure? = null,
         health: JSONObject? = null,
-    ) = wearHomeDashboardState(source, work, result, health, true, now)
+    ) = wearHomeDashboardState(source, work, result, health, true, now, "hu")
 
     private fun metrics(id: String) =
         JSONObject()
@@ -70,6 +70,20 @@ class WearHomeDashboardStateTest {
         assertEquals(formatter.format(java.time.Instant.ofEpochMilli(now + 1000L)), next.clock)
         assertNotEquals(first.clock, next.clock)
         assertEquals(first.source, next.source)
+    }
+
+    @Test
+    fun dashboardMovementMetricIsTranslatedAndNeverMixesLanguages() {
+        val data = metrics(workout.workoutId).put("distanceMeters", 150)
+        fun rows(language: String) =
+            wearHomeDashboardState(home, workout, null, data, true, now, language).metrics
+        assertEquals(listOf("97 bpm · 7 kcal", "65 lépés · 150 m"), rows("hu"))
+        assertEquals(listOf("97 bpm · 7 kcal", "65 steps · 150 m"), rows("en"))
+        assertEquals(listOf("97 bpm · 7 kcal", "65 Schritte · 150 m"), rows("de"))
+        assertEquals(listOf("97 bpm · 7 kcal", "65 pași · 150 m"), rows("ro"))
+        for (language in listOf("en", "de", "ro")) {
+            assertFalse(rows(language).any { it.contains("Edzés") || it.contains("lépés") })
+        }
     }
 
     @Test

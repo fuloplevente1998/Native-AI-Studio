@@ -36,6 +36,7 @@ internal fun wearHomeDashboardState(
     health: JSONObject?,
     enabled: Boolean,
     now: Long,
+    language: String = java.util.Locale.getDefault().language,
 ): WearHomeDashboardState {
     val clock = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
     val homeClock = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
@@ -95,9 +96,9 @@ internal fun wearHomeDashboardState(
         val sets = workout.exercise?.sets.orEmpty()
         val completed = sets.count { it.done }
         val metrics =
-            wearLiveWorkoutRows(currentHealth, workout.workoutId, now)
-                .filter { it.contains("bpm") || it.contains("kcal") || it.startsWith("Edzés: ") }
-                .map { it.removePrefix("Edzés: ") }
+            wearLiveWorkoutRows(currentHealth, workout.workoutId, now, language)
+                .filter { it.contains("bpm") || it.contains("kcal") || it.startsWith(wearLiveMovementPrefix(language)) }
+                .map { it.removePrefix(wearLiveMovementPrefix(language)) }
         return WearHomeDashboardState(
             if (rest > 0) "PIHENŐ" else "EDZÉS",
             formatSeconds(if (rest > 0) rest else workout.elapsedSeconds(now)).padStart(5, '0'),

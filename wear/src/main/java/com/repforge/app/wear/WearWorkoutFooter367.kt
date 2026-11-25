@@ -68,7 +68,7 @@ internal fun wearLiveMovementRow(data: JSONObject?, workoutId: String, language:
         return if (!number.isFinite() || number < 0.0) null else "${trimWearNumber(number)} $unit"
     }
     return listOfNotNull(value("steps", wearText("lépés", language)), value("distanceMeters", "m"))
-        .takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { String.format(Locale.ROOT, wearText("Edzés: %s", language), it) }
+        .takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { wearLiveMovementLabel(it, language) }
 }
 
 /** 3.6: the stopwatch face never changes size or place between start, pause, resume and stop. */
