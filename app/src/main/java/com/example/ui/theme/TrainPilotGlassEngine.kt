@@ -32,6 +32,8 @@ internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier
 internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier {
     if (!palette.isLiquidGlass) return this
+    if (LocalGlassOverlay.current) return background(glassOverlayRolePaint(palette.glassClarity, role), shape)
+        .overlayRoleRim(palette, shape, role)
     if (role == GlassMaterialRole.Tile) return trainPilotGlassRim(palette, shape, role)
     // Controls and active measurement only composite a bounded tint over the shared scene.
     // No additional sampling, blur, lens, shadow or procedural scene per control.

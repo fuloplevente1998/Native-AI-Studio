@@ -41,6 +41,7 @@ internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
+    if (LocalGlassOverlay.current) return trainPilotGlassMaterial(palette, shape, role)
     kyantGlassOrNull(palette, shape, role)?.let { return it }
     val backdrop = LocalGlassHeaderBackdrop.current
     return if (backdrop != null) liveGlassLens(backdrop, palette, shape)

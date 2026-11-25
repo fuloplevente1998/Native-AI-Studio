@@ -144,17 +144,27 @@ class LiquidGlass2810Test {
     }
 
     @Test fun everyTopNavTabIsRecordedUnderTheGlassHeader() {
-        assertEquals(setOf(MainTab.HOME, MainTab.PROGRAMS, MainTab.WORKOUT, MainTab.PROGRESS, MainTab.HEALTH), GlassUnderlapTabs)
+        assertEquals(setOf(MainTab.HOME, MainTab.PROGRAMS, MainTab.WORKOUT, MainTab.PROGRESS, MainTab.HEALTH,
+            MainTab.COACH, MainTab.LOG), GlassUnderlapTabs)
         for (tab in GlassUnderlapTabs) assertTrue("$tab", glassUnderlapRoute(tab, SubScreen.NONE))
         assertTrue(glassUnderlapRoute(MainTab.HOME, SubScreen.SETTINGS_MAIN))
+        assertFalse(glassUnderlapRoute(MainTab.CALENDAR, SubScreen.NONE))
+        assertFalse(glassUnderlapRoute(MainTab.CALENDAR, SubScreen.CALENDAR_PLANNER))
+        for (tab in MainTab.entries) assertTrue("Coach detail from $tab", glassUnderlapRoute(tab, SubScreen.COACH_DETAIL))
         for (measuring in listOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS))
             assertFalse("$measuring", glassUnderlapRoute(MainTab.WORKOUT, measuring))
         // Each underlapped screen starts its scroll content with the safe-area spacer (else content would hide).
         fun src(path: String) = java.io.File("src/main/java/com/example/$path").readText()
         for (path in listOf("ui/screens/HomeScreen.kt", "ui/screens/workout/ProgramsListScreen.kt",
             "ui/screens/workout/WorkoutTabScreen.kt", "ui/screens/progress/ProgressTabScreen.kt",
-            "ui/screens/health/HealthTabScreen.kt", "ui/screens/settings/SettingsMainScreen.kt"))
+            "ui/screens/health/HealthTabScreen.kt", "ui/screens/settings/SettingsMainScreen.kt",
+            "ui/screens/health/CoachDetailScreen.kt", "ui/screens/log/LogTabScreen.kt"))
             assertTrue(path, src(path).contains("LocalGlassTopInset.current"))
+        // LazyColumn content padding is the in-scroll spacer, not an outer Modifier.padding.
+        val coach = src("ui/screens/health/CoachDetailScreen.kt").substringAfter("LazyColumn(").substringBefore("if (uiState.currentSubScreen")
+        val journal = src("ui/screens/log/LogTabScreen.kt").substringAfter("LazyColumn(").substringBefore("CompactJournalSearchField(")
+        assertTrue(coach.contains("contentPadding = PaddingValues(") && coach.contains("top = 16.dp + LocalGlassTopInset.current, bottom = 16.dp"))
+        assertTrue(journal.contains("contentPadding = PaddingValues(") && journal.contains("top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp"))
         // The route host (every tab) is composed inside the box that records the header's backdrop.
         val root = src("MainActivity.kt")
         val capture = root.indexOf(".then(glassCapture)")
@@ -163,6 +173,7 @@ class LiquidGlass2810Test {
         assertTrue(root.substring(capture, host).contains("CompositionLocalProvider(LocalGlassTopInset provides glassTopInset)"))
         val scaffold = src("ui/theme/GlassAwareScaffold.kt")
         assertTrue(scaffold.contains("glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen)"))
+        assertTrue(scaffold.contains("bottom = innerPadding.calculateBottomPadding()"))
         assertFalse("no per-tab allow-list left", scaffold.contains("setOf(MainTab.HOME, MainTab.HEALTH)"))
     }
 
