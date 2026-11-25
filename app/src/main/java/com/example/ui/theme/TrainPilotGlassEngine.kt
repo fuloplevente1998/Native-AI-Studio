@@ -155,11 +155,12 @@ internal fun DrawScope.drawGlassDropShadow(path: Path) {
  * also stays on the active measurement screens (2808/10 light glass).
  */
 @Composable
-internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
+internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier =
     if (!palette.glassRimActive()) this else drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
-        val strength = GlassOptics.from(palette.glassClarity).specular
+        val strength = GlassOptics.forRole(palette.glassClarity, role).specular
         val shine = Brush.verticalGradient(
             0f to Color.White.copy(alpha = strength),
             .5f to Color.White.copy(alpha = strength * .40f),
