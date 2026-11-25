@@ -47,7 +47,7 @@ internal fun wearObservedSleepMinutes(start: Long, end: Long): Long? =
     if (start > 0 && end > start && end - start <= 24 * 60 * 60 * 1000L) (end - start) / 60000L else null
 
 /** #367/9: aggregated sleep total of the phone's selected provider, for the local day it ends on. */
-internal data class WatchPhoneSleepSummary(val date: String, val minutes: Long, val provider: String) {
+data class WatchPhoneSleepSummary(val date: String, val minutes: Long, val provider: String) {
     companion object {
         fun parse(source: JSONObject?): WatchPhoneSleepSummary? {
             source ?: return null
