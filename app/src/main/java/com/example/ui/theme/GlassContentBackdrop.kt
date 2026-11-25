@@ -79,6 +79,7 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
     if (!palette.isLiquidGlass) return this
+    if (backdrop.view !== LocalView.current) return trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Selection)
     val enabled = LocalGlassOpticsEnabled.current
     if (enabled && backdrop.kyant != null && backdrop.view === LocalView.current) {
         return kyantGlass(rememberKyantScene(backdrop.kyant, samplesContent = true), palette, shape,
