@@ -44,6 +44,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import com.repforge.app.ui.theme.TrainPilotButton as Button
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -589,7 +590,7 @@ fun ProgramsListScreen(
                             color = palette.textSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
-                        Button(
+                        TrainPilotGlassPrimaryButton(
                             onClick = onOpenPersonalPlanner,
                             colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                             shape = RoundedCornerShape(12.dp)
@@ -665,7 +666,7 @@ fun ProgramsListScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
+                TrainPilotGlassPrimaryButton(
                     onClick = { showCreateCustomProgramDialog = true },
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
