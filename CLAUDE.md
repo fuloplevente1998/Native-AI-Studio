@@ -55,6 +55,10 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
   adatvédelem/migráció, refaktor. Haiku 5.5 alagens (low/medium): csak olvasó/gépies munka – `rg` keresés,
   CI-napló és JUnit XML összesítés, hash/verzió/aláíró ellenőrzés, fájllista; kódot, tesztet, adat- vagy
   szinkronszabályt NEM ír.
+- Alagens-munkarend: egyszerre EGY alagens fut (nincs párhuzamos írás ugyanazon az ágon). Sorrend: megvalósító
+  (Opus/Sonnet) → független átnéző alagens a diffre (más modell/új kontextus; csak olvas, hibát jelez) →
+  Haiku ellenőrző (nyers XML számok, hash, verzió, aláíró). Minden alagens a végén leírja, mit változtatott és
+  mit nem tudott ellenőrizni. Írás előtt mindig friss ág (`git fetch` + merge, nem elavult másolat).
 - Visszajelzéseket **gyűjtő draft PR-ba** rögzítjük (`docs/FIXES_<verzió>.md` táblázat);
   kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
