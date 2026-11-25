@@ -25,17 +25,18 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, null) else this
+    if (palette.isLiquidGlass) glassSceneModifier(palette, null, GlassMaterialRole.Panel) else this
 
 @Composable
-internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, shape) else this
+internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier =
+    if (palette.isLiquidGlass) glassSceneModifier(palette, shape, role) else this
 
 /** UI-thread only; the paint is reused, the shader it carries is snapshotted by each draw call. */
 private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
 
 @Composable
-private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?): Modifier {
+private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?, role: GlassMaterialRole): Modifier {
     val effectsEnabled = LocalGlassOpticsEnabled.current
     val scene = LocalGlassScene.current
     val configuration = LocalConfiguration.current
@@ -44,7 +45,8 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
     val sceneHeight = with(localDensity) { configuration.screenHeightDp.dp.toPx() }.coerceAtLeast(1f)
     // Position is read only in the draw phase: scrolling re-binds uniforms, never recomposes or recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
-    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity) }
+    val materialRole = if (!effectsEnabled && shape != null) GlassMaterialRole.Performance else role
+    val optics = remember(palette.glassClarity, materialRole) { GlassOptics.forRole(palette.glassClarity, materialRole) }
     return onGloballyPositioned { coordinates -> origin.value = coordinates.positionInRoot() }
         .drawWithCache {
             val outline = shape?.createOutline(size, layoutDirection, this)
