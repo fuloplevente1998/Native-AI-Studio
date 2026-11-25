@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -140,8 +142,9 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayout
             val shape = RoundedCornerShape(12.dp)
             Surface(
                 shape = shape,
-                color = palette.surfaceCard,
-                modifier = modifier.heightIn(min = 70.dp)
+                // 2811/G4: inner tile of the "Test és fittség" panel = translucent tile + Tile rim (no own lens).
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = modifier.trainPilotGlassRim(palette, shape).heightIn(min = 70.dp)
                     .trainPilotBorder(1.dp, palette.cardBorder, shape)
                     .trainPilotClickable(shape) { onSelect(key, reading) }
                     .testTag("health_body_fitness_$key")
