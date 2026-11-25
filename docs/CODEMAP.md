@@ -126,3 +126,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | Kyant K2 közös vezérlők és integráció | `ex/ui/theme/GlassSurfaces.kt` (state tint), `LiquidGlassPalettes.kt` (glassControlPaint), `TrainPilotGlassEngine.kt` (cheap Button/Input/Performance), `rf/ui/theme/TrainPilotButton.kt` (audited primary action), `ex/ui/components/TrainPilotControls.kt`, `GlassContentBackdrop.kt` (nested header controls), `KyantK2IntegrationTest.kt` |
 
 | K2 overlay and switches | `ex/ui/components/TrainPilotControls.kt` (`TrainPilotSwitch`), `TrainPilotAlertDialog.kt` (own-window glass overlay), `TrainPilotModalBottomSheet.kt` (default handle), `ex/ui/screens/StudioWorkoutModesDialog.kt`, `ex/ui/screens/settings/SettingsMainScreen.kt` |
+
+| Kyant dialog window isolation | `ex/ui/theme/KyantWindowOverlay.kt` (Android-only backdrop types behind glass/API/optics gate; common alert dialog remains JVM-compatible candidate) |
