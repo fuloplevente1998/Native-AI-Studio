@@ -158,7 +158,7 @@ internal fun PlannerFieldTile(
                 color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
+                    .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
                     .trainPilotBorder(
                         1.dp,
                         if (expanded) palette.primary else palette.cardBorder,
