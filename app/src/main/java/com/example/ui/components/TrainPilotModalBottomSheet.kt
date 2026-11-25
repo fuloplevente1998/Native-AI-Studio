@@ -1,6 +1,14 @@
 package com.example.ui.components
 
 import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.LocalKyantHeader
+import com.example.ui.theme.LocalKyantScene
+import com.example.ui.theme.kyantSceneLayer
+import com.example.ui.theme.rememberKyantScene
+import com.example.ui.theme.rememberKyantSceneBackdrop
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -64,15 +72,20 @@ internal fun TrainPilotModalBottomSheet(
         // padding in the outlined area so the stroke reaches the physical edge of the panel.
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
+        // A sheet has a separate Compose window: record its own scene, never the parent window.
+        val sheetLayer = if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current &&
+            (customPaint || containerColor == palette.background)) rememberKyantSceneBackdrop(palette) else null
+        val sheetScene = sheetLayer?.let { rememberKyantScene(it) }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
-                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
-                // 2810/5: a Liquid Glass sheet on the page colour paints the same procedural backdrop, so
-                // its inner glass panels have colour to refract (sheets are separate windows).
-                .then(if (palette.isLiquidGlass && !customPaint && containerColor == palette.background)
-                    Modifier.trainPilotGlassScene(palette) else Modifier)
+                .then(when {
+                    sheetLayer != null -> Modifier.kyantSceneLayer(palette, sheetLayer)
+                    customPaint -> Modifier.trainPilotGlassMaterial(palette, shape)
+                    palette.isLiquidGlass && containerColor == palette.background -> Modifier.trainPilotGlassScene(palette)
+                    else -> Modifier
+                })
                 .drawWithCache {
                     // Material moves and scales the sheet inside its caller modifier. Draw here
                     // so the stroke moves with the surface and extends around the drag handle.
@@ -90,8 +103,9 @@ internal fun TrainPilotModalBottomSheet(
                         }
                     }
                 }
-                .windowInsetsPadding(contentWindowInsets()),
-            content = content
-        )
+                .windowInsetsPadding(contentWindowInsets())
+        ) {
+            CompositionLocalProvider(LocalKyantScene provides sheetScene, LocalKyantHeader provides sheetScene) { content() }
+        }
     }
 }
