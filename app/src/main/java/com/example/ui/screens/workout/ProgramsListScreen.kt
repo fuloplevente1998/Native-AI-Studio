@@ -1,5 +1,7 @@
 package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -421,7 +423,7 @@ fun ProgramsListScreen(
                 }
             },
             confirmButton = {
-                Button(
+                TrainPilotGlassPrimaryButton(
                     onClick = {
                         showCreateCustomProgramDialog = false
                         onCreateCustomProgram(customProgName, customProgSub)
@@ -484,10 +486,11 @@ fun ProgramsListScreen(
                         val selected = state.programsTabCustomOnly == isCustom
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = if (selected) palette.primary else Color.Transparent,
+                            color = if (selected) palette.glassControlFill(palette.primary, GlassMaterialRole.Selection) else Color.Transparent,
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
+                                .then(if (selected) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(20.dp), GlassMaterialRole.Selection) else Modifier)
                                 .trainPilotClickable(RoundedCornerShape(20.dp)) { onToggleCustomTab(isCustom) }
                                 .testTag(if (isCustom) "programs_tab_custom" else "programs_tab_builtin")
                         ) {
@@ -498,7 +501,7 @@ fun ProgramsListScreen(
                                 Text(
                                     text = label,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = if (selected) palette.onPrimary else palette.textSecondary,
+                                    color = if (selected) (if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary) else palette.textSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
