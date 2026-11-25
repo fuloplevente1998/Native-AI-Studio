@@ -97,7 +97,9 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     // Compose backdrop (cards: limited to the glass backdrop cap) + the thin white-ish tint +
                     // the vector rim. API < 31 / software: the previous opaque gradient + paint.
                     if (path == null) { if (!paintComposeScene(GlassScene.lumaCap)) drawRect(fallback) } else clipPath(path) {
-                        if (paintComposeScene(optics.backdropCap)) drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
+                        // 2811/1: a page-matched surface uses the page guard itself (no luminance step).
+                        val cap = if (role.matchesPage) GlassScene.lumaCap else optics.backdropCap
+                        if (paintComposeScene(cap)) drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
                         else {
                             drawRect(fallback)
                             drawRect(glassFallbackPaint(palette.glassClarity))

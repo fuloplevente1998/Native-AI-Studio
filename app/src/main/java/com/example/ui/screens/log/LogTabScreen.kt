@@ -299,7 +299,8 @@ fun LogTabScreen(
                 .fillMaxSize()
                 .trainPilotScreenBackdrop(palette)
                 .testTag("log_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+                top = 8.dp + com.example.ui.theme.LocalGlassTopInset.current, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         item {

@@ -104,7 +104,9 @@ internal object GlassPrograms33 {
         originX: Float, originY: Float, palette: TrainPilotPalette, optics: GlassOptics, density: Float,
         highlight: Float, seconds: Float = 0f, photo: Shader? = null): Shader? {
         val lens = sceneLens() ?: return null
-        val scene = boundScene(sceneWidth, sceneHeight, originX, originY, palette, seconds, photo, guard = false) ?: return null
+        // 2811/1: a page-matched surface (header) samples the guarded page itself, so it equals it at rest.
+        val scene = boundScene(sceneWidth, sceneHeight, originX, originY, palette, seconds, photo,
+            guard = optics.role.matchesPage) ?: return null
         // Rebind after the child's uniforms changed: the lens snapshots the child here.
         lens.setInputShader("scene", scene)
         // 2810/6: strong diffusion (20–32 dp) of the soft scene, capped for small chips.

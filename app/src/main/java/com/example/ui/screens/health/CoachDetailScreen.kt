@@ -96,7 +96,8 @@ internal fun CoachDetailScreen(
             .fillMaxSize()
             .trainPilotScreenBackdrop(palette)
             .testTag("coach_detail_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+            top = 16.dp + com.example.ui.theme.LocalGlassTopInset.current, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {

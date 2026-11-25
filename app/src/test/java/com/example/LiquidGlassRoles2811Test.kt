@@ -40,17 +40,20 @@ class LiquidGlassRoles2811Test {
     @Test fun everyRoleFollowsTheSliderMonotonicallyAndContinuously() {
         for (role in roles) {
             val all = (0..100).map { GlassOptics.from(it, role) }
-            assertTrue("$role tint never reaches the ceiling alone", role.tint in .1f..1f)
+            assertTrue("$role tint never reaches the ceiling alone", role.tint in .1f..1f || (role.matchesPage && role.tint == 0f))
             data class Field(val name: String, val get: (GlassOptics) -> Float, val sign: Int)
             val fields = listOf(
-                Field("coat", { it.coat }, -1), Field("blurDp", { it.blurDp }, if (role.blurScale > 0f) -1 else 0),
-                Field("specular", { it.specular }, 1), Field("shadow", { it.shadow }, 1),
-                Field("thickness", { it.thickness }, 1), Field("bend", { it.bend }, if (role.refraction > 0f) 1 else 0),
+                Field("coat", { it.coat }, if (role.tint > 0f) -1 else 0), Field("blurDp", { it.blurDp }, if (role.blurScale > 0f) -1 else 0),
+                Field("specular", { it.specular }, if (role.rim > 0f) 1 else 0), Field("shadow", { it.shadow }, if (role.depth > 0f) 1 else 0),
+                Field("thickness", { it.thickness }, if (role.depth > 0f) 1 else 0), Field("bend", { it.bend }, if (role.refraction > 0f) 1 else 0),
                 Field("dispersion", { it.dispersion }, if (role.chroma > 0f) 1 else 0),
-                Field("saturation", { it.saturation }, 1), Field("backdropCap", { it.backdropCap }, 2))
+                Field("saturation", { it.saturation }, if (role.vibrancy > 0f) 1 else 3),
+                Field("backdropCap", { it.backdropCap }, if (role.tint > 0f) 2 else 3))
             for (f in fields) {
                 val range = abs(f.get(all.last()) - f.get(all.first()))
                 if (f.sign == 0) { assertTrue("$role ${f.name} off", all.all { f.get(it) == 0f }); continue }
+                // 3: constant across the slider (a page-matched role has no own tint/vibrancy to move).
+                if (f.sign == 3) { assertTrue("$role ${f.name} constant", all.all { f.get(it) == f.get(all.first()) }); continue }
                 assertTrue("$role ${f.name} differs Frosted/Clear", range > 0f)
                 for (step in 1..100) {
                     val before = f.get(all[step - 1])
@@ -71,7 +74,8 @@ class LiquidGlassRoles2811Test {
 
     @Test fun outerPanelIsVisiblyStrongerThanInnerTile() {
         assertTrue(GlassRole.Panel.prominence > GlassRole.Tile.prominence)
-        assertEquals("the inner tile is the quietest role", GlassRole.Tile, roles.minByOrNull { it.prominence })
+        // Among roles with an edge of their own (the page-matched header has none), the inner tile is the quietest.
+        assertEquals("the inner tile is the quietest role", GlassRole.Tile, roles.filter { it.rim > 0f }.minByOrNull { it.prominence })
         assertTrue(GlassRole.Overlay.prominence >= GlassRole.Panel.prominence)
         for (step in 0..100) {
             val panel = GlassOptics.from(step, GlassRole.Panel)
@@ -136,7 +140,9 @@ class LiquidGlassRoles2811Test {
     @Test fun headerUsesTheNavigationRoleOnlyUnderGlassPalettes() {
         for (role in roles) {
             assertEquals(role, GlassRole.resolve(role, opticsEnabled = true))
-            assertEquals("measurement screen", GlassRole.Performance, GlassRole.resolve(role, opticsEnabled = false))
+            // Measurement screen: Performance, except the page-matched header (no step there either).
+            assertEquals("measurement screen", if (role.matchesPage) role else GlassRole.Performance,
+                GlassRole.resolve(role, opticsEnabled = false))
         }
         val custom = CustomThemeDraft.fromStyle(CustomThemeStyle.CONTRAST, "x").let {
             requireNotNull(resolveCustomTheme(it, newCustomThemeKey())).palette }

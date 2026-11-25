@@ -131,7 +131,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
         color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
-            // 2811/1: Navigation role – thin tint over the recorded content + backdrop (no solid bar).
+            // 2811/1: Navigation role – continuous with the page; scrolled content blurs/refracts under it.
             .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), GlassRole.Navigation)
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
@@ -209,7 +209,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = palette.glassTile(if (isCalendarActive) selection.surface else palette.surfaceElevated, elevated = isCalendarActive),
                         modifier = Modifier
                             .size(48.dp)
-                            .trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassRole.Navigation)
+                            .trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassRole.Button)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
                             .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -235,7 +235,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = palette.glassTile(if (isSettingsActive) selection.surface else palette.surfaceElevated, elevated = isSettingsActive),
                         modifier = Modifier
                             .size(48.dp)
-                            .trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassRole.Navigation)
+                            .trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassRole.Button)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
                             .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -274,7 +274,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
                     .then(if (palette.isLiquidGlass && pillTrack == null) Modifier.background(palette.glassTile(palette.surface), trackShape)
-                        .trainPilotGlassRim(palette, trackShape, GlassRole.Navigation).padding(2.dp) else Modifier)
+                        .trainPilotGlassRim(palette, trackShape, GlassRole.Button).padding(2.dp) else Modifier)
                     .testTag("top_nav_row")
                     .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(if (palette.isLiquidGlass) 2.dp else 6.dp)
@@ -335,7 +335,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
             if (pillTrack != null) {
                 // 2811/1: the track is the neutral tile tint (stays under the contrast ceiling), not a dark veil.
                 Box(Modifier.fillMaxWidth().background(palette.glassTile(palette.surface), trackShape)
-                    .trainPilotGlassRim(palette, trackShape, GlassRole.Navigation).padding(2.dp)) {
+                    .trainPilotGlassRim(palette, trackShape, GlassRole.Button).padding(2.dp)) {
                     GlassSelectionPill(pillTrack, tabSelected.indexOf(true), trackShape, palette, selection.border)
                     navRow()
                 }
@@ -378,7 +378,7 @@ internal fun TopNavPillItem(
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
         .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape, GlassRole.Selection) else Modifier)
-        .then(if (quick) Modifier.trainPilotGlassRim(palette, itemShape, GlassRole.Navigation) else Modifier)
+        .then(if (quick) Modifier.trainPilotGlassRim(palette, itemShape, GlassRole.Button) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(

@@ -22,8 +22,13 @@ internal enum class GlassRole(
     val chroma: Float,
     val vibrancy: Float,
 ) {
-    /** Header, top nav track, quick buttons: thin tint so the backdrop colour reads through (2811/1). */
-    Navigation(.45f, 1.10f, 1.00f, .70f, .55f, .80f, .70f, 1.25f),
+    /**
+     * Header band (2811/1, device round 2): continuous with the page – no tint, vibrancy, rim, inner shade or
+     * shadow, and the page's own luminance guard, so at scroll top it equals the page pixel for pixel (no
+     * step, no hard line). Content scrolled under it is blurred and edge-refracted, and limited to the same
+     * page ceiling, so glyphs on it stay >= 4.5:1. Quick buttons and the nav capsule are glass tiles on it.
+     */
+    Navigation(0f, 1.10f, 0f, 0f, 0f, .80f, .70f, 0f),
     /** Outer card / section: the reference material (identical to the pre-role engine). */
     Panel(1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f),
     /** Inner tile on a panel: lighter, flatter, no outer shadow – always weaker than [Panel]. */
@@ -42,12 +47,16 @@ internal enum class GlassRole(
     /** Visual weight (edge light + depth + lift): orders the hierarchy, e.g. Panel > Tile. */
     val prominence: Float get() = rim + depth + elevation
 
+    /** No own tint or vibrancy: the surface reproduces the guarded page exactly where nothing is under it. */
+    val matchesPage: Boolean get() = tint == 0f && vibrancy == 0f
+
     companion object {
         /**
          * The role actually drawn: where the expensive optics are off (active measurement screen) every
          * surface uses the light [Performance] material; elsewhere the requested role.
          */
-        fun resolve(requested: GlassRole, opticsEnabled: Boolean): GlassRole = if (opticsEnabled) requested else Performance
+        fun resolve(requested: GlassRole, opticsEnabled: Boolean): GlassRole =
+            if (opticsEnabled || requested.matchesPage) requested else Performance
     }
 }
 

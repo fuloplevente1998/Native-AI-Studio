@@ -66,9 +66,16 @@ internal fun GlassAwareScaffold(
 /** The top-nav tabs; each one's scroll content starts with the [LocalGlassTopInset] spacer. */
 internal val GlassUnderlapTabs: Set<MainTab> = setOf(MainTab.HOME, MainTab.PROGRAMS, MainTab.WORKOUT, MainTab.PROGRESS, MainTab.HEALTH)
 
+/**
+ * 2811/1: the top-bar shortcut screens that also scroll under the glass header (their lists start with the
+ * [LocalGlassTopInset] spacer). The calendar keeps its pinned full-height layout (G2) and stays below.
+ */
+internal val GlassUnderlapShortcutTabs: Set<MainTab> = setOf(MainTab.LOG, MainTab.COACH)
+
 /** Routes whose content extends under the glass header and is recorded for the header/nav lens. */
 internal fun glassUnderlapRoute(tab: MainTab, subScreen: SubScreen): Boolean =
-    subScreen == SubScreen.SETTINGS_MAIN || (subScreen == SubScreen.NONE && tab in GlassUnderlapTabs)
+    subScreen == SubScreen.SETTINGS_MAIN ||
+        (subScreen == SubScreen.NONE && (tab in GlassUnderlapTabs || tab in GlassUnderlapShortcutTabs))
 
 /** True under [GlassAwareScaffold] in a glass palette: the root already paints the page backdrop. */
 internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }

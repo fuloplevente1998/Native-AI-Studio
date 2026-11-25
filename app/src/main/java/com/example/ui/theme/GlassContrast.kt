@@ -65,6 +65,30 @@ internal object GlassContrast {
         return lo
     }
 
+    /** Exact mirror of the AGSL `limitLuma`: above [cap], linear-light scale down (hue kept). */
+    fun limit(c: Color, cap: Float): Color {
+        val r = c.red.coerceIn(0f, 1f); val g = c.green.coerceIn(0f, 1f); val b = c.blue.coerceIn(0f, 1f)
+        val l = luminance(r, g, b)
+        if (l <= cap) return Color(r, g, b)
+        val k = cap.coerceAtLeast(0f) / l
+        return Color(GlassScene.srgb(GlassScene.linear(r) * k), GlassScene.srgb(GlassScene.linear(g) * k),
+            GlassScene.srgb(GlassScene.linear(b) * k))
+    }
+
+    /**
+     * 2811/1: Kotlin mirror of the lens centre (no rim zone) over one backdrop pixel, in shader order:
+     * vibrancy -> backdrop limit -> white-ish tint -> safety ceiling. Used to prove the header has no step.
+     */
+    fun lensCentre(backdrop: Color, optics: GlassOptics): Color {
+        val luma = rec709[0] * backdrop.red + rec709[1] * backdrop.green + rec709[2] * backdrop.blue
+        fun sat(v: Float) = (luma + (v - luma) * optics.saturation).coerceIn(0f, 1f)
+        val vivid = limit(Color(sat(backdrop.red), sat(backdrop.green), sat(backdrop.blue)), optics.backdropCap)
+        val w = GlassOptics.TINT
+        val a = optics.coat
+        val tinted = Color(a * w.red + (1f - a) * vivid.red, a * w.green + (1f - a) * vivid.green, a * w.blue + (1f - a) * vivid.blue)
+        return limit(tinted, GlassOptics.SURFACE_LUMA_MAX)
+    }
+
     /** Largest channel gain of the saturation matrix: the own-channel coefficient with the others at 0. */
     fun saturationGain(saturation: Float, channel: Int): Float =
         matrixWeights[channel] * (1f - saturation) + saturation

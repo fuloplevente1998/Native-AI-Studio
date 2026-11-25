@@ -89,3 +89,10 @@ Saját motor, új motor/függőség nélkül; csak a 33–40 család. Audit: `do
   folt-súly ≥ 0,25, perem iránya); `LiquidGlassOptics373Test` uniform-készlet bővítve (`thickness`).
 - Csak készüléken: képi hatás 0/50/65/100%, fejléc görgetés tetején és tartalom fölött, A57 frame time (5. folt: ~25% több
   jelenet-számítás), AGSL fordítás Samsungon (helyben skia-python SkSL ellenőrizve), API 31–32 út.
+- **Fejléc 2. kör (eszköz #381, „Fejléc nem átlátszó”):** a Navigation szerep vékony tónusa + saját korlátja (~0,097) csak a
+  fejléc-sávot sötétítette → sötét, egyenletes sáv éles alsó lépcsővel. Most `Navigation` = lappal folytonos (`matchesPage`):
+  tónus 0, telítés 1, perem/mélység/árnyék 0; a jelenet-lencse az őrzött lapot mintázza, a Compose út a lap őrét használja,
+  mérőképernyőn sem vált Performance-re. Görgetés tetején a fejléc pixelre a lap; alá görgetett tartalom homályosodik és a
+  peremen törik, fénysűrűsége a lap plafonjára (≤0,128) korlátozva. Gyorsgombok/nav-kapszula: csempe-tónus + Button perem.
+  Napló és Coach is a fejléc alá görget. `LiquidGlassHeader2811Test` (nincs lépcső 33–40 × 0/50/65/100, glifa-kontraszt, alágörgetés).
+  Korlát: API 31–32-n a színmátrix-skála a fejléc alatt is sötétít (kontraszt elsőbbsége) – készüléken nézendő.
