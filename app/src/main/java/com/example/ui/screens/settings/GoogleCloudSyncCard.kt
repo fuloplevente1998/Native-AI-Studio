@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -151,7 +154,8 @@ fun StudioGoogleCloudSyncCard(
         }
     }
     @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String, failMessage: String?) {
-        Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceElevated, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+        Surface(shape = RoundedCornerShape(12.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true),
+            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(12.dp)).testTag(tag)) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
@@ -175,9 +179,10 @@ fun StudioGoogleCloudSyncCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
+        color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .trainPilotAnimatedExpansion()
             .testTag("studio_google_cloud_card")
