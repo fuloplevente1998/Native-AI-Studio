@@ -51,6 +51,8 @@ class KyantK2IntegrationTest {
             assertEquals(p.glassControlFill(p.surface, GlassMaterialRole.Button), idle)
             assertEquals(p.glassControlFill(p.primary, GlassMaterialRole.Selection).alpha, active.alpha, .01f)
             assertTrue(active.alpha > idle.alpha)
+            assertTrue(active.blue > active.red)
+            assertTrue(active.blue > active.green)
             for (selected in listOf(false, true)) {
                 val fill = p.programDayFill(selected)
                 assertTrue(fill.alpha in 0.01f..0.45f)

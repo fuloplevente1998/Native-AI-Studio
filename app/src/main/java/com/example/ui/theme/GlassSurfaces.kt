@@ -1,5 +1,13 @@
 package com.example.ui.theme
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.repforge.app.ui.theme.NativeThemeTokens
@@ -62,8 +70,26 @@ internal fun TrainPilotPalette.programDayFill(selected: Boolean): Color {
     val role = programDayGlassRole(selected)
     val paint = glassControlFill(legacy, role)
     if (!isLiquidGlass || !selected) return paint
-    return GlassContrast.limit(primary, GLASS_TILE_LUMA).copy(alpha = paint.alpha)
+    return GlassContrast.limit(programDaySelectionAccent, GLASS_TILE_LUMA).copy(alpha = paint.alpha)
 }
 
 internal fun TrainPilotPalette.programDayTextColor(selected: Boolean): Color =
     if (selected && !isLiquidGlass) onPrimary else textPrimary
+
+/** Use the existing Sapphire accent for the blue selection specified by mockup 2812/3. */
+internal val programDaySelectionAccent: Color
+    get() = LiquidGlassPalettes.all.first { it.key == "glass_sapphire" }.primary
+
+/** A few cached vector strokes outside the selected control, not a blur or sampled backdrop. */
+internal fun Modifier.programDaySelectionGlow(palette: TrainPilotPalette, selected: Boolean, shape: Shape): Modifier =
+    if (!palette.isLiquidGlass || !selected) this else drawWithCache {
+        val edge = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
+        val accent = programDaySelectionAccent
+        onDrawBehind {
+            clipPath(edge, ClipOp.Difference) {
+                drawPath(edge, accent.copy(alpha = .05f), style = Stroke(6.dp.toPx()))
+                drawPath(edge, accent.copy(alpha = .09f), style = Stroke(4.dp.toPx()))
+                drawPath(edge, accent.copy(alpha = .22f), style = Stroke(2.dp.toPx()))
+            }
+        }
+    }

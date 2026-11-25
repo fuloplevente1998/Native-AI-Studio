@@ -7,6 +7,10 @@ import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.programDayGlassRole
 import com.example.ui.theme.programDayFill
 import com.example.ui.theme.programDayTextColor
+import com.example.ui.theme.programDaySelectionAccent
+import com.example.ui.theme.programDaySelectionGlow
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.key
 
@@ -205,13 +209,16 @@ internal fun ProgramEditorContent(
                     color = palette.programDayFill(selected),
                     // A static rim/outline: no backdrop capture or blur per day button.
                     border = if (palette.isLiquidGlass) BorderStroke(
-                        0.5.dp, if (selected) palette.primary.copy(alpha = .65f)
+                        0.5.dp, if (selected) programDaySelectionAccent.copy(alpha = .75f)
                         else palette.textPrimary.copy(alpha = .16f)
                     ) else null,
                     modifier = Modifier
                         .widthIn(min = 76.dp)
                         .heightIn(min = 48.dp)
-                        .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, shape, role)
+                        .then(if (palette.isLiquidGlass) Modifier
+                            .programDaySelectionGlow(palette, selected, shape)
+                            .trainPilotGlassRim(palette, shape, role)
+                            .semantics { this.selected = selected }
                             else Modifier.trainPilotBorder(
                                 1.dp, if (selected) palette.primary else palette.cardBorder, shape
                             ))
@@ -221,12 +228,19 @@ internal fun ProgramEditorContent(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
                     ) {
-                        Text(
-                            text = d.localizedDayCode(state.language),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.programDayTextColor(selected),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = d.localizedDayCode(state.language),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.programDayTextColor(selected),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (palette.isLiquidGlass && selected) Icon(
+                                Icons.Default.Check, contentDescription = null,
+                                tint = palette.programDayTextColor(true), modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
