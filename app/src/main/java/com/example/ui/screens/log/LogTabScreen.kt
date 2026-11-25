@@ -74,6 +74,7 @@ import androidx.compose.ui.text.input.ImeAction
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
@@ -301,7 +302,9 @@ fun LogTabScreen(
                 .fillMaxSize()
                 .trainPilotScreenBackdrop(palette)
                 .testTag("log_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
+            // The measured header inset scrolls with the list; no extra item or opaque clip.
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
+                end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         item {
