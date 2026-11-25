@@ -139,3 +139,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | K3 single root scene | `ex/ui/theme/KyantGlass.kt` (`KyantSceneBackground`, reuse same captured layer), `GlassAwareScaffold.kt` (empty sibling before scaffold), `KyantK3CacheTest.kt` (source contract) |
 
 | K3 battery saver | `ex/ui/theme/GlassPowerSave.kt` (host-only power mode observer), `GlassScene.kt` (static drift gate), `KyantK3CacheTest.kt` (mode matrix) |
+
+| 2813 görgethető tartalom és mért fix glass sávok | `ex/ui/theme/GlassScrollChrome.kt`, `GlassAwareScaffold.kt`, `GlassContentBackdrop.kt` (külön chrome gate, list capture, in-scroll top/bottom padding) |

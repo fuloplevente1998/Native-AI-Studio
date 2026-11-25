@@ -42,6 +42,12 @@ internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
     if (LocalGlassOverlay.current) return trainPilotGlassMaterial(palette, shape, role)
+    // A chrome-only lens is allowed on scrolling measurement screens, without enabling
+    // per-card optics, animated selection, or press effects in the workout content.
+    if (LocalGlassChromeUnderlap.current && palette.isLiquidGlass) {
+        val chrome = LocalKyantHeader.current.forThisWindow()
+        if (chrome != null) return kyantGlass(chrome, palette, shape, role)
+    }
     kyantGlassOrNull(palette, shape, role)?.let { return it }
     val backdrop = LocalGlassHeaderBackdrop.current
     return if (backdrop != null) liveGlassLens(backdrop, palette, shape)

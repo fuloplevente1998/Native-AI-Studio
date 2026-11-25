@@ -1,6 +1,9 @@
 package com.example.ui.components
 
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.LocalGlassChromeUnderlap
+import com.example.ui.theme.glassHeaderMaterial
+import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
 
@@ -93,10 +96,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         state.phoneControlsWorkout -> word("Vezérlés: telefon", "Control: phone", "Steuerung: Telefon", "Control: telefon")
         else -> word("Vezérlés: óra", "Control: watch", "Steuerung: Uhr", "Control: ceas")
     }
-    Surface(color = palette.glassTile(palette.surfaceCard, elevated = true), shape = RoundedCornerShape(14.dp),
+    val liveChrome = LocalGlassChromeUnderlap.current && palette.isLiquidGlass
+    Surface(color = if (liveChrome) Color.Transparent else palette.glassTile(palette.surfaceCard, elevated = true), shape = RoundedCornerShape(14.dp),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(0.75.dp, palette.cardBorder)),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)
-            .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Performance).testTag("workout_sticky_handover")) {
+            .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(14.dp))
+                else Modifier.trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Performance))
+            .testTag("workout_sticky_handover")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.isWorkoutSessionActive) {
                 val statusContent: @Composable () -> Unit = {

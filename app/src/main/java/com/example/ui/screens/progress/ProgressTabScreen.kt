@@ -6,6 +6,8 @@ import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
+import com.example.ui.theme.GlassScrollChrome
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
@@ -97,20 +99,16 @@ fun ProgressTabScreen(
     val layout = rememberPageLayout("progress", blockIds)
     val overviewListState = rememberLazyListState()
     PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .trainPilotPageBackdrop(palette)
-            .testTag("progress_tab_screen")
-    ) {
-        // 2810: safe-area spacer under the glass header (the section tabs stay fixed below it).
-        Spacer(Modifier.height(LocalGlassTopInset.current))
+    GlassScrollChrome(
+        modifier = Modifier.fillMaxSize().trainPilotPageBackdrop(palette).testTag("progress_tab_screen"),
+        enabled = layout.draft == null,
+        top = {
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
             color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp).trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
+                .padding(horizontal = 12.dp, vertical = 2.dp).glassHeaderMaterial(palette, RoundedCornerShape(14.dp))
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
@@ -170,13 +168,15 @@ fun ProgressTabScreen(
             }
         }
 
+        }
+    ) { scrollModifier, topInset, bottomInset ->
         when (activeSection) {
             // 1. AL-OLDAL (0): 📈 FEJLŐDÉS (Összes volumen, 4 lenyíló statisztika ablak, Izomcsoport-terhelés, Rekordok & Kardió)
             0 -> {
                 LazyColumn(
                     state = overviewListState,
-                    modifier = Modifier.fillMaxSize().testTag("progress_overview_list"),
-                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 0.dp, bottom = 10.dp),
+                    modifier = scrollModifier.testTag("progress_overview_list"),
+                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = topInset, bottom = 10.dp + bottomInset),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     item(key = "progress_overview", contentType = "overview") {
@@ -230,7 +230,7 @@ fun ProgressTabScreen(
 
             // Statistics replaces the old standalone Strength/1RM tab; estimates remain in record details.
             else -> if (layout.draft == null) StudioStatisticsScreen(uiState, onSelectStatsSubTab,
-                onToggleCardioFilterStepsMode, onRefreshRecords)
+                onToggleCardioFilterStepsMode, onRefreshRecords, scrollModifier = scrollModifier, topInset = topInset)
         }
     }
     }

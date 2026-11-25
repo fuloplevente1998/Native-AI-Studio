@@ -66,7 +66,8 @@ import java.util.Locale
 @Composable
 internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int) -> Unit,
     onStepsMode: (Boolean) -> Unit, onRefreshRecords: () -> Unit,
-    model: ProgressViewModel = viewModel(key = "studio-statistics")) {
+    model: ProgressViewModel = viewModel(key = "studio-statistics"),
+    scrollModifier: Modifier = Modifier.fillMaxSize(), topInset: androidx.compose.ui.unit.Dp = 0.dp) {
     val native by model.uiState.collectAsStateWithLifecycle()
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner, model) {
@@ -92,7 +93,7 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
     StudioStatisticsContent(state, native, onSelectTab, onStepsMode,
         onExercise = { id -> model.selectExercise(id); model.selectCardioActivity(id) },
         onActivity = model::selectCardioActivity, onRetry = model::retryCardio,
-        onRefreshRecords = onRefreshRecords)
+        onRefreshRecords = onRefreshRecords, scrollModifier = scrollModifier, topInset = topInset)
 }
 
 private fun statsTr(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
@@ -105,7 +106,8 @@ private fun statsTr(lang: com.example.model.AppLanguage, hu: String, en: String,
 @Composable
 internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressUiState,
     onSelectTab: (Int) -> Unit, onStepsMode: (Boolean) -> Unit, onExercise: (String) -> Unit,
-    onActivity: (String) -> Unit, onRetry: () -> Unit, onRefreshRecords: () -> Unit) {
+    onActivity: (String) -> Unit, onRetry: () -> Unit, onRefreshRecords: () -> Unit,
+    scrollModifier: Modifier = Modifier.fillMaxSize(), topInset: androidx.compose.ui.unit.Dp = 0.dp) {
     val palette = LocalTrainPilotPalette.current
     val strings = TrainPilotStrings.forLanguage(state.language)
     val lang = state.language
@@ -122,10 +124,10 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
         val listState = rememberLazyListState()
         com.example.ui.components.TrainPilotScrollableListBox(
             lazyListState = listState,
-            modifier = Modifier.fillMaxSize()
+            modifier = scrollModifier
         ) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("studio_statistics_screen"),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp + topInset, bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // 2779: three tabs in one row: Strength (records) · Cardio · Steps. The stored state stays
             // statsSubTab 0/1 + cardioFilterStepsMode, so the view model and saved settings are unchanged.

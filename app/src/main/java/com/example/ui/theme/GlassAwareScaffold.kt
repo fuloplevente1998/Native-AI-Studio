@@ -38,9 +38,13 @@ internal fun GlassAwareScaffold(
     // 2812: the five primary tabs plus Coach and Journal scroll under the header, so the
     // header, nav and pill lens see every tab's content (one recorded source, [captureGlassBackdrop]).
     val glassHost = uiState.sheetHostState()
-    val glassUnderlap = palette.glassEffectsActive(LocalGlassOpticsEnabled.current) &&
-        Build.VERSION.SDK_INT >= 31 && glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen)
-    val kyant = KyantGlass.active(palette) && LocalGlassOpticsEnabled.current
+    // Measurement keeps the expensive general optics gate closed. Only its fixed chrome
+    // samples content, on supported glass devices outside battery saver.
+    val measurementChrome = KyantGlass.active(palette) &&
+        glassMeasurementChromeRoute(glassHost.currentSubScreen) && !rememberGlassPowerSave(palette.isLiquidGlass)
+    val glassUnderlap = measurementChrome || (palette.glassEffectsActive(LocalGlassOpticsEnabled.current) &&
+        Build.VERSION.SDK_INT >= 31 && glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen))
+    val kyant = KyantGlass.active(palette) && (LocalGlassOpticsEnabled.current || measurementChrome)
     val headerBackdrop = if (glassUnderlap && !kyant) rememberGlassBackdrop() else null
     val sceneLayer = if (kyant) rememberKyantSceneBackdrop(palette) else null
     val contentLayer = if (kyant && glassUnderlap) rememberLayerBackdrop() else null
@@ -56,7 +60,8 @@ internal fun GlassAwareScaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
                 CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop,
-                    LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
+                    LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader,
+                    LocalGlassChromeUnderlap provides glassUnderlap) {
                     topBar()
                 }
             }
@@ -76,7 +81,8 @@ internal fun GlassAwareScaffold(
             // header lens sees it too); the pages above stay transparent instead of repainting it.
             // Only the top bar may sample captured body content; body controls must not sample themselves.
             CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
-                LocalKyantScene provides kyantScene, LocalKyantHeader provides null) {
+                LocalKyantScene provides kyantScene, LocalKyantHeader provides null,
+                LocalGlassChromeUnderlap provides glassUnderlap) {
                 content(bodyPadding, capture,
                     if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
             }
@@ -92,6 +98,12 @@ internal fun glassUnderlapRoute(tab: MainTab, subScreen: SubScreen): Boolean =
     subScreen == SubScreen.SETTINGS_MAIN || subScreen == SubScreen.COACH_DETAIL ||
         (subScreen == SubScreen.NONE && tab in GlassUnderlapTabs)
 
+/** Scrolling workout routes only; the outdoor map keeps its existing protected layout. */
+internal fun glassMeasurementChromeRoute(screen: SubScreen): Boolean = screen == SubScreen.ACTIVE_STRENGTH ||
+    screen == SubScreen.ACTIVE_TIMED || screen == SubScreen.ACTIVE_BILATERAL
+
+internal val LocalGlassChromeUnderlap = staticCompositionLocalOf { false }
+
 /** True under [GlassAwareScaffold] in a glass palette: the root already paints the page backdrop. */
 internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
 
@@ -100,6 +112,7 @@ internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
 private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean {
     if (!palette.isLiquidGlass) return false
     if (LocalGlassOverlay.current) return true
+    if (LocalGlassChromeUnderlap.current && LocalKyantScene.current.forThisWindow() != null) return true
     // Dialogs inherit composition locals but not the recording window. Do not hide their background.
     if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current)
         return LocalKyantScene.current.forThisWindow() != null

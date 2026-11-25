@@ -83,6 +83,7 @@ internal fun StudioTodayStatusDetailSheet(
     fitnessReading: BodyFitnessReading? = null
 ) {
     val palette = LocalTrainPilotPalette.current
+    val maxDetailHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp
     com.example.ui.components.TrainPilotScreenSheet(
         onDismiss = onDismiss,
         testTag = "health_today_tile_sheet"
@@ -101,7 +102,10 @@ internal fun StudioTodayStatusDetailSheet(
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 // 2784: opens to its content, at most ~2/3 of the screen.
-                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
+                // Steps/sleep can receive new details while Material is opening. Reserve their
+                // bounded scroll viewport from the first measure, even with empty data.
+                .then(if (activeKey == "steps" || activeKey == "sleep") Modifier.height(maxDetailHeight)
+                    else Modifier.heightIn(max = maxDetailHeight))
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                 .testTag("health_today_tile_expanded_card")
         ) {
