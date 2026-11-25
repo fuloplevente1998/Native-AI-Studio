@@ -10,7 +10,8 @@ lifecycleRuntimeKtx = "2.8.7"
 lifecycleViewmodelCompose = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
-kotlin = "2.2.10"
+# [Kyant test build] 2.3.10 (2026-02-04) = backdrop 1.0.6 stdlib; 2.2 left invalid non-local-return dex markers.
+kotlin = "2.3.10"
 composeBom = "2024.09.00"
 # [Kyant test build only - test/2810-kyant-glass, never merged] phone app; Wear keeps composeBom.
 # Backdrop 1.0.6 (2026-02-14) needs Compose foundation/ui 1.10.3 = BOM 2026.02.00.
