@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.GlassMotion
 import com.example.ui.theme.TrainPilotPalette
-import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.rememberGlassMotionEnabled
 import com.example.ui.theme.trainPilotGlassRim
 import kotlinx.coroutines.launch
@@ -94,9 +94,7 @@ internal fun BoxScope.GlassSelectionPill(
                 scaleY = if (motion) GlassMotion.squash(right.value - left.value, restWidth) else 1f
             }
             .clip(shape)
-            .glassHeaderMaterial(palette, shape, GlassMaterialRole.Selection)
-            // 2809/2: rim light instead of a selection hairline; the label keeps the selected foreground.
-            .trainPilotGlassRim(palette, shape)
+            .glassHeaderControl(palette, shape, GlassMaterialRole.Selection)
             .testTag("glass_selection_pill")
     )
 }
