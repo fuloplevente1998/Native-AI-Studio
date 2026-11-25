@@ -23,3 +23,5 @@
   mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
 - **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
   → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
+
+- **Kyant integráció (felhasználói döntés 2026-11-25):** `feat/kyant-glass` az aktuális main `43036875`-ből. A jóváhagyott K0–K5 terv: `docs/KYANT_GLASS_PLAN.md`. #378 motor, #379 felületi bekötések, #380 G6 vizuális minőség/optimalizálás, #386 Kyant-port csak referenciák; nincs vak merge. K0: Kotlin 2.3.10, telefon Compose BOM 2026.02.00, Kyant 1.0.6, NOTICE és D8 route-preview javítás, gyártási package/verzió érintetlen. Teljes JVM, app/Wear R8 és debug DEX kapu után K1. Main változatlan, nincs végleges APK vagy készülékes elfogadás.
