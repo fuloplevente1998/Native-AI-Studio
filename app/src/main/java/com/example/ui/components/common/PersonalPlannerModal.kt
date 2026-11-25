@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.Flag
@@ -699,7 +700,7 @@ fun PersonalPlannerModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotFrame(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),

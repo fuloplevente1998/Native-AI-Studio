@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.customThemeText
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -147,7 +147,7 @@ fun SettingsMainScreen(
             state = settingsListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.pageBrush).trainPilotGlassScene(palette)
+                .trainPilotPageBackdrop(palette)
                 .testTag("settings_main_screen"),
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
                 top = 6.dp + LocalGlassTopInset.current, bottom = 6.dp),

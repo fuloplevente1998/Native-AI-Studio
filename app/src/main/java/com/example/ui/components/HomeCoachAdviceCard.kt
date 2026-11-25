@@ -1,4 +1,6 @@
 package com.example.ui.components
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.background
@@ -83,8 +85,8 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
     // every layout recomputes it.
     var summaryOverflow by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(18.dp)
-    Surface(shape = shape, color = p.surface,
-        modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
+    Surface(shape = shape, color = p.glassTile(p.surface),
+        modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape).trainPilotGlassRim(p, shape)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = 0.7f), p.cardBorder)), shape)
             .trainPilotClickable(shape, onClick = onOpen).testTag("home_coach_advice_card")) {
         Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
@@ -112,7 +114,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
                         color = p.primary)
                 }
             }
-            Surface(color = p.surfaceElevated, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Surface(color = p.glassTile(p.surfaceElevated, elevated = true), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.readinessTodayLabel, color = p.textSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                     Text(score?.let { "$it/100" } ?: "—", color = p.textPrimary,

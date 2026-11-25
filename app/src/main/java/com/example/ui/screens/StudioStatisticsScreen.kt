@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -154,8 +156,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
                         val trendKind = exerciseTrendKind(record)
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
-                        Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
-                            modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
+                            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
+                                .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp)) {
@@ -327,8 +330,9 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
         val available = days.filter { it.stepsAvailable && it.dateIso >= from.toString() && it.dateIso < until.toString() }
         return if (available.isEmpty()) "—" else number.format(available.sumOf { it.steps })
     }
-    Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+    Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
             .testTag("statistics_daily_activity")) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -396,7 +400,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 }
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.surfaceElevated)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.glassTile(palette.surfaceElevated, elevated = true))
                 .padding(horizontal = 10.dp, vertical = 6.dp).testTag("statistics_steps_selected")) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)) {

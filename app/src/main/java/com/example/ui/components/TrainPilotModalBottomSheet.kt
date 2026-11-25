@@ -75,10 +75,12 @@ internal fun TrainPilotModalBottomSheet(
                     val outline = shape.createOutline(Size(size.width, size.height + top), layoutDirection, this)
                     val path = Path().apply { addOutline(outline) }
                     val color = outlineColor.copy(alpha = outlineColor.alpha * 0.22f)
+                    // 2809/2: Liquid Glass sheets: the glass rim, not a neutral hairline, outlines the panel.
+                    val framed = !com.repforge.app.ui.theme.liquidGlassDropsFrame(palette, outlineColor)
                     val stroke = Stroke(width = TrainPilotFrames.pageWidth.toPx() * 2f)
                     onDrawWithContent {
                         drawContent()
-                        translate(top = -top) {
+                        if (framed) translate(top = -top) {
                             clipPath(path) { drawPath(path, color, style = stroke) }
                         }
                     }

@@ -23,7 +23,13 @@ import com.example.ui.theme.*
 internal data class GlassThemeAccess(
     val clarity: Int,
     val preview: (Int) -> Unit,
-    val commit: (Int) -> Unit
+    val commit: (Int) -> Unit,
+    /** 2809/1 B: relative private path of the background image ("" = living backdrop). */
+    val backdropImage: String = "",
+    val backdropBusy: Boolean = false,
+    val backdropFailed: Boolean = false,
+    val pickBackdrop: (android.net.Uri) -> Unit = {},
+    val clearBackdrop: () -> Unit = {}
 )
 internal val LocalGlassThemeAccess = staticCompositionLocalOf<GlassThemeAccess?> { null }
 
@@ -60,6 +66,47 @@ internal fun LiquidGlassControl(language: AppLanguage, selectedId: Int) {
             Text("Clear Liquid", color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
         }
         LiquidGlassMaterialPreview(candidate, language)
+        if (access != null && androidx.activity.compose.LocalActivityResultRegistryOwner.current != null)
+            LiquidGlassBackdropPicker(access, language)
+    }
+}
+
+/**
+ * 2809/1 B: optional background image for the glass family. The system photo picker (falls back to
+ * the document picker on older devices) needs no storage permission; the copy lives in private storage.
+ */
+@Composable
+private fun LiquidGlassBackdropPicker(access: GlassThemeAccess, language: AppLanguage) {
+    val palette = LocalTrainPilotPalette.current
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) access.pickBackdrop(uri)
+    }
+    val hasImage = access.backdropImage.isNotEmpty()
+    Column(Modifier.fillMaxWidth().testTag("liquid_glass_backdrop"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(customThemeText(language, "Háttér", "Background", "Hintergrund", "Fundal"),
+            color = palette.textPrimary, style = MaterialTheme.typography.labelLarge)
+        Text(if (hasImage) customThemeText(language, "Saját háttérkép (a szöveg olvashatósága miatt sötétítve)",
+                "Own background image (dimmed to keep text readable)", "Eigenes Hintergrundbild (für Lesbarkeit abgedunkelt)",
+                "Imagine de fundal proprie (întunecată pentru lizibilitate)")
+            else customThemeText(language, "Élő színfoltok a téma színeiből", "Living colour blobs from the theme",
+                "Lebendige Farbflächen aus dem Thema", "Pete de culoare animate din temă"),
+            color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+        if (access.backdropFailed) Text(customThemeText(language, "A kép nem menthető. Próbáld újra.",
+            "The image could not be saved. Try again.", "Das Bild konnte nicht gespeichert werden.", "Imaginea nu a putut fi salvată."),
+            color = palette.danger, style = MaterialTheme.typography.labelSmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.repforge.app.ui.theme.TrainPilotOutlinedButton(enabled = !access.backdropBusy, modifier = Modifier.weight(1f)
+                .heightIn(min = 48.dp).testTag("liquid_glass_backdrop_pick"), onClick = {
+                picker.launch(androidx.activity.result.PickVisualMediaRequest(
+                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }) { Text(customThemeText(language, "Háttérkép választása", "Choose image", "Bild wählen", "Alege imaginea"), maxLines = 1) }
+            if (hasImage) com.repforge.app.ui.theme.TrainPilotOutlinedButton(enabled = !access.backdropBusy,
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("liquid_glass_backdrop_remove"),
+                onClick = access.clearBackdrop) {
+                Text(customThemeText(language, "Eltávolítás", "Remove", "Entfernen", "Elimină"), maxLines = 1)
+            }
+        }
     }
 }
 

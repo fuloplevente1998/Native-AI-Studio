@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -76,7 +77,7 @@ internal fun CustomThemeSection(language: AppLanguage) {
             key(theme.key) {
                 val active = theme.key == access.activeKey
                 val shape = RoundedCornerShape(12.dp)
-                Column(Modifier.fillMaxWidth().border(1.dp,
+                Column(Modifier.fillMaxWidth().trainPilotFrame(1.dp,
                     if (active) palette.selectionColors().border else palette.cardBorder, shape).padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(theme.draft.name, color = palette.textPrimary, fontWeight = FontWeight.Bold)

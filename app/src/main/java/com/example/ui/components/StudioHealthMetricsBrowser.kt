@@ -99,7 +99,7 @@ internal fun StudioHealthMetricsBrowser(
                 colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
                     labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
                     selectedLabelColor = palette.onPrimary),
-                border = TrainPilotFrames.stroke(1.dp, if (provider == selected) palette.primary else palette.cardBorder),
+                border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, if (provider == selected) palette.primary else palette.cardBorder)),
                 label = { Text(NativeWorkoutHealthSource.label(selected)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("journal_provider_$selected"))
         }
@@ -147,7 +147,7 @@ internal fun StudioHealthMetricsBrowser(
                 if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
             }
             Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
-                border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
+                border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {

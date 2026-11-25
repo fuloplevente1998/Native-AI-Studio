@@ -1,4 +1,5 @@
 package com.repforge.app.ui.journal
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import android.content.res.Resources
 import androidx.compose.foundation.background
@@ -35,7 +36,7 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
     Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
-        .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
+        .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Edzés pulzus és energia", "Workout heart rate and energy", "Trainingspuls und Energie", "Puls și energie antrenament"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)

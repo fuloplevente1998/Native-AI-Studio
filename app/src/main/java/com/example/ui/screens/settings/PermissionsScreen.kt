@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -64,7 +65,7 @@ fun PermissionsScreen(
     LazyColumn(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("permissions_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)

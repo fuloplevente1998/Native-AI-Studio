@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.key
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -81,7 +82,7 @@ fun LogWorkoutDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .trainPilotScreenBackdrop(palette)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
@@ -123,7 +124,7 @@ fun LogWorkoutDetailScreen(
     LazyColumn(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("log_workout_detail_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(if (uiState.logDetailTabIndex == 0) 4.dp else TrainPilotCardSpacing.CardGap)

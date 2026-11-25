@@ -96,7 +96,7 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
     }
     val toggle: @Composable () -> Unit = {
         Surface(shape = RoundedCornerShape(10.dp), color = if (item.completed) palette.success else palette.surfaceCard,
-            border = BorderStroke(1.dp, if (item.completed) palette.success else palette.cardBorder),
+            border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (item.completed) palette.success else palette.cardBorder)),
             modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
                 .toggleable(value = item.completed, role = Role.Checkbox, onValueChange = { onToggle() }).testTag("bilateral_set_${item.setNumber}_complete")) {
             Box(contentAlignment = Alignment.Center) {
@@ -114,7 +114,7 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
                 else word("Jobb oldal", "Right side", "Rechte Seite", "Partea dreaptă")
             val shape = RoundedCornerShape(10.dp)
             Surface(shape = shape, color = if (recorded) palette.success.copy(alpha = .16f) else palette.surfaceCard,
-                border = BorderStroke(1.dp, if (recorded) palette.success else palette.cardBorder),
+                border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (recorded) palette.success else palette.cardBorder)),
                 modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 56.dp).trainPilotClickable(shape, onClick = onEdit)
                     .semantics { contentDescription = "$full: $seconds $unit" }
                     .testTag("bilateral_set_${item.setNumber}_${if (left) "left" else "right"}_value")) {

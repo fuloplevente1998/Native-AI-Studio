@@ -28,7 +28,7 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
         Box {
             if (custom) {
                 Surface(shape = RoundedCornerShape(8.dp), color = colors.card,
-                    border = TrainPilotFrames.control(colors.line), modifier = Modifier.fillMaxWidth()) {
+                    border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(label, style = MaterialTheme.typography.labelSmall, color = colors.muted, maxLines = 1)
@@ -44,7 +44,7 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
                 }
             } else {
                 Surface(onClick = { expanded = true }, enabled = enabled, shape = RoundedCornerShape(8.dp),
-                    color = colors.card, border = TrainPilotFrames.control(colors.line),
+                    color = colors.card, border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag)) {
                     Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

@@ -39,6 +39,7 @@ import com.example.ui.components.GlassThemeAccess
 import com.example.ui.components.LocalGlassThemeAccess
 import com.example.ui.theme.withGlassClarity
 import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.GlassSceneHost
 import com.example.ui.theme.glassOpticsEnabledFor
 import com.example.ui.theme.isCustomThemeKey
 import androidx.compose.ui.Alignment
@@ -129,6 +130,21 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(settings.glassClarity, glassPreview) {
                 if (glassPreview == settings.glassClarity && glassWriteJob?.isActive != true) glassPreview = null
             }
+            // 2809/1 B: background image choice; success is shown only after the durable write.
+            var backdropBusy by remember { mutableStateOf(false) }
+            var backdropFailed by remember { mutableStateOf(false) }
+            fun backdropOperation(block: suspend (NativeDataReplacement.Continuation) -> Unit) {
+                val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(applicationContext) }.getOrNull()
+                if (ticket == null) { backdropFailed = true; return }
+                backdropBusy = true
+                backdropFailed = false
+                lifecycleScope.launch {
+                    try { block(ticket) }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { backdropFailed = true }
+                    finally { backdropBusy = false }
+                }
+            }
             val glassAccess = GlassThemeAccess(clarity,
                 preview = { glassPreview = it },
                 commit = { value ->
@@ -145,7 +161,10 @@ class MainActivity : ComponentActivity() {
                             catch (_: Exception) { if (glassPreview == value) glassPreview = null }
                         }
                     } else glassPreview = null
-                })
+                },
+                backdropImage = settings.glassBackdropImage, backdropBusy = backdropBusy, backdropFailed = backdropFailed,
+                pickBackdrop = { uri -> backdropOperation { GlassBackdropImages.choose(applicationContext, uri, settingsStore, it) } },
+                clearBackdrop = { backdropOperation { GlassBackdropImages.clear(applicationContext, settingsStore, it) } })
             val currentPalette = if (isCustomThemeKey(settings.themeKey)) {
                 remember(settings.themeKey, settings.customThemesJson) { settings.resolvedThemePalette() }
             } else remember(uiState.selectedPaletteId, clarity) {
@@ -190,7 +209,9 @@ class MainActivity : ComponentActivity() {
                     com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
                         CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
                             LocalGlassOpticsEnabled provides glassOpticsEnabledFor(uiState)) {
-                            TrainPilotAppRoot(viewModel = viewModel)
+                            GlassSceneHost(settings.glassBackdropImage, { GlassBackdropImages.load(applicationContext, it) }) {
+                                TrainPilotAppRoot(viewModel = viewModel)
+                            }
                         }
                     }
                 } else if (migrationFailure) {
