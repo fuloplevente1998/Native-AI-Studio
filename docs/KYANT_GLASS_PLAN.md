@@ -42,6 +42,9 @@ Nincs új bitmap-readback, titok, felesleges réteg; a Kyant támogatását és 
   világos fotó, nagy betű, csökkentett mozgás, Galaxy A57.
 - K5 (felhasználói módosítás 2026-11-25): eredeti `com.TrainPilot.com` csomagnév, tartós TrainPilot release signer, nem külön tesztcsomag vagy debug kulcs. Teljes CI és R8 zöld után ellenőrzött, jóváhagyott aláírási út; azonos forrás SHA, aapt/signature/SHA256/forrás ellenőrzés, Drive átadás. A jelenlegi persistent-signing csak mainre engedélyezett; ezt a védelmet nem lazítjuk, main merge és kiadás továbbra is külön jóváhagyás. Az aláírt készülékes próba útját a végén egyeztetni kell, ha main még nem merge-elhető. Play-feltöltés nincs automatikusan.
 
+## Licencátadás
+A Kyant Backdrop és a ténylegesen feloldott Shapes verzió szerzői jogi/Apache-2.0 hivatkozása az APK-ban megmarad. A felhasználó kérése szerint a végleges kiadás előtt a TrainPilot.io adatvédelmi tájékoztatója is kap harmadik féltől származó könyvtár/licenc szakaszt; a weboldalt ebben a munkaszakaszban nem módosítjuk.
+
 ## Rögzített referencia
 - #378 `b16bcd902d81d1393fd2268060be52937b080f23` – működő Kyant teszt; nem merge.
 - #379 `3ac9aba17283707be020e0747b1807570ce8a5bf` – széles felületi áttetszőség.
