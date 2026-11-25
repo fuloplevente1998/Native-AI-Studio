@@ -15,6 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.glassReadable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +28,9 @@ import com.example.ui.theme.PaletteCategory
 import com.example.ui.theme.TrainPilotPalettes
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
+
+internal fun paletteCategoryTitleColor(palette: TrainPilotPalette): Color =
+    if (palette.isLiquidGlass) glassReadable(palette.textPrimary) else Color.Unspecified
 
 private val families = listOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT, PaletteCategory.LIQUID_GLASS)
 
@@ -74,7 +80,8 @@ internal fun StudioPaletteCategories(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (family == PaletteCategory.LIQUID_GLASS) "Liquid Glass" else titles[index], Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text(if (family == PaletteCategory.LIQUID_GLASS) "Liquid Glass" else titles[index],
+                            Modifier.weight(1f), fontWeight = FontWeight.Bold, color = paletteCategoryTitleColor(palette))
                         Text(count, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
                         Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                     }

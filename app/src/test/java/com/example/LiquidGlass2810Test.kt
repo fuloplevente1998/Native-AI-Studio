@@ -27,6 +27,20 @@ class LiquidGlass2810Test {
     private fun srgb(l: Float) = if (l <= .0031308f) l * 12.92f else 1.055f * l.pow(1f / 2.4f) - .055f
     private fun luma(r: Float, g: Float, b: Float) = .2126f * lin(r) + .7152f * lin(g) + .0722f * lin(b)
 
+    @Test fun themeCategoryTitleIsReadableOnAllEightGlassPalettes() {
+        assertEquals((33..40).toList(), glass.map { it.id })
+        for (seed in glass) for (step in listOf(0, 65, 100)) {
+            val p = seed.withGlassClarity(step)
+            val color = com.example.ui.components.paletteCategoryTitleColor(p)
+            for (elevated in listOf(false, true)) {
+                val tile = p.glassTile(p.surfaceElevated, elevated).compositeOver(GlassOptics.lensWorstCase)
+                assertTrue("${p.key} $step $elevated", NativeThemeTokens.contrast(color, tile) >= 4.5f)
+            }
+        }
+        for (p in legacy.filterNot { it.isLiquidGlass })
+            assertEquals(Color.Unspecified, com.example.ui.components.paletteCategoryTitleColor(p))
+    }
+
     @Test fun tintAlphaFollowsClarityMonotonicallyWithinTheApprovedRange() {
         var last = Float.MAX_VALUE
         for (step in 0..100) {
