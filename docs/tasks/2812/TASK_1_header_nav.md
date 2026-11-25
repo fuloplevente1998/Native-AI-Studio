@@ -9,6 +9,7 @@ Coach és Napló fülön a fejléc tömör sötétkék, a lista teteje a fejléc
 `app/src/main/java/com/example/ui/theme/GlassAwareScaffold.kt`: `GlassUnderlapTabs` = HOME, PROGRAMS, WORKOUT, PROGRESS, HEALTH. A `MainTab.COACH` és `MainTab.LOG` hiányzik → `glassUnderlapRoute` hamis → nincs áttetsző fejléc/rögzített tartalom, és a body `innerPadding`-et kap.
 
 ## Teendő
+0. Előbb tisztázd: a Coach fül `MainTab.COACH` (MainActivity.kt:1182) és/vagy `SubScreen.COACH_DETAIL` (MainActivity.kt:928, `CoachDetailScreen.kt:105`) – a felhasználó képernyője melyik? Mindkettő kapja meg ugyanazt a fejléc-viselkedést. A `glassUnderlapRoute` jelenleg csak SETTINGS_MAIN alroutot ismer, ezért a COACH_DETAIL-t is vedd fel (és a hozzá tartozó spacert).
 1. Vedd fel `MainTab.COACH`-ot és `MainTab.LOG`-ot a `GlassUnderlapTabs`-ba (a `CALENDAR`-t NE, csak ha a képernyője is rendelkezik spacerrel – nézd meg és indokold).
 2. A két képernyő görgethető tartalma ELEJÉN kapja meg a `LocalGlassTopInset.current` magasságú távtartót (mintául: `ProgressTabScreen.kt:106`, `HealthTabScreen.kt:724`). Fájlok: `app/src/main/java/com/example/ui/screens/log/LogTabScreen.kt`, a Coach fül képernyője (keresd: `rg -n "MainTab.COACH" app/src/main`; a „Mai javaslat gyakorlatonként" a `StudioCoachDomainPanels.kt`-ban van). Ha nem a fő lista kapja, a Coach/Napló tartalma a fejléc alá kerülne és eltűnne – ezért a távtartó kötelező.
 3. Alul is: a tartalom a nav alá csúszhat, de a legalsó elem ne maradjon a nav mögött (alsó padding a nav magasságával).
