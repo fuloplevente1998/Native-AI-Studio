@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import com.repforge.app.ui.theme.trainPilotClickable
 
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalGlassOpticsEnabled
@@ -202,9 +203,11 @@ fun TrainPilotGlobalTopHeaderAndNav(
 
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isCalendarActive) selection.surface else palette.surfaceElevated,
+                        color = if (palette.isLiquidGlass) Color.Transparent else if (isCalendarActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(10.dp),
+                                if (isCalendarActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
                             .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -226,9 +229,11 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     // 3. Beállítások (Settings) Icon Button
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSettingsActive) selection.surface else palette.surfaceElevated,
+                        color = if (palette.isLiquidGlass) Color.Transparent else if (isSettingsActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(10.dp),
+                                if (isSettingsActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
                             .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -326,8 +331,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
             }
             }
             if (pillTrack != null) {
-                Box(Modifier.fillMaxWidth().background(palette.surface.copy(alpha = .22f), trackShape)
-                    .trainPilotGlassRim(palette, trackShape).padding(2.dp)) {
+                Box(Modifier.fillMaxWidth().glassHeaderMaterial(palette, trackShape, GlassMaterialRole.Navigation)
+                    .padding(2.dp)) {
                     GlassSelectionPill(pillTrack, tabSelected.indexOf(true), trackShape, palette, selection.border)
                     navRow()
                 }
@@ -366,7 +371,8 @@ internal fun TopNavPillItem(
     val ownGlass = !hosted && (selected || compact)
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
+        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape,
+            if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(
