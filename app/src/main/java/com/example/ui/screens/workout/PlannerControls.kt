@@ -8,7 +8,7 @@ import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.RowScope
-import com.repforge.app.ui.theme.TrainPilotButton
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -85,20 +85,8 @@ internal fun CalendarPrimaryGlassButton(
     shape: Shape,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val palette = LocalTrainPilotPalette.current
-    val glass = palette.isLiquidGlass && enabled
-    TrainPilotButton(
-        onClick = onClick,
-        modifier = if (glass) modifier.trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Button) else modifier,
-        enabled = enabled,
-        shape = shape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (glass) Color.Transparent else palette.primary,
-            contentColor = if (glass) palette.textPrimary else palette.onPrimary,
-        ),
-        elevation = if (glass) null else ButtonDefaults.buttonElevation(),
-        content = content,
-    )
+    TrainPilotGlassPrimaryButton(onClick = onClick, modifier = modifier, enabled = enabled,
+        shape = shape, content = content)
 }
 
 @Composable
