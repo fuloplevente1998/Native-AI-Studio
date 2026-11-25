@@ -115,15 +115,16 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 val elapsedContent: @Composable () -> Unit = {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = selection.surface,
+                        color = if (palette.isLiquidGlass) palette.glassTile(selection.surface, elevated = true) else selection.surface,
                         border = TrainPilotFrames.stroke(1.dp, selection.border),
-                        modifier = Modifier.testTag("active_workout_elapsed")
+                        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Performance)
+                            .testTag("active_workout_elapsed")
                     ) {
                         Text(
                             text = elapsedText,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = selection.foreground,
+                            color = if (palette.isLiquidGlass) palette.textPrimary else selection.foreground,
                             maxLines = 1,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
@@ -135,12 +136,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                     TrainPilotOutlinedButton(onClick = onToggle, enabled = enabled,
                         shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                         border = TrainPilotFrames.stroke(1.dp, if (enabled) selection.border else palette.cardBorder),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = selection.surface,
-                            contentColor = selection.foreground, disabledContainerColor = palette.surfaceElevated,
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.glassTile(selection.surface, elevated = true),
+                            contentColor = if (palette.isLiquidGlass) palette.textPrimary else selection.foreground,
+                            disabledContainerColor = palette.glassTile(palette.surfaceElevated, elevated = true),
                             disabledContentColor = palette.textSecondary.copy(alpha = 0.6f)),
                         modifier = Modifier.heightIn(min = 48.dp).testTag("workout_handover_action")) {
                         Icon(Icons.Default.Watch, contentDescription = null,
-                            tint = if (enabled) selection.foreground else palette.textSecondary.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
+                            tint = if (enabled) (if (palette.isLiquidGlass) palette.textPrimary else selection.foreground) else palette.textSecondary.copy(alpha = 0.6f), modifier = Modifier.size(18.dp))
                         Text(actionLabel, style = MaterialTheme.typography.labelMedium,
                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
