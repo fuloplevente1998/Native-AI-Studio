@@ -24,12 +24,18 @@ val mapsApiKey = sequenceOf(
     localMapsProperties.getProperty("MAPS_API_KEY")
 ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
+// Disposable phone-only test configuration; never merge this branch.
+val glass2TestBuild = providers.gradleProperty("trainpilotGlass2Test").orNull == "true"
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.TrainPilot.com"
+    manifestPlaceholders["trainpilotAppLabel"] = "@string/app_name"
+    manifestPlaceholders["trainpilotWearScheme"] = "trainpilot"
+    manifestPlaceholders["trainpilotWearPath"] = "/trainpilot/"
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
@@ -71,6 +77,13 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      if (glass2TestBuild) {
+        applicationIdSuffix = ".glass2test"
+        versionNameSuffix = "-glass2-test"
+        manifestPlaceholders["trainpilotAppLabel"] = "TrainPilot Glass 2 Test"
+        manifestPlaceholders["trainpilotWearScheme"] = "trainpilotglass2test"
+        manifestPlaceholders["trainpilotWearPath"] = "/trainpilotglass2test/"
+      }
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
