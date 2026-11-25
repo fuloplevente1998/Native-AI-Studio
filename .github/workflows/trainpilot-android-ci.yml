@@ -39,7 +39,7 @@ on:
         default: false
 
 concurrency:
-  group: native-audit-${{ github.head_ref == 'test/2810-kyant-glass' && 'refs/heads/test/2810-kyant-glass' || github.ref }}
+  group: native-audit-${{ github.head_ref == 'design/kyant-glass-next' && 'refs/heads/design/kyant-glass-next' || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -48,7 +48,7 @@ permissions:
 jobs:
   android-build:
     # [Kyant test build] the disposable Kyant test branch only builds its isolated APK.
-    if: github.head_ref != 'test/2810-kyant-glass'
+    if: github.head_ref != 'design/kyant-glass-next'
     name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -164,7 +164,7 @@ jobs:
           retention-days: 7
 
   release-r8:
-    if: github.head_ref != 'test/2810-kyant-glass'
+    if: github.head_ref != 'design/kyant-glass-next'
     # Same release R8/shrink check as before, on its own runner so it no longer
     # competes for CPU with debug compilation and Robolectric tests.
     name: Release R8 minification check
@@ -218,7 +218,7 @@ jobs:
   kyant-test-apk:
     # [Kyant test build only] Disposable, phone-only engine comparison APK (Kyant Backdrop 1.0.6).
     # Debug-signed with a throwaway key, own package; never a release gate, signing or Play run.
-    if: github.event_name == 'pull_request' && github.head_ref == 'test/2810-kyant-glass' && github.base_ref == 'test/2810-kyant-base'
+    if: github.event_name == 'pull_request' && github.head_ref == 'design/kyant-glass-next' && github.base_ref == 'test/2810-kyant-glass'
     name: Isolated phone Kyant glass test APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
