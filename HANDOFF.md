@@ -23,3 +23,5 @@
   mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
 - **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
   → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
+
+- **Liquid Glass 2.0 önálló jelölt** `design/liquid-glass-2` (base `43036875`): G0 célzott audit + G1 első anyagszerepek, fejléc/nav és kontraszt-teszt. #379 alternatíva, nem merge-elhető együtt. G1 CI még nincs igazolva; G2–G6 hátra, készülékes mérés kötelező. `docs/LIQUID_GLASS_2_AUDIT.md`.
