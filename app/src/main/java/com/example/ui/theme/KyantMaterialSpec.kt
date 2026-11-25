@@ -13,6 +13,7 @@ internal data class KyantMaterialSpec(
     val tintAlpha: Float,
     val saturation: Float,
     val colorScale: Float,
+    val sceneScale: Float,
     val highlightAlpha: Float,
     val shadow: Boolean,
 ) {
@@ -25,6 +26,27 @@ internal data class KyantMaterialSpec(
         fun forRole(role: GlassMaterialRole, clarity: Int): KyantMaterialSpec {
             val step = clarity.coerceIn(0, 100)
             return cache[role.ordinal][step] ?: compute(role, step / 100f).also { cache[role.ordinal][step] = it }
+        }
+
+        // Positive diagonal gain is the maximum after Android's saturation matrix;
+        // off-diagonal terms are non-positive. The guarded scene bounds each channel.
+        internal fun sceneWorst(coat: Float, saturation: Float, scale: Float): Float {
+            val weights = floatArrayOf(.2126f, .7152f, .0722f)
+            val channels = FloatArray(3) { i ->
+                val maxChannel = GlassScene.srgb((GlassScene.lumaCap / weights[i]).coerceAtMost(1f))
+                (maxChannel * GlassContrast.saturationGain(saturation, i) * scale).coerceIn(0f, 1f)
+            }
+            return GlassContrast.composite(coat, channels[0], channels[1], channels[2])
+        }
+
+        private fun sceneScale(coat: Float, saturation: Float): Float {
+            var low = 0f
+            var high = 1f
+            repeat(16) {
+                val mid = (low + high) / 2f
+                if (sceneWorst(coat, saturation, mid) <= GlassContrast.target) low = mid else high = mid
+            }
+            return low
         }
 
         private fun compute(role: GlassMaterialRole, t: Float): KyantMaterialSpec {
@@ -45,8 +67,9 @@ internal data class KyantMaterialSpec(
             // A backdrop may contain bright text or a bright photo. Keep the existing main
             // contrast ceiling even for unknown source colours, without a second shader.
             val scale = if (blur == 0f) 1f else GlassContrast.blurOnlyScale(coat, saturation)
+            val sceneScale = if (blur == 0f) 1f else sceneScale(coat, saturation)
             return KyantMaterialSpec(baseBlur * blur, baseHeight * lens, baseAmount * lens,
-                coat, saturation, scale,
+                coat, saturation, scale, sceneScale,
                 if (role == GlassMaterialRole.Selection) .45f + .45f * t else .35f + .35f * t,
                 role == GlassMaterialRole.Panel)
         }
