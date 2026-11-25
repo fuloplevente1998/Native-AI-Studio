@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
@@ -70,7 +71,8 @@ internal fun WearPinnedPulse(workout: WearWorkout, health: JSONObject?) {
         "♥ " + (pulse.bpm?.let { "$it bpm" } ?: "–"),
         color = if (pulse.live) LocalWearHomeTheme.current.secondaryColor else Muted,
         fontSize = (11.5f * scale).sp, lineHeight = (13f * scale).sp, fontWeight = FontWeight.SemiBold,
-        maxLines = 1, modifier = Modifier.testTag("wear-live-pulse"),
+        // Visible: a descender or the larger heart glyph must never be clipped by the fixed 14 dp row.
+        maxLines = 1, overflow = TextOverflow.Visible, modifier = Modifier.testTag("wear-live-pulse"),
     )
 }
 
