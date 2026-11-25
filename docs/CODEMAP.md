@@ -21,6 +21,7 @@ nagy fájlok sorai frissülnek.
 | Gyakorlatvideó gomb, görgetés-segédek | `ex/ui/components/common/ExerciseVideoButton.kt`, `ex/ui/components/common/ScrollHelpers.kt` |
 | Alulról nyíló lapok, útvonalak | `ex/ui/components/TrainPilotSheetRoutes.kt`, `TrainPilotScreenSheet.kt`, `TrainPilotModalBottomSheet.kt` |
 | Liquid Glass 2.0 G3 közös vezérlők | `rf/ui/theme/TrainPilotButton.kt` (`TrainPilotGlassPrimaryButton`, `glassPrimaryActionColors`), `TrainPilotOutlinedButton.kt`, `ex/ui/components/TrainPilotControls.kt`, `TrainPilotModalBottomSheet.kt`, `GlassControlsG3Test.kt` |
+| Liquid Glass 2.0 G4 képernyőintegráció | `ex/ui/components/visual/MuscleHeatmapCard.kt`, `ex/ui/screens/health/{HealthTiles,HealthWeightAndGoals,HealthTabScreen,CoachDetailScreen}.kt`, `ex/ui/screens/settings/GoogleCloudSyncCard.kt`, `ex/ui/screens/log/LogTabScreen.kt`, `ex/ui/screens/workout/ProgramCard.kt`, `ex/ui/components/{StudioRestTimerDock,StudioWorkoutHandoverBar,ActiveWorkoutLiveBar}.kt`, `ex/ui/screens/measure/Active{Strength,Timed,Bilateral}WorkoutScreen.kt`, `ex/ui/screens/OutdoorGpsDashboard.kt`; `LiquidGlassG4Test.kt` |
 | Gombok, chipek, nyomásvisszajelzés, keretek | `ex/ui/components/TrainPilotControls.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt`, `TrainPilotFrames.kt`, `TrainPilotButton.kt` |
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
 | Közös kijelölés és telt gomb feliratkontraszt (#349) | `ex/ui/theme/ThemeSelectionColors.kt`, teszt `app/src/test/java/com/example/ThemeSelection349Test.kt` |
