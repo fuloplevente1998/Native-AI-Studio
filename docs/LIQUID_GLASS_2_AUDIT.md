@@ -33,3 +33,6 @@ Galaxy A57: record identical theme/background, font size, brightness, refresh ra
 
 ## Scope / next gate
 G1 role-based optics within existing renderer, keep contrast and fallback; G2 calendar reference; G3 common controls; G4 complete surface audit/integration; G5 measured optimization and Wear color check; G6 full regressions and physical acceptance checklist. No main merge, version, dependency or protocol change.
+
+## G4 rollout evidence
+G1–G3 JVM and R8 verified, G3 run #45611727232 (1224 tests). G4: 15 source files above, including GPS controls while preserving map paint. Home, Programs, Workout, Progress, Stats and Settings already have shared card material at selected audited sites; this is not a blanket verification of all nested controls. Remaining: secondary settings/screens and dialogs, stats subpanels, detailed log/exercise, real device contrast/geometry and fallback review. `LiquidGlassG4Test` protects legacy paint scope and measurement route gating. G4 candidate CI pending.
