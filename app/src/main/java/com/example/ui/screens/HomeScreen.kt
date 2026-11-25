@@ -1,5 +1,9 @@
 package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -236,14 +240,10 @@ fun HomeScreen(
                                         .fillMaxWidth()
                                         .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
                                         .testTag("home_hero_workout_header")
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(
-                                                    palette.surfaceElevated.copy(alpha = 0.65f),
-                                                    palette.surface
-                                                )
-                                            )
-                                        )
+                                        .then(if (palette.isLiquidGlass) Modifier.background(palette.glassTile(palette.surface))
+                                            else Modifier.background(Brush.verticalGradient(
+                                                colors = listOf(palette.surfaceElevated.copy(alpha = 0.65f), palette.surface)
+                                            )))
                                         .padding(horizontal = 10.dp, vertical = 7.dp),
                                     verticalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
@@ -312,8 +312,9 @@ fun HomeScreen(
 
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
-                                                color = palette.selectionColors().surface,
-                                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                                color = palette.glassControlFill(palette.selectionColors().surface, GlassMaterialRole.Selection),
+                                                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(8.dp), GlassMaterialRole.Selection)
+                                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                             ) {
                                                 Text(
                                                     text = if (state.isWorkoutSessionActive) {
@@ -376,17 +377,17 @@ fun HomeScreen(
                                     if (state.isWorkoutSessionActive && state.activeWorkoutId.isNotBlank()) {
                                         com.example.ui.components.StudioPausedWorkoutActions(state.activeWorkoutId, state.phoneControlsWorkout,
                                             state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
-                                    } else Button(
+                                    } else TrainPilotGlassPrimaryButton(
                                         onClick = onStartOrContinueWorkout,
                                         shape = RoundedCornerShape(12.dp),
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = palette.primary,
-                                            contentColor = palette.readablePrimaryLabel()
+                                            contentColor = if (palette.isLiquidGlass) palette.onPrimary else palette.readablePrimaryLabel()
                                         ),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .heightIn(min = 42.dp)
+                                            .heightIn(min = if (palette.isLiquidGlass) 48.dp else 42.dp)
                                             .testTag("home_continue_workout_button")
                                     ) {
                                         Icon(
