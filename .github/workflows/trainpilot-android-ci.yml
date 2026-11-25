@@ -47,8 +47,6 @@ permissions:
 
 jobs:
   android-build:
-    # [Kyant test build] the disposable Kyant test branch only builds its isolated APK.
-    if: github.head_ref != 'design/kyant-glass-next'
     name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -57,6 +55,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -164,7 +165,6 @@ jobs:
           retention-days: 7
 
   release-r8:
-    if: github.head_ref != 'design/kyant-glass-next'
     # Same release R8/shrink check as before, on its own runner so it no longer
     # competes for CPU with debug compilation and Robolectric tests.
     name: Release R8 minification check
@@ -175,6 +175,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -204,7 +207,7 @@ jobs:
       - name: Run release R8 minification
         shell: bash
         if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
-        run: gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8
+        run: gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8 :wear:minifyReleaseWithR8
 
       - name: Upload R8 Gradle task timing profile
         if: always()
@@ -217,7 +220,8 @@ jobs:
 
   kyant-test-apk:
     # [Kyant test build only] Disposable, phone-only engine comparison APK (Kyant Backdrop 1.0.6).
-    # Debug-signed with a throwaway key, own package; never a release gate, signing or Play run.
+    # Debug-signed with a throwaway key, own package, only after the complete gates pass.
+    needs: [android-build, release-r8]
     if: github.event_name == 'pull_request' && github.head_ref == 'design/kyant-glass-next' && github.base_ref == 'test/2810-kyant-glass'
     name: Isolated phone Kyant glass test APK
     runs-on: ubuntu-latest
@@ -226,6 +230,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -283,45 +288,6 @@ jobs:
           name: TrainPilot-Kyant-Test
           path: kyant-test-output/
           if-no-files-found: error
-          retention-days: 7
-      - uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
-      - name: Fetch Robolectric SDK
-        continue-on-error: true
-        run: python3 scripts/prefetch_robolectric_sdk.py
-      - name: Glass / theme JVM regressions on the Compose 1.10 bump (informative)
-        continue-on-error: true
-        run: |
-          gradle --no-daemon --stacktrace --continue -PtrainpilotKyantTest=true :app:testDebugUnitTest \
-            --tests 'com.example.LiquidGlass*' \
-            --tests 'com.example.GlassBackdropStore2809Test' \
-            --tests 'com.example.CustomTheme*350Test' \
-            --tests 'com.example.ThemeSelection349Test' \
-            --tests 'com.example.PhoneWearThemeRegressionTest' \
-            --tests 'com.example.StudioAppearanceRegressionTest' \
-            --tests 'com.example.SourceSizeGuardTest'
-      - name: Summarise raw JUnit XML
-        if: always()
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          import glob, xml.etree.ElementTree as ET
-          t = f = e = s = 0
-          for path in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
-              r = ET.parse(path).getroot()
-              t += int(r.get('tests', 0)); f += int(r.get('failures', 0)); e += int(r.get('errors', 0)); s += int(r.get('skipped', 0))
-              if int(r.get('failures', 0)) or int(r.get('errors', 0)): print('FAILED:', r.get('name'))
-          print(f'tests={t} failures={f} errors={e} skipped={s}')
-          PY
-      - name: Upload targeted test XML
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kyant-test-junit
-          path: app/build/test-results/
-          if-no-files-found: ignore
           retention-days: 7
       - name: Remove disposable signing key
         if: always()
