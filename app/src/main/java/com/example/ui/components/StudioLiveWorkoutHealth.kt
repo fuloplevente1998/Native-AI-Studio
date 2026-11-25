@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -41,7 +45,9 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         com.example.model.AppLanguage.DE -> de
         com.example.model.AppLanguage.RO -> ro
     }
-    IconButton(onClick = open, modifier = Modifier.size(48.dp).testTag("workout_read_health")) {
+    IconButton(onClick = open, modifier = Modifier.size(48.dp)
+        .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Button, live = false)
+        .testTag("workout_read_health")) {
         Icon(Icons.Default.FavoriteBorder, contentDescription = word(
             "Edzés egészségadatainak lekérése",
             "Read workout health data",

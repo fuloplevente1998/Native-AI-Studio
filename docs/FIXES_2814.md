@@ -32,3 +32,9 @@ Felhasználói észrevétel: a gyakorlat utáni „Gyakorlat visszajelzés” fe
 - L2–L5: közös elsődleges és alap outlined gomb, chip, beviteli keret, szemantikus műveletek pereme; fejléc/fülkijelölés, sorozatmezők, completed jelölés, gyakorlatválasztó, időzített/kétoldali blokkok, start/pause/next, pihenő, health/Home, program, napló, fejlődés/statisztika, Coach, naptár, beállítások célzott bekötések. Közös komponenssel a többi hívó is kapja a peremjavítást. A térkép és az órás renderelő változatlan. A veszélyes akciók nem vesztik el szemantikus színüket.
 - L6: a korábban jóváhagyott popup megmarad, választás kap belső peremet. Külön ablakon nincs szülőablak mintavétel.
 - L7–L8: JVM policy/kontraszt teszt és közös CI, készülékes A/B 8 paletta, 0/65/100, nagy betű, energiatakarékosság, 60/120 Hz görgetés és tartós mérés. Nem állítunk mért FPS-javulást. A további egyedi felületek (pl. részletes grafikonvezérlők, egyedi theme editor, kapcsoló hüvelykujja, GPS) optikai vizsgálata készüléken szükséges; nem mindegyik kapott valódi lencsét. Nincs merge, signing vagy verzióemelés.
+
+## 4. Egészségadat funkcionális hibapont
+Lásd `docs/WORKOUT_HEALTH_2814.md` – készülékes aktív kcal hiány, élő óra és szolgáltatók, mentett intervallum, késői sync. Első adapterjavítás: Samsung workout aktív/total energia lekérése. A teljes automatikus pipeline még nem kész.
+
+## 5. Liquid Drop folytatás
+#791: 1290/0/0/0 és Release R8 zöld. GPS műszerfal 5 nem-térképes panelje statikus drop, egészség-lekérő gomb pereme, kapcsoló thumb finom fény. Térkép, gesztus, mérési adatlogika változatlan. Új CI szükséges.

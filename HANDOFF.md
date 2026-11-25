@@ -7,3 +7,5 @@
 - API 31–32 blur, 33+ lens; energiatakarékos és külön ablak belső vezérlők olcsó paint; GPS map, Wear és motor változatlan; nem minden csempe önálló lencse.
 - Korábbi regressziók megtartva, új `LiquidDrop2814Test.kt`. Közös CI az új head-en ellenőrizendő; fizikai 8 paletta/slider/IME/jank és GPU-mérés még hátravan. Egyedi grafikonvezérlők, témaeditor, kapcsoló thumb és GPS további készülékes auditja szükséges.
 - Nincs merge, verzióemelés, aláírt build.
+
+- #791: 1290/0/0/0, telefon 1011, Wear 276, shared 3; R8 zöld, feltételes DEX skipped. Új head: GPS panelek, egészség ikongomb, switch thumb; Samsung edzésintervallum active/total és permission javítás. `docs/WORKOUT_HEALTH_2814.md` H1–H4 külön nyitott feladat: automatikus élő és lezárás utáni csatolás, késői reconcile, napi napló audit. CI újra ellenőrizendő.

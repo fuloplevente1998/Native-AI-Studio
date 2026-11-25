@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.layout.size
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -240,8 +242,8 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
     }
 }
 
-/** Material switch semantics, gestures, sizing and legacy colors are unchanged. Glass tracks are
- * bounded, inexpensive state paint; no independent blur, layer capture or animation. */
+/** Keep native switch semantics and layout; a small shaped thumb highlight is drawn inside
+ * the Material thumb, not over the hit area or the track. No independent backdrop. */
 @Composable
 internal fun TrainPilotSwitch(
     checked: Boolean,
@@ -260,5 +262,14 @@ internal fun TrainPilotSwitch(
         uncheckedBorderColor = p.cardBorder
     ) else colors
     androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange,
-        modifier = modifier, enabled = enabled, colors = glassColors)
+        modifier = modifier, enabled = enabled, colors = glassColors,
+        thumbContent = if (p.isLiquidGlass && enabled) ({
+            // A small inset shine; the native thumb retains the checked/unchecked color.
+            androidx.compose.foundation.Canvas(Modifier.size(10.dp)) {
+                drawCircle(Color.White.copy(alpha = .42f), radius = size.minDimension * .24f,
+                    center = androidx.compose.ui.geometry.Offset(size.width * .35f, size.height * .30f))
+                drawCircle(Color.Black.copy(alpha = .20f), radius = size.minDimension * .20f,
+                    center = androidx.compose.ui.geometry.Offset(size.width * .69f, size.height * .72f))
+            }
+        }) else null)
 }

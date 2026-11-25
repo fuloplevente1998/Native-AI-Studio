@@ -429,6 +429,22 @@ final class SamsungSdkReader {
         }
         JSONObject workout(Instant start, Instant end) throws Exception {
             JSONObject out = base(start, end);
+            // ActivitySummary uses the requested local-time interval, not the daily total.
+            // Keep these two definitions separate from ExerciseSession.getCalories().
+            // A local-time filter cannot disambiguate a repeated/skipped hour at an offset change.
+            // In that case leave the window aggregate unavailable rather than count extra time.
+            ZoneId zone = ZoneId.systemDefault();
+            boolean exactLocalWindow = zone.getRules().getOffset(start).equals(zone.getRules().getOffset(end))
+                && zone.getRules().getValidOffsets(LocalDateTime.ofInstant(start, zone)).size() == 1
+                && zone.getRules().getValidOffsets(LocalDateTime.ofInstant(end, zone)).size() == 1;
+            if (exactLocalWindow) {
+                safe(DataTypes.ACTIVITY_SUMMARY, () -> number(out, "activeCalories", aggregate(DataType.ActivitySummaryType.TOTAL_ACTIVE_CALORIES_BURNED, start, end)), "activeCalories");
+                safe(DataTypes.ACTIVITY_SUMMARY, () -> number(out, "totalCalories", aggregate(DataType.ActivitySummaryType.TOTAL_CALORIES_BURNED, start, end)), "totalCalories");
+            } else if (allowed(DataTypes.ACTIVITY_SUMMARY)) {
+                out.put("activeCalories", JSONObject.NULL); out.put("totalCalories", JSONObject.NULL);
+                failed.put("activeCalories"); failed.put("totalCalories");
+                errors.put("activeCalories", "AMBIGUOUS_LOCAL_TIME_WINDOW"); errors.put("totalCalories", "AMBIGUOUS_LOCAL_TIME_WINDOW");
+            }
             safe(DataTypes.STEPS, () -> number(out, "steps", aggregate(DataType.StepsType.TOTAL, start, end)), "steps");
             heart(out, start, end);
             out.put("workoutEnergyVersion", 1); out.put("workoutEnergyProvider", HealthJournalStore.SAMSUNG);

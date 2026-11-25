@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 
 import com.example.ui.components.TrainPilotSwitch as Switch
@@ -296,10 +298,10 @@ private fun OutdoorManualDistanceCard(state: OutdoorGpsDisplay, actions: Outdoor
     }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.glassTile(palette.surfaceCard, elevated = true),
+        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance)
+            .liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance, live = false)
             .trainPilotBorder(
                 1.dp,
                 if (state.hasManualDistance) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
@@ -434,8 +436,8 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
         }
         else -> state.title
     }
-    Surface(shape = RoundedCornerShape(16.dp), color = palette.glassTile(palette.surfaceCard, elevated = true),
-        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance)
+    Surface(shape = RoundedCornerShape(16.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+        modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance, live = false)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fullscreen) {
@@ -491,8 +493,8 @@ private fun ActivityPicker(state: OutdoorGpsDisplay, actions: OutdoorGpsActions,
 private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, showTimer: Boolean) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(18.dp), color = palette.glassTile(palette.surfaceCard, elevated = true),
-        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Performance)) {
+    Surface(shape = RoundedCornerShape(18.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+        modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Performance, live = false)) {
         Column(Modifier.fillMaxWidth().padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (showTimer) Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -519,8 +521,8 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
 @Composable
 private fun MetricTile(metric: Triple<String, String, String>, highlighted: Boolean, modifier: Modifier) {
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(12.dp), color = palette.glassTile(palette.background),
-        modifier = modifier.trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Performance)
+    Surface(shape = RoundedCornerShape(12.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.background,
+        modifier = modifier.liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Performance, live = false)
             .trainPilotBorder(1.dp, if (highlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
             RoundedCornerShape(12.dp))) {
         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -538,8 +540,8 @@ private fun MetricTile(metric: Triple<String, String, String>, highlighted: Bool
 private fun DashboardControls(state: OutdoorGpsDisplay, strings: LocalizedStrings, actions: OutdoorGpsActions) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(16.dp), color = palette.glassTile(palette.surfaceCard, elevated = true),
-        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance)) {
+    Surface(shape = RoundedCornerShape(16.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+        modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance, live = false)) {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(6.dp)) {
             val stack = maxWidth < 300.dp || LocalDensity.current.fontScale > 1.35f
             if (!state.started) Button(actions.start, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
