@@ -81,7 +81,8 @@ internal object GlassScene {
     }
 
     /** The drift clock runs only for a living backdrop on a started (visible) screen. */
-    fun ticks(mode: GlassBackdropMode, visible: Boolean): Boolean = mode == GlassBackdropMode.LIVING && visible
+    fun ticks(mode: GlassBackdropMode, visible: Boolean, hasPhoto: Boolean = false): Boolean =
+        mode == GlassBackdropMode.LIVING && visible && !hasPhoto
 
     /** The user image is only decoded and drawn for the glass family. */
     fun usesImage(isLiquidGlass: Boolean, path: String): Boolean = isLiquidGlass && path.isNotEmpty()
@@ -190,7 +191,8 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
     val state = remember { GlassSceneState() }
     val mode = GlassScene.mode(palette.isLiquidGlass, LocalGlassOpticsEnabled.current, rememberGlassMotionEnabled())
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED))
+    // A static user photo does not need the procedural drift clock.
+    val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED), hasPhoto = state.image != null)
     val wantImage = GlassScene.usesImage(palette.isLiquidGlass, imagePath)
     LaunchedEffect(wantImage, imagePath) {
         state.image = if (!wantImage) null else withContext(Dispatchers.IO) { runCatching { loadImage(imagePath) }.getOrNull() }
