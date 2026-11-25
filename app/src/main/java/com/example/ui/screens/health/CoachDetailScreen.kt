@@ -1,4 +1,7 @@
 package com.example.ui.screens
+
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -114,9 +117,9 @@ internal fun CoachDetailScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.glassTile(palette.surfaceCard),
+                color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier
-                    .fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
+                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
