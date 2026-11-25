@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.glassTile
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -171,7 +174,7 @@ fun ActiveTimedWorkoutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("active_timed_screen")
     ) {
         uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
@@ -207,7 +210,7 @@ fun ActiveTimedWorkoutScreen(
                 val secWord = tr(lang, "mp", "s", "Sek.", "sec")
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
+                    color = palette.glassTile(palette.surfaceCard, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
@@ -408,7 +411,7 @@ fun ActiveTimedWorkoutScreen(
             val secWord = tr(lang, "mp", "s", "Sek.", "sec")
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
+                color = palette.glassTile(palette.surfaceCard, elevated = true),
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
@@ -452,7 +455,7 @@ fun ActiveTimedWorkoutScreen(
             val lang = uiState.language
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
+                color = palette.glassTile(palette.surfaceCard, elevated = true),
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
