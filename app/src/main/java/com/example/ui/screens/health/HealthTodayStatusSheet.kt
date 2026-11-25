@@ -1,10 +1,12 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.kyantStateTile
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.example.model.workoutsOn
 
-import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -90,7 +92,7 @@ internal fun StudioTodayStatusDetailSheet(
             "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else tr(uiState.language, "nincs lekért napi tartomány", "no daily range fetched", "kein Tagesbereich geladen", "fără interval zilnic preluat")
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = palette.background.copy(alpha = 0.75f),
+            color = palette.glassTile(palette.background.copy(alpha = 0.75f)),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
@@ -271,7 +273,7 @@ internal fun StudioTodayStatusDetailSheet(
                 if (activeKey == "pulse") {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = palette.background.copy(alpha = 0.55f),
+                        color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .trainPilotAnimatedExpansion()
@@ -295,7 +297,7 @@ internal fun StudioTodayStatusDetailSheet(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = Color(0xFFEF4444).copy(alpha = 0.16f),
+                                    color = palette.kyantStateTile(Color(0xFFEF4444), Color(0xFFEF4444).copy(alpha = 0.16f)),
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -339,7 +341,7 @@ internal fun StudioTodayStatusDetailSheet(
                             // Full-width dark sparkline box with red wave curve (Screenshot 9)
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.surfaceCard.copy(alpha = 0.7f),
+                                color = palette.glassTile(palette.surfaceCard.copy(alpha = 0.7f)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(54.dp)
@@ -412,8 +414,8 @@ internal fun StudioTodayStatusDetailSheet(
 
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
+                                    color = palette.glassTile(palette.surfaceCard),
+                                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                                         .fillMaxWidth()
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                                 ) {
@@ -493,7 +495,7 @@ internal fun StudioTodayStatusDetailSheet(
                 })
                 if (activeKey != "pulse") Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = palette.primary.copy(alpha = 0.16f),
+                    color = palette.kyantStateTile(palette.primary, palette.primary.copy(alpha = 0.16f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
