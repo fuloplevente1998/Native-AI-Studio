@@ -29,11 +29,18 @@ internal fun ExternalRoutePreview(detail: WorkoutHistoryWithDetails, language: S
         source.optBoolean("sourceDeleted") || source.optBoolean("windowChanged")) return
     val recordId = source.optString("id")
     if (recordId.isBlank()) return
-    key(row.id, row.rawJson) {
+    // [Kyant test build] Kotlin 2.3 + Compose 1.10: an early `return@key` inside the inline key
+    // lambda emitted a NON_LOCAL_RETURN marker that D8 rejects; the keyed body is its own function.
+    key(row.id, row.rawJson) { ExternalRoutePreviewKeyed(row, source, recordId, language) }
+}
+
+@Composable
+private fun ExternalRoutePreviewKeyed(row: com.repforge.app.data.db.WorkoutHistoryEntity, source: JSONObject,
+    recordId: String, language: String) {
         val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
         var ticket by remember { mutableStateOf<NativeDataReplacement.Continuation?>(null) }
-        val fingerprint = remember(row.rawJson) { ExternalRouteStore.fingerprint(row) } ?: return@key
+        val fingerprint = remember(row.rawJson) { ExternalRouteStore.fingerprint(row) } ?: return
         var route by remember { mutableStateOf<RouteCoordinatesUiModel?>(null) }
         var preview by remember { mutableStateOf<RouteCoordinatesUiModel?>(null) }
         var saved by remember { mutableStateOf(false) }
@@ -184,5 +191,4 @@ internal fun ExternalRoutePreview(detail: WorkoutHistoryWithDetails, language: S
                 "Nu există traseu partajat sau accesul nu este acordat."))
         }
         route?.let { WorkoutRouteMapDialog(it, { route = null }, language) }
-    }
 }
