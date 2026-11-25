@@ -15,10 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -161,6 +158,8 @@ internal object GlassScene {
 /** Shared drift time and the decoded user image. Read only while drawing: a tick redraws, never recomposes. */
 @Stable
 internal class GlassSceneState {
+    // UI-thread cache shared by the visible and recorded scene; no bitmap or view references.
+    val paintCache = GlassScenePaintCache()
     var seconds by mutableFloatStateOf(0f)
     private var currentImage by mutableStateOf<Bitmap?>(null)
     var image: Bitmap?
@@ -234,24 +233,19 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
  */
 internal fun DrawScope.drawGlassSceneCompose(palette: TrainPilotPalette, scene: GlassSceneState?, origin: Offset,
     sceneWidth: Float, sceneHeight: Float, cap: Float = GlassScene.lumaCap) {
+    val cache = scene?.paintCache ?: GlassScenePaintCache()
     val top = (-origin.y / sceneHeight).coerceIn(0f, 1f)
     val bottom = ((size.height - origin.y) / sceneHeight).coerceIn(0f, 1f)
-    drawRect(Brush.verticalGradient(listOf(GlassScene.base(palette, top, cap), GlassScene.base(palette, bottom, cap))))
+    drawRect(cache.baseBrush(palette, top, bottom, cap))
     val image = scene?.imageBitmap
     if (image != null) {
-        val (scale, at) = GlassScene.crop(image.width, image.height, sceneWidth, sceneHeight)
-        val dim = GlassScene.imageScaleFor(cap)
+        val (scale, at) = cache.imageCrop(image.width, image.height, sceneWidth, sceneHeight)
         drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(image.width, image.height),
             dstOffset = IntOffset((at.x - origin.x).roundToInt(), (at.y - origin.y).roundToInt()),
             dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
-            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(dim, dim, dim, 1f) }))
+            colorFilter = cache.photoFilter(cap))
         return
     }
-    val tones = GlassScene.guardedTones(palette, cap)
-    GlassScene.blobs(sceneWidth, sceneHeight, scene?.seconds ?: 0f).forEachIndexed { i, blob ->
-        val tone = tones[i]
-        drawRect(Brush.radialGradient(
-            0f to tone.copy(alpha = blob.strength), .5f to tone.copy(alpha = blob.strength * .46f), 1f to tone.copy(alpha = 0f),
-            center = Offset(blob.x - origin.x, blob.y - origin.y), radius = blob.radius.coerceAtLeast(1f)))
-    }
+    for (brush in cache.blobBrushes(palette, origin, sceneWidth, sceneHeight, scene?.seconds ?: 0f, cap))
+        drawRect(brush)
 }

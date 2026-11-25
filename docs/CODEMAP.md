@@ -130,3 +130,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | Kyant dialog window isolation | `ex/ui/theme/KyantWindowOverlay.kt` (Android-only backdrop types behind glass/API/optics gate; common alert dialog remains JVM-compatible candidate) |
 
 | K2 popup and sheet finish | `ex/ui/components/TrainPilotDropdownMenu.kt`, `ex/ui/theme/GlassSurfaces.kt` (`glassOverlayFill`), `KyantWindowOverlay.kt` (`KyantStaticSheetBackdrop`), `TrainPilotModalBottomSheet.kt`, status banner in `ex/MainActivity.kt` |
+
+| K3 scene paint cache | `ex/ui/theme/GlassScenePaintCache.kt` (bounded last-value slots), `GlassScene.kt` (host-owned cache), `KyantK3CacheTest.kt` (reuse/invalidation) |
