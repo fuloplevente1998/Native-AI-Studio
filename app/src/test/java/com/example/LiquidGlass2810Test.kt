@@ -95,6 +95,31 @@ class LiquidGlass2810Test {
         assertTrue(GlassScene.lumaCap > .084f) // brighter than the 2809 page (lens peak .32 -> luminance .084)
     }
 
+    @Test fun semanticRolesKeepContrastAndDifferentiateNavigationAndSelection() {
+        for (step in listOf(0, 25, 50, 65, 100)) {
+            val panel = GlassOptics.from(step)
+            assertSame(panel, GlassOptics.forRole(step, GlassMaterialRole.Panel))
+            val nav = GlassOptics.forRole(step, GlassMaterialRole.Navigation)
+            val selection = GlassOptics.forRole(step, GlassMaterialRole.Selection)
+            assertTrue(nav.coat < panel.coat)
+            assertTrue(nav.backdropCap >= panel.backdropCap)
+            assertTrue(selection.specular > nav.specular)
+            assertTrue(selection.bend > panel.bend)
+            assertTrue(GlassOptics.forRole(step, GlassMaterialRole.Tile).specular < panel.specular)
+            assertEquals(0f, GlassOptics.forRole(step, GlassMaterialRole.Performance).bend, 0f)
+            for (role in GlassMaterialRole.values()) {
+                val material = GlassOptics.forRole(step, role)
+                assertSame(material, GlassOptics.forRole(step, role))
+                assertEquals(panel.blurDp, material.blurDp, 0f)
+                // A distinct tint must retain the existing contrast bound in both rendering paths.
+                assertTrue("$role $step", GlassContrast.worstComposite(material.coat, material.backdropCap)
+                    <= GlassOptics.SURFACE_LUMA_MAX)
+                assertTrue("$role $step API31", GlassContrast.blurOnlyWorst(material.coat,
+                    material.saturation, material.blurOnlyScale) <= GlassOptics.SURFACE_LUMA_MAX)
+            }
+        }
+    }
+
     @Test fun backdropIsBrighterAndLarger() {
         assertTrue(GlassScene.BLOB_STRENGTH >= .9f)
         val blobs = GlassScene.blobs(1080f, 2340f, 0f)
