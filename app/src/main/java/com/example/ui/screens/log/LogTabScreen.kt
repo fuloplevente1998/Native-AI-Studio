@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.GlassMaterialRole
-import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -15,6 +14,7 @@ import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.example.model.localWorkoutDate
 
@@ -65,6 +65,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -542,11 +544,20 @@ internal fun CompactJournalSearchField(
 ) {
     val palette = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(14.dp)
+    var focused by remember { mutableStateOf(false) }
+    val edge = remember(palette.cardBorder, focused) {
+        Brush.verticalGradient(listOf(
+            palette.cardBorder.copy(alpha = if (focused) .95f else .65f),
+            palette.cardBorder.copy(alpha = if (focused) .65f else .30f)
+        ))
+    }
     Row(
         modifier = Modifier.fillMaxWidth().height(48.dp)
             .clip(shape)
             .background(palette.glassTile(palette.surfaceCard))
-            .trainPilotFrame(1.dp, palette.cardBorder, shape)
+            .then(if (palette.isLiquidGlass) Modifier.border(1.dp, edge, shape)
+                else if (focused) Modifier.trainPilotFrame(1.dp, palette.primary, shape)
+                else Modifier.trainPilotFrame(1.dp, palette.cardBorder, shape))
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -560,7 +571,8 @@ internal fun CompactJournalSearchField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.weight(1f).height(48.dp).testTag("log_search_input"),
+            modifier = Modifier.weight(1f).height(48.dp)
+                .onFocusChanged { focused = it.isFocused }.testTag("log_search_input"),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             cursorBrush = SolidColor(palette.primary),
