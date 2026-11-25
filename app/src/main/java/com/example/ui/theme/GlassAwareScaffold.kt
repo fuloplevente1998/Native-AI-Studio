@@ -70,8 +70,9 @@ internal fun GlassAwareScaffold(
         }
         // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
         // header lens sees it too); the pages above stay transparent instead of repainting it.
+        // Only the top bar may sample captured body content; body controls must not sample themselves.
         CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
-            LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
+            LocalKyantScene provides kyantScene, LocalKyantHeader provides null) {
             content(bodyPadding, if (kyant) capture else capture.then(Modifier.trainPilotGlassScene(palette)),
                 if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
         }
