@@ -18,5 +18,8 @@
 - **#373 Liquid Glass befejezés:** saját AGSL motor (SDF peremi fénytörés, spekuláris perem, belső árnyék, csak peremi kromatikus szél,
   `LENS_PEAK` kontrasztőr), folytonos 0–100 csúszka élő előnézettel, egyszer fordított programok, valódi backdrop fejléc + csúszó nav pill alatt,
   rugós pill/nyomás, csökkentett mozgás, API31–32/opak fallback, aktív edzésnél nincs üveg. `docs/LIQUID_GLASS_THEMES.md` V4, `LiquidGlassOptics373Test`.
-- **Hátra:** közös CI zöld → készülékes Liquid Glass elfogadás (képminőség, AGSL fordítás Samsungon, frame time; tab-átúsztatás még nincs)
-  → main merge, verzió és kiadás csak felhasználói jóváhagyással. Issue-lezárás csak elfogadás után.
+- **2810 gyűjtő (`fix/collector-2810`, draft #377):** saját motor iOS-szerű hangolás (fehéres tónus 40→6%, homály 32→20 dp,
+  telítés, vékony perem, árnyék; kontraszt a háttér fénysűrűség-korláttal, `GlassContrast.kt`), több felület glass úton, fejléc alatt
+  mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
+- **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
+  → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.

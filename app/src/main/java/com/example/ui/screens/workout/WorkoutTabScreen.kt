@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.components.WorkoutModeArt
 import com.example.ui.components.QuickWorkoutMode
 import com.example.ui.components.PageLayoutHorizontalRow
@@ -76,11 +78,12 @@ internal fun WorkoutModeTile(
     val tint = badgeColor ?: palette.primary
     Surface(
         shape = shape,
-        color = palette.surface,
+        color = palette.glassCardFill(palette.surface),
         modifier = modifier
             .fillMaxHeight()
             .heightIn(min = 124.dp)
             .trainPilotSoftGlow(palette.primary, shape, 4.dp)
+            .trainPilotGlassMaterial(palette, shape)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
             .trainPilotClickable(shape) { onClick() }
             .testTag(testTag)
@@ -164,7 +167,7 @@ fun WorkoutTabScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 8.dp, bottom = 12.dp),
+                .padding(top = 8.dp + com.example.ui.theme.LocalGlassTopInset.current, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         layout.order.forEach { id ->
@@ -175,10 +178,11 @@ fun WorkoutTabScreen(
                             // 1. Gyors edzés Card (Mockup 1/4 #2)
                             Surface(
                                 shape = RoundedCornerShape(18.dp),
-                                color = palette.surface,
+                                color = palette.glassCardFill(palette.surface),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
+                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
                                     .testTag("workout_tab_quick_card")
@@ -256,10 +260,11 @@ fun WorkoutTabScreen(
                             // 2773 (A): exercise library entry right under the three tiles.
                             Surface(
                                 shape = RoundedCornerShape(18.dp),
-                                color = palette.surface,
+                                color = palette.glassCardFill(palette.surface),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 56.dp)
+                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
                                     .testTag("workout_tab_exercise_catalog")
@@ -333,9 +338,10 @@ fun WorkoutTabScreen(
                                 PageLayoutCard {
                                 Surface(
                                     shape = RoundedCornerShape(18.dp),
-                                    color = palette.surface,
+                                    color = palette.glassCardFill(palette.surface),
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                                         .padding(20.dp)
                                 ) {
@@ -382,9 +388,10 @@ fun WorkoutTabScreen(
                                 // Edzés beállításai (from main Edzés screen)
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.surface,
+                                    color = palette.glassCardFill(palette.surface),
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgressionModal() }
                                 ) {
@@ -447,9 +454,10 @@ internal fun ShortcutSquareCard(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
+        color = palette.glassCardFill(palette.surface),
         modifier = modifier
             .heightIn(min = 48.dp)
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {

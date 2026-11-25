@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -254,7 +257,7 @@ fun CalendarPlannerScreen(
                     )
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = palette.surfaceElevated,
+                        color = palette.glassTile(palette.surfaceElevated, elevated = true),
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
@@ -344,7 +347,7 @@ fun CalendarPlannerScreen(
                     options.forEach { (canonicalVal, displayLabel) ->
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
@@ -398,9 +401,10 @@ fun CalendarPlannerScreen(
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
+                color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_month_panel")
+                    .trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
                     // Horizontal swipe changes month (left = next, right = previous); the arrows stay.
                     // Only horizontal drags past the touch slop are consumed: day taps and vertical
@@ -437,7 +441,7 @@ fun CalendarPlannerScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .size(36.dp)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
@@ -462,7 +466,7 @@ fun CalendarPlannerScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.surfaceElevated,
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier
                                     .size(36.dp)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
@@ -606,11 +610,12 @@ fun CalendarPlannerScreen(
             // 3. Calendar planning pinned to the bottom (stays below the month on short windows).
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
+                color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 6.dp)
                     .testTag("calendar_planning_block")
+                    .trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
                     .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
@@ -777,9 +782,10 @@ fun CalendarPlannerScreen(
             // 2. INTERACTIVE DAY ACTIONS CARD (Módosítás, Áthelyezés, Törlés, Visszavonás)
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
+                color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_day_actions")
+                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
@@ -805,7 +811,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(palette.surfaceElevated)
+                                    .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {

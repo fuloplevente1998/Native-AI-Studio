@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassScene
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -68,6 +69,10 @@ internal fun TrainPilotModalBottomSheet(
                 .fillMaxWidth()
                 .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
                 .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
+                // 2810/5: a Liquid Glass sheet on the page colour paints the same procedural backdrop, so
+                // its inner glass panels have colour to refract (sheets are separate windows).
+                .then(if (palette.isLiquidGlass && !customPaint && containerColor == palette.background)
+                    Modifier.trainPilotGlassScene(palette) else Modifier)
                 .drawWithCache {
                     // Material moves and scales the sheet inside its caller modifier. Draw here
                     // so the stroke moves with the surface and extends around the drag handle.

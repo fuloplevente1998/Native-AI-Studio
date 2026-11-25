@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,8 +121,10 @@ fun WeeklyGoalsCompact(
     val lang = state.language
     val monthly = state.workoutGoalPeriod == WorkoutGoalPeriod.MONTHLY
     val shape = RoundedCornerShape(if (framed) 16.dp else 12.dp)
-    Surface(shape = shape, color = if (framed) p.surface else p.surfaceElevated.copy(alpha = 0.6f),
+    // 2810/2: framed = its own glass card over the page backdrop; inline = an inner glass tile.
+    Surface(shape = shape, color = if (framed) p.glassCardFill(p.surface) else p.glassTile(p.surfaceElevated.copy(alpha = 0.6f), elevated = true),
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp)
+            .then(if (framed) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
             .then(if (framed) Modifier.trainPilotBorder(1.dp, p.cardBorder, shape) else Modifier)
             .then(
                 if (expanded == null) Modifier.trainPilotClickable(shape, onClick = onOpen)
@@ -169,7 +174,7 @@ private fun WeeklyGoalBar(label: String, value: String, fraction: Float, modifie
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Text(value, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = p.textPrimary, maxLines = 1)
         }
-        Box(Modifier.fillMaxWidth().height(7.dp).background(p.surfaceElevated, RoundedCornerShape(4.dp))) {
+        Box(Modifier.fillMaxWidth().height(7.dp).background(p.glassTile(p.surfaceElevated, elevated = true), RoundedCornerShape(4.dp))) {
             if (fraction > 0f) Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(p.primary, RoundedCornerShape(4.dp)))
         }
     }
@@ -253,7 +258,7 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
     }
     Spacer(Modifier.height(2.dp))
     if (detailIcon != null) {
-        Surface(shape = RoundedCornerShape(10.dp), color = p.surfaceElevated, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(10.dp), color = p.glassTile(p.surfaceElevated, elevated = true), modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(detailIcon, contentDescription = null, tint = p.primary, modifier = Modifier.size(18.dp))

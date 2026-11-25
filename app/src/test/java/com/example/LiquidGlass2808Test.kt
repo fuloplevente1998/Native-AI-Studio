@@ -103,25 +103,29 @@ class LiquidGlass2808Test {
 
     @Test fun clearEndLetsMoreBackdropThrough() {
         val clear = GlassOptics.from(100)
-        // Previous V4 values at 100: coat .10, veil .90, blurDp 1, in-shader diffusion .0015, card paint .24.
+        // Previous V4 values at 100: coat .10, veil .90, card paint .24. 2810/6 (approved material): the
+        // backdrop is blurred strongly at every position (iOS-like, 20 dp at Clear), so "more backdrop" is
+        // measured by the tint and by the share of the backdrop that reaches the eye, not by a weak blur.
         assertTrue(clear.coat < .10f && clear.coat > 0f)
-        assertTrue(clear.veil < .90f)
-        assertTrue(clear.blurDp < 1f && clear.blurDp > 0f)
-        assertTrue(clear.blur < .0015f)
+        assertTrue(clear.blurOnlyScale > GlassOptics.from(0).blurOnlyScale)
+        assertTrue(clear.blurDp in 18f..24f)
         val p = glass.withGlassClarity(100)
         assertTrue(checkNotNull(p.customCardPaint).alpha < .24f)
-        // Proportionally across the range: every step lets through at least as much as V4 did.
+        // Proportionally across the range: every step lets through at least as much as V4 did, and the
+        // backdrop luminance allowed under the tint never shrinks towards Clear.
+        var lastCap = -1f
         for (step in 0..100) {
             val t = step / 100f
             val optics = GlassOptics.from(step)
             assertTrue(optics.coat <= .62f - .52f * t + 1e-6f)
-            assertTrue(optics.veil <= .94f - .04f * t + 1e-6f)
+            assertTrue(optics.backdropCap > lastCap)
+            lastCap = optics.backdropCap
             assertTrue(checkNotNull(glass.withGlassClarity(step).customCardPaint).alpha <= .82f - .58f * t + 1e-6f)
         }
-        // Frosted end unchanged.
+        // Frosted end: the approved 2810 spec (40 % tint, strongest blur).
         val frost = GlassOptics.from(0)
-        assertEquals(.62f, frost.coat, 1e-6f)
-        assertEquals(.94f, frost.veil, 1e-6f)
+        assertEquals(GlassOptics.FROSTED_COAT, frost.coat, 1e-6f)
+        assertEquals(.40f, frost.coat, 1e-6f)
         assertEquals(GlassOptics.FROSTED_BLUR_DP, frost.blurDp, 1e-4f)
     }
 }

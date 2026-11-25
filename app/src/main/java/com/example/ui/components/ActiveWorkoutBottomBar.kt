@@ -156,19 +156,20 @@ fun WorkoutFinishSheet(
 internal fun Modifier.activeWorkoutDockFrame(
     background: androidx.compose.ui.graphics.Color,
     accent: androidx.compose.ui.graphics.Color,
-    corner: androidx.compose.ui.unit.Dp = 20.dp
+    corner: androidx.compose.ui.unit.Dp = 20.dp,
+    /** 2810/3: Liquid Glass dock = glass bar (own soft shadow and rim); no opaque fade band or elevation. */
+    glass: Boolean = false
 ): Modifier {
     val shape = RoundedCornerShape(corner)
     return this
-        .drawBehind {
+        .then(if (glass) Modifier else Modifier.drawBehind {
             val fade = 18.dp.toPx()
             drawRect(
                 brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                     listOf(background.copy(alpha = 0f), background), startY = -fade, endY = 0f),
                 topLeft = androidx.compose.ui.geometry.Offset(0f, -fade),
                 size = androidx.compose.ui.geometry.Size(size.width, fade))
-        }
-        .shadow(10.dp, shape, clip = false)
+        }.shadow(10.dp, shape, clip = false))
         .drawWithContent {
             drawContent()
             val r = corner.toPx()
