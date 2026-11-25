@@ -60,9 +60,9 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     val native = canvas.nativeCanvas
                     if (native.isHardwareAccelerated && Build.VERSION.SDK_INT >= 33) painted = runCatching {
                         val at = origin.value
-                        // 2809/1: drift time and image are read while drawing, so a tick only redraws.
-                        val seconds = scene?.seconds ?: 0f
+                        // Photo rendering does not depend on the procedural clock.
                         val photo = scene?.imageShader(sceneWidth, sceneHeight)
+                        val seconds = if (photo == null) scene?.seconds ?: 0f else 0f
                         drawGlass33(native, size.width, size.height, shape != null, radii, sceneWidth, sceneHeight,
                             at, palette, optics, localDensity.density, seconds, photo)
                     }.getOrDefault(false)
@@ -119,8 +119,11 @@ private fun drawGlass33(canvas: android.graphics.Canvas, width: Float, height: F
         origin.x, origin.y, palette, optics, density, 0f, seconds, photo)
     if (shader == null) return false
     glassPaint.shader = shader
-    canvas.drawRect(0f, 0f, width, height, glassPaint)
-    glassPaint.shader = null
+    try {
+        canvas.drawRect(0f, 0f, width, height, glassPaint)
+    } finally {
+        glassPaint.shader = null
+    }
     return true
 }
 
