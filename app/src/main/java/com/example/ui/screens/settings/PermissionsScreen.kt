@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -186,7 +187,7 @@ fun PermissionsScreen(
 internal fun PermissionSettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(18.dp)
-    Surface(shape = shape, color = palette.surfaceCard,
+    Surface(shape = shape, color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, shape)) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium,
