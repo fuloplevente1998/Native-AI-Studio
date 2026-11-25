@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -128,7 +130,7 @@ fun ActiveStrengthWorkoutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("active_strength_screen")
     ) {
         uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
