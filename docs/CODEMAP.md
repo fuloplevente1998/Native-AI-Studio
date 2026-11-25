@@ -48,6 +48,7 @@ nagy fájlok sorai frissülnek.
 |---|---|
 | Edzés fül, módcsempék, napkártyák | `ex/ui/screens/workout/WorkoutTabScreen.kt`, `ex/ui/screens/WorkoutTabDayCards.kt` |
 | Programlista, programkártya, szerkesztő | `ex/ui/screens/workout/ProgramsListScreen.kt`, `ex/ui/screens/workout/ProgramCard.kt`, `ex/ui/screens/workout/ProgramEditorScreen.kt`; mentés `rf/StudioProgramSave.kt`, `rf/NativeProgramEditor.kt` |
+| Liquid Glass 2.0 G2 naptár: napállapot, csempe/lencse, mező és elsődleges akció | `ex/ui/screens/workout/PlannerControls.kt` (`calendarDayAppearance`, `CalendarPrimaryGlassButton`, `PlannerFieldTile`), `CalendarPlannerScreen.kt`, `CalendarGlass2Test.kt` |
 | Naptár tervező | `ex/ui/screens/workout/CalendarPlannerScreen.kt`, `ex/ui/screens/workout/PlannerControls.kt`; logika `ex/model/StudioCalendarPlanning.kt`, `rf/ui/calendar/*` |
 | Gyakorlatkönyvtár, részletek, saját gyakorlat | `ex/ui/screens/workout/ExerciseLibraryScreen.kt`, `ex/ui/screens/workout/ExerciseDetailScreen.kt`, `ex/ui/screens/workout/AddCustomExerciseDialog.kt`; `trW` a `ex/ui/screens/workout/WorkoutScreenText.kt` |
 | Személyes tervező (első profil) | `ex/ui/components/StudioPersonalPlannerDialog.kt`, `ex/ui/components/common/PersonalPlannerModal.kt` |
