@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.GlassScrollChrome
+import com.example.ui.theme.LocalGlassChromeUnderlap
+import com.example.ui.theme.glassHeaderMaterial
 
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -127,22 +130,78 @@ fun ActiveStrengthWorkoutScreen(
 
     StudioRestCountdown(uiState, onAdjustRestTimer)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .trainPilotScreenBackdrop(palette)
-            .testTag("active_strength_screen")
-    ) {
-        uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
+    val liveChrome = LocalGlassChromeUnderlap.current
+    GlassScrollChrome(
+        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("active_strength_screen"),
+        top = {
+            if (!liveChrome) Column(Modifier.fillMaxWidth()) {
+                uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
+            }
+        },
+        bottom = {
+        // Fixed Sticky Bottom Dock:
+        // 1) Sticky Rest Timer above Previous/Next (Compact flat mode by default; transitions to Large mode when scrolling down or swiping/tapping)
+        // 2) Sticky < Előző | Következő > buttons
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
+            modifier = Modifier
+                .fillMaxWidth()
+                .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp, glass = palette.isLiquidGlass)
+                .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(20.dp))
+                    else Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp)))
+                .pointerInput(isRestTimerLargeMode) {
+                    detectVerticalDragGestures { _, dragAmount ->
+                        if (dragAmount < -12f) {
+                            restTimerLarge = true
+                        } else if (dragAmount > 12f) {
+                            restTimerLarge = false
+                        }
+                    }
+                }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // 2778: shared rest dock (same component on every measurement screen).
+                com.example.ui.components.StudioRestTimerDock(uiState, isRestTimerLargeMode,
+                    onLarge = { restTimerLarge = it }, onAdjust = onAdjustRestTimer,
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
+                    showIdle = false)
+
+                // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
+                com.example.ui.components.ActiveWorkoutBottomBar(
+                    language = uiState.language,
+                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
+                    hasNext = currentExerciseIdx + 1 < totalExercisesCount,
+                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
+                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
+                    elapsedLabel = "",
+                    tagPrefix = "active",
+                    onPrevious = onPreviousExercise,
+                    onNext = onNextExercise,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout
+                )
+            }
+        }
+        }
+    ) { scrollModifier, topInset, bottomInset ->
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+            modifier = scrollModifier
                 .nestedScroll(userScrollSizesRest),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + topInset, bottom = 16.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
+            if (liveChrome && (uiState.statusBannerMessage != null)) item(key = "measurement_status") {
+                Column(Modifier.fillMaxWidth()) {
+                    uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
+                }
+            }
             // 2775: shared header (title, day badge + Coach, exercise strip) and exercise title row.
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -207,54 +266,7 @@ fun ActiveStrengthWorkoutScreen(
 
         }
 
-        // Fixed Sticky Bottom Dock:
-        // 1) Sticky Rest Timer above Previous/Next (Compact flat mode by default; transitions to Large mode when scrolling down or swiping/tapping)
-        // 2) Sticky < Előző | Következő > buttons
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
-            modifier = Modifier
-                .fillMaxWidth()
-                .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp, glass = palette.isLiquidGlass)
-                .trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
-                .pointerInput(isRestTimerLargeMode) {
-                    detectVerticalDragGestures { _, dragAmount ->
-                        if (dragAmount < -12f) {
-                            restTimerLarge = true
-                        } else if (dragAmount > 12f) {
-                            restTimerLarge = false
-                        }
-                    }
-                }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // 2778: shared rest dock (same component on every measurement screen).
-                com.example.ui.components.StudioRestTimerDock(uiState, isRestTimerLargeMode,
-                    onLarge = { restTimerLarge = it }, onAdjust = onAdjustRestTimer,
-                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
-                    showIdle = false)
 
-                // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
-                com.example.ui.components.ActiveWorkoutBottomBar(
-                    language = uiState.language,
-                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                    hasNext = currentExerciseIdx + 1 < totalExercisesCount,
-                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
-                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
-                    elapsedLabel = "",
-                    tagPrefix = "active",
-                    onPrevious = onPreviousExercise,
-                    onNext = onNextExercise,
-                    onFinish = onFinishWorkout,
-                    onDiscard = onDiscardWorkout
-                )
-            }
-        }
     }
 }
 

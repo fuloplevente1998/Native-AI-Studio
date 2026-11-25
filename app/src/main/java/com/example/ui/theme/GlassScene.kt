@@ -233,7 +233,7 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
             last = now
         }
     }
-    CompositionLocalProvider(LocalGlassScene provides state) { content() }
+    CompositionLocalProvider(LocalGlassScene provides state, LocalGlassPowerSave provides powerSave) { content() }
 }
 
 /**

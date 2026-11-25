@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.GlassScrollChrome
+import com.example.ui.theme.LocalGlassChromeUnderlap
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.glassTile
 
 import com.example.ui.theme.glassCardFill
@@ -171,25 +174,70 @@ fun ActiveTimedWorkoutScreen(
         (fromDb + presets).distinctBy { it.nameHu.lowercase() }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .trainPilotScreenBackdrop(palette)
-            .testTag("active_timed_screen")
-    ) {
-        uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
+    val liveChrome = LocalGlassChromeUnderlap.current
+    GlassScrollChrome(
+        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("active_timed_screen"),
+        top = {
+            if (!liveChrome) Column(Modifier.fillMaxWidth()) {
+                uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
         native.statusMessage?.let { Text(it, color = palette.danger) }
         if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
             "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
             "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
+            }
+        },
+        bottom = {
 
-        LazyColumn(
+        // Fixed Sticky Bottom navigation buttons
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+                .fillMaxWidth()
+                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp, glass = palette.isLiquidGlass)
+                .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                    else Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp)))
+        ) {
+            val lang = uiState.language
+            // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
+                    onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
+                    // Timed sets: the rest appears once it runs or was changed, not as an idle 90 s before the first set.
+                    showIdle = false)
+                com.example.ui.components.ActiveWorkoutBottomBar(
+                    language = uiState.language,
+                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
+                    hasNext = currentIdx + 1 < totalCount,
+                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
+                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
+                    elapsedLabel = "",
+                    tagPrefix = "timed",
+                    onPrevious = onPreviousExercise,
+                    onNext = onNextExercise,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout
+                )
+            }
+        }
+        }
+    ) { scrollModifier, topInset, bottomInset ->
+        LazyColumn(
+            modifier = scrollModifier,
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+                 top = 16.dp + topInset, bottom = 16.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
+            if (liveChrome && (uiState.statusBannerMessage != null || native.statusMessage != null || target == null)) item(key = "measurement_status") {
+                Column(Modifier.fillMaxWidth()) {
+                    uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
+        native.statusMessage?.let { Text(it, color = palette.danger) }
+        if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+            "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
+            "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
+                }
+            }
             item {
                 // 2775: same header as the strength screen + shared exercise title row.
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -497,37 +545,6 @@ fun ActiveTimedWorkoutScreen(
             item(key = "active_exercise_feedback") { exerciseFeedback() }
         }
 
-        // Fixed Sticky Bottom navigation buttons
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
-            modifier = Modifier
-                .fillMaxWidth()
-                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp, glass = palette.isLiquidGlass)
-                .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
-        ) {
-            val lang = uiState.language
-            // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
-                    onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
-                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
-                    // Timed sets: the rest appears once it runs or was changed, not as an idle 90 s before the first set.
-                    showIdle = false)
-                com.example.ui.components.ActiveWorkoutBottomBar(
-                    language = uiState.language,
-                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                    hasNext = currentIdx + 1 < totalCount,
-                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
-                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
-                    elapsedLabel = "",
-                    tagPrefix = "timed",
-                    onPrevious = onPreviousExercise,
-                    onNext = onNextExercise,
-                    onFinish = onFinishWorkout,
-                    onDiscard = onDiscardWorkout
-                )
-            }
-        }
+
     }
 }
