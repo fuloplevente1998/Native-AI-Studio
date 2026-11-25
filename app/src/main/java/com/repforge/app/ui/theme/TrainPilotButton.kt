@@ -4,7 +4,8 @@ import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
-import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassControlFill
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import com.example.ui.theme.trainPilotGlassRim
@@ -124,7 +125,7 @@ fun TrainPilotGlassPrimaryButton(
     val glass = useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint)
     TrainPilotButton(
         onClick = onClick,
-        modifier = if (glass) modifier.trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Button) else modifier,
+        modifier = if (glass) modifier.background(palette.glassControlFill(colors.containerColor, GlassMaterialRole.Selection), shape) else modifier,
         enabled = enabled,
         shape = shape,
         colors = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint),
