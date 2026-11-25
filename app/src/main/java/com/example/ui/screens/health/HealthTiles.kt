@@ -1,4 +1,6 @@
 package com.example.ui.screens
+
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -53,8 +55,9 @@ internal fun MainTodayStatusTile(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.background.copy(alpha = 0.55f),
+        color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
         modifier = modifier
+            .trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Tile)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
@@ -101,8 +104,9 @@ internal fun PulseInnerBox(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.background.copy(alpha = 0.45f),
+        color = palette.glassTile(palette.background.copy(alpha = 0.45f)),
         modifier = modifier
+            .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
     ) {
         Column(
