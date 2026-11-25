@@ -1,25 +1,16 @@
-# Aktuális átadó
+# Aktuális átadó (2026-11-25, 2811)
 
-- Main: 1.5.0 · 280600/280602 (#361), teljes refaktor után (R0–R8). Előbb `docs/CODEMAP.md`, utána csak a megnevezett fájl.
-  Méretőr `SourceSizeGuardTest`; áthelyezés `scripts/split_kotlin.py`, `scripts/verify_move.py`. ViewModel: állapot + mag, funkciók `Vm*.kt`.
-- **Integrációs jelölt:** `integration/wear-health-themes` = main `0affd420` + #369 → #370 → #368 → #371 (ebben a sorrendben).
-  Szöveges ütközés csak a HANDOFF.md-ben volt; a 10 közös kódfájl automatikusan összefésülődött. Ellenőrizve: dupla deklaráció nincs
-  (1 dupla import törölve), MainActivity 1388/1393 sor, méretőr-plafonok rendben, verzió 1.5.1 · 280700/280702. A teljes közös CI dönt.
-- **#369 külső edzésimport** (#359): HC + Samsung Room-import (kézi/opt-in auto), stabil forrásazonosító, duplikáció/tombstone, késői metrikák,
-  privát GPS (`noBackupFilesDir`). Egyetlen health sync út, nincs új worker. Korlát: Samsung törlésfeed, gyártói export, HC route-consent készüléken.
-- **#370 automatikus órás mérés** (#351): célzott kérés (workout ID/revision/epoch/15 s TTL), source node ellenőrzés, ACK csak valós HS start után,
-  előtéri fallback; API 33–35 `BODY_SENSORS_BACKGROUND`, 36+ `READ_HEALTH_DATA_IN_BACKGROUND`. Az óra nem veszi át a vezérlést. `docs/WEAR_AUTO_MEASUREMENT_351.md`.
-- **#368 Wear dizájn/vezérlés** (#367): v3 kezdőlap (akku-/lépésív), 4 főlap, korona/gesztus, v2 edzésfelület, 3 mp vezérlő-overlay, érintészár,
-  pihenő ±15 s, 10 s előjelzés. Szerződés: `controlProtocol367=6`, `dailyStepsGoal`, `restOverridesMs367`, `watchControl367`, `phonePause367`,
-  `phoneRest367`, `pauseRevision`, `restRevision`. `docs/WEAR_367_CONTROL_INTEGRATION.md`.
-- **#371 témák + Liquid Glass** (#349/#350): 32 gyári téma (ID/kulcs változatlan), 8 glass téma (33–40), saját témák (UUID, színkerék/HEX,
-  név Mentés után, teljes képernyős előnézet), Frosted–Clear csúszka csak glass családnál, Wear opak színek. `docs/CUSTOM_THEME_EDITOR_350.md`,
-  `docs/LIQUID_GLASS_THEMES.md`. **#372 (theme-test APK) soha nem merge-elhető.**
-- **#373 Liquid Glass befejezés:** saját AGSL motor (SDF peremi fénytörés, spekuláris perem, belső árnyék, csak peremi kromatikus szél,
-  `LENS_PEAK` kontrasztőr), folytonos 0–100 csúszka élő előnézettel, egyszer fordított programok, valódi backdrop fejléc + csúszó nav pill alatt,
-  rugós pill/nyomás, csökkentett mozgás, API31–32/opak fallback, aktív edzésnél nincs üveg. `docs/LIQUID_GLASS_THEMES.md` V4, `LiquidGlassOptics373Test`.
-- **2810 gyűjtő (`fix/collector-2810`, draft #377):** saját motor iOS-szerű hangolás (fehéres tónus 40→6%, homály 32→20 dp,
-  telítés, vékony perem, árnyék; kontraszt a háttér fénysűrűség-korláttal, `GlassContrast.kt`), több felület glass úton, fejléc alatt
-  mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
-- **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
-  → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
+- **Main:** `43036875` = 1.5.1 · 280700/280702 + #377 (saját motoros iOS-szerű Liquid Glass, 2810). Verzió nem változik („Verziók maradhatnak”, Play Console-ba nem ment). Előbb `docs/CODEMAP.md`. Utolsó aláírt build: 2810 (run 45583162058, signer `cd2da9ea…`).
+- **DÖNTÉS (felhasználó): élesben a KYANT motor** (`io.github.kyant0:backdrop`, Apache-2.0). Nem indult el. Terv, egy alagens egyszerre:
+  K0 új ág `feat/kyant-glass` a mainről: Kyant 1.0.6, Compose BOM 2026.02.00 CSAK a telefonra (Wear marad), Kotlin 2.3.10, NOTICE (`assets/third-party-licenses/kyant-backdrop-NOTICE.txt`), zöld CI.
+  K1 Kyant lencse a mostani üvegszerepekre (13 ütköző fájl a #378-cal: `git diff --name-only 4ca72afe...origin/test/2810-kyant-glass`). K2 oldalak + nav + lapok rendezése. K3 teljesítmény. K4 teszt APK.
+  A `ExternalRoutePreview` debug-dex javítás (`key{}` törzs kiemelése) CSAK teszt ágakra kell (debug D8), mainre nem; release R8 CI-n zöld.
+- **Teljesítmény:** a teszt APK-k debug buildek → a lassúság részben debug. Következő APK-k legyenek release-szerűek (R8, debug kulcs, külön csomagnév), és előtte/utána képkockaidő-mérés (A57).
+- **Ágak/PR-ek:** #379 `fix/collector-2811` = saját motor G0–G6 + 3 javítókör, CI zöld `27bd7b06` (990 telefon/248 óra teszt, 0 hiba) – TARTALÉK, nincs merge. `docs/FIXES_2811.md`, `LIQUID_GLASS_2_SPEC.md`, `_AUDIT.md`, `_ACCEPTANCE.md`, `LIQUID_GLASS_THEMES.md` V8–V11.
+  `design/liquid-glass-2` = másik munkamenet teljes G0–G6, CI zöld `04b94235` (42 fájl, 31 ütközik a #379-cel; APK-ja debug-dex hibán bukott → ugyanaz a javítás kell).
+  **#372 és #378 SOHA nem merge** (#378 = Kyant teszt, referencia). Teszt APK mechanizmus: ág `test/<név>-apk` + alap ág, PR-en épül (`lg-test-apk` job, csomag `com.TrainPilot.com.lg<név>`).
+- **Nyitott hibák (FIXES_2811):** fejléc nem átlátszó minden képernyőn kivéve Naptár (kör 3-ban a Naptár-útra váltva javítva, készüléken NEM igazolt); lapok tetején sötét sáv + tömör szegmentált választók/kapcsolók/belső kártyák/dialógus kijelölt sorok; teljesítmény-akadozás; óra olvashatósága glass témánál (2810/1); üveg a csempéken/gombokon csak teljesítményjavítás után.
+- **Később:** valódi terhelésajánlás (Coach, új számítás, jóváhagyással; a mockup 4/5-ös kártya most kimarad); izomcsoport-ábra marad a férfi test; Play-jegyzet (`docs/PLAY_LISTING.md`); #349/#350 nyitva; óriás komposzálható fájlok szétszedése.
+- **Készülékes ellenőrzés (A57):** csúszka 0/50/65/100%; fejléc minden fülön és görgetve; aktív edzés; lapok; frame time; API 31–32.
+- **Munkarend (`CLAUDE.md`):** fő Sonnet 5.5 high; Opus 5.5 alagens medium (high csak kivételesen); Haiku csak olvasó/ellenőrző. Egy alagens egyszerre, megvalósító → átnéző → Haiku. Merge/kiadás/verzió csak kifejezett engedéllyel; helyi build tilos, csak GitHub Actions; teszt nem gyengíthető.
+- **Figyelem:** 5 órás limit többször megállította az alagenseket (commitolj+pusholj `[skip ci]`-vel megálláskor). A főmappa munkafája elavulhat: írás előtt `git fetch` + friss worktree, ne commitolj elavult másolatot.
