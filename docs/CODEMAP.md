@@ -24,6 +24,8 @@ nagy fájlok sorai frissülnek.
 | Témák/paletták, színek | `ex/ui/theme/TrainPilotPalettes.kt`, `Theme.kt`, `rf/ui/theme/NativeThemeTokens.kt` |
 | Közös kijelölés és telt gomb feliratkontraszt (#349) | `ex/ui/theme/ThemeSelectionColors.kt`, teszt `app/src/test/java/com/example/ThemeSelection349Test.kt` |
 | Saját téma (#350): modell, kontrasztfeloldás, hordozható JSON | `ex/ui/theme/CustomThemeDraft.kt`, `CustomThemeResolver.kt`, `CustomThemeCodec.kt` |
+| Kyant Liquid Glass – jóváhagyott main-alapú K0–K5 integráció | `docs/KYANT_GLASS_PLAN.md`; K0: `gradle/libs.versions.toml`, `app/build.gradle.kts`, `rf/ui/journal/ExternalRoutePreview.kt`, `app/src/main/assets/third-party-licenses/kyant-backdrop-NOTICE.txt`, `.github/workflows/trainpilot-android-ci.yml` |
+| Kyant központi anyagszerepek / ablakhoz kötött rétegek (K1) | `ex/ui/theme/KyantMaterialSpec.kt` (Panel, Tile, Navigation, Selection, Button, Input, Overlay; 0–100), `KyantGlass.kt` (public Backdrop API, scene/content guard), `GlassAwareScaffold.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `ex/ui/components/TrainPilotModalBottomSheet.kt`; `app/src/test/java/com/example/KyantMaterialSpecTest.kt` |
 | Ötödik Liquid Glass család (#350) | `ex/ui/theme/LiquidGlassPalettes.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `GlassAwareScaffold.kt`, `ex/ui/components/common/LiquidGlassControl.kt`, `StudioPaletteCategories.kt`; terv és aktuális hatókör: `docs/LIQUID_GLASS_THEMES.md` |
 | Liquid Glass optika/motor (#373): csúszka→paraméter leképezés, kapu, mozgásszabályok; AGSL forrás + egyszer fordított programok; lap/kártya anyag; élő tartalom-lencse; csúszó nav pill; nyomás-rugó | `ex/ui/theme/GlassOptics.kt`, `GlassShaders.kt`, `TrainPilotGlassEngine.kt`, `GlassContentBackdrop.kt`, `GlassMotionState.kt`, `ex/ui/components/common/GlassSelectionPill.kt`, `rf/ui/theme/TrainPilotPressFeedback.kt` (`glassPressMotion`); érintési lencse-buborék `ex/ui/theme/GlassTouchBubble.kt`; teszt `app/src/test/java/com/example/LiquidGlassOptics373Test.kt`, `LiquidGlassNav373Test.kt` |
 | Liquid Glass élő háttér + saját háttérkép (2809/1): foltok, őr, órajel, gyökér-háttér, lap-háttér segédek; kép import/tár; csempe-festék (2809/3); keretkapu (2809/2) | `ex/ui/theme/GlassScene.kt`, `GlassShaders.kt` (`SCENE`, `SCENE_PHOTO`), `GlassAwareScaffold.kt` (`trainPilotPageBackdrop`, `trainPilotScreenBackdrop`), `rf/GlassBackdropImages.kt`, `ex/ui/components/common/LiquidGlassControl.kt` (választó), `ex/ui/theme/LiquidGlassPalettes.kt` (`glassTile`), `rf/ui/theme/TrainPilotFrames.kt` (`trainPilotFrame`, `trainPilotFrameStroke`, `liquidGlassDropsStroke`); teszt `LiquidGlass2809Test.kt`, `GlassBackdropStore2809Test.kt` |
@@ -123,3 +125,17 @@ nagy fájlok sorai frissülnek.
 
 Megjegyzés: a `rf/ui/{home,journal,calendar,programs,workout,settings}/` alatti `*Screen.kt` fájlok egy része
 régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e valami (az élő UI a `com.example` fa).
+
+| Kyant K2 közös vezérlők és integráció | `ex/ui/theme/GlassSurfaces.kt` (state tint), `LiquidGlassPalettes.kt` (glassControlPaint), `TrainPilotGlassEngine.kt` (cheap Button/Input/Performance), `rf/ui/theme/TrainPilotButton.kt` (audited primary action), `ex/ui/components/TrainPilotControls.kt`, `GlassContentBackdrop.kt` (nested header controls), `KyantK2IntegrationTest.kt` |
+
+| K2 overlay and switches | `ex/ui/components/TrainPilotControls.kt` (`TrainPilotSwitch`), `TrainPilotAlertDialog.kt` (own-window glass overlay), `TrainPilotModalBottomSheet.kt` (default handle), `ex/ui/screens/StudioWorkoutModesDialog.kt`, `ex/ui/screens/settings/SettingsMainScreen.kt` |
+
+| Kyant dialog window isolation | `ex/ui/theme/KyantWindowOverlay.kt` (Android-only backdrop types behind glass/API/optics gate; common alert dialog remains JVM-compatible candidate) |
+
+| K2 popup and sheet finish | `ex/ui/components/TrainPilotDropdownMenu.kt`, `ex/ui/theme/GlassSurfaces.kt` (`glassOverlayFill`), `KyantWindowOverlay.kt` (`KyantStaticSheetBackdrop`), `TrainPilotModalBottomSheet.kt`, status banner in `ex/MainActivity.kt` |
+
+| K3 scene paint cache | `ex/ui/theme/GlassScenePaintCache.kt` (bounded last-value slots), `GlassScene.kt` (host-owned cache), `KyantK3CacheTest.kt` (reuse/invalidation) |
+
+| K3 single root scene | `ex/ui/theme/KyantGlass.kt` (`KyantSceneBackground`, reuse same captured layer), `GlassAwareScaffold.kt` (empty sibling before scaffold), `KyantK3CacheTest.kt` (source contract) |
+
+| K3 battery saver | `ex/ui/theme/GlassPowerSave.kt` (host-only power mode observer), `GlassScene.kt` (static drift gate), `KyantK3CacheTest.kt` (mode matrix) |

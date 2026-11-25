@@ -2,8 +2,8 @@
 
 - Main: `43036875` (2810, #377 merge). R0–R8 refaktor kész; előbb `docs/CODEMAP.md`, utána csak a megnevezett fájl.
   Méretőr `SourceSizeGuardTest`; áthelyezés `scripts/split_kotlin.py`, `scripts/verify_move.py`.
-- Nyitott, külön ágak (ne keverd): `feat/kyant-glass` (draft #388, Kyant Liquid Glass), `docs/handoff-2811` (#387).
-  #372 és #378 teszt-APK ágak, soha nem merge-elhetők.
+- **Kyant Liquid Glass (#388, `feat/kyant-glass`):** `docs/KYANT_GLASS_PLAN.md`; Kyant 1.0.6, Kotlin 2.3.10 (globális), telefon Compose BOM 2026.02.00, Wear BOM marad;
+  1.5.2 · 280800/280802 verzióemelés ezen az ágon; main beolvasztva, K3 teljesítmény és készülékes elfogadás hátra. #372/#378 soha nem merge; `docs/handoff-2811` (#387) külön.
 
 ## `fix/359-367-phone-wear-refinements` (draft PR) – 1. fázis: telefon + alvás
 - **#359/2.1 név:** importált külső edzés a meglévő naplószerkesztőben átnevezhető (`journal_editor_title`, ≤80 kar.).

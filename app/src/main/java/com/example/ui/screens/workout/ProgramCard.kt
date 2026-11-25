@@ -1,4 +1,8 @@
 package com.example.ui.screens
+
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.GlassMaterialRole
 import androidx.compose.runtime.key
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -122,13 +126,14 @@ internal fun ProgramCardContent(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = palette.primary,
-                            modifier = Modifier.testTag("${tagPrefix}program_activate_visual_${program.id}")
+                            color = palette.glassTile(palette.primary, elevated = true),
+                            modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                                .testTag("${tagPrefix}program_activate_visual_${program.id}")
                         ) {
                             Text(
                                 text = strings.activateAction,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = palette.onPrimary,
+                                color = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary,
                                 maxLines = 1,
                                 softWrap = false,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)

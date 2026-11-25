@@ -118,6 +118,8 @@ private object GlassBubbleLens33 {
 @Composable
 internal fun Modifier.glassTouchBubble(source: MutableInteractionSource, enabled: Boolean, shape: Shape?): Modifier {
     val palette = LocalTrainPilotPalette.current
+    // Kyant supplies the optical surface. Retain the shared press motion, not a second AGSL lens.
+    if (KyantGlass.active(palette) && LocalKyantScene.current.forThisWindow() != null) return this
     val motion = rememberGlassMotionEnabled()
     if (!GlassTouchBubble.enabled(palette.glassEffectsActive(LocalGlassOpticsEnabled.current), motion, enabled)) return this
     val held by source.collectIsPressedAsState()

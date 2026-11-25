@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.GlassMaterialRole
+
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -37,7 +43,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -151,7 +157,8 @@ fun StudioGoogleCloudSyncCard(
         }
     }
     @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String, failMessage: String?) {
-        Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceElevated, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+        Surface(shape = RoundedCornerShape(12.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true),
+            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Tile).testTag(tag)) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
@@ -175,9 +182,10 @@ fun StudioGoogleCloudSyncCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
+        color = palette.glassCardFill(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .trainPilotAnimatedExpansion()
             .testTag("studio_google_cloud_card")
@@ -252,7 +260,7 @@ fun StudioGoogleCloudSyncCard(
                     autoSync.any, "settings_google_auto_sync") { saveAutoSync(autoSync.copy(drive = it, calendar = it)) }
                 if (autoSync.any) AutoRow(tr(lang, "Csak Wi-Fi-n", "Wi-Fi only", "Nur über WLAN", "Doar pe Wi-Fi"),
                     autoSync.wifiOnly, "settings_google_auto_wifi") { saveAutoSync(autoSync.copy(wifiOnly = it)) }
-                Button(
+                com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(
                     onClick = { activity?.let { settingsViewModel.syncAllCloud(it) } },
                     enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),

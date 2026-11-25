@@ -48,3 +48,7 @@ if any(row["files"] or row["tests"] for row in report["modules"].values() if row
 if report["total"]["failures"] or report["total"]["errors"]:
     print("JUnit XML contains failing or error tests", file=sys.stderr)
     sys.exit(1)
+
+if os.environ.get("TRAINPILOT_REQUIRE_NO_SKIPS") == "true" and report["total"]["skipped"]:
+    print("Full Kyant acceptance requires zero skipped tests", file=sys.stderr)
+    sys.exit(1)

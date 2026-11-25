@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.ui.semantics.contentDescription
 
@@ -233,7 +239,7 @@ fun WorkoutSummaryScreen(
             state = summaryListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .trainPilotScreenBackdrop(palette)
                 .testTag("workout_summary_screen"),
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -370,8 +376,8 @@ fun WorkoutSummaryScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
                     .testTag("workout_summary_photos_card")
@@ -405,7 +411,7 @@ fun WorkoutSummaryScreen(
                         if (attachedPhotos.isNotEmpty()) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true)
                             ) {
                                 Text(
                                     text = "${attachedPhotos.size}",
@@ -558,7 +564,7 @@ fun WorkoutSummaryScreen(
 
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = palette.surfaceElevated,
+                                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                     modifier = Modifier
                                         .size(width = 96.dp, height = 120.dp)
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
@@ -712,8 +718,8 @@ internal fun SummaryStatTile(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surfaceCard,
-        modifier = modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+        color = palette.glassTile(palette.surfaceCard),
+        modifier = modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp)).trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)

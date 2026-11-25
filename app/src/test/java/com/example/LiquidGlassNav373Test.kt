@@ -16,6 +16,7 @@ import com.example.model.MainTab
 import com.example.model.SubScreen
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
 import com.example.ui.theme.TrainPilotPalettes
+import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.TrainPilotTheme
 import org.junit.Assert.*
 import org.junit.Rule
@@ -75,6 +76,21 @@ class LiquidGlassNav373Test {
     @Test fun reducedMotionMovesThePillWithoutTravelOrStretch() {
         val (widest, rest, _) = travel(animatorScale = 0f)
         assertTrue("no stretch under reduced motion: widest=$widest rest=$rest", widest <= rest + 1f)
+    }
+
+    @Test fun measurementNavigationKeepsSelectionAndClickWithoutAnimatedPill() {
+        var clicked: MainTab? = null
+        compose.setContent { TrainPilotTheme(palette = TrainPilotPalettes.getById(35)) {
+            CompositionLocalProvider(LocalGlassOpticsEnabled provides false) {
+                TrainPilotGlobalTopHeaderAndNav(MainTab.WORKOUT, SubScreen.ACTIVE_STRENGTH,
+                    AppLanguage.HU, 35, TrainPilotStrings.forLanguage(AppLanguage.HU),
+                    { clicked = it }, { _, _ -> }, {}, {}, {})
+            }
+        } }
+        compose.onNodeWithTag("top_nav_workout").assertIsSelected()
+        compose.onAllNodesWithTag("glass_selection_pill").assertCountEquals(0)
+        compose.onNodeWithTag("top_nav_health").performClick()
+        compose.runOnIdle { assertEquals(MainTab.HEALTH, clicked) }
     }
 
     @Test fun legacyPaletteHasNoGlassPill() {

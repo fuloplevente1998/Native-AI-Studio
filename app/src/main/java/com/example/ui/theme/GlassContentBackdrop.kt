@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
 import android.graphics.RenderEffect
+import androidx.compose.foundation.background
 import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -15,6 +16,10 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalView
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -25,7 +30,8 @@ import kotlin.math.roundToInt
  * No screenshots, window capture, bitmaps, readback, or external rendering library.
  */
 @Stable
-internal class GlassBackdrop internal constructor(internal val layer: GraphicsLayer) {
+internal class GlassBackdrop internal constructor(internal val layer: GraphicsLayer,
+    internal val kyant: LayerBackdrop?, internal val view: android.view.View) {
     internal var origin by mutableStateOf(Offset.Zero)
 }
 
@@ -33,21 +39,26 @@ internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?>
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
 @Composable
-internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape): Modifier {
+internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
+    kyantGlassOrNull(palette, shape, role)?.let { return it }
     val backdrop = LocalGlassHeaderBackdrop.current
     return if (backdrop != null) liveGlassLens(backdrop, palette, shape)
-    else trainPilotGlassMaterial(palette, shape)
+    else trainPilotGlassMaterial(palette, shape, role)
 }
 
 @Composable
 internal fun rememberGlassBackdrop(): GlassBackdrop {
     val layer = rememberGraphicsLayer()
-    return remember(layer) { GlassBackdrop(layer) }
+    val kyant = if (KyantGlass.supported && LocalGlassOpticsEnabled.current) rememberLayerBackdrop(layer) else null
+    val view = LocalView.current
+    return remember(layer, kyant, view) { GlassBackdrop(layer, kyant, view) }
 }
 
 @Composable
 internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
-    onGloballyPositioned { backdrop.origin = it.positionInRoot() }
+    if (backdrop.kyant != null && backdrop.view === LocalView.current) layerBackdrop(backdrop.kyant)
+    else onGloballyPositioned { backdrop.origin = it.positionInRoot() }
         .drawWithContent {
             var hardware = false
             drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
@@ -69,7 +80,12 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
     if (!palette.isLiquidGlass) return this
+    if (backdrop.view !== LocalView.current) return trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Selection)
     val enabled = LocalGlassOpticsEnabled.current
+    if (enabled && backdrop.kyant != null && backdrop.view === LocalView.current) {
+        return kyantGlass(rememberKyantScene(backdrop.kyant, samplesContent = true), palette, shape,
+            GlassMaterialRole.Selection)
+    }
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
@@ -129,3 +145,12 @@ internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
     matrix.postConcat(android.graphics.ColorMatrix().apply { setScale(scale, scale, scale, 1f) })
     return matrix.array
 }
+
+/** Nested header controls composite over the one header lens, including active workout. */
+internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color =
+    glassControlPaint(clarity, role)
+
+@Composable
+internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
+    if (!palette.isLiquidGlass) this else background(glassHeaderControlPaint(palette.glassClarity, role), shape)
+        .trainPilotGlassRim(palette, shape, role)

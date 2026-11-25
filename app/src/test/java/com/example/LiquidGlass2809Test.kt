@@ -47,6 +47,8 @@ class LiquidGlass2809Test {
         assertEquals(GlassBackdropMode.STATIC, reduced)
         assertFalse(GlassScene.ticks(reduced, visible = true))
         assertTrue(GlassScene.ticks(GlassBackdropMode.LIVING, visible = true))
+        assertFalse("static photo needs no clock", GlassScene.ticks(GlassBackdropMode.LIVING, visible = true, hasPhoto = true))
+        assertTrue("fallback after photo removal", GlassScene.ticks(GlassBackdropMode.LIVING, visible = true, hasPhoto = false))
         assertFalse("paused when not visible", GlassScene.ticks(GlassBackdropMode.LIVING, visible = false))
         assertFalse(GlassScene.ticks(GlassBackdropMode.OFF, visible = true))
         assertTrue("cheap clock", GlassScene.FRAME_MS >= 50L)

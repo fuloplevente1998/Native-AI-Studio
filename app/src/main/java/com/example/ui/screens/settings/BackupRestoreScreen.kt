@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -41,7 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -225,8 +230,8 @@ fun BackupRestoreScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
@@ -335,7 +340,7 @@ fun BackupRestoreScreen(
             }
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = palette.surfaceElevated,
+                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
                     .testTag("backup_operation_status").semantics { liveRegion = LiveRegionMode.Polite }
             ) {

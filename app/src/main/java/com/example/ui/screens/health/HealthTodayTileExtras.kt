@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.glassTile
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -196,7 +197,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 shape = summaryShape,
-                color = palette.primary.copy(alpha = 0.12f),
+                color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.12f)),
                 border = TrainPilotFrames.control(palette.primary, selected = true)
             ) {
                 Text(

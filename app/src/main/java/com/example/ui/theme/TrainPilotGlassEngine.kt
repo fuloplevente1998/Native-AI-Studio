@@ -5,6 +5,7 @@ import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -28,8 +29,18 @@ internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier
     if (palette.isLiquidGlass) glassSceneModifier(palette, null) else this
 
 @Composable
-internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, shape) else this
+internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier {
+    if (!palette.isLiquidGlass) return this
+    if (role == GlassMaterialRole.Tile) return trainPilotGlassRim(palette, shape, role)
+    // Controls and active measurement only composite a bounded tint over the shared scene.
+    // No additional sampling, blur, lens, shadow or procedural scene per control.
+    if (!LocalGlassOpticsEnabled.current || role == GlassMaterialRole.Button ||
+        role == GlassMaterialRole.Input || role == GlassMaterialRole.Performance)
+        return background(palette.glassControlFill(palette.surface, role), shape)
+            .trainPilotGlassRim(palette, shape, role)
+    return kyantGlassOrNull(palette, shape, role) ?: glassSceneModifier(palette, shape)
+}
 
 /** UI-thread only; the paint is reused, the shader it carries is snapshotted by each draw call. */
 private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
@@ -59,8 +70,8 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                     if (native.isHardwareAccelerated && Build.VERSION.SDK_INT >= 33) painted = runCatching {
                         val at = origin.value
                         // 2809/1: drift time and image are read while drawing, so a tick only redraws.
-                        val seconds = scene?.seconds ?: 0f
                         val photo = scene?.imageShader(sceneWidth, sceneHeight)
+                        val seconds = if (photo == null) scene?.seconds ?: 0f else 0f
                         drawGlass33(native, size.width, size.height, shape != null, radii, sceneWidth, sceneHeight,
                             at, palette, optics, localDensity.density, seconds, photo)
                     }.getOrDefault(false)
@@ -117,8 +128,8 @@ private fun drawGlass33(canvas: android.graphics.Canvas, width: Float, height: F
         origin.x, origin.y, palette, optics, density, 0f, seconds, photo)
     if (shader == null) return false
     glassPaint.shader = shader
-    canvas.drawRect(0f, 0f, width, height, glassPaint)
-    glassPaint.shader = null
+    try { canvas.drawRect(0f, 0f, width, height, glassPaint) }
+    finally { glassPaint.shader = null }
     return true
 }
 
@@ -153,11 +164,16 @@ internal fun DrawScope.drawGlassDropShadow(path: Path) {
  * also stays on the active measurement screens (2808/10 light glass).
  */
 @Composable
-internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
+internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Tile): Modifier =
     if (!palette.glassRimActive()) this else drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
-        val strength = GlassOptics.from(palette.glassClarity).specular
+        val strength = (GlassOptics.from(palette.glassClarity).specular * when (role) {
+            GlassMaterialRole.Selection -> 1.15f
+            GlassMaterialRole.Performance -> .70f
+            else -> 1f
+        }).coerceAtMost(.6f)
         val shine = Brush.verticalGradient(
             0f to Color.White.copy(alpha = strength),
             .5f to Color.White.copy(alpha = strength * .40f),

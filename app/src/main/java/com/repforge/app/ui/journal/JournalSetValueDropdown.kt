@@ -1,5 +1,9 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.theme.LocalTrainPilotPalette
+
+import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,7 +61,7 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
                 }
             }
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
-                modifier = Modifier.heightIn(max = 280.dp).background(colors.card)) {
+                modifier = Modifier.heightIn(max = 280.dp).then(if (LocalTrainPilotPalette.current.isLiquidGlass) Modifier else Modifier.background(colors.card))) {
                 DropdownMenuItem(text = { Text(customLabel, color = colors.text) },
                     onClick = { custom = true; expanded = false }, modifier = Modifier.testTag("${tag}_custom"))
                 choices.forEach { choice ->

@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -99,8 +105,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
@@ -293,8 +299,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc_permission") }
@@ -343,8 +349,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("samsung") }
@@ -356,7 +362,7 @@ fun WatchAndSyncScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF14B8A6).copy(alpha = 0.16f),
+                        color = palette.glassStateTile(Color(0xFF14B8A6), Color(0xFF14B8A6).copy(alpha = 0.16f)),
                         modifier = Modifier
                             .size(46.dp)
                             .border(1.dp, Color(0xFF14B8A6).copy(alpha = 0.45f), RoundedCornerShape(14.dp))

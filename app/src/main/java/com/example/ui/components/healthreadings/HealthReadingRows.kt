@@ -1,5 +1,8 @@
 package com.example.ui.components.healthreadings
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -126,7 +129,7 @@ fun HealthPulseDayRow(
 
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.surfaceElevated,
+        color = palette.glassTile(palette.surfaceElevated, elevated = true),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, palette.cardBorder)),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -218,7 +221,7 @@ fun HealthRecoveryRow(reading: RecoveryDayReading, modifier: Modifier = Modifier
     }
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.surfaceElevated,
+        color = palette.glassTile(palette.surfaceElevated, elevated = true),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, palette.cardBorder)),
         modifier = modifier.fillMaxWidth()
     ) {

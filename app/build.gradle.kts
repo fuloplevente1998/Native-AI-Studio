@@ -33,8 +33,8 @@ android {
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
-    versionCode = 280700 // Play scheme: release 2807, mobile suffix 00
-    versionName = "1.5.1"
+    versionCode = 280800 // Play scheme: release 2808, mobile suffix 00
+    versionName = "1.5.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "DEVELOPER_NAME", "\"FulTechStudios\"")
@@ -113,7 +113,9 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 
 dependencies {
   implementation(project(":shared"))
-  implementation(platform(libs.androidx.compose.bom))
+  // Kyant requires Compose UI/foundation 1.10.3; Wear retains its own BOM.
+  implementation(platform(libs.androidx.compose.bom.kyant))
+  implementation(libs.kyant.backdrop)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.core.splashscreen)
@@ -158,7 +160,7 @@ dependencies {
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.robolectric)
-  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(platform(libs.androidx.compose.bom.kyant))
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)

@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -153,7 +154,7 @@ fun WeeklyGoalsCompact(
                     }
                 }
             }
-            if (onGoals != null && expanded != false) Surface(shape = RoundedCornerShape(12.dp), color = p.primary.copy(alpha = 0.12f),
+            if (onGoals != null && expanded != false) Surface(shape = RoundedCornerShape(12.dp), color = p.glassStateTile(p.primary, p.primary.copy(alpha = 0.12f)),
                 modifier = Modifier.size(if (expanded == null) 44.dp else 48.dp).trainPilotBorder(1.dp, p.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .trainPilotClickable(RoundedCornerShape(12.dp)) { onGoals() }.testTag("weekly_goals_settings")) {
                 Box(contentAlignment = Alignment.Center) {

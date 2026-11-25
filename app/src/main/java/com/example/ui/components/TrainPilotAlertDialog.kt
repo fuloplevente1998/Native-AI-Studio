@@ -1,7 +1,10 @@
 package com.example.ui.components
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.KyantWindowOverlay
 import com.repforge.app.ui.theme.trainPilotFrame
-
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -48,39 +51,50 @@ internal fun TrainPilotAlertDialog(
         titleLarge = MaterialTheme.typography.titleMedium
     )
     Dialog(onDismissRequest = onDismissRequest, properties = properties) {
-        MaterialTheme(typography = compactType) {
-            Surface(color = background, shape = shape, tonalElevation = tonalElevation,
-                modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
-                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
-                    .trainPilotSoftGlow(p.primary, shape, 4.dp)
-                    .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape)) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (title != null || icon != null) Row(Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (icon != null) CompositionLocalProvider(LocalContentColor provides
-                            (iconContentColor.takeIf { it != Color.Unspecified } ?: p.primary)) { icon() }
-                        if (title != null) Box(Modifier.weight(1f)) {
-                            CompositionLocalProvider(LocalContentColor provides titleColor) {
-                                ProvideTextStyle(MaterialTheme.typography.titleMedium) { title() }
+        // Keep third-party backdrop types out of the common dialog's JVM bytecode.
+        val glass = p.isLiquidGlass && (background == p.surfaceCard || background == p.surface || background == p.background)
+        val panel: @Composable (Modifier, Color) -> Unit = { overlay, fill ->
+            MaterialTheme(typography = compactType) {
+                Surface(color = fill, shape = shape, tonalElevation = tonalElevation,
+                    modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
+                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
+                        .then(overlay)
+                        .then(if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Overlay)
+                            else Modifier.trainPilotSoftGlow(p.primary, shape, 4.dp)
+                                .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape))) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (title != null || icon != null) Row(Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (icon != null) CompositionLocalProvider(LocalContentColor provides
+                                (iconContentColor.takeIf { it != Color.Unspecified } ?: p.primary)) { icon() }
+                            if (title != null) Box(Modifier.weight(1f)) {
+                                CompositionLocalProvider(LocalContentColor provides titleColor) {
+                                    ProvideTextStyle(MaterialTheme.typography.titleMedium) { title() }
+                                }
                             }
                         }
-                    }
-                    // A finite body region preserves existing scrollable forms/lists. Do not
-                    // nest another verticalScroll around callers' own scrolling content.
-                    if (text != null) Box(Modifier.fillMaxWidth().weight(1f, fill = false)) {
-                        CompositionLocalProvider(LocalContentColor provides bodyColor) {
-                            ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
+                        // A finite body region preserves existing scrollable forms/lists. Do not
+                        // nest another verticalScroll around callers' own scrolling content.
+                        if (text != null) Box(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                            CompositionLocalProvider(LocalContentColor provides bodyColor) {
+                                ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
+                            }
                         }
-                    }
-                    FlowRow(Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        dismissButton?.invoke()
-                        confirmButton()
+                        FlowRow(Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            dismissButton?.invoke()
+                            confirmButton()
+                        }
                     }
                 }
             }
+        }
+        if (glass && KyantGlass.active(p) && LocalGlassOpticsEnabled.current) {
+            KyantWindowOverlay(p, shape) { overlay -> panel(overlay, Color.Transparent) }
+        } else {
+            panel(Modifier, background)
         }
     }
 }

@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -23,12 +22,11 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.dp
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.GlassMotion
 import com.example.ui.theme.TrainPilotPalette
-import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.rememberGlassMotionEnabled
-import com.example.ui.theme.trainPilotGlassRim
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -93,9 +91,7 @@ internal fun BoxScope.GlassSelectionPill(
                 scaleY = if (motion) GlassMotion.squash(right.value - left.value, restWidth) else 1f
             }
             .clip(shape)
-            .glassHeaderMaterial(palette, shape)
-            // 2809/2: rim light instead of a selection hairline; the label keeps the selected foreground.
-            .trainPilotGlassRim(palette, shape)
+            .glassHeaderControl(palette, shape, GlassMaterialRole.Selection)
             .testTag("glass_selection_pill")
     )
 }

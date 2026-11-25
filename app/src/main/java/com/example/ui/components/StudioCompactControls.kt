@@ -1,5 +1,10 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -86,8 +91,8 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
             color = if (selected) palette.primary else palette.textPrimary)
     }
     val rir: @Composable () -> Unit = {
-        Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceCard,
-            modifier = Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp), onClick = onRir).testTag("bilateral_set_${item.setNumber}_rir")) {
+        Surface(shape = RoundedCornerShape(8.dp), color = palette.glassTile(palette.surfaceCard),
+            modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(8.dp)).heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp), onClick = onRir).testTag("bilateral_set_${item.setNumber}_rir")) {
             Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                 Text(if (item.actualRirProvided) "RIR ${item.rir}" else "RIR —",
                     style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, softWrap = false)

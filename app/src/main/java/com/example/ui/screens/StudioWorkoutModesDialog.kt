@@ -1,5 +1,19 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.semantics.selected
+
+import androidx.compose.ui.semantics.semantics
+
+import androidx.compose.foundation.BorderStroke
+
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.glassTile
+
+import com.example.ui.theme.GlassMaterialRole
+
+import com.example.ui.theme.glassControlFill
+
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Switch
+import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
@@ -80,11 +94,14 @@ private fun ModeOption(label: String, selected: Boolean, tag: String, onClick: (
     val p = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) p.primary else p.surfaceElevated,
-        modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp), onClick = onClick).testTag(tag)
+        color = if (selected) p.glassControlFill(p.primary, GlassMaterialRole.Selection) else p.glassTile(p.surfaceElevated),
+        border = if (p.isLiquidGlass && selected) BorderStroke(1.dp, p.primary) else null,
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(p, RoundedCornerShape(12.dp))
+            .semantics { this.selected = selected }
+            .trainPilotClickable(RoundedCornerShape(12.dp), onClick = onClick).testTag(tag)
     ) {
         Text(label, fontWeight = FontWeight.SemiBold,
-            color = if (selected) p.onPrimary else p.textPrimary,
+            color = if (selected && !p.isLiquidGlass) p.onPrimary else p.textPrimary,
             modifier = Modifier.padding(horizontal = 13.dp, vertical = 12.dp))
     }
 }
@@ -166,7 +183,7 @@ internal fun StudioWorkoutModesDialog(
                     for ((index, row) in review.rows.withIndex()) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = p.surfaceElevated,
+                            color = p.glassTile(p.surfaceElevated),
                             modifier = Modifier.fillMaxWidth().testTag("studio_modes_comparison_$index")
                         ) {
                             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -208,7 +225,7 @@ internal fun StudioWorkoutModesDialog(
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(workoutModeText(lang, "Alapértelmezett pihenőidő", "Default rest timer",
                             "Standard-Pausenzeit", "Timp implicit de pauză"), color = p.textPrimary)
-                        Surface(shape = RoundedCornerShape(10.dp), color = p.surfaceElevated,
+                        Surface(shape = RoundedCornerShape(10.dp), color = p.glassTile(p.surfaceElevated),
                             modifier = Modifier.trainPilotClickable(RoundedCornerShape(10.dp), onClick = onCycleRest).testTag("studio_modes_rest")) {
                             Text("${state.defaultRestSec} $unit ↻", color = p.primary,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

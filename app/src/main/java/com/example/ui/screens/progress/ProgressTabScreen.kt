@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.PageLayoutBlock
@@ -129,10 +132,11 @@ fun ProgressTabScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = if (selected) selection.surface else Color.Transparent,
+                            color = if (selected) palette.glassControlFill(selection.surface, GlassMaterialRole.Selection) else Color.Transparent,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(42.dp)
+                                .then(if (selected) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Selection) else Modifier)
                                 .trainPilotBorder(
                                     width = if (selected) 1.dp else 0.dp,
                                     color = if (selected) selection.border else Color.Transparent,

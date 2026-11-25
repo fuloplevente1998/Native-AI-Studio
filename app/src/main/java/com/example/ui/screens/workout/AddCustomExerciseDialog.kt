@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
+import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -133,7 +133,7 @@ fun AddCustomExerciseModalDialog(
                     DropdownMenu(
                         expanded = categoryDropdownOpen,
                         onDismissRequest = { categoryDropdownOpen = false },
-                        modifier = Modifier.background(palette.surfaceElevated)
+                        modifier = if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surfaceElevated)
                     ) {
                         ExerciseCategory.entries.filter { it != ExerciseCategory.ALL }.forEach { cat ->
                             DropdownMenuItem(
@@ -183,7 +183,7 @@ fun AddCustomExerciseModalDialog(
                     DropdownMenu(
                         expanded = equipmentDropdownOpen,
                         onDismissRequest = { equipmentDropdownOpen = false },
-                        modifier = Modifier.background(palette.surfaceElevated)
+                        modifier = if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surfaceElevated)
                     ) {
                         equipmentOptions.forEach { (canonicalEq, displayEq) ->
                             DropdownMenuItem(

@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import androidx.compose.foundation.Canvas
@@ -29,7 +32,7 @@ fun ExercisePostureMiniIllustration(
 
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.surfaceElevated,
+        color = palette.glassTile(palette.surfaceElevated, elevated = true),
         modifier = modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
     ) {
         val primaryGold = palette.primary

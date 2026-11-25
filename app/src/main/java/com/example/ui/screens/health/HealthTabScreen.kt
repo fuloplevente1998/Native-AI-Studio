@@ -552,7 +552,8 @@ fun HealthTabScreen(
                     Modifier.fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
                         .clip(goalShape)
-                        .background(palette.surfaceCard)
+                        .background(if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard)
+                        .trainPilotGlassMaterial(palette, goalShape)
                 ) {
                     com.example.ui.components.WeeklyGoalsCompact(
                         uiState,
