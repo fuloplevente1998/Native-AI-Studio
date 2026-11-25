@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -124,8 +127,9 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
 
     @Composable
     fun Section(title: String, tag: String, content: @Composable () -> Unit) {
-        Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
-            modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
+        Surface(shape = RoundedCornerShape(18.dp), color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
+            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                 content()
@@ -281,8 +285,9 @@ internal fun WeightLogBody(
             }
         }
     }
-    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
-        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceCard.copy(alpha = 0.7f), elevated = true),
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
@@ -413,8 +418,10 @@ internal fun WeightLogBody(
         }
     }
     Spacer(Modifier.height(6.dp))
-    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceCard),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
+            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { onAdd() }.testTag("health_add_weight_button")) {
         Box(Modifier.padding(12.dp), contentAlignment = Alignment.Center) {
             Text(strings.newMeasurementAction, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.primary)
