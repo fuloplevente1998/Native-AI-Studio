@@ -98,7 +98,7 @@ internal val GLASS_TILE = Color(0xFF58616F)
 internal val GLASS_TILE_ELEVATED = Color(0xFF5B6472)
 
 /** Inner tile alpha, continuous and strictly falling with the slider (.16 Frosted -> .10 Clear). */
-internal fun glassTileAlpha(clarity: Int): Float = .16f - .06f * clarity.coerceIn(0, 100) / 100f
+internal fun glassTileAlpha(clarity: Int): Float = KyantMaterialSpec.forRole(GlassMaterialRole.Tile, clarity).tintAlpha
 
 internal fun glassTilePaint(clarity: Int, elevated: Boolean): Color =
     (if (elevated) GLASS_TILE_ELEVATED else GLASS_TILE).copy(alpha = glassTileAlpha(clarity))
