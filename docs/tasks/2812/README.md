@@ -12,7 +12,9 @@ Sorrend: 1 → 2 → 3 → 4. A listák STÍLUSA marad (nem változtatjuk); a Pr
 - Meglévő Kyant anyag-szerepeket használd (`KyantMaterialSpec.kt`: Panel/Tile/Navigation/Selection/Button/Input/Overlay), ne írj új motort, ne duplikálj konstansokat.
 - Debug D8 nem tud `return@key`-t parse-olni egyes helyeken – új ilyet ne írj.
 - Nincs titok, nincs gyártott adat. Magyar commit-üzenet.
-- Kimenet: a módosított fájlok TELJES tartalma vagy egyesített diff + 5 soros összefoglaló („mit változtattam / mit nem tudtam ellenőrizni").
+- Írás: a repóba közvetlenül dolgozol. Ág: `fix/2812-<szám>` a `main`-ből; commitolj oda, nyiss DRAFT PR-t a `main` felé. A `main`-re, a `fix/collector-2812` és a többi meglévő ágra NE pusholj; ne merge-elj; PR #372 és #378 soha nem merge-elhető.
+- Indulás előtt olvasd: `CLAUDE.md`, `AGENTS.md`, `docs/CODEMAP.md`, `docs/FIXES_2812.md`, a feladat fájlja és a mockup PNG.
+- A végén (PR-leírás + chat): 5 soros összefoglaló – mit változtattál (fájlonként), mit NEM tudtál ellenőrizni, kockázatok. A CI-t (draft PR-en automatikus) várd meg, a nyers JUnit számokat (tests/failures/errors/skipped) írd le.
 
 ## Feladatok
 | # | Fájl | Mockup |
