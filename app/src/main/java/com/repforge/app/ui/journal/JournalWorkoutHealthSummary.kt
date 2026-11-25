@@ -26,7 +26,7 @@ import java.util.Locale
 @Composable
 internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text: Resources, language: String) {
     if (detail.workout.originDevice == "external") {
-        JournalExternalWorkoutMetrics(detail, text, language)
+        JournalExternalWorkoutMetrics(detail, text, language, showSource = false)
         return
     }
     val colors = LocalTrainPilotColors.current

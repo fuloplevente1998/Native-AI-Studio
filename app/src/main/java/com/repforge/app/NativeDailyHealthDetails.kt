@@ -63,16 +63,8 @@ object NativeDailyHealthDetails {
                 }
             }
         }
-        if (spans.isEmpty()) return null
-        val ordered = spans.sortedWith(compareBy<Pair<Long, Long>> { it.first }.thenBy { it.second })
-        var start = ordered.first().first
-        var end = ordered.first().second
-        var totalMs = 0L
-        for (span in ordered.drop(1)) {
-            if (span.first <= end) end = max(end, span.second)
-            else { totalMs += end - start; start = span.first; end = span.second }
-        }
-        totalMs += end - start
+        // #367/9: the same union is used for the watch (shared), never a second calculation.
+        val totalMs = com.repforge.shared.SleepNightTotal.unionMillis(spans) ?: return null
         return (totalMs / 60_000.0).takeIf { it > 0.0 }
     }
 }

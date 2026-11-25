@@ -134,6 +134,15 @@ class WearScreenAuditTest {
         routes.forEach { route -> shoot("$suffix-$route", round) { app(if (route == "journal-detail") "journal" else route) } }
         workoutRoutes.forEach { route -> shoot("$suffix-$route-strength", round) { app(route, strength) } }
         listOf("workout", "timer").forEach { route -> shoot("$suffix-$route-timed", round) { app(route, timed) } }
+        // #367 phase 2: the touch-revealed controls with captions (3.2)
+        shoot("$suffix-overlay-strength", round) {
+            WearWorkoutControlOverlay(workout = strength, timerPause = null, workoutPause = {}, onPrevious = {}, onNext = {},
+                onFinish = {}, onDiscard = {}, onMore = {}, onDismiss = {})
+        }
+        shoot("$suffix-overlay-last", round) {
+            WearWorkoutControlOverlay(workout = timed, timerPause = null, workoutPause = {}, onPrevious = {}, onNext = {},
+                onFinish = {}, onDiscard = {}, onMore = {}, onDismiss = {})
+        }
         shoot("$suffix-summary", round) { app("summary", closure = WearClosure("c", "w1", "finishWorkout", "done", "", 3120, 3, 8)) }
         val written = File("build/test-results/wear-screens").listFiles()?.count { it.name.startsWith(suffix) } ?: 0
         assertTrue("screens written: $written", written >= routes.size + workoutRoutes.size)
@@ -159,6 +168,12 @@ class WearScreenAuditTest {
                 }
             }
             shoot("$suffix-rest",true) { app("workout",rest,rest=90) }
+            // timed (plank) exercise as last exercise: fixed heart-rate row, stable timer face (3.3/3.6)
+            val timed=workout.copy(currentExercise=2)
+            shoot("$suffix-plank",true) {
+                val density=LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) { app("workout",timed) }
+            }
         } finally { Locale.setDefault(previous) }
     }
 

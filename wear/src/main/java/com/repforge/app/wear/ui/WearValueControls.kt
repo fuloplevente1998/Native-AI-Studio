@@ -49,11 +49,13 @@ internal fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolea
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val actionSize = LocalActionSize.current
+    // 367: inside a large round action the caption sits where the circle is narrower than its diameter.
+    val captionRoom = if (actionSize >= 56f) actionSize - 12f else actionSize - 4f
     val captionStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal, letterSpacing = 0.sp)
-    val captionSize = remember(caption, captionScale, density, textMeasurer, actionSize, captionStyle) {
+    val captionSize = remember(caption, captionScale, density, textMeasurer, captionRoom, captionStyle) {
         val requested = 8.5f * captionScale / fontScale
         val measured = caption?.let { textMeasurer.measure(it, captionStyle.copy(fontSize = requested.sp)).size.width } ?: 0
-        val available = with(density) { (actionSize - 4f).dp.toPx() }
+        val available = with(density) { captionRoom.dp.toPx() }
         requested * if (measured > available) available / measured else 1f
     }
     if (caption != null && LocalCaptionBelow.current) {
@@ -75,7 +77,7 @@ internal fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolea
         val color = if (!enabled) Muted else if (tone == Gold) LocalWearHomeTheme.current.onAccentColor else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
         Text(text, color = color, fontSize = (glyph / fontScale).sp,
             lineHeight = ((glyph + 2) / fontScale).sp, fontWeight = FontWeight.Medium, maxLines = 1)
-        if (caption != null) Text(caption, modifier = Modifier.widthIn(max = (actionSize - 4f).dp), style = captionStyle,
+        if (caption != null) Text(caption, modifier = Modifier.widthIn(max = captionRoom.dp), style = captionStyle,
             color = color, fontSize = captionSize.sp, lineHeight = (captionSize * 1.18f).sp,
             textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }

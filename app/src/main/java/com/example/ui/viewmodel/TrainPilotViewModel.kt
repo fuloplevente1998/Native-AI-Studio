@@ -990,6 +990,8 @@ class TrainPilotViewModel : ViewModel() {
                 originDevice = w.originDevice,
                 externalSource = external?.optString("source")?.takeIf { it.isNotBlank() },
                 externalProvider = external?.optString("provider")?.takeIf { it.isNotBlank() },
+                externalUserTitle = if (w.originDevice == "external") runCatching {
+                    com.repforge.app.NativeJournalEditor.savedTitle(JSONObject(w.rawJson)) }.getOrNull()?.takeIf { it.isNotBlank() } else null,
                 savedStartIso = w.started,
                 savedFinishIso = w.finished,
                 photoCount = detail.photos.size,

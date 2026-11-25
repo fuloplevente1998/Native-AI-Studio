@@ -975,7 +975,8 @@ object WearSyncRepository {
             val hasDraft = (activeWorkout != null && activeWorkout.optBoolean("active", false)) ||
                 (draftDoc != null && draftDoc.json.isNotBlank() && draftDoc.json != "null" && draftDoc.json != "{}")
 
-            // Same durable phone goal as the Goals UI; no daily health metrics travel here.
+            // Same durable phone goal as the Goals UI. The only daily health value sent is the
+            // aggregated sleep total (#367/9), never raw records or other daily totals.
             val goalDocument = db.keyValueDocumentDao().getDocument("native:userGoals")
             val dailyStepsGoal = goalDocument?.json?.let { raw ->
                 runCatching { JSONObject(raw).optInt("stepsGoal", 0) }.getOrNull()
@@ -1003,6 +1004,7 @@ object WearSyncRepository {
                 .put("automaticProtocol", 1)
                 .put("ownershipProtocol193", 1)
 
+            WatchSleepSummary367.read(appContext)?.let { homeSnapshot.put(com.repforge.shared.SleepNightTotal.HOME_KEY, it) }
             if (recommendedJson != null) {
                 homeSnapshot.put("recommended", recommendedJson)
             }

@@ -19,7 +19,9 @@ import java.util.UUID
 internal object NativeJournalEditor {
     data class Opened(val detail: WorkoutHistoryWithDetails, val ticket: NativeDataReplacement.Continuation)
     data class Draft(val started: String, val finished: String, val exercises: List<Exercise>,
-        val feedbackEffort: String? = null, val note: String = "")
+        val feedbackEffort: String? = null, val note: String = "",
+        /** #359: user-set name of an imported external workout ("" = default label). */
+        val title: String = "")
     data class Units(val loadType: String, val repUnit: String, val measurementType: String)
     data class Exercise(val originalIndex: Int?, val id: String, val sets: List<Set>, val catalogUnits: Units? = null,
         val effort: String? = null, val note: String = "")
@@ -45,10 +47,16 @@ internal object NativeJournalEditor {
                     value("leftSeconds"), value("rightSeconds"), value("distanceMeters"), value("actualRir"))
             }, effort = StudioWorkoutFeedback.readOwnExerciseEffort(ex),
                 note = StudioWorkoutFeedback.readExerciseNote(ex))
-        }, detail.workout.effortFeedback ?: StudioWorkoutFeedback.readWorkoutEffort(raw), savedNote(raw))
+        }, detail.workout.effortFeedback ?: StudioWorkoutFeedback.readWorkoutEffort(raw), savedNote(raw),
+            title = savedTitle(raw))
     }
 
     private fun savedNote(raw: JSONObject): String = StudioWorkoutFeedback.readWorkoutNote(raw)
+
+    /** #359: local name of an imported workout. Stored beside, never inside, the provider snapshot,
+     * so a later sync (which only replaces `externalWorkout359`) cannot overwrite it. */
+    const val USER_TITLE = "userTitle359"
+    fun savedTitle(raw: JSONObject): String = (raw.opt(USER_TITLE) as? String)?.trim().orEmpty()
 
     fun addExercise(draft: Draft, source: ExerciseLibraryEntity): Draft {
         require(draft.exercises.none { it.id == source.id })
@@ -185,6 +193,12 @@ internal object NativeJournalEditor {
             feedback.remove("suggestion")
             raw.put("feedback", feedback)
             if (raw.has("effortFeedback")) raw.put("effortFeedback", effort)
+        }
+        if (draft.title.trim() != savedTitle(raw)) {
+            val title = draft.title.trim()
+            require(detail.workout.originDevice == "external") { "Only imported workouts take a local name" }
+            require(title.length <= 80 && title.none(Char::isISOControl)) { "Invalid workout name" }
+            if (title.isEmpty()) raw.remove(USER_TITLE) else raw.put(USER_TITLE, title)
         }
         if (draft.note != savedNote(raw)) {
             // A note is annotation, not a second progression approval. Keep applied/ratings intact.
