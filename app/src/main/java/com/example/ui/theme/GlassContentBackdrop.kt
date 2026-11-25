@@ -6,6 +6,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -72,6 +75,11 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
     role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
     if (!palette.isLiquidGlass) return this
     val enabled = LocalGlassOpticsEnabled.current
+    val scene = LocalGlassScene.current
+    val config = LocalConfiguration.current
+    val localDensity = LocalDensity.current
+    val sceneWidth = with(localDensity) { config.screenWidthDp.dp.toPx() }.coerceAtLeast(1f)
+    val sceneHeight = with(localDensity) { config.screenHeightDp.dp.toPx() }.coerceAtLeast(1f)
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
@@ -97,7 +105,8 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                         runCatching {
                             val relative = origin.value - backdrop.origin
                             lensLayer.record(this, layoutDirection, dimensions) {
-                                drawRect(palette.surface)
+                                // Transparent or temporarily empty content must not turn the header opaque.
+                                drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight)
                                 translate(left = -relative.x, top = -relative.y) { drawLayer(backdrop.layer) }
                             }
                             drawLayer(lensLayer)
@@ -107,8 +116,13 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                         drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
                         drawGlassHighlights(path, palette, optics, 0f)
                     } else if (!live) {
-                        drawRect(fallback)
-                        drawRect(glassFallbackPaint(palette.glassClarity))
+                        if (hardware && Build.VERSION.SDK_INT >= 31) {
+                            drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight, optics.backdropCap)
+                            drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
+                        } else {
+                            drawRect(fallback)
+                            drawRect(glassFallbackPaint(palette.glassClarity))
+                        }
                         drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
@@ -124,6 +138,23 @@ private fun createContentBlur31(radius: Float, optics: GlassOptics): androidx.co
     // Blur first, then vibrancy + contrast scale (the effect input is applied before the filter).
     return RenderEffect.createColorFilterEffect(filter, blur).asComposeRenderEffect()
 }
+
+/** Nested header elements share the header lens: no per-button capture, blur or shader.
+ * A neutral, bounded translucent tint and a role-specific rim distinguish the selection.
+ */
+internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color {
+    val t = clarity.coerceIn(0, 100) / 100f
+    return when (role) {
+        GlassMaterialRole.Selection -> GlassContrast.grey(GlassOptics.SURFACE_LUMA_MAX).copy(alpha = .36f - .12f * t)
+        GlassMaterialRole.Navigation -> glassTilePaint(clarity, false).copy(alpha = .08f - .04f * t)
+        else -> glassTilePaint(clarity, true)
+    }
+}
+
+@Composable
+internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
+    if (!palette.isLiquidGlass) this else background(glassHeaderControlPaint(palette.glassClarity, role), shape)
+        .trainPilotGlassRim(palette, shape, role)
 
 /** Saturation boost, then every channel scaled by [scale] (the API 31–32 contrast bound). */
 internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
