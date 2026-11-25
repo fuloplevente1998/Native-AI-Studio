@@ -2,7 +2,7 @@
 
 Alap: `main` (1.5.2, `f779f5dc` vagy újabb). Ág: `fix/2812-5-all`. Egy draft PR a main felé, EGY közös CI-kör; a README közös szabályai érvényesek.
 Gyűjtő (a teljes megfigyelés-lista): docs/FIXES_2812.md, sorok 12–18 (+ 1–11 már mainen: #397). Mockup: docs/mockups/2812/task5_theme_search_calendar_plus.png (13, 15, 16, 18).
-Sorrend: A → B → C → D → E → G, feladatonként külön commit; a verzióemelés (F) az UTOLSÓ commit.
+Sorrend: A → H → B → C → D → E → G, feladatonként külön commit; a verzióemelés (F) az UTOLSÓ commit.
 
 ## A) Felnyíló lapok akadása (12. sor) + Google Cloud lap (14. sor)
 Hol: `TrainPilotSheetRoutes` lapjai (WATCH_AND_SYNC = Kapcsolt eszközök, PERMISSIONS_SCREEN = Adatvédelem és engedélyek, BACKUP_RESTORE = Mentés/Google Cloud, PRIVATE_PHOTOS, EXERCISE_*, LOG_WORKOUT_DETAIL). Eszközön a legrosszabb: Adatvédelem és engedélyek, Kapcsolt eszközök; Google Cloud szinkron is akadós.
@@ -31,8 +31,13 @@ Fő fülek: Kezdőlap, Programok, Edzés, Naptár, Haladás, Egészség, Napló,
 ## G) Adatvédelmi tájékoztató: harmadik fél licencek (19. sor)
 Hol: `com.repforge.app.PrivacyPolicy.text(lang)` (`app/src/main/java/com/repforge/app/PrivacyPolicyAndActivity.kt`), megjelenítés: `SettingsMainScreen.kt:~111–136` (dialógus). Jelenleg nincs benne licenc-említés. Teendő: új „Harmadik fél licencek" szakasz mind a 4 nyelven (hu/en/de/ro): Kyant Backdrop (io.github.kyant0:backdrop:1.0.6) és Shapes (io.github.kyant0:shapes:1.2.0), Apache License 2.0, © Kyant (Kyant0), forrás https://github.com/Kyant0/AndroidLiquidGlass, módosítatlan bináris függőségek a Liquid Glass megjelenítéshez. Vedd fel a `app/src/main/assets/third-party-licenses/kyant-backdrop-NOTICE.txt` összes felsorolt könyvtárát (olvasd el). Ha a licencszöveg megjeleníthető az appból (asset), hivatkozz rá. Ne írj új adatkezelési állítást, csak a licenc-szakaszt. Teszt: a szöveg mind a 4 nyelven tartalmazza a „Kyant" és „Apache" kulcsszavakat.
 
+## H) Felnyíló lap lehúzáskor ugrál (20. sor) – legfontosabb hiba
+Tünet: felnyitom a lapot (pl. Kapcsolt eszközök, Adatvédelem és engedélyek), lehúzom, megállok félúton → a lap magától fel-le ugrál. Fájlok: `app/src/main/java/com/example/ui/components/TrainPilotModalBottomSheet.kt` (137 sor, olvasd végig), `TrainPilotScreenSheet.kt`, `ui/theme/KyantWindowOverlay.kt`, `TrainPilotSheetRoutes.kt`.
+Feltételezések (ellenőrizd a kódban, a felhasználó eszközön látta, mérés nincs): (a) a lap tartalom-magassága húzás közben változik (állapotfrissítés, animált tartalom, a `KyantWindowOverlay` scene-rétege) és a ModalBottomSheet horgonyai újraszámolódnak → ugrás; (b) üveg módban a `dragHandle` a tartalomba került (a Material `dragHandle` = null), ez és a belső görgetés (nestedScroll) ellentétesen mozgatja a lapot; (c) `contentWindowInsets = 0` + belső `windowInsetsPadding` miatt a magasság húzás közben billeg.
+Teendő: állapítsd meg az okot a kódból (fájl:sor), javítsd úgy, hogy húzás alatt a horgonyok stabilak (semmi nem méretezi újra a tartalmat; a scene-rögzítés fagyasztva húzás alatt), a belső görgetés ne mozgassa ellentétesen a lapot, a fogantyú húzása egyértelmű. Nem-glass palettán is ellenőrizd. Tiszta logika (pl. mikor fagyasztunk) legyen tesztelhető. Az A és H pont összefügg (lapok), ugyanabban a témában gondold végig.
+
 ## F) Verzióemelés (UTOLSÓ commit, csak ha A–E kész)
 Fájlok: `app/build.gradle.kts`, `wear/build.gradle.kts` (`rg "280800|280802"`). Új érték: versionName `1.5.3`, telefon `280900`, Wear `280902`. A séma: `27NN00`/`27NN02`. Más fájl változatlan (applicationId `com.TrainPilot.com`, aláírás). `HANDOFF.md` frissítés (≤40 sor, régit cseréld).
 
 ## Kész, ha
-Minden A–E és G pont kész, CI zöld a PR-en (nyers JUnit számok a PR-leírásban), a verzió 1.5.3 (280900/280902). Ezután az ág mainre megy (a merge-et és a buildet a felhasználó kéri / a Claude Code session végzi) – TE NE merge-elj.
+Minden A–E, G és H pont kész, CI zöld a PR-en (nyers JUnit számok a PR-leírásban), a verzió 1.5.3 (280900/280902). Ezután az ág mainre megy (a merge-et és a buildet a felhasználó kéri / a Claude Code session végzi) – TE NE merge-elj.
