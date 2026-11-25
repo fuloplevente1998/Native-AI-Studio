@@ -50,7 +50,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
-import androidx.compose.material3.Switch
+import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton

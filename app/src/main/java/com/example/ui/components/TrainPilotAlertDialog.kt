@@ -1,6 +1,19 @@
 package com.example.ui.components
+import com.example.ui.theme.KyantMaterialSpec
+import com.example.ui.theme.GlassContrast
+import com.example.ui.theme.GlassOptics
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.rememberKyantScene
+import com.example.ui.theme.rememberKyantSceneBackdrop
+import com.example.ui.theme.kyantSceneLayer
+import com.example.ui.theme.LocalKyantHeader
+import com.example.ui.theme.LocalKyantScene
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.KyantGlass
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import com.repforge.app.ui.theme.trainPilotFrame
-
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,12 +61,23 @@ internal fun TrainPilotAlertDialog(
         titleLarge = MaterialTheme.typography.titleMedium
     )
     Dialog(onDismissRequest = onDismissRequest, properties = properties) {
+        // Dialogs own a separate window. Never sample the parent's recording.
+        val glass = p.isLiquidGlass && (background == p.surfaceCard || background == p.surface || background == p.background)
+        val layer = if (glass && KyantGlass.active(p) && LocalGlassOpticsEnabled.current) rememberKyantSceneBackdrop(p) else null
+        val scene = layer?.let { rememberKyantScene(it) }
+        // A raw white coat would exceed the scene luminance ceiling, especially over photos.
+        val overlayPaint = if (layer != null) GlassContrast.limit(GlassOptics.TINT, GlassOptics.SURFACE_LUMA_MAX)
+            .copy(alpha = KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, p.glassClarity).tintAlpha) else Color.Transparent
         MaterialTheme(typography = compactType) {
-            Surface(color = background, shape = shape, tonalElevation = tonalElevation,
+            Surface(color = if (layer != null) Color.Transparent else background, shape = shape, tonalElevation = tonalElevation,
                 modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
                     .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
-                    .trainPilotSoftGlow(p.primary, shape, 4.dp)
-                    .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape)) {
+                    .then(if (layer != null) Modifier.clip(shape).kyantSceneLayer(p, layer)
+                        .background(overlayPaint, shape) else Modifier)
+                    .then(if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Overlay)
+                        else Modifier.trainPilotSoftGlow(p.primary, shape, 4.dp)
+                            .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape))) {
+                CompositionLocalProvider(LocalKyantScene provides scene, LocalKyantHeader provides null) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (title != null || icon != null) Row(Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -79,6 +103,7 @@ internal fun TrainPilotAlertDialog(
                         dismissButton?.invoke()
                         confirmButton()
                     }
+                }
                 }
             }
         }

@@ -49,7 +49,11 @@ internal fun TrainPilotModalBottomSheet(
     modifier: Modifier = Modifier,
     contentColor: Color = contentColorFor(containerColor),
     outlineColor: Color = contentColor,
-    dragHandle: @Composable (() -> Unit)? = { BottomSheetDefaults.DragHandle() },
+    dragHandle: @Composable (() -> Unit)? = {
+        val p = LocalTrainPilotPalette.current
+        if (p.isLiquidGlass) BottomSheetDefaults.DragHandle(color = p.cardBorder)
+        else BottomSheetDefaults.DragHandle()
+    },
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.windowInsets },
     content: @Composable ColumnScope.() -> Unit
 ) {

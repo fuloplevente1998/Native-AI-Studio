@@ -1,5 +1,7 @@
 package com.repforge.app.ui.navigation
 
+import com.example.ui.components.TrainPilotSwitch as Switch
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import androidx.compose.foundation.layout.*

@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.Text
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import androidx.compose.runtime.Composable

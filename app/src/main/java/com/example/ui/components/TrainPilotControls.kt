@@ -231,3 +231,26 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
         }
     }
 }
+
+/** Material switch semantics, gestures, sizing and legacy colors are unchanged. Glass tracks are
+ * bounded, inexpensive state paint; no independent blur, layer capture or animation. */
+@Composable
+internal fun TrainPilotSwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: androidx.compose.material3.SwitchColors = androidx.compose.material3.SwitchDefaults.colors()
+) {
+    val p = LocalTrainPilotPalette.current
+    val glassColors = if (p.isLiquidGlass) androidx.compose.material3.SwitchDefaults.colors(
+        checkedThumbColor = p.primary,
+        checkedTrackColor = p.glassControlFill(p.surfaceElevated, GlassMaterialRole.Selection),
+        checkedBorderColor = p.primary,
+        uncheckedThumbColor = p.textSecondary,
+        uncheckedTrackColor = p.glassTile(p.surfaceElevated),
+        uncheckedBorderColor = p.cardBorder
+    ) else colors
+    androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange,
+        modifier = modifier, enabled = enabled, colors = glassColors)
+}

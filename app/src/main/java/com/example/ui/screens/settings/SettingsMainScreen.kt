@@ -1,5 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.semantics.semantics
+
+import androidx.compose.foundation.BorderStroke
+
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.GlassMaterialRole
+
+import com.example.ui.theme.glassControlFill
+
 import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassCardFill
@@ -243,9 +253,12 @@ fun SettingsMainScreen(
                             val selected = uiState.language == lang
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (selected) palette.primary else palette.glassTile(palette.surfaceElevated, elevated = true),
+                                color = if (selected) palette.glassControlFill(palette.primary, GlassMaterialRole.Selection) else palette.glassTile(palette.surfaceElevated, elevated = true),
+                                border = if (palette.isLiquidGlass && selected) BorderStroke(1.dp, palette.primary) else null,
                                 modifier = Modifier
                                     .weight(1f)
+                                    .trainPilotGlassRim(palette, RoundedCornerShape(10.dp))
+                                    .semantics { this.selected = selected }
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
@@ -253,7 +266,7 @@ fun SettingsMainScreen(
                                         text = "${lang.flag} ${lang.code}",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (selected) palette.onPrimary else palette.textPrimary
+                                        color = if (selected && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary
                                     )
                                 }
                             }
