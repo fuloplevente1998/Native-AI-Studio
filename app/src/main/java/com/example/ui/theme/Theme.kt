@@ -19,7 +19,9 @@ val LocalTrainPilotPalette = staticCompositionLocalOf {
 /** One mapping for Studio and embedded native editors, including light selection colors. */
 internal fun nativeStudioColors(palette: TrainPilotPalette): TrainPilotExtendedColors {
     val selection = palette.selectionColors()
-    return TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
+    // 2811/G4: native (rf) cards in Liquid Glass are translucent tiles; legacy palettes: the exact colours.
+    return TrainPilotExtendedColors(bg = palette.background, card = palette.glassTile(palette.surfaceCard),
+        card2 = palette.glassTile(palette.surfaceElevated, elevated = true),
         line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
         accent = palette.primary, accent2 = palette.secondary, onAccent = palette.readablePrimaryLabel(),
         accentText = selection.foreground,

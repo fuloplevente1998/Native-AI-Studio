@@ -96,3 +96,15 @@ Saját motor, új motor/függőség nélkül; csak a 33–40 család. Audit: `do
   peremen törik, fénysűrűsége a lap plafonjára (≤0,128) korlátozva. Gyorsgombok/nav-kapszula: csempe-tónus + Button perem.
   Napló és Coach is a fejléc alá görget. `LiquidGlassHeader2811Test` (nincs lépcső 33–40 × 0/50/65/100, glifa-kontraszt, alágörgetés).
   Korlát: API 31–32-n a színmátrix-skála a fejléc alatt is sötétít (kontraszt elsőbbsége) – készüléken nézendő.
+
+## V9 (2811 G2–G4, 2026-11-25) – naptár, közös komponensek, képernyők
+- **Egy szabály:** minden új üveg-kitöltés olyan szín, amelynek fénysűrűsége ≤ a semleges csempe-tónusé (`GLASS_TILE_LUMA` < 0,13),
+  alacsony alfával – bármely üveg-kompozit fölött a plafon alatt marad (konvex sRGB keverés), így a paletta szövege ≥4,5:1, kontúr ≥3:1.
+  Régi paletták és saját témák pontosan a kapott színt kapják (`glassStateTile`, `glassTile`, `glassButtonColors` → ugyanaz a példány).
+- **G2 naptár:** `glassCalendarCell` (PlannerControls.kt): csempe / tervezett akcentus / teljesített siker / mai (akcentus szám) / kijelölt
+  Selection lencse; az állapotot A/B jel, pipa és körvonal is hordozza. Gombok a közös üveg gombokon.
+- **G3:** `TrainPilotPressFeedback` → `glassButtonColors`: telt/körvonalas/szöveg/mentés/törlés gomb áttetsző, saját színárnyalatú
+  állapot-tónus, olvashatóra emelt felirat; Button perem. Mező = csempe (Input), kijelölés (`selectionColors`, chip) akcentus tónus.
+  Menük, párbeszédablakok: opak (külön ablak, indokolt).
+- **G4:** `tintedSurface`, natív kártyák (`nativeStudioColors`), mérőképernyők háttere (közös, ott statikus háttér), dokkok/sávok, felsorolt
+  kártyák a közös anyagon. Tesztek: `LiquidGlassSurfaces2811Test`.

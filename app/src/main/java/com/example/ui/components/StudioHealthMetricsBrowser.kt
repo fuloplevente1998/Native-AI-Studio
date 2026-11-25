@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.foundation.layout.*
@@ -107,7 +110,7 @@ internal fun StudioHealthMetricsBrowser(
     val periodFormat = java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         val pillShape = RoundedCornerShape(14.dp)
-        Surface(shape = pillShape, color = palette.surfaceCard, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+        Surface(shape = pillShape, color = palette.glassCardFill(palette.surfaceCard), modifier = Modifier.trainPilotGlassMaterial(palette, pillShape).weight(1f).heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), pillShape)
             .trainPilotClickable(pillShape) {
                 pickStart = from; pickEnd = to
@@ -146,7 +149,7 @@ internal fun StudioHealthMetricsBrowser(
             androidx.compose.runtime.LaunchedEffect(focusKey) {
                 if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
             }
-            Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
+            Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {

@@ -102,7 +102,9 @@ data class TrainPilotPalette(
 
     /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
     fun tintedSurface(alpha: Float): Color = primary.copy(alpha = alpha).let {
-        if (id == -1 || isLiquidGlass || isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
+        // 2811/G4: Liquid Glass = translucent accent state tint (no opaque block inside glass cards).
+        if (isLiquidGlass) glassStateTile(primary, it.compositeOver(surfaceCard), strong = alpha >= .2f)
+        else if (id == -1 || isHighContrast || hasGlow || subGroup == PaletteCategory.LIGHT) it.compositeOver(surfaceCard) else it
     }
     val textMuted: Color = textSecondary.copy(alpha = 0.90f)
 

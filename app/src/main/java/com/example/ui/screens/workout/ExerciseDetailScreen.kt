@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassStateTile
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -120,7 +122,7 @@ fun ExerciseDetailScreen(
                     SmallExerciseVideoButton(exerciseName = exercise.localizedName(state.language), exerciseId = exercise.id)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = palette.primary.copy(alpha = 0.18f),
+                        color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.18f)),
                         modifier = Modifier.trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(12.dp))
                     ) {
                         Text(

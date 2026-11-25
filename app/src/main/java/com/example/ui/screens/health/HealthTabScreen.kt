@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
@@ -552,7 +553,9 @@ fun HealthTabScreen(
                     Modifier.fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
                         .clip(goalShape)
-                        .background(palette.surfaceCard)
+                        // 2811/G4: Heti célok = glass panel (legacy: the card colour).
+                        .trainPilotGlassMaterial(palette, goalShape)
+                        .background(palette.glassCardFill(palette.surfaceCard))
                 ) {
                     com.example.ui.components.WeeklyGoalsCompact(
                         uiState,

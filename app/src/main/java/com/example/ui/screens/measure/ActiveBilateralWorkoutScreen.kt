@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -246,7 +249,8 @@ fun ActiveBilateralWorkoutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            // 2811/G4: glass = the shared (static on this screen) page backdrop instead of an opaque panel.
+            .trainPilotScreenBackdrop(palette)
             .testTag("active_bilateral_screen")
     ) {
         uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
@@ -287,8 +291,8 @@ fun ActiveBilateralWorkoutScreen(
                 val isLeftRecordedInTarget = targetSetObj?.leftRecorded == true || targetSetObj?.completed == true
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassCardFill(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(
                             width = if (leftRunning) 2.dp else 1.dp,
@@ -363,7 +367,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = palette.surfaceElevated,
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
@@ -448,8 +452,8 @@ fun ActiveBilateralWorkoutScreen(
                 val isRightRecordedInTarget = targetSetObj?.rightRecorded == true || targetSetObj?.completed == true
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassCardFill(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(
                             width = if (rightRunning) 2.dp else 1.dp,
@@ -524,7 +528,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = palette.surfaceElevated,
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
@@ -607,8 +611,8 @@ fun ActiveBilateralWorkoutScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassCardFill(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
@@ -632,7 +636,7 @@ fun ActiveBilateralWorkoutScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = palette.primary.copy(alpha = 0.16f),
+                                color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.16f)),
                                 modifier = Modifier
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onAddSet() }
                             ) {
@@ -686,8 +690,8 @@ fun ActiveBilateralWorkoutScreen(
                 val diff = kotlin.math.abs(compareLeft - compareRight)
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassCardFill(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {

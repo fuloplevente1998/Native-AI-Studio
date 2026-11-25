@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import androidx.compose.runtime.key
 
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -235,8 +238,8 @@ internal fun ProgramEditorContent(
 
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = palette.surface,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surface),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                     .fillMaxWidth()
                     .trainPilotReorderItem(exerciseReorder, ex.id, index)
                     .trainPilotAnimatedExpansion()
@@ -356,7 +359,7 @@ internal fun ProgramEditorContent(
 
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = palette.surfaceElevated,
+                                color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
@@ -445,7 +448,7 @@ internal fun EditorStepperBox(
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = palette.surfaceElevated,
+            color = palette.glassTile(palette.surfaceElevated, elevated = true),
             modifier = Modifier
                 .fillMaxWidth()
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))

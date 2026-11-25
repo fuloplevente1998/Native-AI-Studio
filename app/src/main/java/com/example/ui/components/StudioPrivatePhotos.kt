@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.background
@@ -160,8 +163,8 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 item {
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth()
+                        color = palette.glassCardFill(palette.surfaceCard),
+                        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                             .testTag("other_photo_attach_card")
                     ) {
@@ -248,8 +251,8 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 item {
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
+                        color = palette.glassCardFill(palette.surfaceCard),
+                        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                             .fillMaxWidth()
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                             .testTag("journal_photo_attach_card")

@@ -29,7 +29,10 @@ internal fun TrainPilotPalette.selectionColors(): ThemeSelectionColors {
         }
         return endpoint
     }
-    return ThemeSelectionColors(selected, readable(4.5f), readable(3f))
+    // 2811/G3: in Liquid Glass the selected fill is the translucent accent state tint (the foreground and
+    // outline were lifted against the glass ceiling already); legacy palettes keep the opaque composite.
+    val fill = if (isLiquidGlass) glassStateTile(primary, selected, strong = true) else selected
+    return ThemeSelectionColors(fill, readable(4.5f), readable(3f))
 }
 
 /** Neutral outline for inputs: preserve the original border hue where possible. */

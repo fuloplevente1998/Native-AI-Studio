@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.ui.semantics.contentDescription
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -74,7 +75,8 @@ fun IntervalSettingsScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            // 2811/G4: glass = the shared (static on this screen) page backdrop instead of an opaque panel.
+            .trainPilotScreenBackdrop(palette)
             .testTag("interval_settings_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)

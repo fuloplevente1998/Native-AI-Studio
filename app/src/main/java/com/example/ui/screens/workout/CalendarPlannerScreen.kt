@@ -842,7 +842,7 @@ fun CalendarPlannerScreen(
                                     if (isDone) {
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
-                                            color = palette.primary.copy(alpha = 0.16f),
+                                            color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.16f)),
                                             modifier = Modifier
                                                 .heightIn(min = 48.dp)
                                                 .trainPilotClickable(RoundedCornerShape(8.dp)) {
@@ -949,7 +949,7 @@ fun CalendarPlannerScreen(
                         )
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = palette.danger.copy(alpha = 0.12f),
+                            color = palette.glassStateTile(palette.danger, palette.danger.copy(alpha = 0.12f)),
                             modifier = Modifier
                                 .size(48.dp).testTag("calendar_replan_close")
                                 .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))

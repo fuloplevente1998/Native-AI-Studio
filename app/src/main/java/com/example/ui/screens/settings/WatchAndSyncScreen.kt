@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -99,8 +102,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
@@ -293,8 +296,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc_permission") }
@@ -343,8 +346,8 @@ fun WatchAndSyncScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("samsung") }

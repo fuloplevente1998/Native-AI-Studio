@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -151,7 +155,7 @@ fun StudioGoogleCloudSyncCard(
         }
     }
     @Composable fun ServiceBox(title: String, st: CloudSyncStatus, lastIso: String, extra: String, tag: String, failMessage: String?) {
-        Surface(shape = RoundedCornerShape(12.dp), color = palette.surfaceElevated, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+        Surface(shape = RoundedCornerShape(12.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true), modifier = Modifier.fillMaxWidth().testTag(tag)) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
@@ -175,8 +179,8 @@ fun StudioGoogleCloudSyncCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = palette.surfaceCard,
-        modifier = Modifier
+        color = palette.glassCardFill(palette.surfaceCard),
+        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
             .fillMaxWidth()
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .trainPilotAnimatedExpansion()
@@ -299,14 +303,14 @@ fun StudioGoogleCloudSyncCard(
 
             if (!compact) Text(driveHealthBackupSummary(lang), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
-                Surface(shape = RoundedCornerShape(10.dp), color = palette.primary.copy(alpha = 0.14f),
+                Surface(shape = RoundedCornerShape(10.dp), color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.14f)),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")) {
                     Text(gs.stageMessage, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
                         color = palette.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
             if (!compact && !gs.errorMessage.isNullOrBlank()) {
-                Surface(shape = RoundedCornerShape(10.dp), color = palette.danger.copy(alpha = 0.14f),
+                Surface(shape = RoundedCornerShape(10.dp), color = palette.glassStateTile(palette.danger, palette.danger.copy(alpha = 0.14f)),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")) {
                     Text(gs.errorMessage, style = MaterialTheme.typography.labelMedium, color = palette.danger,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))

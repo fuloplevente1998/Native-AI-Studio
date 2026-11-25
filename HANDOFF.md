@@ -25,5 +25,8 @@
   anyag: `GlassRole` (Navigation/Panel/Tile/Button/Selection/Input/Overlay/Performance) szorzók a meglévő motoron, perem
   (méretfüggő fénytörés, irányfüggő spekuláris, vastagság, árnyék), 2811/1 fejléc: Navigation szerep + 5. folt a fejléc alatt,
   gyorsgombok csempe-tónus + perem. `docs/LIQUID_GLASS_THEMES.md` V8, `LiquidGlassRoles2811Test`. `docs/FIXES_2811.md` 1, 10.
-- **Hátra:** #379 CI zöld → készülékes összevetés (0/50/65/100%, fejléc görgetés tetején, A57 frame time) → G2 naptár + tervező
-  (spec szerinti referencia), majd G3–G6. Main merge, verzió és kiadás csak jóváhagyással (#377 már main-en).
+- **2811 G2–G4 (ugyanott):** fejléc 2. kör (lappal folytonos Navigation, nincs lépcső; Napló/Coach a fejléc alatt), naptár
+  napcellák/gombok üveg, közös gombok/mezők/kijelölés üveg-tónus (`GlassSurfaces.kt`), képernyők tömör kártyái/aktív edzés panel
+  üveg úton. `docs/FIXES_2811.md` 1, 10–13, `docs/LIQUID_GLASS_THEMES.md` V8–V9.
+- **Hátra:** G4 CI zöld → G5 (Performance, gyorsítás) → G6 (regresszió, kézi elfogadási lista) → végső CI → készülékes teszt-APK.
+  Main merge, verzió és kiadás csak jóváhagyással (#377 már main-en).

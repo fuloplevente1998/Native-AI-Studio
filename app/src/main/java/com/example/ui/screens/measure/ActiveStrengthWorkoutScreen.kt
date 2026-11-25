@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -128,7 +131,8 @@ fun ActiveStrengthWorkoutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            // 2811/G4: glass = the shared (static on this screen) page backdrop instead of an opaque panel.
+            .trainPilotScreenBackdrop(palette)
             .testTag("active_strength_screen")
     ) {
         uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
@@ -265,7 +269,7 @@ internal fun SetValuePill(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = palette.background.copy(alpha = 0.65f),
+        color = palette.glassTile(palette.background.copy(alpha = 0.65f)),
         modifier = Modifier
             .width(64.dp)
             .trainPilotBorder(

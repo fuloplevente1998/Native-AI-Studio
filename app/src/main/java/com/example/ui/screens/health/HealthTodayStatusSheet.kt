@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.example.model.workoutsOn
@@ -90,7 +94,7 @@ internal fun StudioTodayStatusDetailSheet(
             "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else tr(uiState.language, "nincs lekért napi tartomány", "no daily range fetched", "kein Tagesbereich geladen", "fără interval zilnic preluat")
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = palette.background.copy(alpha = 0.75f),
+            color = palette.glassTile(palette.background.copy(alpha = 0.75f)),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
@@ -271,7 +275,7 @@ internal fun StudioTodayStatusDetailSheet(
                 if (activeKey == "pulse") {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = palette.background.copy(alpha = 0.55f),
+                        color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .trainPilotAnimatedExpansion()
@@ -412,8 +416,8 @@ internal fun StudioTodayStatusDetailSheet(
 
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
+                                    color = palette.glassCardFill(palette.surfaceCard),
+                                    modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                                         .fillMaxWidth()
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                                 ) {
@@ -493,7 +497,7 @@ internal fun StudioTodayStatusDetailSheet(
                 })
                 if (activeKey != "pulse") Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = palette.primary.copy(alpha = 0.16f),
+                    color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.16f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)

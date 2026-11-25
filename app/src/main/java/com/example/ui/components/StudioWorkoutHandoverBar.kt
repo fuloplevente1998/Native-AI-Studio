@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -89,9 +92,9 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         state.phoneControlsWorkout -> word("Vezérlés: telefon", "Control: phone", "Steuerung: Telefon", "Control: telefon")
         else -> word("Vezérlés: óra", "Control: watch", "Steuerung: Uhr", "Control: ceas")
     }
-    Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
+    Surface(color = palette.glassCardFill(palette.surfaceCard), shape = RoundedCornerShape(14.dp),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(0.75.dp, palette.cardBorder)),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).testTag("workout_sticky_handover")) {
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp)).testTag("workout_sticky_handover")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.isWorkoutSessionActive) {
                 val statusContent: @Composable () -> Unit = {

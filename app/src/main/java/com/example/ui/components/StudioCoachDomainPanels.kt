@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -103,13 +107,13 @@ internal fun StudioCoachRecommendations(
             val reasons = state.exercises.map { it.advice.reason }.distinct()
             val sharedReason = reasons.singleOrNull()?.let { NativeCoachAdviceText.reason(text, it) }?.takeIf { it.isNotBlank() }
             var openRow by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
-            Surface(color = palette.surfaceCard, shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().testTag("studio_coach_advice_list")
+            Surface(color = palette.glassCardFill(palette.surfaceCard), shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp)).fillMaxWidth().testTag("studio_coach_advice_list")
                     .trainPilotBorder(0.75.dp, palette.cardBorder, RoundedCornerShape(16.dp))) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                     Text(coachTr(lang, "Mai javaslat gyakorlatonként", "Today's advice per exercise", "Heutige Empfehlung je Übung", "Recomandarea de azi pe exerciții"),
                         style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
-                    if (sharedReason != null) Surface(color = palette.warning.copy(alpha = 0.14f), shape = RoundedCornerShape(10.dp),
+                    if (sharedReason != null) Surface(color = palette.glassStateTile(palette.warning, palette.warning.copy(alpha = 0.14f)), shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).testTag("studio_coach_shared_reason")) {
                         Text(sharedReason, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp))
@@ -358,8 +362,8 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String,
         confirmButton = { TextButton(onClick = model::approveTrainingModeWeight, enabled = !state.modeProposalLoading,
             modifier = Modifier.testTag("studio_active_coach_approve")) { Text(coachTr(lang, "Alkalmazás", "Apply", "Anwenden", "Aplică")) } },
         dismissButton = { TextButton(onClick = model::cancelTrainingModeReview) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
-    Surface(color = palette.surfaceCard, shape = RoundedCornerShape(18.dp),
-        modifier = Modifier.fillMaxWidth().testTag("studio_active_coach_panel")
+    Surface(color = palette.glassCardFill(palette.surfaceCard), shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp)).fillMaxWidth().testTag("studio_active_coach_panel")
             .trainPilotBorder(1.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("TrainPilot Coach", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)

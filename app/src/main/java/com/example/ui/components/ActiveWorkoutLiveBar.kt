@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,9 +75,11 @@ fun ActiveWorkoutLiveBar(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         shape = shape,
-        color = palette.surfaceElevated.copy(alpha = 0.98f),
-        shadowElevation = 8.dp,
+        // 2811/G4: floating bar = Overlay glass (own frost + lift) in Liquid Glass; legacy unchanged.
+        color = palette.glassCardFill(palette.surfaceElevated.copy(alpha = 0.98f)),
+        shadowElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
         modifier = modifier.fillMaxWidth().trainPilotBorder(1.5.dp, palette.primary, shape)
+            .trainPilotGlassMaterial(palette, shape, com.example.ui.theme.GlassRole.Overlay)
             .trainPilotClickable(shape) { onContinue() }.testTag("floating_return_to_active_workout_bar")
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
@@ -94,7 +99,7 @@ fun ActiveWorkoutLiveBar(
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("live_bar_status"))
             }
             val small = RoundedCornerShape(12.dp)
-            Surface(shape = small, color = palette.surfaceCard, modifier = Modifier.heightIn(min = 44.dp)
+            Surface(shape = small, color = palette.glassTile(palette.surfaceCard, elevated = true), modifier = Modifier.heightIn(min = 44.dp)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), small)
                 .trainPilotClickable(small, enabled = enabled) { showFinish = true }.testTag("live_bar_finish")) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 9.dp, vertical = 10.dp)) {

@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -139,8 +142,8 @@ internal fun HealthSourcesContent(
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassCardFill(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                     .weight(1f)
                     .heightIn(min = 52.dp)
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
@@ -162,8 +165,8 @@ internal fun HealthSourcesContent(
         Spacer(Modifier.height(10.dp))
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = palette.surfaceCard,
-            modifier = Modifier
+            color = palette.glassCardFill(palette.surfaceCard),
+            modifier = Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
                 .fillMaxWidth()
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                 .trainPilotClickable(RoundedCornerShape(20.dp)) {

@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassStateTile
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -449,7 +450,7 @@ fun LogTabScreen(
                 if (filteredLogs.isNotEmpty()) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = palette.primary.copy(alpha = 0.16f),
+                        color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.16f)),
                         modifier = Modifier
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
                             .trainPilotClickable(RoundedCornerShape(10.dp)) {
