@@ -11,6 +11,20 @@ import kotlin.math.pow
  */
 internal val LocalGlassOpticsEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
 
+/** Semantic material roles, all using the same renderer and luminance ceiling. */
+internal enum class GlassMaterialRole(
+    val coatScale: Float, val bendScale: Float, val rimScale: Float, val depthScale: Float
+) {
+    Navigation(.55f, .85f, .70f, .55f),
+    Panel(1f, 1f, 1f, 1f),
+    Tile(1f, .55f, .60f, .55f),
+    Button(1f, 1.12f, 1.10f, 1.10f),
+    Selection(.80f, 1.20f, 1.25f, 1.15f),
+    Input(1f, .55f, .70f, .65f),
+    Overlay(1f, .80f, .85f, .80f),
+    Performance(1f, .0f, .70f, .55f),
+}
+
 /**
  * TrainPilot Liquid Glass material as ONE continuous function of the family slider
  * (0 = Frosted, 100 = Clear Liquid). Every field is monotonic in the slider and moves by a
@@ -62,6 +76,29 @@ internal data class GlassOptics(
         val TINT = Color(0xFFEEF3FB)
 
         private val cache = arrayOfNulls<GlassOptics>(101)
+        private val roleCache = Array(GlassMaterialRole.values().size) { arrayOfNulls<GlassOptics>(101) }
+
+        /** Recompute both contrast bounds when the material tint changes; never raise the ceiling. */
+        fun forRole(value: Int, role: GlassMaterialRole): GlassOptics {
+            val step = value.coerceIn(0, 100)
+            val base = from(step)
+            if (role == GlassMaterialRole.Panel) return base
+            val cache = roleCache[role.ordinal]
+            return cache[step] ?: run {
+                val coat = base.coat * role.coatScale
+                base.copy(
+                    coat = coat,
+                    bend = base.bend * role.bendScale,
+                    dispersion = base.dispersion * role.bendScale,
+                    specular = (base.specular * role.rimScale).coerceAtMost(.60f),
+                    shadow = base.shadow * role.depthScale,
+                    backdropCap = if (coat == base.coat) base.backdropCap else GlassContrast.backdropCap(coat),
+                    blurOnlyScale = if (coat == base.coat) base.blurOnlyScale
+                        else GlassContrast.blurOnlyScale(coat, base.saturation),
+                ).also { cache[step] = it }
+            }
+        }
+
 
         fun from(value: Int): GlassOptics {
             val step = value.coerceIn(0, 100)
