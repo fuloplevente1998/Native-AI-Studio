@@ -560,7 +560,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .background(if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.background)
                 .padding(bodyPadding)
                 .then(glassCapture),
             contentAlignment = Alignment.TopCenter
