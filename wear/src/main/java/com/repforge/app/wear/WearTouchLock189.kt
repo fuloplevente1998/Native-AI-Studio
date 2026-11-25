@@ -41,14 +41,27 @@ internal class WearUnlockGesture189 {
     fun progress(now: Long)=downAt?.let { ((now-it).toFloat()/HOLD_MS).coerceIn(0f,1f) } ?: 0f
 }
 
+/** #367 3.5: how far (dp) a finger may drift off the unlock button while it keeps holding. */
+internal const val WEAR_UNLOCK_DRIFT_DP=16f
+
+/** A hold survives finger roll and drift; it ends only when the finger really leaves the button area. */
+internal fun wearUnlockHoldInside(x: Float,y: Float,width: Float,height: Float,margin: Float)=
+    x in -margin..width+margin&&y in -margin..height+margin
+
+/** Whole seconds still to hold (3, 2, 1, 0), shown while the lock is pressed. */
+internal fun wearUnlockSecondsLeft(elapsedMs: Long): Int {
+    val left=WearUnlockGesture189.HOLD_MS-elapsedMs.coerceAtLeast(0L)
+    return ((left+999L)/1000L).toInt().coerceIn(0,(WearUnlockGesture189.HOLD_MS/1000L).toInt())
+}
+
 internal data class WearTouchCopy189(val lock: String,val locked: String,val hold: String,
-    val work: String,val rest: String,val paused: String,val ready: String,val saved: String) {
+    val work: String,val rest: String,val paused: String,val ready: String,val saved: String,val sec: String) {
     companion object {
         fun language(language: String)=when(language.substringBefore('-').substringBefore('_')) {
-            "en"->WearTouchCopy189("Touch lock","Locked","Hold the lock for 3 seconds","Work","Rest","Paused","Ready","Recorded")
-            "de"->WearTouchCopy189("Berührungssperre","Gesperrt","Schloss 3 Sekunden halten","Arbeit","Pause","Pausiert","Bereit","Erfasst")
-            "ro"->WearTouchCopy189("Blocare atingere","Blocat","Ține lacătul apăsat 3 secunde","Lucru","Pauză","În pauză","Pregătit","Înregistrat")
-            else->WearTouchCopy189("Érintészár","Zárolva","Tartsd a lakatot 3 mp-ig","Munka","Pihenő","Szünet","Készen áll","Rögzítve")
+            "en"->WearTouchCopy189("Touch lock","Locked","Press and hold the lock for 3 seconds without letting go","Work","Rest","Paused","Ready","Recorded","s")
+            "de"->WearTouchCopy189("Berührungssperre","Gesperrt","Schloss 3 Sekunden ununterbrochen gedrückt halten","Arbeit","Pause","Pausiert","Bereit","Erfasst","Sek.")
+            "ro"->WearTouchCopy189("Blocare atingere","Blocat","Ține lacătul apăsat 3 secunde, fără să-l lași","Lucru","Pauză","În pauză","Pregătit","Înregistrat","s")
+            else->WearTouchCopy189("Érintészár","Zárolva","Tartsd lenyomva a lakatot megszakítás nélkül 3 mp-ig","Munka","Pihenő","Szünet","Készen áll","Rögzítve","mp")
         }
     }
 }

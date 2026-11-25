@@ -64,14 +64,15 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
         if(foreground)while(true){
             now=clock()
             if(gesture.tryUnlock(now))unlock()
-            delay(if(gesture.holding)32 else 250)
+            delay(if(gesture.holding)32 else 100)
         }
     }
     val progress=gesture.progress(now)
     val hint=copy.hold
+    // While pressed, the instruction yields to the remaining seconds, so the screen tells the truth.
+    val shownHint=if(gesture.holding)"${wearUnlockSecondsLeft((progress*WearUnlockGesture189.HOLD_MS).toLong())} ${copy.sec}" else hint
     val theme = LocalWearHomeTheme.current
     val color=theme.accentColor
-    val slop=LocalViewConfiguration.current.touchSlop
     val fontScale=LocalDensity.current.fontScale
     val automatic=workout.automation
     val context=LocalContext.current
@@ -102,7 +103,7 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
                         try {
                             while(true){
                                 val event=awaitPointerEvent();val current=event.changes.firstOrNull { it.id==first.id }
-                                if(event.changes.size!=1||current==null||(current.position-first.position).getDistance()>slop||current.position.x !in 0f..size.width.toFloat()||current.position.y !in 0f..size.height.toFloat()){
+                                if(event.changes.size!=1||current==null||!wearUnlockHoldInside(current.position.x,current.position.y,size.width.toFloat(),size.height.toFloat(),WEAR_UNLOCK_DRIFT_DP.dp.toPx())){
                                     cancelled=true;gesture.cancel()
                                 }
                                 event.changes.forEach { it.consume() }
@@ -123,7 +124,7 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
             Text(counter,color=theme.textColor,fontSize=(18*scale).sp,lineHeight=(20*scale).sp,fontWeight=FontWeight.SemiBold,
                 modifier=Modifier.testTag("wear-locked-clock"),maxLines=1)
             Text(rows.firstOrNull() ?: "—",color=color,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-            Text(hint,color=theme.mutedColor,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,textAlign=TextAlign.Center,maxLines=2,
+            Text(shownHint,color=theme.mutedColor,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,textAlign=TextAlign.Center,maxLines=2,
                 modifier=Modifier.testTag("wear-touch-hint"))
         }
     }

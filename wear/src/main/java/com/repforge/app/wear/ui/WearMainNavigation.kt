@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -68,23 +69,37 @@ internal fun WearMainNavigation(
     }
     val gesture = if (index < 0) Modifier else Modifier.pointerInput(route) {
         awaitEachGesture {
+            // Taps and vertical drags are never consumed here. The system back direction keeps its
+            // left edge band; a leftward drag may start anywhere but the physical rim (#367 3.7/3.8).
             val down = awaitFirstDown(requireUnconsumed = false)
-            // Leave both physical rim edges to the system. Do not consume taps or vertical drags.
-            if (!wearMainSwipeCanStart(down.position.x, size.width.toFloat(), 24.dp.toPx()))
-                return@awaitEachGesture
-            var distance = 0f
+            val pixels = density
+            val widthPx = size.width.toFloat()
+            val backEdge = WEAR_SWIPE_BACK_EDGE_DP * pixels
+            val rim = WEAR_SWIPE_RIM_DP * pixels
+            // Total travel from the touch-down point (the touch slop counts as travelled).
+            var endX = down.position.x
+            var endY = down.position.y
+            val tracker = VelocityTracker()
+            tracker.addPosition(down.uptimeMillis, down.position)
             val slop = awaitHorizontalTouchSlopOrCancellation(down.id) { change, over ->
                 val direction = if (over < 0) 1 else -1
-                if (wearAdjacentMainRoute(route, direction) != null) {
-                    distance = over
+                if (wearAdjacentMainRoute(route, direction) != null &&
+                    wearSwipeMayStart(down.position.x, widthPx, over, backEdge, rim)) {
+                    tracker.addPosition(change.uptimeMillis, change.position)
+                    endX = change.position.x
+                    endY = change.position.y
                     change.consume()
                 }
             } ?: return@awaitEachGesture
             val completed = horizontalDrag(slop.id) { change ->
-                distance += change.positionChange().x
+                tracker.addPosition(change.uptimeMillis, change.position)
+                endX = change.position.x
+                endY = change.position.y
                 change.consume()
             }
-            if (completed && kotlin.math.abs(distance) >= 36.dp.toPx()) {
+            val distance = endX - down.position.x
+            if (completed && wearSwipeCommits(distance / pixels, (endY - down.position.y) / pixels,
+                    tracker.calculateVelocity().x / pixels)) {
                 wearAdjacentMainRoute(route, if (distance < 0) 1 else -1)
                     ?.let { currentOnPage.value(it) }
             }

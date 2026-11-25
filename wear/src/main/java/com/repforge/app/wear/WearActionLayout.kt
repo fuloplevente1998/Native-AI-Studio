@@ -59,6 +59,9 @@ internal data class WearFixedPageLayout(
     val footerTop: Float,
     val footerWidth: Float,
     val footerHeight: Float,
+    /** Fixed row between body and footer (live heart rate); 0 when the page has none. */
+    val pinnedTop: Float = footerTop,
+    val pinnedHeight: Float = 0f,
 )
 
 /** Locate the controls themselves in the circle, without shrinking a whole rectangular page. */
@@ -68,6 +71,10 @@ internal fun wearFixedPageLayout(
     arc: Boolean,
     count: Int = 2,
     gap: Float = 7f,
+    buttonSize: Float = 48f,
+    rimMargin: Float = 22f,
+    captionBand: Float = 14f,
+    pinnedHeight: Float = 0f,
 ): WearFixedPageLayout {
     val diameter = min(width, height)
     val top = (height - diameter) / 2f
@@ -81,20 +88,39 @@ internal fun wearFixedPageLayout(
         footerTop = top + diameter - 10f - footerHeight
     } else {
         val layout = wearActionLayout(width, height, count, gap)
-        footerWidth = count * layout.buttonSize + (count - 1) * layout.gap
+        footerWidth = count * buttonSize + (count - 1) * layout.gap
         // 2777: room for the caption under the circles (12 dp) and the controls a bit higher on the rim.
-        footerHeight = layout.buttonSize + 14f
-        val outerCenterX = (footerWidth - layout.buttonSize) / 2f
-        val radius = diameter / 2f - layout.buttonSize / 2f - 22f
+        // 367 (3.4): the single workout action is larger, sits [rimMargin] dp from the rim and
+        // has its caption inside the circle ([captionBand] = 0).
+        footerHeight = buttonSize + captionBand
+        val outerCenterX = (footerWidth - buttonSize) / 2f
+        val radius = diameter / 2f - buttonSize / 2f - rimMargin
         val centerY = sqrt((radius * radius - outerCenterX * outerCenterX).coerceAtLeast(0f))
-        footerTop = top + diameter / 2f + centerY - layout.buttonSize / 2f
+        footerTop = top + diameter / 2f + centerY - buttonSize / 2f
     }
     val bodyTop = top + 32f
+    val pinnedTop = footerTop - pinnedHeight
     return WearFixedPageLayout(
         bodyTop,
-        (footerTop - bodyTop - 4f).coerceAtLeast(1f),
+        (pinnedTop - bodyTop - if (pinnedHeight > 0f) 0f else 4f).coerceAtLeast(1f),
         footerTop,
         footerWidth,
         footerHeight,
+        pinnedTop,
+        pinnedHeight,
     )
 }
+
+/** 367 (3.1/3.4): one workout action, same size and slot on every exercise and screen type. */
+internal const val WEAR_FOOTER_BUTTON_DP = 56f
+internal const val WEAR_FOOTER_RIM_MARGIN_DP = 6f
+internal const val WEAR_PINNED_ROW_DP = 14f
+
+internal fun wearWorkoutPageLayout(width: Float, height: Float): WearFixedPageLayout =
+    wearFixedPageLayout(
+        width, height, false, 1,
+        buttonSize = WEAR_FOOTER_BUTTON_DP,
+        rimMargin = WEAR_FOOTER_RIM_MARGIN_DP,
+        captionBand = 0f,
+        pinnedHeight = WEAR_PINNED_ROW_DP,
+    )

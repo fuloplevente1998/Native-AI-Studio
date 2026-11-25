@@ -68,12 +68,18 @@ internal fun FixedRoundPanel(
     headerColor: Color = Gold,
     sweep: Float = WEAR_HEADER_SWEEP,
     onTitleClick: (() -> Unit)? = null,
+    titleDescription: String = wearText("Megnyitás telefonon"),
+    footerSize: Float = 48f,
+    rimMargin: Float = 22f,
+    captionBand: Float = 14f,
+    pinned: (@Composable () -> Unit)? = null,
     footer: @Composable () -> Unit,
     content: @Composable ColumnScope.(Boolean) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().testTag("wear-round-list")) {
         val diameter = minOf(maxWidth, maxHeight).value
-        val layout = wearFixedPageLayout(maxWidth.value, maxHeight.value, arc, count, gap)
+        val layout = wearFixedPageLayout(maxWidth.value, maxHeight.value, arc, count, gap,
+            footerSize, rimMargin, captionBand, if (pinned != null) WEAR_PINNED_ROW_DP else 0f)
         val compact = layout.bodyHeight < 72f * LocalDensity.current.fontScale
         CurvedHeader(title, headerColor, sweep)
         Box(
@@ -95,6 +101,15 @@ internal fun FixedRoundPanel(
                 content(compact)
             }
         }
+        if (pinned != null)
+            Box(
+                Modifier.align(Alignment.TopCenter)
+                    .offset(y = layout.pinnedTop.dp)
+                    .width((diameter - 48f).dp)
+                    .height(layout.pinnedHeight.dp)
+                    .testTag("wear-pinned-row"),
+                contentAlignment = Alignment.Center,
+            ) { pinned() }
         Box(
             Modifier.align(Alignment.TopCenter)
                 .offset(y = layout.footerTop.dp)
@@ -111,7 +126,7 @@ internal fun FixedRoundPanel(
                     .width((diameter * .7f).dp)
                     .height(32.dp)
                     .clickable(role = Role.Button, onClick = onTitleClick)
-                    .semantics { contentDescription = wearText("Megnyitás telefonon") }
+                    .semantics { contentDescription = titleDescription }
             )
     }
 }

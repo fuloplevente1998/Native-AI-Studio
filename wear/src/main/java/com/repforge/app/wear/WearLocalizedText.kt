@@ -235,6 +235,7 @@ private val wearTranslations = mapOf(
     "Idő rögzítése" to listOf("Record time", "Zeit aufzeichnen", "Înregistrează timpul"),
     "Sorozat rögzítése" to listOf("Record set", "Satz aufzeichnen", "Înregistrează seria"),
     "Befejezés" to listOf("Finish", "Beenden", "Încheie"),
+    "Elvetés" to listOf("Discard", "Verwerfen", "Renunță"),
     "Edzés befejezése" to listOf("Finish workout", "Training beenden", "Încheie antrenamentul"),
     "Következő" to listOf("Next", "Weiter", "Următorul"),
     "Következő gyakorlat" to listOf("Next exercise", "Nächste Übung", "Exercițiul următor"),

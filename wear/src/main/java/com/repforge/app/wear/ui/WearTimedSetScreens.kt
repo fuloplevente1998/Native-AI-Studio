@@ -27,7 +27,6 @@ internal fun TimedSetScreen(
     health: JSONObject?,
     onChange: (String, Double) -> Unit,
     onComplete: () -> Unit,
-    onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSkipRest: () -> Unit,
     onFinish: () -> Unit,
@@ -58,80 +57,69 @@ internal fun TimedSetScreen(
             delay(200)
         }
     }
+    val onRecord: () -> Unit = {
+        val measured = timer.elapsed()
+        val seconds = if (measured > 0) ceil(measured / 1000.0) else fieldValue(set, field)
+        onChange(field, seconds - fieldValue(set, field))
+        timer = WearStopwatchStore.save(context, WearStopwatch(key))
+        elapsed = 0L
+        if (
+            !perSide ||
+                (side == "leftSeconds" && set.rightSeconds > 0) ||
+                (side == "rightSeconds" && set.leftSeconds > 0)
+        )
+            onComplete()
+        else {
+            side = if (side == "leftSeconds") "rightSeconds" else "leftSeconds"
+            WearStopwatchStore.save(context, WearStopwatch("$prefix:$side"))
+        }
+    }
     WorkoutPanel(
         workout,
+        health,
         onMenu,
-        actions = { layout ->
-            WorkoutControls(
+        footer = {
+            WearWorkoutFooter(
                 workout,
                 restRemaining,
-                recordingEnabled =
-                    !set.done && (timer.startedAt > 0 || elapsed > 0 || fieldValue(set, field) > 0),
+                canRecord = !set.done && (timer.startedAt > 0 || elapsed > 0 || fieldValue(set, field) > 0),
                 recordLabel = wearText("Mentés"),
-                onRecord = {
-                    val measured = timer.elapsed()
-                    val seconds =
-                        if (measured > 0) ceil(measured / 1000.0) else fieldValue(set, field)
-                    onChange(field, seconds - fieldValue(set, field))
-                    timer = WearStopwatchStore.save(context, WearStopwatch(key))
-                    elapsed = 0L
-                    if (
-                        !perSide ||
-                            (side == "leftSeconds" && set.rightSeconds > 0) ||
-                            (side == "rightSeconds" && set.leftSeconds > 0)
-                    )
-                        onComplete()
-                    else {
-                        side = if (side == "leftSeconds") "rightSeconds" else "leftSeconds"
-                        WearStopwatchStore.save(context, WearStopwatch("$prefix:$side"))
-                    }
-                },
-                onPrevious = onPrevious,
-                onNext = onNext,
+                onRecord = onRecord,
                 onSkipRest = onSkipRest,
+                onNext = onNext,
                 onFinish = onFinish,
-                layout = layout,
             )
         },
-    ) {
-        run {
-            SetHeading(
-                workout,
-                restRemaining,
-                detail =
-                    if (perSide)
-                        wearFormat("%s · %d/%d", wearText(if (side == "leftSeconds") "Bal oldal" else "Jobb oldal"), workout.currentSetIndex + 1, workout.exercise?.sets?.size ?: 0)
-                    else null,
-            )
-            LiveWorkoutHealth(workout, health)
-        }
+    ) { compact, _ ->
+        SetHeading(
+            workout,
+            restRemaining,
+            detail =
+                if (perSide)
+                    wearFormat("%s · %d/%d", wearText(if (side == "leftSeconds") "Bal oldal" else "Jobb oldal"), workout.currentSetIndex + 1, workout.exercise?.sets?.size ?: 0)
+                else null,
+            compact = compact,
+        )
         val displayed =
             if (set.done || (timer.startedAt == 0L && elapsed == 0L)) fieldValue(set, field).toInt()
             else (elapsed / 1000).toInt()
-        run {
-            Box(
-                Modifier.fillMaxWidth()
-                    .heightIn(min = 34.dp)
-                    .background(Card, RoundedCornerShape(10.dp))
-                    .clickable(enabled = restRemaining == 0 && !set.done, role = Role.Button) {
-                        timer = WearStopwatchStore.save(context, timer.toggle())
-                    }
-                    .semantics {
-                        contentDescription =
-                            if (timer.startedAt > 0) wearText("Stopper szüneteltetése")
-                            else wearText("Stopper indítása")
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    "${if (set.done) "✓" else if (timer.startedAt > 0 || restRemaining > 0) "Ⅱ" else "▶"} ${formatSeconds(displayed)}",
-                    color = White,
-                    fontSize = 28.sp,
-                    lineHeight = 30.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
+        // 3.6: one fixed-size face. Start, pause, resume and stop only change the drawn glyph.
+        WearTimerFace(
+            wearTimerGlyph(set.done, timer.startedAt > 0 || restRemaining > 0),
+            formatSeconds(displayed),
+            White,
+            Modifier.fillMaxWidth()
+                .background(Card, RoundedCornerShape(10.dp))
+                .clickable(enabled = restRemaining == 0 && !set.done, role = Role.Button) {
+                    timer = WearStopwatchStore.save(context, timer.toggle())
+                }
+                .semantics {
+                    contentDescription =
+                        if (timer.startedAt > 0) wearText("Stopper szüneteltetése")
+                        else wearText("Stopper indítása")
+                },
+        )
+        WearQuickUndo(workout)
     }
 }
 
