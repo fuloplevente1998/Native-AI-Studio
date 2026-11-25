@@ -98,6 +98,7 @@ internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
 @Composable
 private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean {
     if (!palette.isLiquidGlass) return false
+    if (LocalGlassOverlay.current) return true
     // Dialogs inherit composition locals but not the recording window. Do not hide their background.
     if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current)
         return LocalKyantScene.current.forThisWindow() != null
