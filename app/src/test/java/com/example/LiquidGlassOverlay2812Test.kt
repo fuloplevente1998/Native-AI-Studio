@@ -18,6 +18,20 @@ class LiquidGlassOverlay2812Test {
         assertEquals(0f, freezeSheetScene(null).seconds, 0f)
     }
 
+    @Test fun sheetHeightStaysPinnedDuringDragAndSettling() {
+        val lock = com.example.ui.components.SheetHeightLock()
+        assertNull(lock.heightFor(false, 0, 800))
+        lock.measured(640)
+        assertEquals(640, lock.heightFor(true, 0, 800))
+        lock.measured(640)
+        assertEquals(500, lock.heightFor(true, 0, 500))
+        lock.measured(500)
+        assertEquals(640, lock.heightFor(true, 0, 800))
+        assertNull(lock.heightFor(false, 0, 800))
+        lock.measured(420)
+        assertEquals(420, lock.heightFor(true, 0, 800))
+    }
+
     @Test fun everySheetColorFollowsPaletteNotColor() {
         for (p in LiquidGlassPalettes.all + TrainPilotPalettes.allPalettes) {
             for (color in listOf(p.background, p.surface, p.surfaceCard, p.surfaceElevated,

@@ -11,15 +11,20 @@ import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.material3.SheetValue
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import com.example.ui.theme.glassOverlayFill
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.BottomSheetDefaults
@@ -28,12 +33,17 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -42,7 +52,47 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import com.repforge.app.ui.theme.TrainPilotFrames
+
+/** Pin the last measured body height during a pointer gesture or Material's settling animation.
+ * Real window constraint changes (rotation, IME) still clamp the pinned value. */
+internal class SheetHeightLock {
+    private var lastHeight: Int? = null
+    private var pinnedHeight: Int? = null
+    var pointerHeld = false
+    val hasPin: Boolean get() = pinnedHeight != null
+
+    fun heightFor(held: Boolean, min: Int, max: Int): Int? {
+        if (!held) {
+            pinnedHeight = null
+            return null
+        }
+        val height = pinnedHeight ?: lastHeight?.also { pinnedHeight = it }
+        return height?.coerceIn(min, max)
+    }
+
+    fun measured(height: Int) { lastHeight = height }
+}
+
+/** Observes the inner body/handle only. A pointer event must never invalidate sheet measurement. */
+private fun Modifier.observeSheetGesture(lock: SheetHeightLock, onReleased: () -> Unit): Modifier =
+    pointerInput(lock) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            lock.pointerHeld = true
+            try {
+                do {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                } while (event.changes.any { it.pressed })
+            } finally {
+                lock.pointerHeld = false
+                if (lock.hasPin) onReleased()
+            }
+        }
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,15 +120,31 @@ internal fun TrainPilotModalBottomSheet(
     val scope = rememberCoroutineScope()
     val fill = if (glass) palette.glassOverlayFill(containerColor) else if (customPaint) palette.background else containerColor
     var handleHeight by remember { mutableIntStateOf(0) }
+    val heightLock = remember(sheetState) { SheetHeightLock() }
+    var releaseGeneration by remember(sheetState) { mutableIntStateOf(0) }
+    val releasePin: () -> Unit = {
+        scope.launch {
+            // Let Material's drag settle start before invalidating the pinned layout.
+            withFrameNanos { }
+            snapshotFlow { sheetState.isAnimationRunning }.first { !it }
+            if (!heightLock.pointerHeld && heightLock.hasPin) releaseGeneration++
+        }
+    }
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.isAnimationRunning }.collect { running ->
+            if (!running && !heightLock.pointerHeld && heightLock.hasPin) releaseGeneration++
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        // Keep Material's original sheet-level pointer and nested-scroll chain intact.
         modifier = modifier,
         sheetState = sheetState,
         shape = shape,
         containerColor = if (optical) Color.Transparent else fill,
         contentColor = contentColor,
         dragHandle = if (glass || dragHandle == null) null else {
-            { Box(Modifier.onSizeChanged { handleHeight = it.height }) { dragHandle() } }
+            { Box(Modifier.observeSheetGesture(heightLock, releasePin).onSizeChanged { handleHeight = it.height }) { dragHandle() } }
         },
         // The phone sheets use bottom-only insets or handle their own. Include the same inset
         // padding in the outlined area so the stroke reaches the physical edge of the panel.
@@ -89,6 +155,19 @@ internal fun TrainPilotModalBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .observeSheetGesture(heightLock, releasePin)
+                    .clipToBounds()
+                    .layout { measurable, constraints ->
+                        // Only react to genuine content/constraint changes; drag progress must not
+                        // itself invalidate measurement and restart Material's anchored gesture.
+                        releaseGeneration
+                        val moving = Snapshot.withoutReadObservation { sheetState.isAnimationRunning }
+                        val pinned = heightLock.heightFor(heightLock.pointerHeld || moving,
+                            constraints.minHeight, constraints.maxHeight)
+                        val measured = measurable.measure(constraints)
+                        heightLock.measured(measured.height)
+                        layout(measured.width, pinned ?: measured.height) { measured.placeRelative(0, 0) }
+                    }
                     .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
                     .then(backdrop)
                     .drawWithCache {
@@ -110,7 +189,9 @@ internal fun TrainPilotModalBottomSheet(
                             }
                         }
                     }
-                    .windowInsetsPadding(contentWindowInsets())
+                    // Top safety belongs to the sheet host; offset-dependent top consumption
+                    // must not feed back into the body height while dragging.
+                    .windowInsetsPadding(contentWindowInsets().only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
             ) {
                 if (glass && dragHandle != null) {
                     Box(Modifier.fillMaxWidth().semantics {
