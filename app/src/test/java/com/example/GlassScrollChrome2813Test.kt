@@ -51,8 +51,8 @@ class GlassScrollChrome2813Test {
         compose.onNodeWithTag("chrome_list").performScrollToIndex(8)
         assertEquals(upper, compose.onNodeWithTag("chrome_top").getUnclippedBoundsInRoot())
         assertEquals(lower, compose.onNodeWithTag("chrome_bottom").getUnclippedBoundsInRoot())
-        val row = compose.onNodeWithTag("chrome_row_8").getUnclippedBoundsInRoot()
-        assertTrue("The viewport extends behind the upper bar", row.top < upper.bottom)
+        val row = compose.onNodeWithTag("chrome_row_7").getUnclippedBoundsInRoot()
+        assertTrue("The previous row extends behind the upper bar", row.top < upper.bottom && row.bottom > upper.top)
         compose.onNodeWithTag("chrome_list").performScrollToIndex(39)
         assertTrue(compose.onNodeWithTag("chrome_row_39").getUnclippedBoundsInRoot().bottom <= lower.top)
     }
