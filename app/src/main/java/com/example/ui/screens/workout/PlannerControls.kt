@@ -204,7 +204,7 @@ internal fun PlannerFieldTile(
             }
 
             if (!dropdownOptions.isNullOrEmpty() && onSelectOption != null) {
-                androidx.compose.material3.DropdownMenu(
+                com.example.ui.components.TrainPilotDropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
                     containerColor = palette.surfaceCard,

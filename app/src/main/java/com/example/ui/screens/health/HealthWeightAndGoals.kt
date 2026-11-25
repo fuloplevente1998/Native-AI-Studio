@@ -401,7 +401,7 @@ internal fun WeightLogBody(
                     IconButton(onClick = { menu = true }, modifier = Modifier.testTag("health_weight_menu_${entry.id}")) {
                         Icon(Icons.Default.MoreVert, contentDescription = tr(lang, "Műveletek", "Actions", "Aktionen", "Acțiuni"), tint = palette.textSecondary)
                     }
-                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    com.example.ui.components.TrainPilotDropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         androidx.compose.material3.DropdownMenuItem(text = { Text(strings.editAction) }, onClick = { menu = false; onEdit(entry) },
                             modifier = Modifier.testTag("health_weight_edit_${entry.id}"))
                         androidx.compose.material3.DropdownMenuItem(

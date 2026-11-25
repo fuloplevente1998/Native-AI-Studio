@@ -26,6 +26,20 @@ class KyantK2IntegrationTest {
         }
     }
 
+    @Test fun windowOverlayPaintIsOpaqueBoundedAndLegacyUnchanged() {
+        for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
+            val p = seed.withGlassClarity(step)
+            val fill = p.glassOverlayFill(Color.Black)
+            assertEquals(1f, fill.alpha, .001f)
+            assertTrue(fill.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
+            assertTrue(NativeThemeTokens.contrast(p.textPrimary, fill) >= 4.5f)
+            assertTrue(NativeThemeTokens.contrast(p.textSecondary, fill) >= 4.5f)
+        }
+        for (p in TrainPilotPalettes.allPalettes) {
+            assertEquals(p.surface, p.glassOverlayFill(p.surface))
+        }
+    }
+
     @Test fun navigationUsesSingleHeaderLensAndNestedLightControls() {
         fun source(path: String) = File("src/main/java/com/example/$path").readText()
         val header = source("ui/components/common/TopHeaderAndNav.kt")

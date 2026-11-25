@@ -1,5 +1,8 @@
 package com.example
 
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassOverlayFill
 import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -1335,11 +1338,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.surfaceElevated,
-                    tonalElevation = 8.dp,
+                    color = palette.glassOverlayFill(palette.surfaceElevated),
+                    tonalElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
                     modifier = Modifier
                         .heightIn(min = 48.dp)
-                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Overlay)
+                            else Modifier.trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp)))
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { viewModel.clearBannerMessage() }
                 ) {
                     Row(

@@ -128,3 +128,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | K2 overlay and switches | `ex/ui/components/TrainPilotControls.kt` (`TrainPilotSwitch`), `TrainPilotAlertDialog.kt` (own-window glass overlay), `TrainPilotModalBottomSheet.kt` (default handle), `ex/ui/screens/StudioWorkoutModesDialog.kt`, `ex/ui/screens/settings/SettingsMainScreen.kt` |
 
 | Kyant dialog window isolation | `ex/ui/theme/KyantWindowOverlay.kt` (Android-only backdrop types behind glass/API/optics gate; common alert dialog remains JVM-compatible candidate) |
+
+| K2 popup and sheet finish | `ex/ui/components/TrainPilotDropdownMenu.kt`, `ex/ui/theme/GlassSurfaces.kt` (`glassOverlayFill`), `KyantWindowOverlay.kt` (`KyantStaticSheetBackdrop`), `TrainPilotModalBottomSheet.kt`, status banner in `ex/MainActivity.kt` |

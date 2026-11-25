@@ -1,5 +1,9 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.theme.LocalTrainPilotPalette
+
+import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +52,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
             }
         }
         DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
-            modifier = Modifier.background(colors.card)) {
+            modifier = if (LocalTrainPilotPalette.current.isLiquidGlass) Modifier else Modifier.background(colors.card)) {
             choices.forEach { (key, label) ->
                 val chosen = answer?.first == key
                 DropdownMenuItem(text = { Text(label, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal,

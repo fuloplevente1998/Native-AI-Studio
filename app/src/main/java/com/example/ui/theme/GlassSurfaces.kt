@@ -38,3 +38,13 @@ internal fun glassReadable(color: Color, minimum: Float = 4.55f): Color {
     return Color.White
 }
 
+
+/** Opaque, guarded popup/sheet paint: a separate window never samples the obscured parent.
+ * Use one matte material across the complete surface, including the drag handle. */
+internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
+    if (!isLiquidGlass) return legacy
+    val base = GlassContrast.limit(surfaceCard.copy(alpha = 1f), GlassOptics.SURFACE_LUMA_MAX)
+    val tint = GlassContrast.limit(primary.copy(alpha = 1f), GlassOptics.SURFACE_LUMA_MAX)
+    val coat = KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, glassClarity).tintAlpha
+    return lerp(base, tint, coat)
+}

@@ -49,7 +49,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.IconToggleButton
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
+import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
