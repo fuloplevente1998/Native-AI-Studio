@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 
 import com.example.ui.components.PageLayoutBlock
@@ -125,11 +127,13 @@ internal fun MainProgressVolumeAndMuscleSection(
                             // 1. EDZÉSVOLUMEN: compact trend + one-row periods; full trend expands in place.
                             Surface(
                                 shape = RoundedCornerShape(18.dp),
-                                color = palette.glassTile(palette.surfaceCard),
+                                color = palette.glassCardFill(palette.surfaceCard),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .trainPilotAnimatedExpansion()
-                                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
+                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                                    // 2810/4: decorative accent frame; Liquid Glass uses the rim instead.
+                                    .then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp)))
                                     .testTag("progress_total_volume_card")
                                     .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
                             ) {
@@ -372,12 +376,13 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
                                 Surface(
                                     shape = RoundedCornerShape(18.dp),
-                                    color = palette.glassTile(palette.surfaceCard),
+                                    color = palette.glassCardFill(palette.surfaceCard),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
                                             bottom = if (compactPrPanel) 8.dp else 16.dp)
-                                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
+                                        .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                                        .then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp)))
                                 ) {
                                     Column(
                                         modifier = Modifier
@@ -582,9 +587,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                             // 4. COMPACT EXPANDABLE "Fejlődési javaslat" CARD AT BOTTOM (`Screenshot_2026-10-27-15-00-06-481_com.repforge.app.jpg`)
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = palette.glassTile(palette.surfaceCard),
+                                color = palette.glassCardFill(palette.surfaceCard),
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                                     .trainPilotBorder(
                                         width = 1.dp,
                                         color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,

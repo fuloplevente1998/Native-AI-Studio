@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.customThemeText
@@ -240,7 +242,7 @@ fun SettingsMainScreen(
                             val selected = uiState.language == lang
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (selected) palette.primary else palette.surfaceElevated,
+                                color = if (selected) palette.primary else palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier
                                     .weight(1f)
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
@@ -409,9 +411,11 @@ internal fun SettingsActionRowCard(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = palette.surfaceCard,
+        // 2810/2: Liquid Glass rows sample the page backdrop like every card; legacy fill unchanged.
+        color = palette.glassCardFill(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
             .trainPilotBorder(if (subtleBorder) 0.75.dp else 1.25.dp,
                 if (subtleBorder) palette.cardBorder.copy(alpha = 0.45f) else palette.sectionBorder,
                 RoundedCornerShape(18.dp))

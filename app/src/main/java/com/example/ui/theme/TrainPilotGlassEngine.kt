@@ -67,28 +67,37 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                 }
                 return painted
             }
-            /** API 31–32 (no AGSL): the same backdrop drawn with Compose brushes, no blur or capture. */
-            fun DrawScope.paintComposeScene(): Boolean {
-                if (!effectsEnabled || Build.VERSION.SDK_INT < 31) return false
+            /**
+             * API 31–32 (no AGSL) and, 2810/3, the active measurement screens (cheap, static): the same
+             * backdrop drawn with Compose brushes, guarded at [cap]; no blur, shader or capture.
+             */
+            fun DrawScope.paintComposeScene(cap: Float): Boolean {
+                if (Build.VERSION.SDK_INT < 31) return false
                 var hardware = false
                 drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
                 if (!hardware) return false
-                drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight)
+                drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight, cap)
                 return true
             }
+            val shadow = if (path != null && radii.any { it > 0f }) path else null
             onDrawWithContent {
+                // 2810/6: soft drop shadow outside rounded glass (darkens the page only, never under text).
+                if (shadow != null) drawGlassDropShadow(shadow)
                 val painted = if (path == null) paintMaterial() else {
                     var drawn = false
                     clipPath(path) { drawn = paintMaterial() }
                     drawn
                 }
                 if (!painted) {
-                    // Opaque fallback: API < 31, software rendering, compile failure or an active measurement
-                    // screen. 2808/10: the cheap vector rim/sheen stays there too (light glass, no shader/blur).
-                    // 2809/1: API 31–32 paints the guarded backdrop with Compose brushes instead of the flat gradient.
-                    if (path == null) { if (!paintComposeScene()) drawRect(fallback) } else clipPath(path) {
-                        if (!paintComposeScene()) drawRect(fallback)
-                        drawRect(palette.cardPaint)
+                    // No AGSL: API 31–32, compile failure or an active measurement screen paint the guarded
+                    // Compose backdrop (cards: limited to the glass backdrop cap) + the thin white-ish tint +
+                    // the vector rim. API < 31 / software: the previous opaque gradient + paint.
+                    if (path == null) { if (!paintComposeScene(GlassScene.lumaCap)) drawRect(fallback) } else clipPath(path) {
+                        if (paintComposeScene(optics.backdropCap)) drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
+                        else {
+                            drawRect(fallback)
+                            drawRect(glassFallbackPaint(palette.glassClarity))
+                        }
                         drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
@@ -114,18 +123,29 @@ private fun drawGlass33(canvas: android.graphics.Canvas, width: Float, height: F
 }
 
 /**
- * Vector approximation of the shader's rim for paths without AGSL (API 31–32 live blur, API < 33
- * opaque cards): a top sheen and a light-facing rim. Continuous in the slider like the shader.
+ * Vector approximation of the shader's rim for paths without AGSL (API 31–32, measurement screens,
+ * API < 31 opaque cards): a thin specular edge, top strongest (~[GlassOptics.specular] white), sides
+ * and bottom weaker. 2810/6: no wide sheen, nothing under text. Continuous in the slider like the shader.
  */
-internal fun DrawScope.drawGlassHighlights(path: Path, palette: TrainPilotPalette, optics: GlassOptics, highlight: Float) {
-    val strength = (optics.specular + highlight).coerceIn(0f, 1f)
-    drawRect(Brush.verticalGradient(0f to Color.White.copy(alpha = .10f * strength), .45f to Color.Transparent))
-    val rim = Brush.linearGradient(
-        0f to Color.White.copy(alpha = .35f + .45f * strength),
-        .5f to palette.cardBorder.copy(alpha = .28f),
-        1f to Color.White.copy(alpha = .12f + .20f * strength),
-        start = Offset.Zero, end = Offset(size.width, size.height))
-    drawPath(path, rim, style = Stroke(1.2.dp.toPx()))
+internal fun DrawScope.drawGlassHighlights(path: Path, @Suppress("UNUSED_PARAMETER") palette: TrainPilotPalette,
+    optics: GlassOptics, highlight: Float) {
+    val strength = (optics.specular + highlight).coerceIn(0f, .6f)
+    val rim = Brush.verticalGradient(
+        0f to Color.White.copy(alpha = strength),
+        .5f to Color.White.copy(alpha = strength * .40f),
+        1f to Color.White.copy(alpha = strength * .27f))
+    drawPath(path, rim, style = Stroke(1.dp.toPx()))
+}
+
+/** Soft shadow below a rounded glass surface: a few widening strokes outside the outline, offset down. */
+internal fun DrawScope.drawGlassDropShadow(path: Path) {
+    val drop = 2.dp.toPx()
+    val step = 3.dp.toPx()
+    clipPath(path, ClipOp.Difference) {
+        translate(top = drop) {
+            for (layer in 1..4) drawPath(path, Color.Black.copy(alpha = .045f), style = Stroke(width = step * layer))
+        }
+    }
 }
 
 /**
@@ -136,14 +156,14 @@ internal fun DrawScope.drawGlassHighlights(path: Path, palette: TrainPilotPalett
 internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
     if (!palette.glassRimActive()) this else drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
+        // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
         val strength = GlassOptics.from(palette.glassClarity).specular
-        val shine = Brush.linearGradient(
-            0f to Color.White.copy(alpha = .30f + .40f * strength),
-            .55f to Color.White.copy(alpha = .06f),
-            1f to palette.primary.copy(alpha = .30f),
-            start = Offset.Zero, end = Offset(size.width * .4f, size.height))
+        val shine = Brush.verticalGradient(
+            0f to Color.White.copy(alpha = strength),
+            .5f to Color.White.copy(alpha = strength * .40f),
+            1f to Color.White.copy(alpha = strength * .27f))
         onDrawWithContent {
             drawContent()
-            clipPath(path) { drawPath(path, shine, style = Stroke(1.5.dp.toPx())) }
+            clipPath(path) { drawPath(path, shine, style = Stroke(2.dp.toPx())) }
         }
     }
