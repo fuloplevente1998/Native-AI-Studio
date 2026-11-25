@@ -66,6 +66,7 @@ import com.example.localization.LocalizedStrings
 import com.example.model.ExerciseItem
 import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -169,7 +170,7 @@ fun ActiveTimedWorkoutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette) // [Kyant test] 2810/3: page backdrop visible while training
             .testTag("active_timed_screen")
     ) {
         uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }

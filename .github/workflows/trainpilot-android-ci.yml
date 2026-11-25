@@ -39,7 +39,7 @@ on:
         default: false
 
 concurrency:
-  group: native-audit-${{ github.ref }}
+  group: native-audit-${{ github.head_ref == 'test/2810-kyant-glass' && 'refs/heads/test/2810-kyant-glass' || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -47,6 +47,8 @@ permissions:
 
 jobs:
   android-build:
+    # [Kyant test build] the disposable Kyant test branch only builds its isolated APK.
+    if: github.head_ref != 'test/2810-kyant-glass'
     name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -162,6 +164,7 @@ jobs:
           retention-days: 7
 
   release-r8:
+    if: github.head_ref != 'test/2810-kyant-glass'
     # Same release R8/shrink check as before, on its own runner so it no longer
     # competes for CPU with debug compilation and Robolectric tests.
     name: Release R8 minification check
@@ -211,3 +214,115 @@ jobs:
           path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
+
+  kyant-test-apk:
+    # [Kyant test build only] Disposable, phone-only engine comparison APK (Kyant Backdrop 1.0.6).
+    # Debug-signed with a throwaway key, own package; never a release gate, signing or Play run.
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/2810-kyant-glass' && github.base_ref == 'test/2810-kyant-base'
+    name: Isolated phone Kyant glass test APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: true
+      - name: Generate disposable debug signer
+        shell: bash
+        run: |
+          test ! -e debug.keystore
+          keytool -genkeypair -keystore debug.keystore -storetype JKS -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 365 -dname "CN=TrainPilot Kyant Test"
+      - name: Build isolated phone debug APK
+        run: gradle --no-daemon --stacktrace -PtrainpilotKyantTest=true :app:assembleDebug
+      - name: Record resolved Compose / Kotlin / Kyant versions
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p kyant-test-output
+          gradle --no-daemon -q -PtrainpilotKyantTest=true :app:dependencies --configuration debugRuntimeClasspath \
+            | grep -E "androidx.compose.(ui:ui|foundation:foundation|material3:material3|runtime:runtime):|io.github.kyant0|org.jetbrains.kotlin:kotlin-stdlib:" \
+            | sed 's/^[| +\\-]*//' | sort -u > kyant-test-output/resolved-versions.txt || true
+          cat kyant-test-output/resolved-versions.txt
+      - name: Verify test package, label, licence asset and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=kyant-test-output/TrainPilot-Kyant-Test.apk
+          cp app/build/outputs/apk/debug/app-debug.apk "$apk"
+          aapt="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$aapt" dump badging "$apk" > kyant-test-output/apk-metadata.txt
+          grep -F "package: name='com.TrainPilot.com.kyanttest'" kyant-test-output/apk-metadata.txt
+          grep -F "application-label:'TrainPilot Kyant Test'" kyant-test-output/apk-metadata.txt
+          grep -F -- "-kyant-test'" kyant-test-output/apk-metadata.txt
+          unzip -l "$apk" | grep -F "assets/third-party-licenses/kyant-backdrop-NOTICE.txt"
+          "$apksigner" verify --print-certs "$apk" >> kyant-test-output/apk-metadata.txt
+          git rev-parse HEAD > kyant-test-output/source-sha.txt
+          (cd kyant-test-output && sha256sum TrainPilot-Kyant-Test.apk > SHA256SUMS)
+          cat kyant-test-output/apk-metadata.txt | head -3
+          cat kyant-test-output/SHA256SUMS kyant-test-output/source-sha.txt
+      - name: Upload isolated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrainPilot-Kyant-Test
+          path: kyant-test-output/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
+      - name: Fetch Robolectric SDK
+        continue-on-error: true
+        run: python3 scripts/prefetch_robolectric_sdk.py
+      - name: Glass / theme JVM regressions on the Compose 1.10 bump (informative)
+        continue-on-error: true
+        run: |
+          gradle --no-daemon --stacktrace --continue -PtrainpilotKyantTest=true :app:testDebugUnitTest \
+            --tests 'com.example.LiquidGlass*' \
+            --tests 'com.example.GlassBackdropStore2809Test' \
+            --tests 'com.example.CustomTheme*350Test' \
+            --tests 'com.example.ThemeSelection349Test' \
+            --tests 'com.example.PhoneWearThemeRegressionTest' \
+            --tests 'com.example.StudioAppearanceRegressionTest' \
+            --tests 'com.example.SourceSizeGuardTest'
+      - name: Summarise raw JUnit XML
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          t = f = e = s = 0
+          for path in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r = ET.parse(path).getroot()
+              t += int(r.get('tests', 0)); f += int(r.get('failures', 0)); e += int(r.get('errors', 0)); s += int(r.get('skipped', 0))
+              if int(r.get('failures', 0)) or int(r.get('errors', 0)): print('FAILED:', r.get('name'))
+          print(f'tests={t} failures={f} errors={e} skipped={s}')
+          PY
+      - name: Upload targeted test XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kyant-test-junit
+          path: app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove disposable signing key
+        if: always()
+        run: rm -f -- debug.keystore

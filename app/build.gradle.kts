@@ -24,6 +24,11 @@ val mapsApiKey = sequenceOf(
     localMapsProperties.getProperty("MAPS_API_KEY")
 ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
+// [Kyant test build only] -PtrainpilotKyantTest=true (isolated CI job) turns the DEBUG build into a
+// separate app: own package suffix, launcher label and deep-link scheme. Without the property the
+// debug and release outputs are exactly as before; release/signing are never touched.
+val kyantTestBuild = providers.gradleProperty("trainpilotKyantTest").orNull == "true"
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -31,6 +36,8 @@ android {
   defaultConfig {
     applicationId = "com.TrainPilot.com"
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
+    manifestPlaceholders["trainpilotAppLabel"] = "@string/app_name"
+    manifestPlaceholders["trainpilotWearScheme"] = "trainpilot"
     minSdk = 26
     targetSdk = 36
     versionCode = 280700 // Play scheme: release 2807, mobile suffix 00
@@ -71,6 +78,12 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      if (kyantTestBuild) {
+        applicationIdSuffix = ".kyanttest"
+        versionNameSuffix = "-kyant-test"
+        manifestPlaceholders["trainpilotAppLabel"] = "TrainPilot Kyant Test"
+        manifestPlaceholders["trainpilotWearScheme"] = "trainpilotkyanttest"
+      }
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
@@ -113,7 +126,9 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 
 dependencies {
   implementation(project(":shared"))
-  implementation(platform(libs.androidx.compose.bom))
+  // [Kyant test build] phone only: Compose 1.10.3 BOM + Kyant Backdrop (Apache-2.0).
+  implementation(platform(libs.androidx.compose.bom.kyant))
+  implementation(libs.kyant.backdrop)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.core.splashscreen)
@@ -158,7 +173,7 @@ dependencies {
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.robolectric)
-  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(platform(libs.androidx.compose.bom.kyant))
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)

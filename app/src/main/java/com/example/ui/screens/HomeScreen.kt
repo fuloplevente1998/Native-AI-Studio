@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -516,7 +517,7 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
     Surface(color = p.glassTile(p.surface), shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
-            .trainPilotClickable(shape, enabled = enabled, onClick = onClick)) {
+            .trainPilotClickable(shape, enabled = enabled, onClick = onClick).glassTileBackdrop(p, shape)) {
         Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(icon, null, tint = p.primary, modifier = Modifier.size(18.dp))

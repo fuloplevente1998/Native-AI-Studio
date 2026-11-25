@@ -13,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,13 +39,21 @@ internal fun GlassAwareScaffold(
         Build.VERSION.SDK_INT >= 31 &&
         (glassHost.currentSubScreen == SubScreen.SETTINGS_MAIN ||
             (glassHost.currentSubScreen == SubScreen.NONE && glassHost.currentTab in setOf(MainTab.HOME, MainTab.HEALTH)))
-    val headerBackdrop = if (glassUnderlap) rememberGlassBackdrop() else null
+    // [Kyant test build] Liquid Glass on API 31+: one page-backdrop layer for the whole window.
+    val kyant = KyantGlass.active(palette)
+    val headerBackdrop = if (glassUnderlap && !kyant) rememberGlassBackdrop() else null
+    val sceneLayer = if (kyant) rememberKyantSceneBackdrop(palette) else null
+    val contentLayer = if (kyant && glassUnderlap) rememberLayerBackdrop() else null
+    val kyantScene = sceneLayer?.let { rememberKyantScene(it) }
+    val kyantHeader = sceneLayer?.let { rememberKyantHeaderScene(it, contentLayer) }
     Scaffold(
-        modifier = Modifier.fillMaxSize().background(palette.background),
-        containerColor = palette.background,
+        modifier = Modifier.fillMaxSize().background(palette.background)
+            .then(if (sceneLayer != null) Modifier.kyantSceneLayer(palette, sceneLayer) else Modifier),
+        containerColor = if (kyant) Color.Transparent else palette.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
-            CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop) {
+            CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop,
+                LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
                 topBar()
             }
         }
@@ -53,11 +64,17 @@ internal fun GlassAwareScaffold(
             end = innerPadding.calculateEndPadding(direction),
             bottom = innerPadding.calculateBottomPadding()
         ) else innerPadding
-        val capture = if (headerBackdrop != null) Modifier.captureGlassBackdrop(headerBackdrop) else Modifier
+        val capture = when {
+            contentLayer != null -> Modifier.layerBackdrop(contentLayer)
+            headerBackdrop != null -> Modifier.captureGlassBackdrop(headerBackdrop)
+            else -> Modifier
+        }
         // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
         // header lens sees it too); the pages above stay transparent instead of repainting it.
-        CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass) {
-            content(bodyPadding, capture.then(Modifier.trainPilotGlassScene(palette)),
+        // Kyant: the scaffold itself draws and records it; the header samples scene + content.
+        CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
+            LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
+            content(bodyPadding, if (kyant) capture else capture.then(Modifier.trainPilotGlassScene(palette)),
                 if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
         }
     }
@@ -69,7 +86,13 @@ internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
 /** Glass page over the root backdrop: nothing to paint. In a sheet window: its own backdrop. */
 @Composable
 private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean =
-    palette.isLiquidGlass && LocalGlassRootBackdrop.current && !LocalTrainPilotInSheet.current
+    palette.isLiquidGlass && ((LocalGlassRootBackdrop.current && !LocalTrainPilotInSheet.current) ||
+        // [Kyant test build] a sheet panel that records its own Kyant page backdrop.
+        LocalKyantScene.current.forThisWindow() != null)
+
+/** [Kyant test build] Content host colour: transparent over the Kyant page backdrop, else unchanged. */
+internal fun glassContentBackground(palette: TrainPilotPalette): Color =
+    if (KyantGlass.active(palette)) Color.Transparent else palette.background
 
 /** Page background of the main tabs. Legacy palettes: exactly the previous page brush. */
 @Composable

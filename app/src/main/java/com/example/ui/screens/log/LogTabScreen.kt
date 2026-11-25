@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -325,7 +326,7 @@ fun LogTabScreen(
                             intervalEndDay = null
                             currentYearMonth = currentYearMonth.minusMonths(1)
                         }
-                        .testTag("log_prev_month_button")
+                        .testTag("log_prev_month_button").glassTileBackdrop(palette, CircleShape)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -343,7 +344,7 @@ fun LogTabScreen(
                         .padding(horizontal = 10.dp)
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .trainPilotClickable(RoundedCornerShape(14.dp)) { showInlineCalendar = !showInlineCalendar }
-                        .testTag("log_month_picker_button")
+                        .testTag("log_month_picker_button").glassTileBackdrop(palette, RoundedCornerShape(14.dp))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -386,7 +387,7 @@ fun LogTabScreen(
                             intervalEndDay = null
                             currentYearMonth = currentYearMonth.plusMonths(1)
                         }
-                        .testTag("log_next_month_button")
+                        .testTag("log_next_month_button").glassTileBackdrop(palette, CircleShape)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -433,7 +434,7 @@ fun LogTabScreen(
                                 filterAllMonths = true
                                 currentYearMonth = java.time.YearMonth.from(today)
                             }
-                            .testTag("log_clear_filter_chip")
+                            .testTag("log_clear_filter_chip").glassTileBackdrop(palette, RoundedCornerShape(10.dp))
                     ) {
                         Text(
                             text = "✕ " + trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
@@ -533,7 +534,7 @@ internal fun CompactJournalSearchField(
     val shape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier.fillMaxWidth().height(48.dp)
-            .clip(shape)
+            .glassTileBackdrop(palette, shape).clip(shape)
             .background(palette.glassTile(palette.surfaceCard))
             .trainPilotFrame(1.dp, palette.cardBorder, shape)
             .padding(horizontal = 12.dp),
@@ -586,7 +587,7 @@ internal fun LogWorkoutCard(
             .trainPilotBorder(1.dp, palette.sectionBorder, shape)
             .clip(shape)
             .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
-            .testTag("log_card_${entry.id}")
+            .testTag("log_card_${entry.id}").glassTileBackdrop(palette, shape)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -658,7 +659,7 @@ internal fun LogWorkoutCard(
                     color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
-                        .testTag("journal_photos_badge_${entry.id}")
+                        .testTag("journal_photos_badge_${entry.id}").glassTileBackdrop(palette, RoundedCornerShape(8.dp))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),

@@ -29,7 +29,9 @@ internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier
 
 @Composable
 internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, shape) else this
+    if (!palette.isLiquidGlass) this
+    // [Kyant test build] Kyant samples the page backdrop layer; other windows / API < 31: own engine fallback.
+    else kyantGlassOrNull(palette, shape, KyantSurface.CARD) ?: glassSceneModifier(palette, shape)
 
 /** UI-thread only; the paint is reused, the shader it carries is snapshotted by each draw call. */
 private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }

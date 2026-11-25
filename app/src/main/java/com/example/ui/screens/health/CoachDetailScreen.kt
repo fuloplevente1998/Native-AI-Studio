@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -117,7 +118,7 @@ internal fun CoachDetailScreen(
                 color = palette.glassTile(palette.surfaceCard),
                 modifier = Modifier
                     .fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp)).glassTileBackdrop(palette, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -192,7 +193,7 @@ internal fun CoachDetailScreen(
                             color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp)).glassTileBackdrop(palette, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("Samsung Energy", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -214,7 +215,7 @@ internal fun CoachDetailScreen(
                             color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp)).glassTileBackdrop(palette, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("TrainPilot", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -233,7 +234,7 @@ internal fun CoachDetailScreen(
                             color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
-                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp)).glassTileBackdrop(palette, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text(tr(uiState.language, "Végső Coach", "Final Coach", "Finaler Coach", "Coach final"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -283,7 +284,7 @@ internal fun CoachExerciseAdviceRow(
         color = palette.glassTile(palette.surfaceElevated, elevated = true),
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotClickable(RoundedCornerShape(12.dp)) { onClick() }
+            .trainPilotClickable(RoundedCornerShape(12.dp)) { onClick() }.glassTileBackdrop(palette, RoundedCornerShape(12.dp))
     ) {
         Row(
             modifier = Modifier.padding(12.dp),

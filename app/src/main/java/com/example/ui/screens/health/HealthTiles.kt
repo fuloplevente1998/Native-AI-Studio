@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -144,7 +145,7 @@ internal fun HealthSectionLauncher(
             .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
-            .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen)
+            .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen).glassTileBackdrop(palette, RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
             Row(
@@ -205,7 +206,7 @@ internal fun SummarySmallPill(label: String, value: String, modifier: Modifier =
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = palette.glassTile(palette.surfaceElevated, elevated = true),
-        modifier = modifier
+        modifier = modifier.glassTileBackdrop(palette, RoundedCornerShape(12.dp))
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)

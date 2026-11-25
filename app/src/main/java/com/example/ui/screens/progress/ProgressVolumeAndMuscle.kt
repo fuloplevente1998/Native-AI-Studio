@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.glassTile
 
 import com.example.ui.components.PageLayoutBlock
@@ -131,7 +132,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     .trainPilotAnimatedExpansion()
                                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                                     .testTag("progress_total_volume_card")
-                                    .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
+                                    .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp).glassTileBackdrop(palette, RoundedCornerShape(18.dp))
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                                     // Header row (clickable to expand/collapse between compact & Screenshot 6 large Volumen trend)
@@ -272,7 +273,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             Surface(
                                                 shape = RoundedCornerShape(12.dp),
                                                 color = palette.glassTile(palette.surfaceElevated, elevated = true),
-                                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp)).glassTileBackdrop(palette, RoundedCornerShape(12.dp))
                                             ) {
                                                 Text(
                                                     text = if (isWeeklyBucket) trL(uiState.language, "Heti bontás", "Weekly breakdown", "Wöchentlich", "Săptămânal") else trL(uiState.language, "Napi bontás", "Daily breakdown", "Täglich", "Zilnic"),
@@ -377,7 +378,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         .fillMaxWidth()
                                         .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
                                             bottom = if (compactPrPanel) 8.dp else 16.dp)
-                                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
+                                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp)).glassTileBackdrop(palette, RoundedCornerShape(18.dp))
                                 ) {
                                     Column(
                                         modifier = Modifier
@@ -420,7 +421,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .glassTileBackdrop(palette, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))
                                                                 .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                                                                 .testTag("stats_pr_record_row"),
@@ -469,7 +470,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .glassTileBackdrop(palette, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))
                                                                 .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
@@ -505,7 +506,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .glassTileBackdrop(palette, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))
                                                                 .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
@@ -541,7 +542,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .glassTileBackdrop(palette, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))
                                                                 .background(palette.glassTile(palette.surfaceElevated, elevated = true))
                                                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
                                                                 .testTag("progress_workout_${w.id}")
@@ -592,7 +593,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     )
                                     .trainPilotAnimatedExpansion()
                                     .trainPilotClickable(RoundedCornerShape(16.dp)) { expandedAdviceDetails = !expandedAdviceDetails }
-                                    .testTag("progress_advice_card")
+                                    .testTag("progress_advice_card").glassTileBackdrop(palette, RoundedCornerShape(16.dp))
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)) {
                                     Row(
@@ -751,7 +752,7 @@ internal fun ExpandableStatSummaryTile(
                 color = if (selected) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(14.dp)
             )
-            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }.glassTileBackdrop(palette, RoundedCornerShape(14.dp))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),

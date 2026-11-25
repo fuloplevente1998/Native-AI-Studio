@@ -4,6 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.LocalKyantHeader
+import com.example.ui.theme.LocalKyantScene
+import com.example.ui.theme.kyantSceneLayer
+import com.example.ui.theme.rememberKyantScene
+import com.example.ui.theme.rememberKyantSceneBackdrop
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -63,11 +70,19 @@ internal fun TrainPilotModalBottomSheet(
         // padding in the outlined area so the stroke reaches the physical edge of the panel.
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
+        // [Kyant test build] Liquid Glass sheet = own window: it records its own page backdrop
+        // and every glass panel inside samples it (the app window behind cannot be read).
+        val sheetLayer = if (customPaint && KyantGlass.active(palette)) rememberKyantSceneBackdrop(palette) else null
+        val sheetScene = sheetLayer?.let { rememberKyantScene(it) }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
-                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
+                .then(when {
+                    sheetLayer != null -> Modifier.kyantSceneLayer(palette, sheetLayer)
+                    customPaint -> Modifier.trainPilotGlassMaterial(palette, shape)
+                    else -> Modifier
+                })
                 .drawWithCache {
                     // Material moves and scales the sheet inside its caller modifier. Draw here
                     // so the stroke moves with the surface and extends around the drag handle.
@@ -85,8 +100,9 @@ internal fun TrainPilotModalBottomSheet(
                         }
                     }
                 }
-                .windowInsetsPadding(contentWindowInsets()),
-            content = content
-        )
+                .windowInsetsPadding(contentWindowInsets())
+        ) {
+            CompositionLocalProvider(LocalKyantScene provides sheetScene, LocalKyantHeader provides sheetScene) { content() }
+        }
     }
 }

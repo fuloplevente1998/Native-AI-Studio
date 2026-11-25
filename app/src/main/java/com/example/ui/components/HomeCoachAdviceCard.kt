@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -88,7 +89,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
     Surface(shape = shape, color = p.glassTile(p.surface),
         modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape).trainPilotGlassRim(p, shape)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = 0.7f), p.cardBorder)), shape)
-            .trainPilotClickable(shape, onClick = onOpen).testTag("home_coach_advice_card")) {
+            .trainPilotClickable(shape, onClick = onOpen).testTag("home_coach_advice_card").glassTileBackdrop(p, shape)) {
         Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
             .padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -114,7 +115,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
                         color = p.primary)
                 }
             }
-            Surface(color = p.glassTile(p.surfaceElevated, elevated = true), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Surface(color = p.glassTile(p.surfaceElevated, elevated = true), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().glassTileBackdrop(p, RoundedCornerShape(8.dp))) {
                 Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.readinessTodayLabel, color = p.textSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                     Text(score?.let { "$it/100" } ?: "—", color = p.textPrimary,

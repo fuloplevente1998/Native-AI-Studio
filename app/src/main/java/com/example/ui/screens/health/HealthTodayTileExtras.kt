@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.glassTile
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -122,7 +123,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
         Surface(shape = RoundedCornerShape(10.dp), color = palette.glassTile(palette.surfaceCard),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWeekly() }.testTag("health_today_tile_open_weekly_$key")) {
+                .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWeekly() }.testTag("health_today_tile_open_weekly_$key").glassTileBackdrop(palette, RoundedCornerShape(10.dp))) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (key == "steps") tr(lang, "Heti lépések és előzmények", "Weekly steps and history", "Wochenschritte und Verlauf", "Pașii săptămânii și istoric")
                     else tr(lang, "Heti edzések és előzmények", "Weekly workouts and history", "Wochentrainings und Verlauf", "Antrenamentele săptămânii și istoric"),

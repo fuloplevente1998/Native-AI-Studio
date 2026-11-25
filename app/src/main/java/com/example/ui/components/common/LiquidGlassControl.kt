@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.*
+import com.repforge.app.ui.theme.trainPilotClickable
 
 /** One transient preview and one durable commit per completed slider interaction. */
 internal data class GlassThemeAccess(
@@ -68,6 +70,31 @@ internal fun LiquidGlassControl(language: AppLanguage, selectedId: Int) {
         LiquidGlassMaterialPreview(candidate, language)
         if (access != null && androidx.activity.compose.LocalActivityResultRegistryOwner.current != null)
             LiquidGlassBackdropPicker(access, language)
+        KyantEngineNotice(language)
+    }
+}
+
+/** [Kyant test build] Apache-2.0 attribution of the glass engine; tap shows the bundled licence text. */
+@Composable
+private fun KyantEngineNotice(language: AppLanguage) {
+    val palette = LocalTrainPilotPalette.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var open by remember { mutableStateOf(false) }
+    val text = remember(open) {
+        if (!open) "" else runCatching {
+            context.assets.open("third-party-licenses/kyant-backdrop-NOTICE.txt").bufferedReader().use { it.readText() }
+        }.getOrDefault("")
+    }
+    Text(customThemeText(language, "Üvegmotor (teszt): Kyant Backdrop 1.0.6 – Apache License 2.0",
+        "Glass engine (test): Kyant Backdrop 1.0.6 – Apache License 2.0",
+        "Glas-Engine (Test): Kyant Backdrop 1.0.6 – Apache License 2.0",
+        "Motor sticlă (test): Kyant Backdrop 1.0.6 – Apache License 2.0"),
+        color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("kyant_engine_notice")
+            .trainPilotClickable(RoundedCornerShape(8.dp)) { open = !open }.padding(vertical = 14.dp))
+    if (open && text.isNotEmpty()) Box(Modifier.fillMaxWidth().heightIn(max = 240.dp)
+        .verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+        Text(text, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
     }
 }
 

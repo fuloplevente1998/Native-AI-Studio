@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 import androidx.compose.runtime.key
@@ -466,7 +467,7 @@ fun ProgramsListScreen(
                 color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp)).glassTileBackdrop(palette, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     val builtinCount = state.programs.count { !it.isCustom }
@@ -520,7 +521,7 @@ fun ProgramsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .testTag("programs_active_program_card")
+                        .testTag("programs_active_program_card").glassTileBackdrop(palette, RoundedCornerShape(16.dp))
                 ) {
                     ProgramCardContent(
                         program = activeProgram,
@@ -559,7 +560,7 @@ fun ProgramsListScreen(
                     color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp)).glassTileBackdrop(palette, RoundedCornerShape(16.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(18.dp),
@@ -612,7 +613,7 @@ fun ProgramsListScreen(
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
                         )
-                        .testTag("program_card_${program.id}")
+                        .testTag("program_card_${program.id}").glassTileBackdrop(palette, RoundedCornerShape(14.dp))
                 ) {
                     ProgramCardContent(
                         program = program,

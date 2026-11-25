@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import kotlin.math.roundToInt
 
 /**
@@ -25,7 +26,9 @@ import kotlin.math.roundToInt
  * No screenshots, window capture, bitmaps, readback, or external rendering library.
  */
 @Stable
-internal class GlassBackdrop internal constructor(internal val layer: GraphicsLayer) {
+internal class GlassBackdrop internal constructor(internal val layer: GraphicsLayer,
+    /** [Kyant test build] the same layer, recorded by Kyant's layerBackdrop on API 31+. */
+    internal val kyant: com.kyant.backdrop.backdrops.LayerBackdrop) {
     internal var origin by mutableStateOf(Offset.Zero)
 }
 
@@ -34,6 +37,7 @@ internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape): Modifier {
+    if (palette.isLiquidGlass) kyantGlassOrNull(palette, shape, KyantSurface.BAR)?.let { return it }
     val backdrop = LocalGlassHeaderBackdrop.current
     return if (backdrop != null) liveGlassLens(backdrop, palette, shape)
     else trainPilotGlassMaterial(palette, shape)
@@ -42,12 +46,14 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
 @Composable
 internal fun rememberGlassBackdrop(): GlassBackdrop {
     val layer = rememberGraphicsLayer()
-    return remember(layer) { GlassBackdrop(layer) }
+    val kyant = com.kyant.backdrop.backdrops.rememberLayerBackdrop(layer)
+    return remember(layer, kyant) { GlassBackdrop(layer, kyant) }
 }
 
 @Composable
 internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
-    onGloballyPositioned { backdrop.origin = it.positionInRoot() }
+    // [Kyant test build] API 31+: Kyant records the source content itself.
+    if (KyantGlass.supported) layerBackdrop(backdrop.kyant) else onGloballyPositioned { backdrop.origin = it.positionInRoot() }
         .drawWithContent {
             var hardware = false
             drawIntoCanvas { hardware = it.nativeCanvas.isHardwareAccelerated }
@@ -68,6 +74,9 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
     if (!palette.isLiquidGlass) return this
+    // [Kyant test build] the live lens is a Kyant surface sampling the captured content.
+    if (KyantGlass.supported) return kyantGlass(rememberKyantScene(backdrop.kyant, samplesContent = true), palette, shape,
+        KyantSurface.BAR)
     val enabled = LocalGlassOpticsEnabled.current
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.

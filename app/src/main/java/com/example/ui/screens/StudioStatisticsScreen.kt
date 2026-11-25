@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTileBackdrop
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -159,7 +160,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
                             modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
                                 .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
-                                .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
+                                .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}").glassTileBackdrop(palette, MaterialTheme.shapes.large)) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp)) {
                                     selectedRecord = if (expanded) null else record.exerciseId
@@ -333,7 +334,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
     Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
-            .testTag("statistics_daily_activity")) {
+            .testTag("statistics_daily_activity").glassTileBackdrop(palette, MaterialTheme.shapes.large)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 StatisticsMetricTile(statsTr(lang, "Ma", "Today", "Heute", "Azi"), total(today, today.plusDays(1)), Modifier.weight(1f),
@@ -400,7 +401,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 }
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.glassTile(palette.surfaceElevated, elevated = true))
+            Column(Modifier.fillMaxWidth().glassTileBackdrop(palette, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp)).background(palette.glassTile(palette.surfaceElevated, elevated = true))
                 .padding(horizontal = 10.dp, vertical = 6.dp).testTag("statistics_steps_selected")) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)) {
