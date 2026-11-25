@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.*
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -29,9 +27,7 @@ class GlassScrollChrome2813Test {
     @Test fun firstAndLastRowsClearBothFixedBarsAndMiddleRowsUnderlap() {
         compose.setContent {
             TrainPilotTheme {
-                val scene = rememberKyantScene(rememberLayerBackdrop())
-                CompositionLocalProvider(LocalKyantScene provides scene, LocalGlassChromeUnderlap provides true) {
-                    GlassScrollChrome(rootInset = 60.dp,
+                MeasuredScrollChrome(rootInset = 60.dp,
                         top = { Box(Modifier.fillMaxWidth().height(48.dp).testTag("chrome_top")) },
                         bottom = { Box(Modifier.fillMaxWidth().height(72.dp).testTag("chrome_bottom")) }
                     ) { modifier, top, bottom ->
@@ -41,7 +37,6 @@ class GlassScrollChrome2813Test {
                             }
                         }
                     }
-                }
             }
         }
         val upper = compose.onNodeWithTag("chrome_top").getUnclippedBoundsInRoot()

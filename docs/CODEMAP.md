@@ -140,4 +140,4 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 
 | K3 battery saver | `ex/ui/theme/GlassPowerSave.kt` (host-only power mode observer), `GlassScene.kt` (static drift gate), `KyantK3CacheTest.kt` (mode matrix) |
 
-| 2813 görgethető tartalom és mért fix glass sávok | `ex/ui/theme/GlassScrollChrome.kt`, `GlassAwareScaffold.kt`, `GlassContentBackdrop.kt` (külön chrome gate, list capture, in-scroll top/bottom padding); teszt `GlassScrollChrome2813Test.kt` |
+| 2813 görgethető tartalom és mért fix glass sávok | `ex/ui/theme/GlassScrollChrome.kt`, `MeasuredScrollChrome.kt`, `GlassAwareScaffold.kt`, `GlassContentBackdrop.kt` (külön chrome gate, list capture, in-scroll top/bottom padding); teszt `GlassScrollChrome2813Test.kt` |

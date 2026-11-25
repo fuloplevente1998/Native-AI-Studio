@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -43,28 +41,12 @@ internal fun GlassScrollChrome(
 
     val layer = rememberLayerBackdrop()
     val chrome = rememberKyantHeaderScene(sceneLayer, layer)
-    SubcomposeLayout(modifier) { constraints ->
-        val width = constraints.maxWidth
-        val height = constraints.maxHeight
-        val barConstraints = Constraints(minWidth = width, maxWidth = width, maxHeight = height)
-        val inset = rootInset.roundToPx().coerceIn(0, height)
-        val upper = subcompose("top") {
-            CompositionLocalProvider(LocalKyantHeader provides chrome) { Box { top?.invoke() } }
-        }.single().measure(barConstraints.copy(maxHeight = height - inset))
-        val lower = subcompose("bottom") {
-            CompositionLocalProvider(LocalKyantHeader provides chrome) { Box { bottom?.invoke() } }
-        }.single().measure(barConstraints.copy(maxHeight = (height - inset - upper.height).coerceAtLeast(0)))
-        val body = subcompose("body") {
-            // The initial and terminal safe areas live INSIDE the scrolling viewport. The
-            // measured heights are available in the same layout pass, including large font/rest dock.
-            Box(Modifier.fillMaxSize().layerBackdrop(layer)) {
-                content(Modifier.fillMaxSize(), (inset + upper.height).toDp(), lower.height.toDp())
-            }
-        }.single().measure(Constraints.fixed(width, height))
-        layout(width, height) {
-            body.placeRelative(0, 0)
-            upper.placeRelative(0, inset)
-            lower.placeRelative(0, height - lower.height)
-        }
-    }
+    MeasuredScrollChrome(
+        modifier = modifier,
+        rootInset = rootInset,
+        capture = Modifier.layerBackdrop(layer),
+        top = { CompositionLocalProvider(LocalKyantHeader provides chrome) { top?.invoke() } },
+        bottom = { CompositionLocalProvider(LocalKyantHeader provides chrome) { bottom?.invoke() } },
+        content = content
+    )
 }
