@@ -89,8 +89,9 @@ internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, 
         .trainPilotGlassRim(palette, shape)
     val tint = GlassOptics.TINT.copy(alpha = spec.tintAlpha)
     val clarity = palette.glassClarity
-    val effects = remember(spec, density, shape, clarity) {
-        val filter = ColorMatrixColorFilter(glassVibrancyMatrix(spec.saturation, spec.colorScale))
+    val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
+    val effects = remember(spec, density, shape, clarity, scale) {
+        val filter = ColorMatrixColorFilter(glassVibrancyMatrix(spec.saturation, scale))
         val blurPx = with(density) { spec.blurDp.dp.toPx() }
         val height = with(density) { spec.lensHeightDp.dp.toPx() }
         val amount = with(density) { spec.lensAmountDp.dp.toPx() }
