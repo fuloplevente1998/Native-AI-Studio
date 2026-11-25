@@ -5,6 +5,7 @@ import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.liquidDropMaterial
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
@@ -125,7 +126,8 @@ fun TrainPilotGlassPrimaryButton(
     val glass = useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint)
     TrainPilotButton(
         onClick = onClick,
-        modifier = if (glass) modifier.background(palette.glassControlFill(colors.containerColor, GlassMaterialRole.Selection), shape) else modifier,
+        modifier = if (glass) modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Selection,
+            accent = palette.primary, allowMeasurement = true) else modifier,
         enabled = enabled,
         shape = shape,
         colors = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint),

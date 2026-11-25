@@ -119,7 +119,8 @@ internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, 
             blur(blurPx)
             if (Build.VERSION.SDK_INT >= 33 && spec.usesLens && this.shape is CornerBasedShape && size.minDimension > 1f) {
                 lens(height.coerceAtMost(size.minDimension / 2f), amount,
-                    depthEffect = clarity > 50, chromaticAberration = clarity > 60)
+                    depthEffect = role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
+                    chromaticAberration = clarity > 60)
             }
         }
         block
@@ -129,9 +130,10 @@ internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, 
         val provider: () -> Highlight? = { value }
         provider
     }
-    val shadow: (() -> Shadow?)? = remember(spec.shadow) {
+    val shadow: (() -> Shadow?)? = remember(spec.shadow, role) {
         if (!spec.shadow) null else {
-            val value = Shadow(radius = 12.dp, color = Color.Black.copy(alpha = .14f))
+            val control = role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection
+            val value = Shadow(radius = if (control) 6.dp else 12.dp, color = Color.Black.copy(alpha = if (control) .22f else .14f))
             val provider: () -> Shadow? = { value }
             provider
         }

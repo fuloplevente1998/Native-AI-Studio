@@ -5,6 +5,9 @@ import com.example.ui.components.WorkoutEditorDropdownMenu as DropdownMenu
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.ui.graphics.Color
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -112,16 +115,18 @@ internal fun StudioStrengthSetCard(
                 val toggleShape = RoundedCornerShape(12.dp)
                 Surface(
                     shape = toggleShape,
-                    color = if (item.completed) p.success else p.glassTile(p.surface),
+                    color = if (p.isLiquidGlass) Color.Transparent else if (item.completed) p.success else p.glassTile(p.surface),
                     border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder)),
-                    modifier = Modifier.size(48.dp).clip(toggleShape)
+                    modifier = Modifier.size(48.dp).liquidDropMaterial(p, toggleShape,
+                        if (item.completed) GlassMaterialRole.Selection else GlassMaterialRole.Button,
+                        accent = if (item.completed) p.success else null, live = false).clip(toggleShape)
                         .toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
                         .semantics { contentDescription = tr("Sorozat teljesítve", "Set completed", "Satz abgeschlossen", "Serie finalizată") }
                         .testTag("toggle_set_${item.setNumber}")
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Check, contentDescription = null,
-                            tint = (if (item.completed) com.repforge.app.ui.theme.NativeThemeTokens.onFill(p.success) else p.textSecondary)
+                            tint = (if (item.completed && p.isLiquidGlass) p.success else if (item.completed) com.repforge.app.ui.theme.NativeThemeTokens.onFill(p.success) else p.textSecondary)
                                 .copy(alpha = if (enabled) 1f else 0.5f),
                             modifier = Modifier.size(22.dp))
                     }
@@ -198,9 +203,10 @@ private fun WorkoutSetValuePicker(
     val valid = customValid?.invoke(canonical) == true
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth()) {
-            Surface(color = p.glassTile(p.surface), shape = RoundedCornerShape(10.dp),
+            Surface(color = if (p.isLiquidGlass) Color.Transparent else p.glassTile(p.surface), shape = RoundedCornerShape(10.dp),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(0.5.dp, outline)),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .liquidDropMaterial(p, RoundedCornerShape(10.dp), GlassMaterialRole.Input, live = false)
                     .trainPilotClickable(RoundedCornerShape(10.dp), enabled = enabled) { custom = false; expanded = true }
                     .testTag(tag)) {
                 Row(Modifier.padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {

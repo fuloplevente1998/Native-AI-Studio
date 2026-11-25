@@ -19,6 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.model.ExerciseItem
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.ui.graphics.Color
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -54,13 +57,16 @@ internal fun StudioExerciseSequenceStrip(
                 val border = when { current -> palette.primary; done -> palette.success; else -> palette.cardBorder }
                 Surface(
                     shape = shape,
-                    color = when { current -> palette.primary; done -> palette.success.copy(alpha = .18f); else -> palette.surfaceElevated },
+                    color = when { palette.isLiquidGlass -> Color.Transparent; current -> palette.primary; done -> palette.success.copy(alpha = .18f); else -> palette.surfaceElevated },
                     modifier = Modifier.widthIn(min = 48.dp)
+                        .liquidDropMaterial(palette, shape, if (current || done) GlassMaterialRole.Selection else GlassMaterialRole.Button,
+                            accent = if (done && !current) palette.success else if (current) palette.primary else null,
+                            live = current, allowMeasurement = true)
                         .trainPilotBorder(1.dp, border, shape).trainPilotClickable(shape) { onSelect(exercise) }.testTag("active_exercise_chip_$index")
                 ) {
                     Text("${index + 1}. ${exercise.localizedName(state.language)}" + if (done && !current) " ✓" else "",
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                        color = when { current -> palette.onPrimary; done -> palette.success; else -> palette.textSecondary },
+                        color = when { current && palette.isLiquidGlass -> palette.textPrimary; current -> palette.onPrimary; done -> palette.success; else -> palette.textSecondary },
                         maxLines = 1, softWrap = false,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                 }
