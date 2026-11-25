@@ -57,7 +57,7 @@ class Wear367Phase2Test {
         for (size in sizes) {
             val page = wearWorkoutPageLayout(size, size)
             assertTrue(page.bodyTop + page.bodyHeight <= page.pinnedTop)
-            assertEquals(page.footerTop, page.pinnedTop + page.pinnedHeight, .001f)
+            assertEquals(page.footerTop, page.pinnedTop + page.pinnedHeight + WEAR_PINNED_GAP_DP, .001f)
             // heading + stopwatch face always fit: the timed screens never need to scroll
             assertTrue("timed content fits at $size", page.bodyHeight >= 16f + 2f + WEAR_TIMER_BOX_DP)
         }

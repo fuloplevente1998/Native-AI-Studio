@@ -99,7 +99,7 @@ internal fun wearFixedPageLayout(
         footerTop = top + diameter / 2f + centerY - buttonSize / 2f
     }
     val bodyTop = top + 32f
-    val pinnedTop = footerTop - pinnedHeight
+    val pinnedTop = footerTop - pinnedHeight - if (pinnedHeight > 0f) WEAR_PINNED_GAP_DP else 0f
     return WearFixedPageLayout(
         bodyTop,
         (pinnedTop - bodyTop - if (pinnedHeight > 0f) 0f else 4f).coerceAtLeast(1f),
@@ -113,8 +113,11 @@ internal fun wearFixedPageLayout(
 
 /** 367 (3.1/3.4): one workout action, same size and slot on every exercise and screen type. */
 internal const val WEAR_FOOTER_BUTTON_DP = 56f
-internal const val WEAR_FOOTER_RIM_MARGIN_DP = 6f
+internal const val WEAR_FOOTER_RIM_MARGIN_DP = 4f
 internal const val WEAR_PINNED_ROW_DP = 14f
+
+/** Clear space between the heart-rate row and the round action below it. */
+internal const val WEAR_PINNED_GAP_DP = 4f
 
 internal fun wearWorkoutPageLayout(width: Float, height: Float): WearFixedPageLayout =
     wearFixedPageLayout(
