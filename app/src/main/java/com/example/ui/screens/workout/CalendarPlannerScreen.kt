@@ -448,7 +448,8 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                                 .testTag("calendar_prev_month")
@@ -473,7 +474,8 @@ fun CalendarPlannerScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                                     .testTag("calendar_next_month")
@@ -564,7 +566,7 @@ fun CalendarPlannerScreen(
                                                 .height(calendarCellHeight)
                                                 .then(when {
                                                     dayStyle.selectedLens -> Modifier.trainPilotGlassMaterial(palette, dayShape, GlassMaterialRole.Selection)
-                                                    dayStyle.lightRim -> Modifier.trainPilotGlassRim(palette, dayShape)
+                                                    dayStyle.lightRim -> Modifier.trainPilotGlassRim(palette, dayShape, GlassMaterialRole.Tile)
                                                     else -> Modifier
                                                 })
                                                 .then(if (palette.isLiquidGlass) Modifier.semantics {
@@ -752,7 +754,9 @@ fun CalendarPlannerScreen(
                     StudioAdaptiveControlRow(minimumWidth = 88.dp) {
                         com.repforge.app.ui.theme.TrainPilotNegativeButton(
                             onClick = onRequestClearCalendar, enabled = !state.calendarClearBusy,
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                                .semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
                             Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"), maxLines = 1)
                         }
                         CalendarPrimaryGlassButton(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
