@@ -24,4 +24,4 @@
 - **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
   → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
 
-- **Liquid Glass 2.0 önálló jelölt** `design/liquid-glass-2` (#380, base `43036875`): G1/G2/G3 zöld; G3 `891ee742`, run 45611727232, telefon 976 + Wear 248 = 1224, 0 failure/error/skipped, shared noSource, R8 zöld. G4 15 forrásfájl + `LiquidGlassG4Test` felpusholva (közös panel/csempe, edzés könnyített, GPS térkép marad); CI nyitott. G0/G4 maradék call-site audit és eszközteszt nyitott, G5/G6 még helyben; csak zöld kapu után tovább. #379 alternatíva, nem merge-elhető együtt.
+- **Liquid Glass 2.0 önálló jelölt** `design/liquid-glass-2` (#380, base `43036875`): G1–G4 zöld; G4 `48fddc7b`, run 45617304763, telefon 978 + Wear 248 = 1226, 0 failure/error/skipped, shared noSource, R8 zöld. G5 photo clock/cache, shader tone/blob cache, 2 új regresszió + kibővített clock teszt felpusholva, CI nyitott. G6 helyben; megosztott blur, teljes G0/G4 audit és fizikai elfogadás/mérés még nyitott. #379 alternatíva, nem merge-elhető együtt.
