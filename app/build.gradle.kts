@@ -24,6 +24,10 @@ val mapsApiKey = sequenceOf(
     localMapsProperties.getProperty("MAPS_API_KEY")
 ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
+// [Test APK only] -PtrainpilotTestVariant=<name> (isolated CI job) turns the DEBUG build into a separate app:
+// own package suffix, launcher label and deep-link scheme. Without it debug/release are unchanged.
+val testVariant = providers.gradleProperty("trainpilotTestVariant").orNull?.takeIf { it.matches(Regex("[a-z0-9]{1,12}")) }
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -31,6 +35,8 @@ android {
   defaultConfig {
     applicationId = "com.TrainPilot.com"
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
+    manifestPlaceholders["trainpilotAppLabel"] = "@string/app_name"
+    manifestPlaceholders["trainpilotWearScheme"] = "trainpilot"
     minSdk = 26
     targetSdk = 36
     versionCode = 280700 // Play scheme: release 2807, mobile suffix 00
@@ -71,6 +77,12 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      if (testVariant != null) {
+        applicationIdSuffix = ".lg$testVariant"
+        versionNameSuffix = "-lg-$testVariant"
+        manifestPlaceholders["trainpilotAppLabel"] = "TrainPilot LG $testVariant"
+        manifestPlaceholders["trainpilotWearScheme"] = "trainpilotlg$testVariant"
+      }
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
