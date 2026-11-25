@@ -20,7 +20,9 @@ import java.time.Instant
 import java.util.Locale
 
 @Composable
-internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, text: Resources, language: String) {
+internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, text: Resources, language: String,
+    /** #359: source package/title/device belong to the Forrás view only, not to the statistics summary. */
+    showSource: Boolean = true) {
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val source = remember(workout.rawJson) {
@@ -44,9 +46,9 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(local("Külső edzés mérései", "External workout measurements", "Externe Trainingsmessungen", "Măsurători antrenament extern"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)
-        source?.optString("source")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
-        source?.optString("title")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.text) }
-        source?.optJSONObject("device")?.let { device ->
+        if (showSource) source?.optString("source")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
+        if (showSource) source?.optString("title")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.text) }
+        if (showSource) source?.optJSONObject("device")?.let { device ->
             val name = listOf("manufacturer", "model").mapNotNull { key ->
                 device.optString(key).takeIf { !device.isNull(key) && it.isNotBlank() }
             }.joinToString(" ")

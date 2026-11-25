@@ -98,6 +98,18 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                 } else {
                     LazyColumn(Modifier.weight(1f).testTag("journal_editor_list"), verticalArrangement = Arrangement.spacedBy(6.dp),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp)) {
+                        // #359: an imported workout's name uses the same draft/Save path as the note.
+                        if (state.opened.detail.workout.originDevice == "external") item {
+                            JournalEditorPanel {
+                                com.example.ui.components.TrainPilotTextField(draft.title, { onChange(draft.copy(title = it.take(80))) },
+                                    label = { Text(when (language) {
+                                        "en" -> "Workout name"; "de" -> "Trainingsname"; "ro" -> "Numele antrenamentului"; else -> "Edzés neve"
+                                    }) }, enabled = !state.saving, singleLine = true,
+                                    shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
+                                    colors = journalEditorFieldColors(),
+                                    modifier = Modifier.fillMaxWidth().testTag("journal_editor_title"))
+                            }
+                        }
                         item {
                             JournalEditorPanel {
                                 Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted,

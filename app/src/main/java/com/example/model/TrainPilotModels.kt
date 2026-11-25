@@ -931,6 +931,11 @@ data class CalendarDayEvent(
     }
 }
 
+/** #359: provider + source package of an imported workout, for the Forrás tab only ("" when unknown). */
+internal fun externalSourceLabel(provider: String?, source: String?): String = listOfNotNull(provider?.takeIf { it.isNotBlank() }?.let {
+    if (it == "health_connect") "Health Connect" else if (it == "samsung_health") "Samsung Health" else it
+}, source?.takeIf { it.isNotBlank() }).joinToString(" · ")
+
 data class LoggedWorkoutEntry(
     val id: String,
     val dateLabelHu: String = "",
@@ -960,14 +965,16 @@ data class LoggedWorkoutEntry(
     /** 2779: the saved #226 PR badges of this workout (JSON array), read from Room. */
     val prRecordsJson: String = "",
     val externalSource: String? = null,
-    val externalProvider: String? = null
+    val externalProvider: String? = null,
+    /** #359: user-set name of an imported workout; the source title/id stay untouched. */
+    val externalUserTitle: String? = null
 ) {
     fun localizedTitle(
         lang: AppLanguage,
         programs: List<TrainingProgramModel> = emptyList(),
         exercises: List<ExerciseItem> = emptyList()
     ): String {
-        if (originDevice == "external") return when (lang) {
+        if (originDevice == "external") return externalUserTitle?.takeIf { it.isNotBlank() } ?: when (lang) {
             AppLanguage.HU -> "Külső edzés"
             AppLanguage.EN -> "External workout"
             AppLanguage.DE -> "Externes Training"
