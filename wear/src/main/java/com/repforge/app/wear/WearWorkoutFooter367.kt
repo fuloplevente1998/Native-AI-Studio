@@ -1,5 +1,6 @@
 package com.repforge.app.wear
 
+import java.util.Locale
 import org.json.JSONObject
 import kotlin.math.min
 
@@ -59,15 +60,15 @@ internal fun wearWorkoutPulse(data: JSONObject?, workoutId: String?, now: Long):
 }
 
 /** Outdoor/steps line without the heart rate (that has its own fixed row). */
-internal fun wearLiveMovementRow(data: JSONObject?, workoutId: String): String? {
+internal fun wearLiveMovementRow(data: JSONObject?, workoutId: String, language: String = Locale.getDefault().language): String? {
     if (data == null || workoutId.isBlank() || data.optString("workoutId") != workoutId ||
         data.optString("source") != "wear_health_services") return null
     fun value(key: String, unit: String): String? {
         val number = if (data.has(key) && !data.isNull(key)) data.optDouble(key) else Double.NaN
         return if (!number.isFinite() || number < 0.0) null else "${trimWearNumber(number)} $unit"
     }
-    return listOfNotNull(value("steps", "lépés"), value("distanceMeters", "m"))
-        .takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { "Edzés: $it" }
+    return listOfNotNull(value("steps", wearText("lépés", language)), value("distanceMeters", "m"))
+        .takeIf { it.isNotEmpty() }?.joinToString(" · ")?.let { String.format(Locale.ROOT, wearText("Edzés: %s", language), it) }
 }
 
 /** 3.6: the stopwatch face never changes size or place between start, pause, resume and stop. */

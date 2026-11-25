@@ -111,11 +111,11 @@ class Wear367Phase2Test {
 
     @Test fun movementRowCarriesOnlyRealOutdoorValues() {
         val now = 1_000_000L
-        assertNull(wearLiveMovementRow(health(now), "w1"))
-        assertEquals("Edzés: 120 m", wearLiveMovementRow(health(now).put("distanceMeters", 120), "w1"))
-        assertEquals("Edzés: 300 lépés · 120 m", wearLiveMovementRow(health(now).put("steps", 300).put("distanceMeters", 120), "w1"))
-        assertNull(wearLiveMovementRow(health(now).put("steps", -1), "w1"))
-        assertNull(wearLiveMovementRow(health(now, workout = "old").put("steps", 10), "w1"))
+        assertNull(wearLiveMovementRow(health(now), "w1", "hu"))
+        assertEquals("Edzés: 120 m", wearLiveMovementRow(health(now).put("distanceMeters", 120), "w1", "hu"))
+        assertEquals("Edzés: 300 lépés · 120 m", wearLiveMovementRow(health(now).put("steps", 300).put("distanceMeters", 120), "w1", "hu"))
+        assertNull(wearLiveMovementRow(health(now).put("steps", -1), "w1", "hu"))
+        assertNull(wearLiveMovementRow(health(now, workout = "old").put("steps", 10), "w1", "hu"))
     }
 
     // 3.6 ---------------------------------------------------------------------------------
@@ -182,8 +182,6 @@ class Wear367Phase2Test {
         assertFalse(wearSwipeMayStart(w - 3f, w, -30f, WEAR_SWIPE_BACK_EDGE_DP, WEAR_SWIPE_RIM_DP))
         assertFalse(wearSwipeMayStart(3f, w, -30f, WEAR_SWIPE_BACK_EDGE_DP, WEAR_SWIPE_RIM_DP))
         assertFalse(wearSwipeMayStart(96f, w, 0f, WEAR_SWIPE_BACK_EDGE_DP, WEAR_SWIPE_RIM_DP))
-        // the old generic helper still describes a symmetric centre band
-        assertTrue(wearMainSwipeCanStart(96f, w, 24f))
     }
 
     @Test fun slowLongDragsAndShortQuickFlicksChangeThePageButNotAccidentalMovements() {
@@ -203,6 +201,33 @@ class Wear367Phase2Test {
         assertFalse(wearSwipeCommits(-40f, 40f, -900f))
         assertFalse(wearSwipeCommits(-40f, 30f, -900f))
         assertTrue(wearSwipeCommits(-40f, 20f, 0f))
+    }
+
+    @Test fun committedPageDirectionIsTheOneDecidedAtTheSlopAndMustSurviveToTheEnd() {
+        // decided 1 = leftward drag (next page), -1 = rightward (previous page)
+        assertEquals(1, wearSwipePageDirection(1, -WEAR_SWIPE_COMMIT_DP, 3f, 0f))
+        assertEquals(-1, wearSwipePageDirection(-1, WEAR_SWIPE_COMMIT_DP, 3f, 0f))
+        assertEquals(1, wearSwipePageDirection(1, -22f, 3f, -700f))
+        // started leftwards (e.g. inside the back band) and came back rightwards past the commit distance: no page change
+        assertEquals(0, wearSwipePageDirection(1, WEAR_SWIPE_COMMIT_DP + 4f, 3f, 600f))
+        assertEquals(0, wearSwipePageDirection(-1, -WEAR_SWIPE_COMMIT_DP - 4f, 3f, -600f))
+        // no decision, no travel or a failing commit rule never pages
+        assertEquals(0, wearSwipePageDirection(0, -WEAR_SWIPE_COMMIT_DP, 0f, 0f))
+        assertEquals(0, wearSwipePageDirection(1, 0f, 0f, -900f))
+        assertEquals(0, wearSwipePageDirection(1, -40f, 40f, -900f))
+        assertEquals(0, wearSwipePageDirection(1, -WEAR_SWIPE_FLING_MIN_DP + 1f, 0f, -2000f))
+    }
+
+    @Test fun movementRowIsTranslatedInAllFourLanguages() {
+        val now = 1_000_000L
+        val data = health(now).put("steps", 300).put("distanceMeters", 120)
+        assertEquals("Edzés: 300 lépés · 120 m", wearLiveMovementRow(data, "w1", "hu"))
+        assertEquals("Workout: 300 steps · 120 m", wearLiveMovementRow(data, "w1", "en"))
+        assertEquals("Training: 300 Schritte · 120 m", wearLiveMovementRow(data, "w1", "de"))
+        assertEquals("Antrenament: 300 pași · 120 m", wearLiveMovementRow(data, "w1", "ro"))
+        assertEquals("Workout: 120 m", wearLiveMovementRow(health(now).put("distanceMeters", 120), "w1", "fr"))
+        for (lang in listOf("en", "de", "ro")) assertFalse(wearLiveMovementRow(data, "w1", lang)!!.contains("Edzés"))
+        assertNull(wearLiveMovementRow(health(now), "w1", "en"))
     }
 
     @Test fun thresholdConstantsKeepTheirDocumentedRelations() {

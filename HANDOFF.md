@@ -33,6 +33,8 @@
   36 dp teljes elmozdulás VAGY ≥16 dp és ≥450 dp/s lökés, vízszintes/függőleges ≥1,5. Menüből nyíló naptár-pager alap Compose pager, nem érintve.
 - Teszt `Wear367Phase2Test`; `WearScreenAuditTest` új képek (overlay, plank).
 - **Készüléken (este):** gomb/pulzus 176/192/216 mm-en nincs levágva; stopper stabil Start/Pause/Stop; 3 mp tartás old, 2,5 mp nem; szél-tap, balra húzás jobb szélről.
+- **Átnézői javítások (utólag):** telefon-alvás csak friss `computedAt`-tal (≤3 ó, `WEAR_PHONE_SLEEP_FRESH_MS`) nyer, különben az óra saját összege;
+  `Edzés: %s` mozgássor 4 nyelven (`wearText`); lapozás iránya a slopnál dől el (`wearSwipePageDirection`); `wearMainSwipeCanStart` törölve.
 
 ## Hátra
 - Készülékes ellenőrzés (fenti + 1. fázis: átnevezés, auto-import, Wear nélküli adat, óra alvás = telefon alvás). Merge/verzió/kiadás csak jóváhagyással.

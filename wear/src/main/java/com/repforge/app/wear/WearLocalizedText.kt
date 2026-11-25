@@ -198,6 +198,7 @@ private val wearTranslations = mapOf(
     "Összes energia" to listOf("Total energy", "Gesamtenergie", "Energie totală"),
     "Lépések" to listOf("Steps", "Schritte", "Pași"),
     "lépés" to listOf("steps", "Schritte", "pași"),
+    "Edzés: %s" to listOf("Workout: %s", "Training: %s", "Antrenament: %s"),
     "Aktív mérési idő" to listOf("Active recording time", "Aktive Messzeit", "Timp activ de măsurare"),
     "Távolság" to listOf("Distance", "Distanz", "Distanță"),
     "Sebesség" to listOf("Speed", "Geschwindigkeit", "Viteză"),

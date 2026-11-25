@@ -36,9 +36,6 @@ internal fun wearAdjacentMainRoute(route: String?, direction: Int): String? {
     return wearMainRoutes.getOrNull(index + direction)
 }
 
-internal fun wearMainSwipeCanStart(x: Float, width: Float, edge: Float): Boolean =
-    width > 2 * edge && x >= edge && x <= width - edge
-
 @Composable
 internal fun WearMainNavigation(
     route: String?,
@@ -79,12 +76,15 @@ internal fun WearMainNavigation(
             // Total travel from the touch-down point (the touch slop counts as travelled).
             var endX = down.position.x
             var endY = down.position.y
+            // Direction decided once, when the slop is crossed and the gesture is claimed.
+            var decided = 0
             val tracker = VelocityTracker()
             tracker.addPosition(down.uptimeMillis, down.position)
             val slop = awaitHorizontalTouchSlopOrCancellation(down.id) { change, over ->
                 val direction = if (over < 0) 1 else -1
                 if (wearAdjacentMainRoute(route, direction) != null &&
                     wearSwipeMayStart(down.position.x, widthPx, over, backEdge, rim)) {
+                    decided = direction
                     tracker.addPosition(change.uptimeMillis, change.position)
                     endX = change.position.x
                     endY = change.position.y
@@ -98,11 +98,9 @@ internal fun WearMainNavigation(
                 change.consume()
             }
             val distance = endX - down.position.x
-            if (completed && wearSwipeCommits(distance / pixels, (endY - down.position.y) / pixels,
-                    tracker.calculateVelocity().x / pixels)) {
-                wearAdjacentMainRoute(route, if (distance < 0) 1 else -1)
-                    ?.let { currentOnPage.value(it) }
-            }
+            val committed = if (completed) wearSwipePageDirection(decided, distance / pixels,
+                (endY - down.position.y) / pixels, tracker.calculateVelocity().x / pixels) else 0
+            if (committed != 0) wearAdjacentMainRoute(route, committed)?.let { currentOnPage.value(it) }
         }
     }
     Box(Modifier.fillMaxSize().background(theme.backgroundColor).then(rotaryModifier).then(gesture)) {

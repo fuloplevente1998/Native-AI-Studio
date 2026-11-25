@@ -21,9 +21,16 @@ class WearMainNavigationTest {
     }
 
     @Test fun systemRimRemainsUnclaimed() {
-        assertFalse(wearMainSwipeCanStart(12f, 192f, 24f))
-        assertTrue(wearMainSwipeCanStart(96f, 192f, 24f))
-        assertFalse(wearMainSwipeCanStart(180f, 192f, 24f))
-        assertFalse(wearMainSwipeCanStart(20f, 40f, 24f))
+        val back = WEAR_SWIPE_BACK_EDGE_DP
+        val rim = WEAR_SWIPE_RIM_DP
+        // rightward (system back direction): the left band is protected
+        assertFalse(wearSwipeMayStart(12f, 192f, 30f, back, rim))
+        assertTrue(wearSwipeMayStart(96f, 192f, 30f, back, rim))
+        // the physical rim never starts a swipe in either direction
+        assertFalse(wearSwipeMayStart(3f, 192f, -30f, back, rim))
+        assertFalse(wearSwipeMayStart(190f, 192f, -30f, back, rim))
+        assertFalse(wearSwipeMayStart(190f, 192f, 30f, back, rim))
+        // a screen too narrow for the protected band claims nothing
+        assertFalse(wearSwipeMayStart(20f, 40f, 30f, back, rim))
     }
 }

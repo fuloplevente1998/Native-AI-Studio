@@ -47,29 +47,48 @@ internal fun wearObservedSleepMinutes(start: Long, end: Long): Long? =
     if (start > 0 && end > start && end - start <= 24 * 60 * 60 * 1000L) (end - start) / 60000L else null
 
 /** #367/9: aggregated sleep total of the phone's selected provider, for the local day it ends on. */
-data class WatchPhoneSleepSummary(val date: String, val minutes: Long, val provider: String) {
+data class WatchPhoneSleepSummary(val date: String, val minutes: Long, val provider: String,
+    /** Phone clock time the total was computed at (`computedAt`); null when the phone did not send it. */
+    val computedAt: Long? = null) {
     companion object {
         fun parse(source: JSONObject?): WatchPhoneSleepSummary? {
             source ?: return null
             val date = source.optString("date").takeIf { runCatching { LocalDate.parse(it) }.isSuccess } ?: return null
             val minutes = source.optLong("minutes", -1L).takeIf { it in 1L..(24L * 60L) } ?: return null
             val provider = source.optString("provider").takeIf { it == "samsung_health" || it == "health_connect" } ?: return null
-            return WatchPhoneSleepSummary(date, minutes, provider)
+            val computedAt = source.optLong("computedAt", 0L).takeIf { it > 0L }
+            return WatchPhoneSleepSummary(date, minutes, provider, computedAt)
         }
     }
+}
+
+/**
+ * #367/9: the phone only publishes the home snapshot on events (app start, workout finish, edits),
+ * not periodically, and a night can still be partial right after waking. A phone total older than
+ * this stops overriding the watch's own measurement (same bound as the daily step total).
+ */
+internal const val WEAR_PHONE_SLEEP_FRESH_MS = WEAR_DAILY_STEPS_FRESH_MS
+/** Phone/watch clock difference tolerated for a `computedAt` slightly ahead of the watch clock. */
+internal const val WEAR_PHONE_SLEEP_SKEW_MS = 10L * 60L * 1000L
+
+internal fun wearPhoneSleepFresh(phone: WatchPhoneSleepSummary, now: Long): Boolean {
+    val computedAt = phone.computedAt ?: return false
+    return now - computedAt in -WEAR_PHONE_SLEEP_SKEW_MS..WEAR_PHONE_SLEEP_FRESH_MS
 }
 
 internal enum class WearSleepOrigin { PHONE_SAMSUNG, PHONE_HEALTH_CONNECT, WATCH_OBSERVED }
 internal data class WearSleepDisplay(val minutes: Long, val origin: WearSleepOrigin)
 
 /**
- * The phone total (same source/window as the phone Today tile) wins for today. Without it, the
- * watch's own observed intervals of the same wake-up day are summed by the same shared union.
- * A summary of another day is never shown as today's sleep; nothing → null ("–"), never 0.
+ * The phone total (same source/window as the phone Today tile) wins for today while it is fresh
+ * ([wearPhoneSleepFresh]); a stale total or one without `computedAt` may still be a partial night,
+ * so the watch's own observed intervals of the same wake-up day (summed by the same shared union)
+ * are used instead. A summary of another day is never shown as today's sleep; nothing → null
+ * ("–"), never 0.
  */
 internal fun wearSleepDisplay(phone: WatchPhoneSleepSummary?, watchMinutes: Long?, now: Long, zone: ZoneId): WearSleepDisplay? {
     val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString()
-    if (phone != null && phone.date == today) return WearSleepDisplay(phone.minutes,
+    if (phone != null && phone.date == today && wearPhoneSleepFresh(phone, now)) return WearSleepDisplay(phone.minutes,
         if (phone.provider == "samsung_health") WearSleepOrigin.PHONE_SAMSUNG else WearSleepOrigin.PHONE_HEALTH_CONNECT)
     return watchMinutes?.takeIf { it > 0 }?.let { WearSleepDisplay(it, WearSleepOrigin.WATCH_OBSERVED) }
 }

@@ -35,6 +35,19 @@ internal fun wearSwipeMayStart(startX: Float, width: Float, dx: Float, backEdge:
     if (dx > 0f) width > backEdge + rim && startX >= backEdge && startX <= width - rim
     else dx < 0f && width > 2f * rim && startX >= rim && startX <= width - rim
 
+/**
+ * Page direction to commit on release: [decided] (1 = next page / leftward, -1 = previous /
+ * rightward) is fixed when the touch slop is crossed, because the start-zone rules (system back
+ * band) were applied for that direction. The gesture only commits when the final travel still goes
+ * the decided way, so a left start in the back band that returns rightwards never flips the page.
+ * 0 = no page change.
+ */
+internal fun wearSwipePageDirection(decided: Int, dxDp: Float, dyDp: Float, velocityDpPerSec: Float): Int {
+    if (decided != 1 && decided != -1) return 0
+    if ((dxDp < 0f) != (decided == 1) || dxDp == 0f) return 0
+    return if (wearSwipeCommits(dxDp, dyDp, velocityDpPerSec)) decided else 0
+}
+
 /** Decide on release (all values in dp and dp/s). The direction is the sign of [dxDp]. */
 internal fun wearSwipeCommits(dxDp: Float, dyDp: Float, velocityDpPerSec: Float): Boolean {
     val distance = abs(dxDp)

@@ -51,7 +51,8 @@ class WearDailyHealthTest {
     @Test fun phoneTotalOfTodayWinsAndOtherDaysAreNeverShown() {
         val zone = ZoneId.of("Europe/Budapest")
         val now = Instant.parse("2026-11-25T09:00:00Z").toEpochMilli()
-        val phone = WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 400).put("provider", "samsung_health"))
+        val phone = WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 400).put("provider", "samsung_health")
+            .put("computedAt", now - 60_000L))
         assertEquals(WearSleepDisplay(400, WearSleepOrigin.PHONE_SAMSUNG), wearSleepDisplay(phone, 220, now, zone))
         val yesterday = phone!!.copy(date = "2026-11-24")
         assertEquals(WearSleepDisplay(220, WearSleepOrigin.WATCH_OBSERVED), wearSleepDisplay(yesterday, 220, now, zone))
@@ -60,5 +61,52 @@ class WearDailyHealthTest {
         assertNull(WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 0).put("provider", "samsung_health")))
         assertNull(WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "bad").put("minutes", 400).put("provider", "health_connect")))
         assertNull(WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 400).put("provider", "x")))
+    }
+
+    private fun phoneSleep(minutes: Long, computedAt: Long?, date: String = "2026-11-25") = WatchPhoneSleepSummary.parse(
+        org.json.JSONObject().put("date", date).put("minutes", minutes).put("provider", "health_connect").apply { if (computedAt != null) put("computedAt", computedAt) })!!
+
+    @Test fun freshPhoneTotalWinsOverTheLargerWatchValue() {
+        val zone = ZoneId.of("Europe/Budapest")
+        val now = Instant.parse("2026-11-25T09:00:00Z").toEpochMilli()
+        // Same source and window: the watch shows exactly what the phone tile shows, up to the bound.
+        for (age in listOf(0L, 60_000L, WEAR_PHONE_SLEEP_FRESH_MS)) {
+            assertEquals(WearSleepDisplay(400, WearSleepOrigin.PHONE_HEALTH_CONNECT), wearSleepDisplay(phoneSleep(400, now - age), 220, now, zone))
+        }
+        // A phone clock slightly ahead of the watch clock is still "now".
+        assertEquals(WearSleepDisplay(400, WearSleepOrigin.PHONE_HEALTH_CONNECT), wearSleepDisplay(phoneSleep(400, now + 60_000L), null, now, zone))
+    }
+
+    @Test fun stalePartialPhoneTotalNoLongerSuppressesTheWatchMeasurement() {
+        val zone = ZoneId.of("Europe/Budapest")
+        val now = Instant.parse("2026-11-25T09:00:00Z").toEpochMilli()
+        // 07:10-style partial night (40 min) computed hours ago; the watch measured more.
+        val partial = phoneSleep(40, now - WEAR_PHONE_SLEEP_FRESH_MS - 1L)
+        assertEquals(WearSleepDisplay(380, WearSleepOrigin.WATCH_OBSERVED), wearSleepDisplay(partial, 380, now, zone))
+        // Nothing of its own: unknown, never the stale number and never 0.
+        assertNull(wearSleepDisplay(partial, null, now, zone))
+        assertNull(wearSleepDisplay(partial, 0, now, zone))
+        // A computedAt far in the future (broken clock) is not fresh either.
+        assertEquals(WearSleepOrigin.WATCH_OBSERVED, wearSleepDisplay(phoneSleep(40, now + WEAR_PHONE_SLEEP_SKEW_MS + 1L), 380, now, zone)!!.origin)
+    }
+
+    @Test fun phoneTotalWithoutComputedAtIsNotTrustedAsFresh() {
+        val zone = ZoneId.of("Europe/Budapest")
+        val now = Instant.parse("2026-11-25T09:00:00Z").toEpochMilli()
+        val old = phoneSleep(40, null)
+        assertNull(old.computedAt)
+        assertNull(WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 40).put("provider", "health_connect"))!!.computedAt)
+        assertNull(phoneSleep(40, 0L).computedAt)
+        assertEquals(WearSleepDisplay(380, WearSleepOrigin.WATCH_OBSERVED), wearSleepDisplay(old, 380, now, zone))
+        assertNull(wearSleepDisplay(old, null, now, zone))
+    }
+
+    @Test fun freshSummaryOfAnotherDayIsNeverShownAsToday() {
+        val zone = ZoneId.of("Europe/Budapest")
+        val now = Instant.parse("2026-11-25T09:00:00Z").toEpochMilli()
+        val yesterday = phoneSleep(400, now - 60_000L, date = "2026-11-24")
+        assertEquals(WearSleepDisplay(220, WearSleepOrigin.WATCH_OBSERVED), wearSleepDisplay(yesterday, 220, now, zone))
+        assertNull(wearSleepDisplay(yesterday, null, now, zone))
+        assertEquals(60_000L, WatchPhoneSleepSummary.parse(org.json.JSONObject().put("date", "2026-11-25").put("minutes", 1).put("provider", "samsung_health").put("computedAt", 60_000L))!!.computedAt)
     }
 }
