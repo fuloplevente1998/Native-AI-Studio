@@ -23,4 +23,5 @@ Sorrend: 1 → 2 → 3 → 4. A listák STÍLUSA marad (nem változtatjuk); a Pr
 | 2 | TASK_2_sheets_dialogs.md – felcsúszó lapok és dialógusok: üveg + rétegek | task2_sheets_dialogs.png |
 | 3 | TASK_3_coach_buttons.md – Coach kártya/elválasztók, Programok A/B gombok | task3_coach_buttons.png |
 | 4 | TASK_4_programs_perf.md – Programok akadás kinyitott programnál (stílus változatlan) | nincs (nem látványos) |
+| 5 | TASK_5_all.md – 2. kör, EGY közös PR: lapok akadása, téma neve, kereső keret, naptár, dupla +, oldal tetejére, verzió 1.5.3 | task5_theme_search_calendar_plus.png |
 | later | nyomásra lencsehatás (GlassTouchBubble), látható finom keretek – külön mockup után | – |
