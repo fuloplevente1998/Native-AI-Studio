@@ -247,14 +247,5 @@ jobs:
         with:
           gradle-version: '9.3.1'
           cache-read-only: true
-      - name: Generate disposable debug signer
-        shell: bash
-        run: |
-          test ! -e debug.keystore
-          keytool -genkeypair -keystore debug.keystore -storetype JKS -storepass android -keypass android \
-            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 365 -dname "CN=TrainPilot Kyant DEX CI"
-      - name: Verify debug D8 dexing (no APK upload)
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
-      - name: Remove disposable signing key
-        if: always()
-        run: rm -f -- debug.keystore
+      - name: Verify debug D8 dexing without signing
+        run: gradle --no-daemon --stacktrace :app:dexBuilderDebug :app:mergeExtDexDebug
