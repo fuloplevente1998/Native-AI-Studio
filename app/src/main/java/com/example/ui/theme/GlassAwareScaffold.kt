@@ -91,9 +91,13 @@ internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
 
 /** Glass page over the root backdrop: nothing to paint. In a sheet window: its own backdrop. */
 @Composable
-private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean =
-    palette.isLiquidGlass && ((LocalGlassRootBackdrop.current && !LocalTrainPilotInSheet.current) ||
-        LocalKyantScene.current.forThisWindow() != null)
+private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean {
+    if (!palette.isLiquidGlass) return false
+    // Dialogs inherit composition locals but not the recording window. Do not hide their background.
+    if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current)
+        return LocalKyantScene.current.forThisWindow() != null
+    return LocalGlassRootBackdrop.current && !LocalTrainPilotInSheet.current
+}
 
 /** Preserve the original opaque route host when no Kyant source is available. */
 @Composable
