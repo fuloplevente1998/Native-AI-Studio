@@ -134,6 +134,34 @@ class Wear2808Test {
         }
     }
 
+    @Test fun liquidGlassAccentFamiliesStayOpaqueAndReadableOnWatch() {
+        // Phone LiquidGlassPalettes seed colors; transport uses family=contrast.
+        val seeds = listOf(
+            "graphite" to "#d0dbe8", "ice" to "#bcebff", "sapphire" to "#8db9ff",
+            "turquoise" to "#70e5ef", "emerald" to "#78f2bc", "amethyst" to "#d0b2ff",
+            "rose" to "#ffb9d8", "amber" to "#ffd18c",
+        )
+        for ((name, accent) in seeds) for (surface in listOf("#111722", "#555b64", "#737983")) {
+            val raw = palette("contrast", "#172333", "#ffffff", accent, accent) {
+                put("key", "glass_$name").put("surface", surface).put("elevated", surface)
+                    .put("muted", "#e0e8f1").put("onAccent", "#000000")
+            }
+            val stored = raw.toJson().toString()
+            val watch = raw.forWatch()
+            assertEquals(stored, raw.toJson().toString())
+            assertEquals(raw, WearHomeTheme.parse(raw.toJson()))
+            assertEquals(raw.key, watch.key)
+            for (bg in listOf(watch.backgroundColor, watch.surfaceColor, watch.elevatedColor)) {
+                assertEquals(1f, bg.alpha, 0f)
+                assertTrue(wearContrast(watch.textColor, bg) >= 4.5f)
+                assertTrue(wearContrast(watch.mutedColor, bg) >= 4.5f)
+                assertTrue(wearContrast(watch.secondaryColor, bg) >= 4.5f)
+                assertTrue(wearContrast(watch.accentColor, bg) >= 3f)
+            }
+            assertTrue(wearContrast(watch.onAccentColor, watch.accentColor) >= 4.5f)
+        }
+    }
+
     @Test fun darkDefaultKeepsItsIdentityAndStoredPaletteIsUntouched() {
         val watch = WearHomeTheme.DEFAULT.forWatch()
         assertEquals(WearHomeTheme.DEFAULT.accentColor, watch.accentColor)
