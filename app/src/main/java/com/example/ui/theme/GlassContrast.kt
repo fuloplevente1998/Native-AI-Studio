@@ -65,6 +65,18 @@ internal object GlassContrast {
         return lo
     }
 
+    /** Bound state colours in linear light while keeping their hue. */
+    fun limit(c: Color, cap: Float): Color {
+        val r = c.red.coerceIn(0f, 1f)
+        val g = c.green.coerceIn(0f, 1f)
+        val b = c.blue.coerceIn(0f, 1f)
+        val l = luminance(r, g, b)
+        if (l <= cap) return Color(r, g, b)
+        val k = cap.coerceAtLeast(0f) / l
+        return Color(GlassScene.srgb(GlassScene.linear(r) * k), GlassScene.srgb(GlassScene.linear(g) * k),
+            GlassScene.srgb(GlassScene.linear(b) * k))
+    }
+
     /** Largest channel gain of the saturation matrix: the own-channel coefficient with the others at 0. */
     fun saturationGain(saturation: Float, channel: Int): Float =
         matrixWeights[channel] * (1f - saturation) + saturation

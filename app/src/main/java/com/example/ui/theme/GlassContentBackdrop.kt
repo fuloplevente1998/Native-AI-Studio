@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
 import android.graphics.RenderEffect
+import androidx.compose.foundation.background
 import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -144,3 +145,12 @@ internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
     matrix.postConcat(android.graphics.ColorMatrix().apply { setScale(scale, scale, scale, 1f) })
     return matrix.array
 }
+
+/** Nested header controls composite over the one header lens, including active workout. */
+internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color =
+    glassControlPaint(clarity, role)
+
+@Composable
+internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
+    if (!palette.isLiquidGlass) this else background(glassHeaderControlPaint(palette.glassClarity, role), shape)
+        .trainPilotGlassRim(palette, shape, role)

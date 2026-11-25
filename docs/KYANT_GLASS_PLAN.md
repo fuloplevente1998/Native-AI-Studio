@@ -48,7 +48,10 @@ A Kyant Backdrop és a ténylegesen feloldott Shapes verzió szerzői jogi/Apach
 ## Rögzített referencia
 - #378 `b16bcd902d81d1393fd2268060be52937b080f23` – működő Kyant teszt; nem merge.
 - #379 `3ac9aba17283707be020e0747b1807570ce8a5bf` – széles felületi áttetszőség.
-- #380 G6 `04b942359b1da614019f4ad2bddbd827aa129bb4` – üveganyag, UI, optimalizálás, zöld CI; későbbi félkész G7 nem validált.
+- #380 G0–G8 `b341ea97bd4bde4e0275a1a54587d557ad78bc2e` – üveganyag, felületi javítások, könnyített vezérlők és gyorsítótár; G7/G8 CI zöld.
 - #386 `91d150e1cc137d197b389933af8fde2cef3770fb` – célzott Kyant felületi port, nem mainre merge.
 A régi ágak megmaradnak referenciának. Csak feat/kyant-glass ágra írunk; nincs verzióCode/Name emelés,
 nincs main módosítás és Play-feltöltés külön engedély nélkül. K0 D8 ellenőrzés: dexBuilderDebug + mergeExtDexDebug, nincs kulcs vagy APK-csomagolás. A tartós aláírás csak a jóváhagyott K5 átadáshoz. Helyi Gradle/emulátor tilos.
+
+## K2 integrációs jelölt
+#379, #380, #386 PR lezárva (nem merge); rögzített commitok továbbra is referenciák. A #379 széles körű UI-javításainak új belső material hívásait olcsó csempe/perem váltja; #380 közös gomb/mező, naptár, mérés, Home/Programok/Progress, G7 nav és G8 paint, fotó clock/cache és kompatibilis tesztek átültetve. A #386 könnyű komponensmintái a Kyant material gate-hez igazítva. Nem teljes körű készülékes elfogadás; maradék sheet/dialog/switch/snackbar és natív felületek auditja, K3/K4/K5 nyitott. Nincs új renderer vagy main merge.

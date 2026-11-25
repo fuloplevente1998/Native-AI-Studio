@@ -1,6 +1,12 @@
 package com.repforge.app.ui.theme
 
 import com.example.ui.theme.glassTouchBubble
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.glassControlFill
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -75,6 +81,60 @@ fun TrainPilotButton(
     } else {
         materialButton()
     }
+}
+
+/**
+ * Only audited primary actions opt in. Color equality alone cannot identify semantic intent:
+ * contrast adjustment can make danger/success and primary colors identical.
+ */
+internal fun useGlassPrimaryAction(
+    palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors,
+    preserveSemanticPaint: Boolean = false,
+): Boolean = !preserveSemanticPaint && palette.isLiquidGlass && enabled &&
+    colors.containerColor == palette.primary && colors.contentColor == palette.onPrimary
+
+internal fun glassPrimaryActionColors(
+    palette: TrainPilotPalette, enabled: Boolean, colors: ButtonColors,
+    preserveSemanticPaint: Boolean = false,
+): ButtonColors = if (useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint))
+    colors.copy(containerColor = Color.Transparent, contentColor = palette.textPrimary)
+else colors
+
+/**
+ * Shared primary action material for audited call sites. Uses the same Button/press feedback and
+ * native accessibility semantics. Custom/semantic and disabled paints keep their exact colors.
+ * Content must inherit its foreground, not hard-code onPrimary (which can be dark).
+ */
+@Composable
+fun TrainPilotGlassPrimaryButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = ButtonDefaults.shape,
+    colors: ButtonColors = ButtonDefaults.buttonColors(
+        containerColor = LocalTrainPilotPalette.current.primary,
+        contentColor = LocalTrainPilotPalette.current.onPrimary),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
+    border: BorderStroke? = null,
+    contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
+    interactionSource: MutableInteractionSource? = null,
+    preserveSemanticPaint: Boolean = false,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val palette = LocalTrainPilotPalette.current
+    val glass = useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint)
+    TrainPilotButton(
+        onClick = onClick,
+        modifier = if (glass) modifier.background(palette.glassControlFill(colors.containerColor, GlassMaterialRole.Selection), shape) else modifier,
+        enabled = enabled,
+        shape = shape,
+        colors = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint),
+        elevation = if (glass) null else elevation,
+        border = border,
+        contentPadding = contentPadding,
+        interactionSource = interactionSource,
+        content = content,
+    )
 }
 
 /** Text actions use the same native shape and full-surface interaction feedback. */

@@ -3,6 +3,11 @@ package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextDecoration
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -443,7 +448,8 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                                 .testTag("calendar_prev_month")
@@ -468,7 +474,8 @@ fun CalendarPlannerScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 color = palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(if (palette.isLiquidGlass) 48.dp else 36.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                                     .testTag("calendar_next_month")
@@ -547,19 +554,28 @@ fun CalendarPlannerScreen(
                                         val evs = state.calendarEvents.filter { it.dayOfMonth == dayNumber && it.dateIso.startsWith(displayedYearMonth.toString()) }
                                         val completedEv = evs.firstOrNull { it.status == CalendarEventStatus.COMPLETED }
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
+                                        val isToday = displayedYearMonth.atDay(dayNumber) == today
+                                        val dayStyle = calendarDayAppearance(palette, isSelected, isToday, plannedEv != null)
+                                        val dayShape = RoundedCornerShape(10.dp)
 
                                         Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = when {
-                                                plannedEv != null -> palette.primary.copy(alpha = 0.12f)
-                                                else -> palette.surface
-                                            },
+                                            shape = dayShape,
+                                            color = dayStyle.fill,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(calendarCellHeight)
+                                                .then(when {
+                                                    dayStyle.selectedLens -> Modifier.trainPilotGlassMaterial(palette, dayShape, GlassMaterialRole.Selection)
+                                                    dayStyle.lightRim -> Modifier.trainPilotGlassRim(palette, dayShape, GlassMaterialRole.Tile)
+                                                    else -> Modifier
+                                                })
+                                                .then(if (palette.isLiquidGlass) Modifier.semantics {
+                                                    selected = isSelected
+                                                    if (isToday) stateDescription = trW(state.language, "Ma", "Today", "Heute", "Astăzi")
+                                                } else Modifier)
                                                 .trainPilotBorder(
-                                                    width = if (isSelected) 1.8.dp else 1.dp,
-                                                    color = if (isSelected) palette.primary else palette.cardBorder,
+                                                    width = if (isSelected) 1.8.dp else if (palette.isLiquidGlass && isToday) 1.4.dp else 1.dp,
+                                                    color = if (isSelected || (palette.isLiquidGlass && isToday)) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
                                                 )
                                                 .testTag("calendar_day_$dayNumber")
@@ -577,7 +593,8 @@ fun CalendarPlannerScreen(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         fontWeight = FontWeight.Bold
                                                     ),
-                                                    color = palette.textPrimary
+                                                    textDecoration = if (dayStyle.underlineToday) TextDecoration.Underline else TextDecoration.None,
+                                                    color = if (palette.isLiquidGlass && isToday) palette.primary else palette.textPrimary
                                                 )
                                                 when {
                                                     completedEv != null -> {
@@ -633,7 +650,7 @@ fun CalendarPlannerScreen(
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("${localizeCadenceLabel(state.planningCadenceHu)} • ${state.planningTime}",
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                maxLines = if (palette.isLiquidGlass) 2 else 1, overflow = TextOverflow.Ellipsis)
                         }
                         if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
@@ -641,14 +658,10 @@ fun CalendarPlannerScreen(
                                 contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})"),
                                 tint = palette.textSecondary)
                         }
-                        Button(
+                        CalendarPrimaryGlassButton(
                             onClick = { onOpenReplanModal(true) },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_replan_action"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = palette.onPrimary
-                            )
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Text(
                                 text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
@@ -741,12 +754,13 @@ fun CalendarPlannerScreen(
                     StudioAdaptiveControlRow(minimumWidth = 88.dp) {
                         com.repforge.app.ui.theme.TrainPilotNegativeButton(
                             onClick = onRequestClearCalendar, enabled = !state.calendarClearBusy,
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                                .semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
                             Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"), maxLines = 1)
                         }
-                        Button(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
+                        CalendarPrimaryGlassButton(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_plan_action")) {
                             Text(trW(state.language, "Tervezés", "Plan workouts", "Trainings planen", "Planifică"), fontWeight = FontWeight.Bold)
                         }

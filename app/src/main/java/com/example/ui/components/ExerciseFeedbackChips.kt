@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.glassTile
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.foundation.layout.*
@@ -53,7 +55,10 @@ internal fun ExerciseFeedbackChips(effort: String?, note: String, language: Stri
                 val chosen = selected == key
                 val accent = if (key == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline else palette.primary
                 Surface(shape = RoundedCornerShape(12.dp),
-                    color = if (chosen) accent.copy(alpha = 0.2f) else if (key == "pain") accent.copy(alpha = 0.04f) else palette.surfaceElevated,
+                    // 2811/4: glass = accent state tint / tile (legacy unchanged); the chosen label stays the accent.
+                    color = if (chosen) palette.glassStateTile(accent, accent.copy(alpha = 0.2f), strong = true)
+                        else if (key == "pain") palette.glassStateTile(accent, accent.copy(alpha = 0.04f))
+                        else palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier.heightIn(min = 48.dp)
                         .trainPilotBorder(1.dp, if (chosen) accent else if (key == "pain") accent.copy(alpha = 0.45f) else palette.cardBorder, RoundedCornerShape(12.dp))
                         .selectable(chosen, enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
@@ -89,7 +94,7 @@ internal fun StudioExerciseFeedbackReview(effort: String?, note: String, languag
     title: String, enabled: Boolean, onEffort: (String?) -> Unit, onNote: (String) -> Unit, tag: String) {
     var editing by rememberSaveable(tag) { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
-    Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = palette.surfaceCard,
+    Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = palette.glassTile(palette.surfaceCard),
         shape = RoundedCornerShape(14.dp), border = com.repforge.app.ui.theme.trainPilotFrameStroke(com.repforge.app.ui.theme.TrainPilotFrames.control(
             if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -116,7 +121,7 @@ internal fun StudioWorkoutOverallFeedback(effort: String?, note: String, languag
     val palette = LocalTrainPilotPalette.current
     val optionalWord = feedbackText(language, "Opcionális", "Optional", "Optional", "Opțional")
     val secondaryText = if (effort != null) "$optionalWord • ${feedbackChoiceLabel(effort, language)}" else optionalWord
-    Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
+    Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.glassTile(palette.surfaceCard), shape = RoundedCornerShape(14.dp),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(com.repforge.app.ui.theme.TrainPilotFrames.control(
             if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder))) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

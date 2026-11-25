@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -121,7 +124,7 @@ internal fun StudioActiveExerciseTitleRow(
             Box(Modifier.heightIn(min = 48.dp).clip(shape)
                 .trainPilotClickable(shape) { exerciseId?.let(onOpenDetail) }
                 .testTag("active_exercise_kind_icon"), contentAlignment = Alignment.Center) {
-                Surface(shape = shape, color = palette.surfaceElevated,
+                Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, shape)) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)) {

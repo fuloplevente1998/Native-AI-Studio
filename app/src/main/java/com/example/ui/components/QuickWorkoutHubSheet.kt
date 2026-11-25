@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.glassStateTile
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -79,7 +83,7 @@ fun QuickWorkoutHubSheet(
                     tabs.forEachIndexed { i, label ->
                         val selected = i == tab
                         val shape = RoundedCornerShape(11.dp)
-                        Surface(shape = shape, color = if (selected) palette.primary else palette.glassTile(palette.surfaceCard),
+                        Surface(shape = shape, color = if (selected) palette.glassStateTile(palette.primary, palette.primary, strong = true) else palette.glassTile(palette.surfaceCard),
                             // 2784: longer labels get more room; the whole word always shows (font steps down if needed).
                             modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 48.dp)
                                 .trainPilotClickable(shape) { onSelectTab(i) }.testTag("quick_tab_$i")) {
@@ -89,7 +93,7 @@ fun QuickWorkoutHubSheet(
                                 WorkoutModeArt(modes[i], Modifier.width(35.dp), height = 28.dp, selected = selected)
                                 TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) palette.onPrimary else palette.textPrimary,
+                                    color = if (selected && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.testTag("quick_tab_label_$i"))
                             }
@@ -129,15 +133,15 @@ private fun QuickOutdoorTab(language: AppLanguage, onStartOutdoor: (String) -> U
                 pair.forEach { (label, name) ->
                     val on = name == selected
                     val shape = RoundedCornerShape(14.dp)
-                    Surface(shape = shape, color = if (on) palette.primary else palette.glassCardFill(palette.surfaceCard),
+                    Surface(shape = shape, color = if (on) palette.glassStateTile(palette.primary, palette.primary, strong = true) else palette.glassTile(palette.surfaceCard),
                         modifier = Modifier.weight(1f).heightIn(min = 52.dp)
-                            .then(if (on) Modifier else Modifier.trainPilotGlassMaterial(palette, shape))
+                            .trainPilotGlassRim(palette, shape)
                             .trainPilotBorder(1.dp, if (on) palette.primary else palette.cardBorder, shape)
                             .trainPilotClickable(shape) { selected = name }
                             .testTag("quick_outdoor_${name.lowercase()}")) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(label, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                                color = if (on) palette.onPrimary else palette.textPrimary, textAlign = TextAlign.Center)
+                                color = if (on && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary, textAlign = TextAlign.Center)
                         }
                     }
                 }

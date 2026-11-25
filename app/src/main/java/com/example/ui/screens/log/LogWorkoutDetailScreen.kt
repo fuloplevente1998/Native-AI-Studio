@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.key
 
@@ -93,12 +98,12 @@ fun LogWorkoutDetailScreen(
             )
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surface,
+                color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .padding(24.dp)
+                    .padding(24.dp).trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -133,8 +138,8 @@ fun LogWorkoutDetailScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
                     .testTag("journal_detail_header")
@@ -237,8 +242,8 @@ fun LogWorkoutDetailScreen(
                 }
                 Surface(
                     shape = shape,
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, shape)
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
                         .trainPilotAnimatedExpansion()
@@ -324,8 +329,8 @@ fun LogWorkoutDetailScreen(
                 if (workout.isOutdoorRun) {
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        color = palette.glassTile(palette.surfaceCard),
+                        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp)).fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(trL(uiState.language, "Kültéri edzés mért adatai", "Outdoor workout measured data", "Gemessene Daten des Outdoor-Trainings", "Date măsurate ale antrenamentului exterior"), style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
@@ -350,8 +355,8 @@ fun LogWorkoutDetailScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
@@ -426,8 +431,8 @@ fun LogWorkoutDetailScreen(
             ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenWatchSync() }
@@ -456,8 +461,8 @@ fun LogWorkoutDetailScreen(
                 }
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenHealthTab() }

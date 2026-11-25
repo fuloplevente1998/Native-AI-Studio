@@ -19,8 +19,8 @@ class KyantMaterialSpecTest {
                 assertSame(material, KyantMaterialSpec.forRole(role, step))
                 assertTrue(material.tintAlpha in 0f..1f)
                 assertTrue(material.blurDp >= 0f && material.lensAmountDp >= 0f)
-                assertEquals(role != GlassMaterialRole.Tile, material.usesBackdrop)
-                assertEquals(role != GlassMaterialRole.Tile, material.usesLens)
+                assertEquals(role !in listOf(GlassMaterialRole.Tile, GlassMaterialRole.Performance), material.usesBackdrop)
+                assertEquals(role !in listOf(GlassMaterialRole.Tile, GlassMaterialRole.Performance), material.usesLens)
                 if (step > 0) {
                     val before = KyantMaterialSpec.forRole(role, step - 1)
                     assertTrue(material.tintAlpha < before.tintAlpha)
@@ -39,7 +39,10 @@ class KyantMaterialSpecTest {
             assertTrue(role(GlassMaterialRole.Overlay).tintAlpha > role(GlassMaterialRole.Button).tintAlpha)
             assertTrue(role(GlassMaterialRole.Selection).lensAmountDp > role(GlassMaterialRole.Navigation).lensAmountDp)
             assertFalse(role(GlassMaterialRole.Tile).shadow)
-            for (r in GlassMaterialRole.entries.filter { it != GlassMaterialRole.Tile }) {
+            assertFalse(role(GlassMaterialRole.Performance).shadow)
+            assertFalse(role(GlassMaterialRole.Performance).usesBackdrop)
+            assertFalse(role(GlassMaterialRole.Performance).usesLens)
+            for (r in GlassMaterialRole.entries.filter { it !in listOf(GlassMaterialRole.Tile, GlassMaterialRole.Performance) }) {
                 val material = role(r)
                 assertTrue(material.colorScale in 0f..1f)
                 assertTrue(material.sceneScale in material.colorScale..1f)

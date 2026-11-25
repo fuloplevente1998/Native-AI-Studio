@@ -1,4 +1,9 @@
 package com.example.ui.components.watchinfo
+
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import androidx.compose.foundation.border
@@ -59,9 +64,11 @@ fun StudioWatchInformationCard(
         modifier = modifier.fillMaxWidth()
             .trainPilotFrame(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape)
             .testTag("watch_device_info_card")
-            .trainPilotClickable(shape, enabled = !data.loading, onClick = onRefresh),
+            .trainPilotClickable(shape, enabled = !data.loading, onClick = onRefresh)
+            // 2811/6: same glass panel as the other cards of the sheet (legacy: the card colour).
+            .trainPilotGlassRim(palette, shape),
         shape = shape,
-        color = palette.surfaceCard
+        color = palette.glassTile(palette.surfaceCard)
     ) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

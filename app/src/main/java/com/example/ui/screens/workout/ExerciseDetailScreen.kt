@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassStateTile
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -120,7 +126,7 @@ fun ExerciseDetailScreen(
                     SmallExerciseVideoButton(exerciseName = exercise.localizedName(state.language), exerciseId = exercise.id)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = palette.primary.copy(alpha = 0.18f),
+                        color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.18f)),
                         modifier = Modifier.trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(12.dp))
                     ) {
                         Text(
@@ -158,8 +164,8 @@ fun ExerciseDetailScreen(
             // Metadata table: Eszköz, Fő izmok, Másodlagos izmok
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = palette.surface,
-                modifier = Modifier
+                color = palette.glassTile(palette.surface),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                     .testTag("exercise_detail_metadata_card")
@@ -265,7 +271,7 @@ fun ExerciseDetailScreen(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = palette.surfaceElevated,
+                        color = palette.glassTile(palette.surfaceElevated, elevated = true),
                         modifier = Modifier.size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {

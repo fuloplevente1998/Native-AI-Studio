@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 
@@ -215,7 +221,7 @@ fun ExerciseLibraryScreen(
             if (state.quickWorkoutQueue.isNotEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.primary.copy(alpha = 0.14f),
+                    color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.14f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
@@ -277,8 +283,8 @@ fun ExerciseLibraryScreen(
                     name.split(Regex("\\s+")).maxOfOrNull { measurer.measure(it, style = nameStyle).size.width } ?: 0
                 }
                 Surface(
-                    shape = RoundedCornerShape(14.dp), color = palette.surface,
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surface),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(14.dp)).fillMaxWidth()
                         .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
                         .trainPilotCombinedClickable(

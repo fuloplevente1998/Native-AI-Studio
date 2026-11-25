@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.glassTile
@@ -436,7 +437,7 @@ internal fun SettingsActionRowCard(
             if (badgeText.isNotEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = palette.primary.copy(alpha = 0.18f)
+                    color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.18f))
                 ) {
                     Text(
                         text = badgeText,

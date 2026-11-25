@@ -1,5 +1,11 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.GlassMaterialRole
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,9 +78,10 @@ fun ActiveWorkoutLiveBar(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         shape = shape,
-        color = palette.surfaceElevated.copy(alpha = 0.98f),
-        shadowElevation = 8.dp,
-        modifier = modifier.fillMaxWidth().trainPilotBorder(1.5.dp, palette.primary, shape)
+        color = palette.glassCardFill(palette.surfaceElevated.copy(alpha = 0.98f)),
+        shadowElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
+        modifier = modifier.fillMaxWidth().trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Panel)
+            .trainPilotBorder(1.5.dp, palette.primary, shape)
             .trainPilotClickable(shape) { onContinue() }.testTag("floating_return_to_active_workout_bar")
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
@@ -94,7 +101,8 @@ fun ActiveWorkoutLiveBar(
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("live_bar_status"))
             }
             val small = RoundedCornerShape(12.dp)
-            Surface(shape = small, color = palette.surfaceCard, modifier = Modifier.heightIn(min = 44.dp)
+            Surface(shape = small, color = palette.glassTile(palette.surfaceCard), modifier = Modifier.heightIn(min = if (palette.isLiquidGlass) 48.dp else 44.dp)
+                .trainPilotGlassRim(palette, small, GlassMaterialRole.Button)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), small)
                 .trainPilotClickable(small, enabled = enabled) { showFinish = true }.testTag("live_bar_finish")) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 9.dp, vertical = 10.dp)) {
@@ -106,10 +114,12 @@ fun ActiveWorkoutLiveBar(
                         fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 }
             }
-            Surface(shape = small, color = palette.primary, modifier = Modifier.heightIn(min = 44.dp)
+            Surface(shape = small, color = palette.glassTile(palette.primary, elevated = true), modifier = Modifier.heightIn(min = if (palette.isLiquidGlass) 48.dp else 44.dp)
+                .trainPilotGlassRim(palette, small, GlassMaterialRole.Button)
                 .trainPilotClickable(small) { onContinue() }.testTag("live_bar_continue")) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
-                    Text(lb(lang, "Folytatás ▶", "Continue ▶", "Weiter ▶", "Continuă ▶"), color = palette.onPrimary,
+                    Text(lb(lang, "Folytatás ▶", "Continue ▶", "Weiter ▶", "Continuă ▶"),
+                        color = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary,
                         fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 }
             }

@@ -1,4 +1,6 @@
 package com.example.ui.screens
+
+import com.example.ui.theme.GlassMaterialRole
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
@@ -318,6 +320,7 @@ fun LogTabScreen(
                     color = palette.glassTile(palette.surfaceCard),
                     modifier = Modifier
                         .size(48.dp)
+                        .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
@@ -341,6 +344,7 @@ fun LogTabScreen(
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 10.dp)
+                        .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .trainPilotClickable(RoundedCornerShape(14.dp)) { showInlineCalendar = !showInlineCalendar }
                         .testTag("log_month_picker_button")
@@ -379,6 +383,7 @@ fun LogTabScreen(
                     color = palette.glassTile(palette.surfaceCard),
                     modifier = Modifier
                         .size(48.dp)
+                        .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
@@ -582,7 +587,7 @@ internal fun LogWorkoutCard(
     Surface(
         shape = shape,
         color = palette.glassTile(palette.surfaceCard),
-        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, shape)
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, shape, GlassMaterialRole.Tile)
             .trainPilotBorder(1.dp, palette.sectionBorder, shape)
             .clip(shape)
             .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }

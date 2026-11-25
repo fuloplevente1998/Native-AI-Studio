@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.trainPilotGlassRim
+
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.ui.semantics.contentDescription
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -74,7 +80,8 @@ fun IntervalSettingsScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            // 2811/G4: glass = the shared (static on this screen) page backdrop instead of an opaque panel.
+            .trainPilotScreenBackdrop(palette)
             .testTag("interval_settings_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -119,8 +126,8 @@ fun IntervalSettingsScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
@@ -181,8 +188,8 @@ internal fun IntervalStepperCard(
     val strings = com.example.localization.LocalTrainPilotStrings.current
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = palette.surfaceCard,
-        modifier = Modifier
+        color = palette.glassTile(palette.surfaceCard),
+        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
             .fillMaxWidth()
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
     ) {
@@ -204,7 +211,7 @@ internal fun IntervalStepperCard(
                         .size(48.dp)
                         .testTag("${testTagPrefix}_minus")
                         .clip(RoundedCornerShape(10.dp))
-                        .background(palette.surfaceElevated)
+                        .background(palette.glassTile(palette.surfaceElevated))
                 ) {
                     Icon(imageVector = Icons.Default.Remove, contentDescription = strings.decreaseValueDesc, tint = palette.textPrimary)
                 }

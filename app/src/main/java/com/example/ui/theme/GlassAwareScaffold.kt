@@ -47,8 +47,9 @@ internal fun GlassAwareScaffold(
     val kyantHeader = sceneLayer?.let { rememberKyantHeaderScene(it, contentLayer) }
     Scaffold(
         modifier = Modifier.fillMaxSize().background(palette.background)
-            .then(if (sceneLayer != null) Modifier.kyantSceneLayer(palette, sceneLayer) else Modifier),
-        containerColor = if (kyant) Color.Transparent else palette.background,
+            .then(if (sceneLayer != null) Modifier.kyantSceneLayer(palette, sceneLayer)
+                else Modifier.trainPilotGlassScene(palette)),
+        containerColor = if (palette.isLiquidGlass) Color.Transparent else palette.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop,
@@ -73,7 +74,7 @@ internal fun GlassAwareScaffold(
         // Only the top bar may sample captured body content; body controls must not sample themselves.
         CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
             LocalKyantScene provides kyantScene, LocalKyantHeader provides null) {
-            content(bodyPadding, if (kyant) capture else capture.then(Modifier.trainPilotGlassScene(palette)),
+            content(bodyPadding, capture,
                 if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
         }
     }
@@ -102,7 +103,7 @@ private fun glassPageIsTransparent(palette: TrainPilotPalette): Boolean {
 /** Preserve the original opaque route host when no Kyant source is available. */
 @Composable
 internal fun glassContentBackground(palette: TrainPilotPalette): Color =
-    if (KyantGlass.active(palette) && LocalKyantScene.current.forThisWindow() != null) Color.Transparent else palette.background
+    if (palette.isLiquidGlass && (LocalGlassRootBackdrop.current || LocalKyantScene.current.forThisWindow() != null)) Color.Transparent else palette.background
 
 /** Page background of the main tabs. Legacy palettes: exactly the previous page brush. */
 @Composable

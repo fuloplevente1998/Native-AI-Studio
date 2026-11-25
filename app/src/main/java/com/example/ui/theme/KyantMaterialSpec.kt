@@ -3,7 +3,7 @@ package com.example.ui.theme
 import kotlin.math.pow
 
 /** One Kyant material family: roles change optical parameters, not rendering engines. */
-internal enum class GlassMaterialRole { Panel, Tile, Navigation, Selection, Button, Input, Overlay }
+internal enum class GlassMaterialRole { Panel, Tile, Navigation, Selection, Button, Input, Overlay, Performance }
 
 /** Parameters are pure and cached by the stored 0–100 clarity step. */
 internal data class KyantMaterialSpec(
@@ -63,6 +63,7 @@ internal data class KyantMaterialSpec(
                 GlassMaterialRole.Button -> Triple(.65f, .65f, .14f - .10f * t)
                 GlassMaterialRole.Input -> Triple(1.1f, .25f, .23f - .13f * t)
                 GlassMaterialRole.Overlay -> Triple(1.4f, .3f, .28f - .16f * t)
+                GlassMaterialRole.Performance -> Triple(0f, 0f, .16f - .06f * t)
             }
             // A backdrop may contain bright text or a bright photo. Keep the existing main
             // contrast ceiling even for unknown source colours, without a second shader.

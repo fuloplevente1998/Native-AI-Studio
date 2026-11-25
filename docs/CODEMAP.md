@@ -122,3 +122,5 @@ nagy fájlok sorai frissülnek.
 
 Megjegyzés: a `rf/ui/{home,journal,calendar,programs,workout,settings}/` alatti `*Screen.kt` fájlok egy része
 régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e valami (az élő UI a `com.example` fa).
+
+| Kyant K2 közös vezérlők és integráció | `ex/ui/theme/GlassSurfaces.kt` (state tint), `LiquidGlassPalettes.kt` (glassControlPaint), `TrainPilotGlassEngine.kt` (cheap Button/Input/Performance), `rf/ui/theme/TrainPilotButton.kt` (audited primary action), `ex/ui/components/TrainPilotControls.kt`, `GlassContentBackdrop.kt` (nested header controls), `KyantK2IntegrationTest.kt` |

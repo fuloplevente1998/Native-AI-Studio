@@ -108,6 +108,27 @@ class GlassBackdropStore2809Test {
         } finally { db.close() }
     }
 
+    @Test fun scenePhotoCacheReusesAndInvalidatesOnImageOrSizeChange() {
+        val scene = com.example.ui.theme.GlassSceneState()
+        val first = android.graphics.Bitmap.createBitmap(8, 8, android.graphics.Bitmap.Config.ARGB_8888)
+        val second = android.graphics.Bitmap.createBitmap(8, 8, android.graphics.Bitmap.Config.ARGB_8888)
+        scene.image = first
+        val firstImage = scene.imageBitmap
+        val firstShader = scene.imageShader(100f, 200f)
+        assertNotNull(firstImage)
+        assertNotNull(firstShader)
+        assertSame(firstImage, scene.imageBitmap)
+        assertSame(firstShader, scene.imageShader(100f, 200f))
+        assertNotSame(firstShader, scene.imageShader(200f, 100f))
+        scene.image = null
+        assertNull(scene.imageBitmap)
+        assertNull(scene.imageShader(200f, 100f))
+        assertFalse(first.isRecycled)
+        scene.image = second
+        assertNotSame(firstImage, scene.imageBitmap)
+        assertNotSame(firstShader, scene.imageShader(100f, 200f))
+    }
+
     @Test fun missingFileOnThisDeviceFallsBackToTheLivingBackdrop() {
         assertNull(GlassBackdropImages.load(context, path('e')))
         assertNull(GlassBackdropImages.load(context, "../databases/trainpilot.db"))
