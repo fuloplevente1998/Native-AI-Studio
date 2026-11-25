@@ -41,6 +41,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import com.repforge.app.ui.theme.TrainPilotButton as Button
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -367,7 +368,7 @@ fun WorkoutTabScreen(
                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Button(
+                                        TrainPilotGlassPrimaryButton(
                                             onClick = onOpenProgramsList,
                                             shape = RoundedCornerShape(12.dp),
                                             colors = ButtonDefaults.buttonColors(
