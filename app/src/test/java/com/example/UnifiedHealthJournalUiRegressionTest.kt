@@ -61,17 +61,27 @@ class UnifiedHealthJournalUiRegressionTest {
             .put("endMs", time + 60_000).put("lastModifiedMs", time)
             .put("data", JSONObject().put("value", 0).put("unit", "steps"))
     }
-    private fun awaitTag(tag: String) {
+    // Compose 1.10 may deliver a snapshot invalidation and its semantics on different frames.
+    // Wait for the actual UI condition, not an assumed number of recomposition frames.
+    private fun awaitUi(condition: () -> Boolean) {
         val previous = compose.mainClock.autoAdvance
         compose.mainClock.autoAdvance = false
         try {
             compose.waitUntil(30_000) {
-            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+                androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
                 org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
                 compose.mainClock.advanceTimeByFrame()
-                compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+                condition()
             }
         } finally { compose.mainClock.autoAdvance = previous }
+    }
+
+    private fun awaitTag(tag: String) = awaitUi {
+        compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+    }
+
+    private fun awaitReloadDisabled() = awaitUi {
+        compose.onAllNodes(hasTestTag("journal_reload") and isNotEnabled()).fetchSemanticsNodes().size == 1
     }
     private fun journal() {
         compose.setContent { TrainPilotTheme {
@@ -154,7 +164,12 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
         assertEquals(listOf(hc), requests)
+        awaitReloadDisabled()
         compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
+        // A real second tap while the provider is busy must not enqueue another request.
+        compose.onNodeWithTag("journal_reload").performTouchInput { click() }
+        compose.mainClock.advanceTimeByFrame()
+        compose.runOnIdle { assertEquals(listOf(hc), requests) }
         compose.runOnIdle {
             store.healthDay(day.toString(), JSONObject().put("steps", 7), store.generation())
             busy = false
@@ -175,9 +190,17 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
         assertEquals(listOf(hc, samsung), requests)
-        compose.runOnIdle { busy = false; error = "Samsung Health: PERMISSION_DENIED"; revision++ }
+        awaitReloadDisabled()
+        compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
+        compose.onNodeWithTag("journal_reload").performTouchInput { click() }
         compose.mainClock.advanceTimeByFrame()
+        compose.runOnIdle {
+            assertEquals(listOf(hc, samsung), requests)
+            busy = false; error = "Samsung Health: PERMISSION_DENIED"; revision++
+        }
+        awaitTag("journal_refresh_error")
         compose.onNodeWithTag("journal_refresh_error").assertTextEquals("Samsung Health: PERMISSION_DENIED")
+        compose.mainClock.autoAdvance = true
     }
 
     @Test fun periodSheetKeepsRangeOnCloseAndTwoTapsInAnyOrderGiveAValidPeriod() {
