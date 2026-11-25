@@ -90,7 +90,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         else -> word("Vezérlés: óra", "Control: watch", "Steuerung: Uhr", "Control: ceas")
     }
     Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
-        border = TrainPilotFrames.stroke(0.75.dp, palette.cardBorder),
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(0.75.dp, palette.cardBorder)),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).testTag("workout_sticky_handover")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.isWorkoutSessionActive) {

@@ -1,4 +1,5 @@
 package com.repforge.app.ui.journal
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import android.graphics.Rect
 import androidx.compose.foundation.background
@@ -52,7 +53,7 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
             modifier = Modifier.align(Alignment.TopCenter).offset(y = top).height(height)
                 .padding(horizontal = 8.dp, vertical = 6.dp).widthIn(max = 620.dp).fillMaxWidth()
                 .trainPilotSoftGlow(colors.accent, shape)
-                .border(TrainPilotFrames.page(colors.line, colors.accent), shape)
+                .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), shape)
                 .testTag("journal_editor_visible_viewport")) {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
                 colors.accent.copy(alpha = 0.06f), colors.card, colors.card2))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -75,7 +76,7 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
 internal fun JournalEditorPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier = modifier, color = colors.card2, shape = RoundedCornerShape(12.dp),
-        border = TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, colors.line)) {
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, colors.line))) {
         Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
             colors.accent.copy(alpha = 0.05f), colors.card2))).padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp), content = content)

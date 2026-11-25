@@ -1,5 +1,9 @@
 package com.example.ui.screens
+import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.key
 import androidx.compose.foundation.lazy.rememberLazyListState
 
@@ -293,7 +297,7 @@ fun LogTabScreen(
             state = logListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .trainPilotScreenBackdrop(palette)
                 .testTag("log_tab_screen"),
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -311,7 +315,7 @@ fun LogTabScreen(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = palette.surfaceCard,
+                    color = palette.glassTile(palette.surfaceCard),
                     modifier = Modifier
                         .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
@@ -333,7 +337,7 @@ fun LogTabScreen(
                 }
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceCard,
+                    color = palette.glassTile(palette.surfaceCard),
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 10.dp)
@@ -372,7 +376,7 @@ fun LogTabScreen(
                 }
                 Surface(
                     shape = CircleShape,
-                    color = palette.surfaceCard,
+                    color = palette.glassTile(palette.surfaceCard),
                     modifier = Modifier
                         .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
@@ -419,7 +423,7 @@ fun LogTabScreen(
                 if (!filterAllMonths) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = palette.surfaceCard,
+                        color = palette.glassTile(palette.surfaceCard),
                         modifier = Modifier
                             .padding(end = 6.dp)
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
@@ -530,8 +534,8 @@ internal fun CompactJournalSearchField(
     Row(
         modifier = Modifier.fillMaxWidth().height(48.dp)
             .clip(shape)
-            .background(palette.surfaceCard)
-            .border(1.dp, palette.cardBorder, shape)
+            .background(palette.glassTile(palette.surfaceCard))
+            .trainPilotFrame(1.dp, palette.cardBorder, shape)
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -577,8 +581,8 @@ internal fun LogWorkoutCard(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         shape = shape,
-        color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth()
+        color = palette.glassTile(palette.surfaceCard),
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, shape)
             .trainPilotBorder(1.dp, palette.sectionBorder, shape)
             .clip(shape)
             .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
@@ -651,7 +655,7 @@ internal fun LogWorkoutCard(
                 val lang = com.example.localization.LocalTrainPilotStrings.current.language
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
                         .testTag("journal_photos_badge_${entry.id}")

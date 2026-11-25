@@ -28,6 +28,7 @@ internal fun Outline.glassCornerRadii(): FloatArray = when (this) {
 internal object GlassPrograms33 {
     private var failed = false
     private var sceneProgram: RuntimeShader? = null
+    private var scenePhotoProgram: RuntimeShader? = null
     private var sceneLensProgram: RuntimeShader? = null
     private var contentLensProgram: RuntimeShader? = null
 
@@ -36,16 +37,34 @@ internal object GlassPrograms33 {
         return runCatching { RuntimeShader(source) }.onFailure { failed = true }.getOrNull()
     }
     fun scene(): RuntimeShader? = sceneProgram ?: compile(GlassShaderSource.SCENE)?.also { sceneProgram = it }
+    fun scenePhoto(): RuntimeShader? = scenePhotoProgram ?: compile(GlassShaderSource.SCENE_PHOTO)?.also { scenePhotoProgram = it }
     fun sceneLens(): RuntimeShader? = sceneLensProgram ?: compile(GlassShaderSource.SCENE_LENS)?.also { sceneLensProgram = it }
     fun contentLens(): RuntimeShader? = contentLensProgram ?: compile(GlassShaderSource.CONTENT_LENS)?.also { contentLensProgram = it }
 
-    fun bindScene(shader: RuntimeShader, sceneWidth: Float, sceneHeight: Float, originX: Float, originY: Float,
-        palette: TrainPilotPalette) {
+    /**
+     * 2809/1: the living backdrop (blobs drifting with [seconds]) or, with [photo], the user image.
+     * [guard] = the page itself (luminance guard on); the lens samples it unguarded and caps its own
+     * output at [GlassOptics.LENS_PEAK].
+     */
+    fun boundScene(sceneWidth: Float, sceneHeight: Float, originX: Float, originY: Float,
+        palette: TrainPilotPalette, seconds: Float, photo: Shader?, guard: Boolean): RuntimeShader? {
+        val shader = (if (photo != null) scenePhoto() else scene()) ?: return null
         shader.setFloatUniform("screen", sceneWidth.coerceAtLeast(1f), sceneHeight.coerceAtLeast(1f))
         shader.setFloatUniform("origin", originX, originY)
-        shader.setFloatUniform("accentMax", GlassOptics.SCENE_ACCENT_MAX)
+        shader.setFloatUniform("lumaCap", GlassScene.lumaCap)
+        shader.setFloatUniform("knee", GlassScene.KNEE)
+        shader.setFloatUniform("guard", if (guard) 1f else 0f)
         shader.setColorUniform("base", palette.background.toArgb())
-        shader.setColorUniform("accent", palette.primary.toArgb())
+        if (photo != null) {
+            shader.setInputShader("photo", photo)
+            return shader
+        }
+        val tones = GlassScene.tones(palette)
+        GlassScene.blobs(sceneWidth, sceneHeight, seconds).forEachIndexed { i, blob ->
+            shader.setFloatUniform("blob$i", blob.x, blob.y, blob.radius, blob.strength)
+            shader.setColorUniform("tone$i", tones[i].toArgb())
+        }
+        return shader
     }
 
     fun bindMaterial(shader: RuntimeShader, width: Float, height: Float, radii: FloatArray, optics: GlassOptics,
@@ -81,10 +100,9 @@ internal object GlassPrograms33 {
     /** Procedural scene seen through the lens (cards, nav, sheets): returns the paint shader. */
     fun sceneMaterial(width: Float, height: Float, radii: FloatArray, sceneWidth: Float, sceneHeight: Float,
         originX: Float, originY: Float, palette: TrainPilotPalette, optics: GlassOptics, density: Float,
-        highlight: Float): Shader? {
-        val scene = scene() ?: return null
+        highlight: Float, seconds: Float = 0f, photo: Shader? = null): Shader? {
         val lens = sceneLens() ?: return null
-        bindScene(scene, sceneWidth, sceneHeight, originX, originY, palette)
+        val scene = boundScene(sceneWidth, sceneHeight, originX, originY, palette, seconds, photo, guard = false) ?: return null
         // Rebind after the child's uniforms changed: the lens snapshots the child here.
         lens.setInputShader("scene", scene)
         val frost = min(optics.blur * min(sceneWidth, sceneHeight), min(width, height) * .45f)
@@ -189,27 +207,80 @@ internal object GlassShaderSource {
         }
     """
 
-    const val SCENE = """
+    /** 2809/1: exact sRGB luminance guard, mirrored by [GlassScene.guard]. */
+    private const val SCENE_GUARD = """
         uniform float2 screen;
         uniform float2 origin;
-        uniform float accentMax;
+        uniform float lumaCap;
+        uniform float knee;
+        uniform float guard;
         layout(color) uniform half4 base;
-        layout(color) uniform half4 accent;
+
+        float3 toLinear(float3 c) {
+            return mix(c / 12.92, pow((c + float3(0.055)) / 1.055, float3(2.4)), step(float3(0.04045), c));
+        }
+
+        float3 toSrgb(float3 l) {
+            return mix(l * 12.92, 1.055 * pow(max(l, float3(0.0)), float3(1.0 / 2.4)) - float3(0.055),
+                step(float3(0.0031308), l));
+        }
+
+        float3 guardLuma(float3 c) {
+            c = clamp(c, 0.0, 1.0);
+            float3 lin = toLinear(c);
+            float l = dot(lin, float3(0.2126, 0.7152, 0.0722));
+            float k = lumaCap * knee;
+            if (l <= k) { return c; }
+            float mapped = k + (lumaCap - k) * (1.0 - exp((k - l) / (lumaCap - k)));
+            return toSrgb(lin * (mapped / l));
+        }
+
+        float3 finish(float3 c) {
+            if (guard > 0.5) { c = guardLuma(c); }
+            return c;
+        }
+    """
+
+    /** Living backdrop: a top-lit palette base and four soft palette blobs that drift slowly. */
+    const val SCENE = """
+        $SCENE_GUARD
+        uniform float4 blob0;
+        uniform float4 blob1;
+        uniform float4 blob2;
+        uniform float4 blob3;
+        layout(color) uniform half4 tone0;
+        layout(color) uniform half4 tone1;
+        layout(color) uniform half4 tone2;
+        layout(color) uniform half4 tone3;
+
+        float3 addBlob(float3 c, float2 p, float4 b, half4 tone) {
+            float2 d = (p - b.xy) / max(b.z, 1.0);
+            float w = clamp(b.w * exp(-2.2 * dot(d, d)), 0.0, 1.0);
+            return mix(c, float3(tone.rgb), w);
+        }
 
         half4 main(float2 pos) {
-            float2 uv = clamp((pos + origin) / screen, 0.0, 1.0);
-            float aspect = screen.y / max(screen.x, 1.0);
-            float2 d1 = (uv - float2(0.80, 0.16)) * float2(1.0, aspect);
-            float2 d2 = (uv - float2(0.10, 0.58)) * float2(1.0, aspect);
-            float2 d3 = (uv - float2(0.72, 0.94)) * float2(1.0, aspect);
-            float ribbon = 0.5 + 0.5 * sin(uv.y * 11.0 + sin(uv.x * 4.6 + uv.y * 2.0) * 1.8);
-            float bright = min(0.05 * ribbon + 0.10 * exp(-6.0 * dot(d1, d1)) + 0.07 * exp(-8.0 * dot(d3, d3)),
-                accentMax * 0.7);
-            float deep = min(0.16 * exp(-7.0 * dot(d2, d2)), accentMax * 0.3);
-            float3 c = float3(base.rgb) * (0.72 + 0.28 * (1.0 - uv.y));
-            c = mix(c, float3(accent.rgb), bright);
-            c = mix(c, float3(accent.rgb) * 0.5, deep);
-            return half4(half3(c), 1.0);
+            float2 p = pos + origin;
+            float v = clamp(p.y / screen.y, 0.0, 1.0);
+            float3 c = float3(base.rgb) * (0.80 + 0.20 * (1.0 - v));
+            c = addBlob(c, p, blob0, tone0);
+            c = addBlob(c, p, blob1, tone1);
+            c = addBlob(c, p, blob2, tone2);
+            c = addBlob(c, p, blob3, tone3);
+            return half4(half3(finish(c)), 1.0);
+        }
+    """
+
+    /** Optional user image (2809/1 B), centre-cropped in root pixels, guarded on the page. */
+    const val SCENE_PHOTO = """
+        uniform shader photo;
+        $SCENE_GUARD
+
+        half4 main(float2 pos) {
+            float2 p = pos + origin;
+            float v = clamp(p.y / screen.y, 0.0, 1.0);
+            float3 c = mix(float3(photo.eval(p).rgb), float3(base.rgb), 0.16) * (0.88 + 0.12 * (1.0 - v));
+            return half4(half3(finish(c)), 1.0);
         }
     """
 

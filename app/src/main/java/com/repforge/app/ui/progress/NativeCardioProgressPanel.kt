@@ -48,7 +48,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Un
     Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder)) {
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when {
                 state.cardioLoading -> Text(strings.getString(R.string.cardio_progress_loading),

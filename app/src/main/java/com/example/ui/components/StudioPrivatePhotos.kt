@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -141,7 +142,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
     }
     val lang = state.language
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
-        LazyColumn(Modifier.then(sheetAwareFillMaxSize()).background(palette.background).testTag("private_photos_screen"),
+        LazyColumn(Modifier.then(sheetAwareFillMaxSize()).trainPilotScreenBackdrop(palette).testTag("private_photos_screen"),
             contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { SubScreenTopBar(strings.privatePhotosTitle, back, settings) }
             item {

@@ -404,7 +404,7 @@ internal fun GoogleDisconnectSheet(language: AppLanguage, onDismiss: () -> Unit,
                 deleteData, "settings_google_disconnect_delete") { deleteData = it }
             Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainPilotOutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, palette.cardBorder),
+                    border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, palette.cardBorder)),
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("settings_google_disconnect_cancel")) {
                     Text(tr(language, "Mégse", "Cancel", "Abbrechen", "Anulează"), color = palette.textPrimary, fontWeight = FontWeight.Bold)
                 }

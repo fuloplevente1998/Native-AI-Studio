@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassTile
 
 import com.repforge.app.ui.theme.TrainPilotFrames
 
@@ -118,7 +119,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
         language = lang
     )
     if (key == "steps" || key == "workout") {
-        Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard,
+        Surface(shape = RoundedCornerShape(10.dp), color = palette.glassTile(palette.surfaceCard),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWeekly() }.testTag("health_today_tile_open_weekly_$key")) {

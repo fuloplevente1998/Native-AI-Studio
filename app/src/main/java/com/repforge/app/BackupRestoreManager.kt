@@ -791,6 +791,8 @@ class BackupRestoreManager(context: Context) {
                 settingsStore.resetAllSettingsForEraseLocal()
 
                 removeRecursive(photosDir())
+                // 2809/1 B: the private glass background image goes with an explicit local erase.
+                File(appContext.filesDir, GlassBackdropImages.DIR).let { if (it.exists()) removeRecursive(it) }
                 removeRecursive(transactionsDir())
                 val gpsRoutesDir = File(appContext.noBackupFilesDir, "gps_routes")
                 if (gpsRoutesDir.exists()) removeRecursive(gpsRoutesDir)

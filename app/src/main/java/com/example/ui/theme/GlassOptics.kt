@@ -44,7 +44,7 @@ internal data class GlassOptics(
     companion object {
         /** No lens output channel exceeds this sRGB value; palettes keep text readable against it. */
         const val LENS_PEAK = .32f
-        /** Upper bound of the accent mixed into the procedural page scene. */
+        /** V4 scene bound; kept as an extra contrast surface (2809 page backdrop: [GlassScene.lumaCap]). */
         const val SCENE_ACCENT_MAX = .16f
         const val FROSTED_BLUR_DP = 24f
         const val CLEAR_BLUR_DP = .5f

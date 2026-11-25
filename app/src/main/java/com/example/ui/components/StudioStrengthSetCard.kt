@@ -73,10 +73,11 @@ internal fun StudioStrengthSetCard(
         // 2775: a completed set reads green at a glance.
         color = if (item.completed) androidx.compose.ui.graphics.lerp(p.surfaceElevated, p.success, 0.14f) else p.surfaceElevated,
         shape = shape,
+        // 2809/2: the active-set frame is a state marker and stays; neutral frames follow the glass gate.
         border = when {
             item.completed -> BorderStroke(1.dp, p.success.copy(alpha = 0.75f))
             active -> TrainPilotFrames.page(p.cardBorder, p.primary)
-            else -> BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f))
+            else -> com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f)))
         },
         modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
@@ -106,7 +107,7 @@ internal fun StudioStrengthSetCard(
                 Surface(
                     shape = toggleShape,
                     color = if (item.completed) p.success else p.surface,
-                    border = BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder),
+                    border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder)),
                     modifier = Modifier.size(48.dp).clip(toggleShape)
                         .toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
                         .semantics { contentDescription = tr("Sorozat teljesítve", "Set completed", "Satz abgeschlossen", "Serie finalizată") }
@@ -192,7 +193,7 @@ private fun WorkoutSetValuePicker(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Surface(color = p.surface, shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(0.5.dp, outline),
+                border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(0.5.dp, outline)),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .trainPilotClickable(RoundedCornerShape(10.dp), enabled = enabled) { custom = false; expanded = true }
                     .testTag(tag)) {

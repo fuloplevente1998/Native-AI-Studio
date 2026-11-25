@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.trainPilotGlassScene
+import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
@@ -94,7 +94,7 @@ fun ProgressTabScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.pageBrush).trainPilotGlassScene(palette)
+            .trainPilotPageBackdrop(palette)
             .testTag("progress_tab_screen")
     ) {
         if (layout.draft == null) Surface(

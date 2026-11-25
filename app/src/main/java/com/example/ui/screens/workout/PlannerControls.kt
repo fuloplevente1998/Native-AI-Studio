@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
 
@@ -54,7 +55,7 @@ internal fun CalendarActionChip(
         color = if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground else color.copy(alpha = 0.14f),
         modifier = modifier
             .heightIn(min = 48.dp)
-            .border(1.dp, if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f) else color.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+            .trainPilotFrame(1.dp, if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f) else color.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
             .trainPilotClickable(RoundedCornerShape(10.dp)) { onClick() }
     ) {
         Box(

@@ -24,14 +24,17 @@ object TrainPilotActionAppearance {
         get() = if (dark) Color(0xFF19382C) else Color(0xFFDDF3E8)
     val saveForeground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
         get() = if (dark) Color(0xFF88E5B3) else Color(0xFF146C43)
+    /** Semantic save/delete outlines of dark palettes; Liquid Glass keeps them (2809/2). */
+    val DARK_SAVE_OUTLINE = Color(0xFF3ECF87)
+    val DARK_NEGATIVE_OUTLINE = Color(0xFFEF6670)
     val saveOutline: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
-        get() = if (dark) Color(0xFF3ECF87) else Color(0xFF4FB985)
+        get() = if (dark) DARK_SAVE_OUTLINE else Color(0xFF4FB985)
     val negativeBackground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
         get() = if (dark) Color(0xFF3E2024) else Color(0xFFFBE3E3)
     val negativeForeground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
         get() = if (dark) Color(0xFFFFB4B4) else Color(0xFFB3261E)
     val negativeOutline: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
-        get() = if (dark) Color(0xFFEF6670) else Color(0xFFD9878A)
+        get() = if (dark) DARK_NEGATIVE_OUTLINE else Color(0xFFD9878A)
     @Composable fun saveColors() = ButtonDefaults.outlinedButtonColors(
         containerColor = saveBackground, contentColor = saveForeground,
         disabledContainerColor = saveBackground.copy(alpha = 0.5f), disabledContentColor = saveForeground.copy(alpha = 0.38f))

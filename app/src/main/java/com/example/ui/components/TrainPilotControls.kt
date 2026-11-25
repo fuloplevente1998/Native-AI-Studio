@@ -76,7 +76,7 @@ fun TrainPilotFilterChip(
     Surface(
         shape = shape,
         color = if (selected) selection.surface else if (glassChip) Color.Transparent else p.surfaceCard,
-        border = BorderStroke(1.dp, if (selected) selection.border else p.cardBorder),
+        border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
         modifier = modifier.heightIn(min = 40.dp)
             .then(if (glassChip) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
             .trainPilotGlassRim(p, shape).semantics { this.selected = selected }
@@ -108,8 +108,10 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
         focusedContainerColor = p.surfaceCard, unfocusedContainerColor = p.surfaceCard,
         disabledContainerColor = p.surfaceCard, errorContainerColor = p.surfaceCard,
         cursorColor = p.primary, errorCursorColor = p.danger,
-        focusedBorderColor = selection.border, unfocusedBorderColor = outline,
-        disabledBorderColor = p.cardBorder.copy(alpha = 0.5f), errorBorderColor = p.danger,
+        // 2809/2: glass fields keep their filled container; the neutral outline vanishes, focus and error stay.
+        focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
+        unfocusedBorderColor = if (com.repforge.app.ui.theme.liquidGlassDropsFrame(p, outline)) Color.Transparent else outline,
+        disabledBorderColor = if (p.isLiquidGlass) Color.Transparent else p.cardBorder.copy(alpha = 0.5f), errorBorderColor = p.danger,
         focusedLabelColor = selection.foreground, unfocusedLabelColor = p.textSecondary,
         disabledLabelColor = p.textSecondary, errorLabelColor = p.danger,
         focusedPlaceholderColor = p.textSecondary, unfocusedPlaceholderColor = p.textSecondary,
@@ -215,7 +217,7 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = BorderStroke(1.dp, p.cardBorder),
+    Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, p.cardBorder)),
         modifier = modifier.heightIn(min = 48.dp)
             .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier)
             .trainPilotGlassRim(p, shape).trainPilotClickable(shape, enabled = enabled) { onClick() }) {

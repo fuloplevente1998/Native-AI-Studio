@@ -1,5 +1,9 @@
 package com.example.ui.screens
+import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 
+import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -90,7 +94,7 @@ internal fun CoachDetailScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("coach_detail_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -110,9 +114,9 @@ internal fun CoachDetailScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
+                color = palette.glassTile(palette.surfaceCard),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -142,7 +146,7 @@ internal fun CoachDetailScreen(
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = statusBadgeColor.copy(alpha = 0.16f),
-                            modifier = Modifier.border(1.dp, statusBadgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            modifier = Modifier.trainPilotFrame(1.dp, statusBadgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                         ) {
                             Text(
                                 text = statusBadgeText,
@@ -185,7 +189,7 @@ internal fun CoachDetailScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -207,7 +211,7 @@ internal fun CoachDetailScreen(
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -226,7 +230,7 @@ internal fun CoachDetailScreen(
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.surfaceElevated,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
                             modifier = Modifier
                                 .weight(1f)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
@@ -276,7 +280,7 @@ internal fun CoachExerciseAdviceRow(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = palette.surfaceElevated,
+        color = palette.glassTile(palette.surfaceElevated, elevated = true),
         modifier = Modifier
             .fillMaxWidth()
             .trainPilotClickable(RoundedCornerShape(12.dp)) { onClick() }

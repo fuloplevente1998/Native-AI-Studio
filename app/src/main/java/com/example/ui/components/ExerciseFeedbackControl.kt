@@ -35,7 +35,7 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
     val selected = StudioWorkoutFeedback.efforts.indexOf(if (effort == "good") "right" else effort)
     val colors = LocalTrainPilotColors.current
     Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = colors.card,
-        shape = RoundedCornerShape(12.dp), border = TrainPilotFrames.control(colors.line)) {
+        shape = RoundedCornerShape(12.dp), border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line))) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
