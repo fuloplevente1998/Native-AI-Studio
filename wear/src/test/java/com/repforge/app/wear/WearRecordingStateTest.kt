@@ -138,17 +138,17 @@ class WearRecordingStateTest {
 
     @Test fun workoutRowsShowMeasuredPulseEnergyAndMovementIncludingZeroButNeverBorrowTargetsOrPreviousData() {
         val data=measured("current",1,2.0).put("steps",0).put("distanceMeters",150).put("updatedAt",100000L)
-        assertEquals(listOf("93 bpm · 2 kcal","Edzés: 0 lépés · 150 m"),wearLiveWorkoutRows(data,"current",100001L))
-        assertTrue(wearLiveWorkoutRows(data,"next",100001L).isEmpty())
-        assertTrue(wearLiveWorkoutRows(null,"current",100001L).isEmpty())
+        assertEquals(listOf("93 bpm · 2 kcal","Edzés: 0 lépés · 150 m"),wearLiveWorkoutRows(data,"current",100001L,"hu"))
+        assertTrue(wearLiveWorkoutRows(data,"next",100001L,"hu").isEmpty())
+        assertTrue(wearLiveWorkoutRows(null,"current",100001L,"hu").isEmpty())
         data.put("state","paused")
-        assertEquals("Mérés szünetel",wearLiveWorkoutRows(data,"current",100001L).last())
+        assertEquals("Mérés szünetel",wearLiveWorkoutRows(data,"current",100001L,"hu").last())
         data.put("state","active")
-        assertEquals("Legutóbbi adat",wearLiveWorkoutRows(data,"current",130001L).last())
+        assertEquals("Legutóbbi adat",wearLiveWorkoutRows(data,"current",130001L,"hu").last())
         data.remove("steps");data.remove("distanceMeters")
-        assertEquals(listOf("93 bpm · 2 kcal"),wearLiveWorkoutRows(data,"current",100001L))
+        assertEquals(listOf("93 bpm · 2 kcal"),wearLiveWorkoutRows(data,"current",100001L,"hu"))
         data.put("steps",-1);data.put("distanceMeters","NaN")
-        assertEquals(listOf("93 bpm · 2 kcal"),wearLiveWorkoutRows(data,"current",100001L))
+        assertEquals(listOf("93 bpm · 2 kcal"),wearLiveWorkoutRows(data,"current",100001L,"hu"))
     }
 
     private fun measured(id: String, revision: Long, calories: Double) = JSONObject()
