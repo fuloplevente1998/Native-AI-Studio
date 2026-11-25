@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.kyantStateTile
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.foundation.layout.*
@@ -96,9 +99,9 @@ internal fun StudioHealthMetricsBrowser(
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { selected ->
             com.example.ui.components.TrainPilotFilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
-                colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
-                    labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
-                    selectedLabelColor = palette.onPrimary),
+                colors = FilterChipDefaults.filterChipColors(containerColor = palette.glassTile(palette.surfaceCard),
+                    labelColor = palette.textPrimary, selectedContainerColor = palette.kyantStateTile(palette.primary, palette.primary, strong = true),
+                    selectedLabelColor = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, if (provider == selected) palette.primary else palette.cardBorder)),
                 label = { Text(NativeWorkoutHealthSource.label(selected)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("journal_provider_$selected"))
@@ -107,7 +110,7 @@ internal fun StudioHealthMetricsBrowser(
     val periodFormat = java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         val pillShape = RoundedCornerShape(14.dp)
-        Surface(shape = pillShape, color = palette.surfaceCard, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+        Surface(shape = pillShape, color = palette.glassTile(palette.surfaceCard), modifier = Modifier.trainPilotGlassRim(palette, pillShape).weight(1f).heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), pillShape)
             .trainPilotClickable(pillShape) {
                 pickStart = from; pickEnd = to
@@ -146,7 +149,7 @@ internal fun StudioHealthMetricsBrowser(
             androidx.compose.runtime.LaunchedEffect(focusKey) {
                 if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
             }
-            Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
+            Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
@@ -235,9 +238,9 @@ internal fun StudioHealthMetricsBrowser(
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             filters.forEach { (filterType, filterLabel) ->
                                 com.example.ui.components.TrainPilotFilterChip(selected = type == filterType, onClick = { type = filterType },
-                                    colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
-                                        labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
-                                        selectedLabelColor = palette.onPrimary),
+                                    colors = FilterChipDefaults.filterChipColors(containerColor = palette.glassTile(palette.surfaceCard),
+                                        labelColor = palette.textPrimary, selectedContainerColor = palette.kyantStateTile(palette.primary, palette.primary, strong = true),
+                                        selectedLabelColor = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary),
                                     label = { Text(filterLabel) },
                                     modifier = Modifier.heightIn(min = 48.dp).testTag(
                                         if (filterType.isEmpty()) "journal_records_all_$date" else "journal_records_filter_${date}_$filterType"))
