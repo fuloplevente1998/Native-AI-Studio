@@ -33,15 +33,59 @@ internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?>
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
 /**
- * Header, nav and selection lens over the recorded content. 2811/1: default role [GlassRole.Navigation]
- * (thin tint, so the backdrop colour shows through within the same contrast ceiling).
+ * Header, nav and selection glass. 2811/1 device round 3: every route draws the SAME material as the calendar
+ * header (the page scene through [trainPilotGlassMaterial], proven continuous with the page on device); routes
+ * whose content scrolls under the header add only that content, blurred and luminance-bounded, on top
+ * ([glassContentOverlay]). The former full content lens (recorded page + AGSL `CONTENT_LENS`) rendered as a dark
+ * flat band on device and is no longer used for the header.
  */
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassRole = GlassRole.Navigation): Modifier {
     val backdrop = LocalGlassHeaderBackdrop.current
-    return if (backdrop != null) liveGlassLens(backdrop, palette, shape, role)
-    else trainPilotGlassMaterial(palette, shape, role)
+    val material = trainPilotGlassMaterial(palette, shape, role)
+    return if (backdrop != null) material.glassContentOverlay(backdrop, palette, shape) else material
+}
+
+/**
+ * Channel scale of the scrolled content shown through the header: even white content stays at the page
+ * ceiling (the Navigation role's API 31–32 bound: no tint, no vibrancy), so glyphs on the header keep >= 4.5:1.
+ * Where nothing is under the header the recorded layer is transparent and the header equals the page.
+ */
+internal fun glassOverlayScale(clarity: Int): Float = GlassOptics.from(clarity, GlassRole.Navigation).blurOnlyScale
+
+/**
+ * 2811/1: only the recorded content (the capture sits inside the page scene, see [GlassAwareScaffold]), platform
+ * blur + uniform channel scale, clipped to [shape]. No fill, tint or luminance clamp of its own over the page.
+ */
+@Composable
+internal fun Modifier.glassContentOverlay(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
+    if (!palette.isLiquidGlass || Build.VERSION.SDK_INT < 31) return this
+    val enabled = LocalGlassOpticsEnabled.current
+    val overlay = rememberGraphicsLayer()
+    val origin = remember { mutableStateOf(Offset.Zero) }
+    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity, GlassRole.Navigation) }
+    return onGloballyPositioned { origin.value = it.positionInRoot() }
+        .drawWithCache {
+            val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
+            val dimensions = IntSize(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
+            val effect = if (!enabled || Build.VERSION.SDK_INT < 31) null else runCatching {
+                createContentBlur31(optics.blurDp.dp.toPx(), glassOverlayScale(palette.glassClarity))
+            }.getOrNull()
+            overlay.renderEffect = effect
+            onDrawWithContent {
+                if (effect != null && backdrop.layer.size.width > 0 && backdrop.layer.size.height > 0) clipPath(path) {
+                    runCatching {
+                        val relative = origin.value - backdrop.origin
+                        overlay.record(this, layoutDirection, dimensions) {
+                            translate(left = -relative.x, top = -relative.y) { drawLayer(backdrop.layer) }
+                        }
+                        drawLayer(overlay)
+                    }
+                }
+                drawContent()
+            }
+        }
 }
 
 @Composable
@@ -123,9 +167,18 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
 }
 
 @RequiresApi(31)
-private fun createContentBlur31(radius: Float, optics: GlassOptics): androidx.compose.ui.graphics.RenderEffect {
-    val blur = RenderEffect.createBlurEffect(radius.coerceAtLeast(.5f), radius.coerceAtLeast(.5f), Shader.TileMode.CLAMP)
-    val filter = android.graphics.ColorMatrixColorFilter(glassVibrancyMatrix(optics.saturation, optics.blurOnlyScale))
+private fun createContentBlur31(radius: Float, optics: GlassOptics): androidx.compose.ui.graphics.RenderEffect =
+    createContentBlur31(radius, optics.blurOnlyScale, optics.saturation, Shader.TileMode.CLAMP)
+
+/**
+ * Blur, then saturation + uniform scale. 2811/1: the header overlay uses saturation 1 (no vibrancy) and DECAL
+ * edges (outside the recorded content is transparent, so the header edge never smears content in).
+ */
+@RequiresApi(31)
+private fun createContentBlur31(radius: Float, scale: Float, saturation: Float = 1f,
+    tile: Shader.TileMode = Shader.TileMode.DECAL): androidx.compose.ui.graphics.RenderEffect {
+    val blur = RenderEffect.createBlurEffect(radius.coerceAtLeast(.5f), radius.coerceAtLeast(.5f), tile)
+    val filter = android.graphics.ColorMatrixColorFilter(glassVibrancyMatrix(saturation, scale))
     // Blur first, then vibrancy + contrast scale (the effect input is applied before the filter).
     return RenderEffect.createColorFilterEffect(filter, blur).asComposeRenderEffect()
 }

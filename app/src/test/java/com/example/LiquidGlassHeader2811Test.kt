@@ -76,4 +76,35 @@ class LiquidGlassHeader2811Test {
         assertTrue(src("ui/theme/GlassShaders.kt").contains("guard = optics.role.matchesPage"))
         assertTrue(src("ui/theme/TrainPilotGlassEngine.kt").contains("if (role.matchesPage) GlassScene.lumaCap else optics.backdropCap"))
     }
+
+    /**
+     * Device round 3 (#3dec77ce APK): only the calendar header (no recorded backdrop) matched the page; every
+     * underlap route used the separate content lens and showed a dark flat band. The header must take the very
+     * same material path on every route, and the underlap addition may only add the scrolled content.
+     */
+    @Test fun underlapHeaderUsesTheCalendarPathPlusContentOnly() {
+        fun src(path: String) = java.io.File("src/main/java/com/example/$path").readText()
+        val lens = src("ui/theme/GlassContentBackdrop.kt")
+        val header = lens.substring(lens.indexOf("internal fun Modifier.glassHeaderMaterial"), lens.indexOf("internal fun glassOverlayScale"))
+        assertTrue(header.contains("val material = trainPilotGlassMaterial(palette, shape, role)"))
+        assertTrue(header.contains("material.glassContentOverlay(backdrop, palette, shape) else material"))
+        assertFalse("no separate content lens for the header", header.contains("liveGlassLens("))
+        val overlay = lens.substring(lens.indexOf("internal fun Modifier.glassContentOverlay"), lens.indexOf("internal fun rememberGlassBackdrop"))
+        for (forbidden in listOf("drawRect(", "TINT", "coat", "backdropCap", "palette.surface", "glassFallbackPaint"))
+            assertFalse("overlay draws no fill/tint/clamp: $forbidden", overlay.contains(forbidden))
+        // The recorded layer holds only the content: the scene is drawn outside (around) the capture.
+        val scaffold = src("ui/theme/GlassAwareScaffold.kt")
+        assertTrue(scaffold.contains("Modifier.trainPilotGlassScene(palette).then(capture)"))
+        assertFalse(scaffold.contains("capture.then(Modifier.trainPilotGlassScene(palette))"))
+        // Content shown through the header is bounded so glyphs stay readable, yet still visible.
+        for (seed in glass) for (clarity in clarities) {
+            val p = seed.withGlassClarity(clarity)
+            val k = glassOverlayScale(clarity)
+            assertTrue("$clarity visible", k > .2f)
+            val whiteContent = Color(k, k, k)
+            assertTrue(whiteContent.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .002f)
+            for (text in listOf(p.textPrimary, p.textSecondary, p.primary, p.selectionColors().foreground))
+                assertTrue("${p.key} $clarity", NativeThemeTokens.contrast(text, whiteContent) >= 4.5f)
+        }
+    }
 }

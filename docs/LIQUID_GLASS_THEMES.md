@@ -116,3 +116,16 @@ Saját motor, új motor/függőség nélkül; csak a 33–40 család. Audit: `do
   felesleges második lencse. Programok egyszer fordulnak, uniformok stabilak, `GlassOptics.from(step, role)` cache.
 - Nyitott (csak készüléken mérhető): pill + fejléc két platform-blur menete közös blur-réteggé vonható-e; A57 frame time.
 - Kézi elfogadás: `docs/LIQUID_GLASS_2_ACCEPTANCE.md`. Teszt: `LiquidGlassPerformance2811Test`.
+
+## V11 (2811/1, eszköz 3. kör) – fejléc minden útvonalon a Naptár útján
+- Eszközön (3dec77ce) csak a Naptár fejléce volt a lap folytatása: ott nincs rögzített háttér, a fejléc `trainPilotGlassMaterial`
+  (jelenet-lencse, Navigation) – ez készüléken igazoltan jó. A fejléc alá görgető útvonalakon a `liveGlassLens` (rögzített lap +
+  platform blur + AGSL `CONTENT_LENS`) sötét, lapos sávot adott; a modell-teszt ezt nem láthatta. Valószínű ok: a lencse a régi
+  opak tartalékfestékre esett vissza (a pontos ok logcat nélkül nem igazolható).
+- Most: `glassHeaderMaterial` = mindig `trainPilotGlassMaterial(role)` + rögzített útvonalon `glassContentOverlay`. Ez csak a
+  rögzített tartalmat rajzolja, platform-homállyal (DECAL szél) és egyenletes csatorna-skálával (`glassOverlayScale`,
+  fehér ≤ plafon). Nincs saját kitöltés, tónus vagy korlát. A rögzítés a jelenetbe került (`trainPilotGlassScene(palette).then(capture)`),
+  így a réteg csak a tartalmat tartalmazza; nyugalomban átlátszó, a fejléc a Naptáréval azonos.
+- A nav-pill ugyanígy (Selection szerep a jelenet-lencsén + tartalom). `liveGlassLens` csak a téma-előnézetben maradt.
+- Teszt: `LiquidGlassHeader2811Test.underlapHeaderUsesTheCalendarPathPlusContentOnly` (forrásszerkezet + kontraszt).
+- Csak készüléken: tartalom a fejléc alatt (homály mértéke), API 31–32; a téma-előnézet élő lencséje is érintett lehet.

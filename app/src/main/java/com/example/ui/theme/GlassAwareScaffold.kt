@@ -54,10 +54,11 @@ internal fun GlassAwareScaffold(
             bottom = innerPadding.calculateBottomPadding()
         ) else innerPadding
         val capture = if (headerBackdrop != null) Modifier.captureGlassBackdrop(headerBackdrop) else Modifier
-        // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
-        // header lens sees it too); the pages above stay transparent instead of repainting it.
+        // 2809/1: one living backdrop behind every glass screen; the pages above stay transparent.
+        // 2811/1 round 3: the capture sits INSIDE the scene, so it records only the scrolled content: the
+        // header draws the page scene itself (as on the calendar) and lays this content, blurred, on top.
         CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass) {
-            content(bodyPadding, capture.then(Modifier.trainPilotGlassScene(palette)),
+            content(bodyPadding, Modifier.trainPilotGlassScene(palette).then(capture),
                 if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
         }
     }
