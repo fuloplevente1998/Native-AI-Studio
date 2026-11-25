@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTile
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import com.repforge.app.ui.theme.LocalTrainPilotColors
@@ -9,7 +10,8 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 internal object WorkoutControlAppearance {
     @Composable
     fun secondaryColors() = ButtonDefaults.outlinedButtonColors(
-        containerColor = LocalTrainPilotColors.current.card2,
+        // 2810/3: a glass tile on the Liquid Glass dock; every other palette keeps card2 exactly.
+        containerColor = com.example.ui.theme.LocalTrainPilotPalette.current.glassTile(LocalTrainPilotColors.current.card2, elevated = true),
         contentColor = LocalTrainPilotColors.current.text)
 
     @Composable

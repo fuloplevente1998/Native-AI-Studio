@@ -43,8 +43,8 @@ internal object GlassPrograms33 {
 
     /**
      * 2809/1: the living backdrop (blobs drifting with [seconds]) or, with [photo], the user image.
-     * [guard] = the page itself (luminance guard on); the lens samples it unguarded and caps its own
-     * output at [GlassOptics.LENS_PEAK].
+     * [guard] = the page itself (luminance guard on); the lens samples it unguarded and limits its own
+     * backdrop at [GlassOptics.backdropCap] after the vibrancy boost (2810/6).
      */
     fun boundScene(sceneWidth: Float, sceneHeight: Float, originX: Float, originY: Float,
         palette: TrainPilotPalette, seconds: Float, photo: Shader?, guard: Boolean): RuntimeShader? {
@@ -80,13 +80,14 @@ internal object GlassPrograms33 {
         shader.setFloatUniform("saturation", optics.saturation)
         shader.setFloatUniform("specular", (optics.specular + highlight).coerceIn(0f, 1f))
         shader.setFloatUniform("shade", optics.shadow)
-        shader.setFloatUniform("peak", GlassOptics.LENS_PEAK)
+        shader.setFloatUniform("backdropCap", optics.backdropCap)
+        shader.setFloatUniform("ceiling", GlassOptics.SURFACE_LUMA_MAX)
         shader.setFloatUniform("lightDir", LIGHT_X, LIGHT_Y)
         shader.setColorUniform("tint", tint.toArgb())
     }
 
     /** Live content lens: smooth platform blur first, then refraction/rim/tint on the blurred copy. */
-    fun contentEffect(width: Int, height: Int, radii: FloatArray, optics: GlassOptics, tint: Color,
+    fun contentEffect(width: Int, height: Int, radii: FloatArray, optics: GlassOptics, tint: Color = GlassOptics.TINT,
         density: Float, highlight: Float): androidx.compose.ui.graphics.RenderEffect? {
         val shader = contentLens() ?: return null
         bindMaterial(shader, width.toFloat(), height.toFloat(), radii, optics, tint, density, 0f, highlight)
@@ -105,8 +106,9 @@ internal object GlassPrograms33 {
         val scene = boundScene(sceneWidth, sceneHeight, originX, originY, palette, seconds, photo, guard = false) ?: return null
         // Rebind after the child's uniforms changed: the lens snapshots the child here.
         lens.setInputShader("scene", scene)
+        // 2810/6: strong diffusion (20–32 dp) of the soft scene, capped for small chips.
         val frost = min(optics.blur * min(sceneWidth, sceneHeight), min(width, height) * .45f)
-        bindMaterial(lens, width, height, radii, optics, palette.surface, density, frost, highlight)
+        bindMaterial(lens, width, height, radii, optics, GlassOptics.TINT, density, frost, highlight)
         return lens
     }
 
@@ -118,8 +120,10 @@ internal object GlassPrograms33 {
 /**
  * Original TrainPilot AGSL. General optics only: a rounded-rectangle distance field gives the
  * surface normal; the rim refracts (stronger at the edge, flat clear center), splits color only
- * inside the rim, gets an inner depth shade and a light-facing specular line. Output channels are
- * capped at [GlassOptics.LENS_PEAK] so palette text keeps its tested contrast.
+ * inside the rim, gets an inner depth shade and a thin specular edge (strongest on top).
+ * 2810/6 order (the layering public Apache-2.0 glass engines use, own code): blur -> refraction ->
+ * vibrancy -> backdrop luminance limit ([GlassOptics.backdropCap]) -> white-ish tint -> safety
+ * ceiling ([GlassOptics.SURFACE_LUMA_MAX], a no-op inside the model) -> rim light.
  */
 internal object GlassShaderSource {
     private const val MATERIAL_UNIFORMS = """
@@ -134,12 +138,30 @@ internal object GlassShaderSource {
         uniform float saturation;
         uniform float specular;
         uniform float shade;
-        uniform float peak;
+        uniform float backdropCap;
+        uniform float ceiling;
         uniform float2 lightDir;
         layout(color) uniform half4 tint;
     """
 
     private const val MATERIAL_BODY = """
+        float3 lensLinear(float3 c) {
+            return mix(c / 12.92, pow((c + float3(0.055)) / 1.055, float3(2.4)), step(float3(0.04045), c));
+        }
+
+        float3 lensSrgb(float3 l) {
+            return mix(l * 12.92, 1.055 * pow(max(l, float3(0.0)), float3(1.0 / 2.4)) - float3(0.055),
+                step(float3(0.0031308), l));
+        }
+
+        // Hard luminance limit in linear light (hue and saturation kept), mirrored by GlassContrast.
+        float3 limitLuma(float3 c, float cap) {
+            float3 lin = lensLinear(clamp(c, 0.0, 1.0));
+            float l = dot(lin, float3(0.2126, 0.7152, 0.0722));
+            if (l <= cap) { return clamp(c, 0.0, 1.0); }
+            return lensSrgb(lin * (max(cap, 0.0) / l));
+        }
+
         float cornerRadius(float2 p, float2 h) {
             float r = p.y < 0.0 ? (p.x < 0.0 ? radii.x : radii.y) : (p.x < 0.0 ? radii.w : radii.z);
             return clamp(r, 0.0, min(h.x, h.y));
@@ -185,24 +207,24 @@ internal object GlassShaderSource {
 
             float luma = dot(c, float3(0.2126, 0.7152, 0.0722));
             c = clamp(mix(float3(luma), c, saturation), 0.0, 1.0);
+            c = limitLuma(c, backdropCap);
             c = mix(c, float3(tint.rgb), coat);
-            float top = max(max(c.r, c.g), c.b);
-            float knee = peak * 0.55;
-            float mapped = top <= knee ? top : knee + (peak - knee) * (1.0 - exp((knee - top) / (peak - knee)));
-            c = c * (mapped / max(top, 0.0001));
+            c = limitLuma(c, ceiling);
 
             float band = 1.0 - smoothstep(0.0, rim * 0.9, -sd);
             float away = 0.5 + 0.5 * dot(n, -lightDir);
             c = c * (1.0 - shade * band * band * (0.45 + 0.55 * away));
 
-            float facing = max(dot(n, lightDir), 0.0);
-            float echo = max(dot(n, -lightDir), 0.0) * 0.4;
+            // Thin specular edge: ~1 px line plus a 3 px glow, top strongest, sides and bottom weaker.
+            // It stays inside the padding, never under text.
             float edgeLine = 1.0 - smoothstep(0.0, 1.25 * px, -sd);
-            float spill = 1.0 - smoothstep(0.0, rim * 0.6, -sd);
-            float sheen = 1.0 - smoothstep(0.0, extent.y * 0.45, pos.y);
-            float shine = specular * (edgeLine * (0.45 + 0.55 * (facing + echo))
-                + spill * spill * facing * 0.45 + sheen * 0.14);
-            c = mix(c, float3(1.0), clamp(shine, 0.0, 0.85));
+            float glow = 1.0 - smoothstep(0.0, 3.0 * px, -sd);
+            float topness = clamp(-n.y, 0.0, 1.0);
+            float side = 1.0 - abs(n.y);
+            float rimAlpha = specular * (0.27 + 0.73 * topness + 0.13 * side)
+                + 0.08 * specular * max(dot(n, lightDir), 0.0);
+            float shine = edgeLine * rimAlpha + glow * glow * rimAlpha * 0.30 * topness;
+            c = mix(c, float3(1.0), clamp(shine, 0.0, 0.60));
             return half4(half3(c), 1.0);
         }
     """

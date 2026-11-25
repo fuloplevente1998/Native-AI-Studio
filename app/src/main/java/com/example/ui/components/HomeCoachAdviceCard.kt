@@ -1,4 +1,6 @@
 package com.example.ui.components
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -85,11 +87,13 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
     // every layout recomputes it.
     var summaryOverflow by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(18.dp)
-    Surface(shape = shape, color = p.glassTile(p.surface),
-        modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape).trainPilotGlassRim(p, shape)
+    // 2810/2: Liquid Glass = the page-backdrop glass card (its own rim), no opaque inner gradient.
+    Surface(shape = shape, color = p.glassCardFill(p.surface),
+        modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
+            .then(if (p.isLiquidGlass) Modifier.trainPilotGlassMaterial(p, shape) else Modifier.trainPilotGlassRim(p, shape))
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = 0.7f), p.cardBorder)), shape)
             .trainPilotClickable(shape, onClick = onOpen).testTag("home_coach_advice_card")) {
-        Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
+        Column(Modifier.then(if (p.isLiquidGlass) Modifier else Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface))))
             .padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(TrainPilotCoachIcon, null, tint = p.primary, modifier = Modifier.padding(end = 6.dp).size(16.dp))

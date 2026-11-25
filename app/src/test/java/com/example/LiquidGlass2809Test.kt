@@ -175,17 +175,30 @@ class LiquidGlass2809Test {
     @Test fun tileTintFallsContinuouslyWithClarityAndCardsToo() {
         var lastTile = Float.MAX_VALUE
         var lastCard = Float.MAX_VALUE
+        var lastCoat = Float.MAX_VALUE
+        val cards = (0..100).map { checkNotNull(glass.first().withGlassClarity(it).customCardPaint).alpha }
         for (step in 0..100) {
             val tile = glassTileAlpha(step)
-            val card = checkNotNull(glass.first().withGlassClarity(step).customCardPaint).alpha
+            val card = cards[step]
             assertTrue("tile $step", tile < lastTile)
-            assertTrue("card $step", card < lastCard)
+            // 2810/6: the card tint spans .40 -> .06 (.0034 per step, under one 8-bit alpha quantum), so the
+            // stored paint may repeat for one step: the exact tint falls strictly, the paint never rises and
+            // strictly falls over every two steps.
+            val coat = GlassOptics.from(step).coat
+            assertTrue("coat $step", coat < lastCoat)
+            assertTrue("card $step", card <= lastCard)
+            if (step >= 2) assertTrue("card $step over two steps", card < cards[step - 2])
+            lastCoat = coat
             if (step > 0) assertTrue(lastTile - tile <= .01f)
             lastTile = tile
             lastCard = card
         }
         assertTrue("low-opacity at the Clear end", glassTileAlpha(100) <= .15f)
-        assertTrue(glassTileAlpha(0) >= .6f)
+        // 2810/6: the tile tint is a neutral below the glass ceiling (no longer the dark paint at .66), so a
+        // tile can never lift a glass composite above it; it stays clearly visible at the Frosted end.
+        assertTrue(glassTileAlpha(0) >= .14f && glassTileAlpha(0) > glassTileAlpha(100))
+        for (elevated in listOf(false, true))
+            assertTrue(glassTilePaint(50, elevated).copy(alpha = 1f).luminance() < GlassOptics.SURFACE_LUMA_MAX)
         assertEquals(glassTileAlpha(0), glassTileAlpha(-5), 0f)
         assertEquals(glassTileAlpha(100), glassTileAlpha(180), 0f)
         for (p in glass) for (step in listOf(0, 50, 100)) {
@@ -205,7 +218,8 @@ class LiquidGlass2809Test {
             val p = seed.withGlassClarity(step)
             val optics = GlassOptics.from(step)
             val under = listOf(GlassOptics.lensWorstCase, GlassOptics.sceneWorstCase(p.background), p.surface, p.background,
-                GlassScene.guard(Color.White), p.surface.copy(alpha = optics.veil).compositeOver(Color.White))
+                GlassScene.guard(Color.White), GlassOptics.blurOnlyWorstCase(step),
+                GlassContrast.grey(GlassContrast.worstComposite(optics.coat, optics.backdropCap)))
             for (u in under) for (elevated in listOf(false, true)) {
                 val tile = p.glassTile(p.surfaceCard, elevated).compositeOver(u)
                 for (text in listOf(p.textPrimary, p.textSecondary, p.primary, p.danger, p.success, p.warning))
