@@ -80,6 +80,7 @@ internal object GlassPrograms33 {
         shader.setFloatUniform("saturation", optics.saturation)
         shader.setFloatUniform("specular", (optics.specular + highlight).coerceIn(0f, 1f))
         shader.setFloatUniform("shade", optics.shadow)
+        shader.setFloatUniform("thickness", optics.thickness)
         shader.setFloatUniform("backdropCap", optics.backdropCap)
         shader.setFloatUniform("ceiling", GlassOptics.SURFACE_LUMA_MAX)
         shader.setFloatUniform("lightDir", LIGHT_X, LIGHT_Y)
@@ -112,9 +113,9 @@ internal object GlassPrograms33 {
         return lens
     }
 
-    // Light from the upper left (y grows downwards).
-    private const val LIGHT_X = -.48f
-    private const val LIGHT_Y = -.877f
+    // Light from the upper left (y grows downwards), shared with the vector rim.
+    private const val LIGHT_X = GlassRimLight.LIGHT_X
+    private const val LIGHT_Y = GlassRimLight.LIGHT_Y
 }
 
 /**
@@ -138,6 +139,7 @@ internal object GlassShaderSource {
         uniform float saturation;
         uniform float specular;
         uniform float shade;
+        uniform float thickness;
         uniform float backdropCap;
         uniform float ceiling;
         uniform float2 lightDir;
@@ -186,7 +188,11 @@ internal object GlassShaderSource {
             float rim = max(2.0 * px, min(h.x, h.y) * bevel);
             float inside = clamp(-sd / rim, 0.0, 1.0);
             float slope = (1.0 - inside) * (1.0 - inside);
-            float2 shift = -n * slope * bend * min(extent.x, extent.y);
+            // 2811/G1 geometry-dependent refraction: the reach follows the surface size up to ~120 dp (large
+            // panels no longer over-bend), and the curved corners (diagonal normal) bend a little more.
+            float corner = 1.0 - abs(n.x * n.x - n.y * n.y);
+            float reach = min(min(extent.x, extent.y), 120.0 * px);
+            float2 shift = -n * slope * bend * reach * (1.0 + 0.35 * corner);
             float2 at = pos + shift;
 
             float3 c = backdrop(at);
@@ -202,16 +208,21 @@ internal object GlassShaderSource {
             float2 split = -n * slope * dispersion * rim;
             float redShift = backdrop(at + split).r;
             float blueShift = backdrop(at - split).b;
-            c.r = mix(c.r, redShift, slope);
-            c.b = mix(c.b, blueShift, slope);
+            // Edge-only, restrained: the split fades in only towards the outer rim (slope squared).
+            c.r = mix(c.r, redShift, slope * slope);
+            c.b = mix(c.b, blueShift, slope * slope);
 
             float luma = dot(c, float3(0.2126, 0.7152, 0.0722));
             c = clamp(mix(float3(luma), c, saturation), 0.0, 1.0);
             c = limitLuma(c, backdropCap);
             c = mix(c, float3(tint.rgb), coat);
+            float band = 1.0 - smoothstep(0.0, rim * 0.9, -sd);
+            // 2811/G1 thickness: light passing through the glass body on the lit rim (before the ceiling,
+            // so it can never lift text contrast); the away side keeps the inner depth shade below.
+            float facing = max(dot(n, lightDir), 0.0);
+            c = mix(c, float3(tint.rgb), clamp(thickness * band * facing, 0.0, 0.5));
             c = limitLuma(c, ceiling);
 
-            float band = 1.0 - smoothstep(0.0, rim * 0.9, -sd);
             float away = 0.5 + 0.5 * dot(n, -lightDir);
             c = c * (1.0 - shade * band * band * (0.45 + 0.55 * away));
 
@@ -224,7 +235,7 @@ internal object GlassShaderSource {
             float rimAlpha = specular * (0.27 + 0.73 * topness + 0.13 * side)
                 + 0.08 * specular * max(dot(n, lightDir), 0.0);
             float shine = edgeLine * rimAlpha + glow * glow * rimAlpha * 0.30 * topness;
-            c = mix(c, float3(1.0), clamp(shine, 0.0, 0.60));
+            c = mix(c, float3(1.0), clamp(shine, 0.0, 0.60)); // GlassRimLight.MAX_SHINE
             return half4(half3(c), 1.0);
         }
     """
@@ -263,17 +274,19 @@ internal object GlassShaderSource {
         }
     """
 
-    /** Living backdrop: a top-lit palette base and four soft palette blobs that drift slowly. */
+    /** Living backdrop: a top-lit palette base and five soft palette blobs that drift slowly (2811/1: one under the header). */
     const val SCENE = """
         $SCENE_GUARD
         uniform float4 blob0;
         uniform float4 blob1;
         uniform float4 blob2;
         uniform float4 blob3;
+        uniform float4 blob4;
         layout(color) uniform half4 tone0;
         layout(color) uniform half4 tone1;
         layout(color) uniform half4 tone2;
         layout(color) uniform half4 tone3;
+        layout(color) uniform half4 tone4;
 
         float3 addBlob(float3 c, float2 p, float4 b, half4 tone) {
             float2 d = (p - b.xy) / max(b.z, 1.0);
@@ -289,6 +302,7 @@ internal object GlassShaderSource {
             c = addBlob(c, p, blob1, tone1);
             c = addBlob(c, p, blob2, tone2);
             c = addBlob(c, p, blob3, tone3);
+            c = addBlob(c, p, blob4, tone4);
             return half4(half3(finish(c)), 1.0);
         }
     """

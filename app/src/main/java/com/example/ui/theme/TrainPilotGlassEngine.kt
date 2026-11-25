@@ -25,17 +25,19 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, null) else this
+    if (palette.isLiquidGlass) glassSceneModifier(palette, null, GlassRole.Panel) else this
 
+/** 2811/G1: [role] picks the semantic material (default [GlassRole.Panel] = the pre-role look). */
 @Composable
-internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape): Modifier =
-    if (palette.isLiquidGlass) glassSceneModifier(palette, shape) else this
+internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassRole = GlassRole.Panel): Modifier =
+    if (palette.isLiquidGlass) glassSceneModifier(palette, shape, role) else this
 
 /** UI-thread only; the paint is reused, the shader it carries is snapshotted by each draw call. */
 private val glassPaint by lazy { Paint(Paint.ANTI_ALIAS_FLAG) }
 
 @Composable
-private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?): Modifier {
+private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape?, requested: GlassRole): Modifier {
     val effectsEnabled = LocalGlassOpticsEnabled.current
     val scene = LocalGlassScene.current
     val configuration = LocalConfiguration.current
@@ -44,7 +46,9 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
     val sceneHeight = with(localDensity) { configuration.screenHeightDp.dp.toPx() }.coerceAtLeast(1f)
     // Position is read only in the draw phase: scrolling re-binds uniforms, never recomposes or recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
-    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity) }
+    // Measurement screens: the light Performance material (no shadow, softer rim); else the requested role.
+    val role = GlassRole.resolve(requested, effectsEnabled)
+    val optics = remember(palette.glassClarity, role) { GlassOptics.from(palette.glassClarity, role) }
     return onGloballyPositioned { coordinates -> origin.value = coordinates.positionInRoot() }
         .drawWithCache {
             val outline = shape?.createOutline(size, layoutDirection, this)
@@ -79,10 +83,10 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                 drawGlassSceneCompose(palette, scene, origin.value, sceneWidth, sceneHeight, cap)
                 return true
             }
-            val shadow = if (path != null && radii.any { it > 0f }) path else null
+            val shadow = if (path != null && optics.elevation > 0f && radii.any { it > 0f }) path else null
             onDrawWithContent {
                 // 2810/6: soft drop shadow outside rounded glass (darkens the page only, never under text).
-                if (shadow != null) drawGlassDropShadow(shadow)
+                if (shadow != null) drawGlassDropShadow(shadow, optics.elevation)
                 val painted = if (path == null) paintMaterial() else {
                     var drawn = false
                     clipPath(path) { drawn = paintMaterial() }
@@ -129,21 +133,23 @@ private fun drawGlass33(canvas: android.graphics.Canvas, width: Float, height: F
  */
 internal fun DrawScope.drawGlassHighlights(path: Path, @Suppress("UNUSED_PARAMETER") palette: TrainPilotPalette,
     optics: GlassOptics, highlight: Float) {
-    val strength = (optics.specular + highlight).coerceIn(0f, .6f)
-    val rim = Brush.verticalGradient(
-        0f to Color.White.copy(alpha = strength),
-        .5f to Color.White.copy(alpha = strength * .40f),
-        1f to Color.White.copy(alpha = strength * .27f))
+    val strength = (optics.specular + highlight).coerceIn(0f, GlassRimLight.MAX_SHINE)
+    val rim = Brush.verticalGradient(*GlassRimLight.gradient(strength).toTypedArray())
     drawPath(path, rim, style = Stroke(1.dp.toPx()))
 }
 
-/** Soft shadow below a rounded glass surface: a few widening strokes outside the outline, offset down. */
-internal fun DrawScope.drawGlassDropShadow(path: Path) {
-    val drop = 2.dp.toPx()
+/**
+ * Soft shadow below a rounded glass surface: a few widening strokes outside the outline, offset down.
+ * 2811/G1: [elevation] is the role's lift (1 = Panel, the 2810 shadow; Tile/Input/Performance: none).
+ */
+internal fun DrawScope.drawGlassDropShadow(path: Path, elevation: Float = 1f) {
+    val lift = elevation.coerceIn(0f, 1.5f)
+    if (lift <= 0f) return
+    val drop = 2.dp.toPx() * lift.coerceAtLeast(.5f)
     val step = 3.dp.toPx()
     clipPath(path, ClipOp.Difference) {
         translate(top = drop) {
-            for (layer in 1..4) drawPath(path, Color.Black.copy(alpha = .045f), style = Stroke(width = step * layer))
+            for (layer in 1..4) drawPath(path, Color.Black.copy(alpha = .045f * lift), style = Stroke(width = step * layer))
         }
     }
 }
@@ -153,15 +159,13 @@ internal fun DrawScope.drawGlassDropShadow(path: Path) {
  * also stays on the active measurement screens (2808/10 light glass).
  */
 @Composable
-internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape): Modifier =
+internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape, role: GlassRole = GlassRole.Panel): Modifier =
     if (!palette.glassRimActive()) this else drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
-        val strength = GlassOptics.from(palette.glassClarity).specular
-        val shine = Brush.verticalGradient(
-            0f to Color.White.copy(alpha = strength),
-            .5f to Color.White.copy(alpha = strength * .40f),
-            1f to Color.White.copy(alpha = strength * .27f))
+        // 2811/G1: the strength follows the role (Panel = the previous rim).
+        val strength = GlassOptics.from(palette.glassClarity, role).specular.coerceAtMost(GlassRimLight.MAX_SHINE)
+        val shine = Brush.verticalGradient(*GlassRimLight.gradient(strength).toTypedArray())
         onDrawWithContent {
             drawContent()
             clipPath(path) { drawPath(path, shine, style = Stroke(2.dp.toPx())) }

@@ -21,5 +21,9 @@
 - **2810 gyűjtő (`fix/collector-2810`, draft #377):** saját motor iOS-szerű hangolás (fehéres tónus 40→6%, homály 32→20 dp,
   telítés, vékony perem, árnyék; kontraszt a háttér fénysűrűség-korláttal, `GlassContrast.kt`), több felület glass úton, fejléc alatt
   mind az 5 fül. `docs/FIXES_2810.md` 2–4, 6–7; `docs/LIQUID_GLASS_THEMES.md` V7. #378 (Kyant teszt) soha nem merge.
-- **Hátra:** #377 CI zöld → készülékes Liquid Glass elfogadás (képminőség 0/65/100, AGSL Samsungon, frame time, API31–32)
-  → main merge, verzió és kiadás csak felhasználói jóváhagyással. 2810/1 (óra olvashatóság) felmérésre.
+- **2811 gyűjtő (`fix/collector-2811`, draft #379):** Liquid Glass 2.0 G0 audit (`docs/LIQUID_GLASS_2_AUDIT.md`) + G1 központi
+  anyag: `GlassRole` (Navigation/Panel/Tile/Button/Selection/Input/Overlay/Performance) szorzók a meglévő motoron, perem
+  (méretfüggő fénytörés, irányfüggő spekuláris, vastagság, árnyék), 2811/1 fejléc: Navigation szerep + 5. folt a fejléc alatt,
+  gyorsgombok csempe-tónus + perem. `docs/LIQUID_GLASS_THEMES.md` V8, `LiquidGlassRoles2811Test`. `docs/FIXES_2811.md` 1, 10.
+- **Hátra:** #379 CI zöld → készülékes összevetés (0/50/65/100%, fejléc görgetés tetején, A57 frame time) → G2 naptár + tervező
+  (spec szerinti referencia), majd G3–G6. Main merge, verzió és kiadás csak jóváhagyással (#377 már main-en).

@@ -44,6 +44,12 @@ internal data class GlassOptics(
     val backdropCap: Float,
     /** API 31–32 colour-matrix scale after the saturation boost ([GlassContrast.blurOnlyScale]). */
     val blurOnlyScale: Float,
+    /** 2811/G1: light passing through the rim body (tint mix on the lit side, below the ceiling). */
+    val thickness: Float = .06f + .06f * clarity,
+    /** 2811/G1: soft outer shadow strength (1 = the 2810 drop shadow, 0 = none). */
+    val elevation: Float = 1f,
+    /** 2811/G1: the semantic role these values were derived for. */
+    val role: GlassRole = GlassRole.Panel,
 ) {
     companion object {
         /**
@@ -61,11 +67,17 @@ internal data class GlassOptics(
         /** The white-ish glass tint (cool white). */
         val TINT = Color(0xFFEEF3FB)
 
-        private val cache = arrayOfNulls<GlassOptics>(101)
+        private val roles = GlassRole.values()
+        private val cache = Array(roles.size) { arrayOfNulls<GlassOptics>(101) }
 
-        fun from(value: Int): GlassOptics {
+        /** The [GlassRole.Panel] material (the pre-role engine, unchanged). */
+        fun from(value: Int): GlassOptics = from(value, GlassRole.Panel)
+
+        /** 2811/G1: the slider material for one semantic role; cached per role and step (UI thread). */
+        fun from(value: Int, role: GlassRole): GlassOptics {
             val step = value.coerceIn(0, 100)
-            return cache[step] ?: compute(step.toFloat()).also { cache[step] = it }
+            val row = cache[role.ordinal]
+            return row[step] ?: compute(step.toFloat(), role).also { row[step] = it }
         }
 
         /** Brightest possible glass composite: a neutral grey at [SURFACE_LUMA_MAX] (worst for light text). */
@@ -82,30 +94,36 @@ internal data class GlassOptics(
             GlassContrast.grey(GlassContrast.blurOnlyWorst(it.coat, it.saturation, it.blurOnlyScale))
         }
 
-        fun from(value: Float): GlassOptics {
+        fun from(value: Float): GlassOptics = from(value, GlassRole.Panel)
+
+        fun from(value: Float, role: GlassRole): GlassOptics {
             val v = if (value.isNaN()) 0f else value.coerceIn(0f, 100f)
-            return if (v == kotlin.math.floor(v)) from(v.toInt()) else compute(v)
+            return if (v == kotlin.math.floor(v)) from(v.toInt(), role) else compute(v, role)
         }
 
-        private fun compute(value: Float): GlassOptics {
+        /** Panel values times the role multipliers; the contrast limits are recomputed for the role's tint. */
+        private fun compute(value: Float, role: GlassRole): GlassOptics {
             val t = value / 100f
-            val blurDp = FROSTED_BLUR_DP * (CLEAR_BLUR_DP / FROSTED_BLUR_DP).pow(t)
-            val coat = FROSTED_COAT - (FROSTED_COAT - CLEAR_COAT) * t
-            val saturation = 1.40f + .40f * t
+            // Exponential: equal slider steps read as equal perceived blur steps (32 -> 20 dp).
+            val blurDp = FROSTED_BLUR_DP * (CLEAR_BLUR_DP / FROSTED_BLUR_DP).pow(t) * role.blurScale
+            val coat = (FROSTED_COAT - (FROSTED_COAT - CLEAR_COAT) * t) * role.tint
+            val saturation = 1f + (.40f + .40f * t) * role.vibrancy
             return GlassOptics(
                 clarity = t,
                 blur = blurDp / SCENE_REFERENCE_DP,
-                // Exponential: equal slider steps read as equal perceived blur steps (32 -> 20 dp).
                 blurDp = blurDp,
-                bend = .018f + .112f * t,
+                bend = (.018f + .112f * t) * role.refraction,
                 bevel = .30f + .25f * t,
-                dispersion = .004f + .056f * t * t,
+                dispersion = (.004f + .056f * t * t) * role.chroma,
                 coat = coat,
                 saturation = saturation,
-                specular = .30f + .15f * t,
-                shadow = .10f + .08f * t,
+                specular = (.30f + .15f * t) * role.rim,
+                shadow = (.10f + .08f * t) * role.depth,
                 backdropCap = GlassContrast.backdropCap(coat),
                 blurOnlyScale = GlassContrast.blurOnlyScale(coat, saturation),
+                thickness = (.06f + .06f * t) * role.depth,
+                elevation = role.elevation,
+                role = role,
             )
         }
     }

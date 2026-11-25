@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.GlassMotion
+import com.example.ui.theme.GlassRole
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.rememberGlassMotionEnabled
@@ -93,9 +94,10 @@ internal fun BoxScope.GlassSelectionPill(
                 scaleY = if (motion) GlassMotion.squash(right.value - left.value, restWidth) else 1f
             }
             .clip(shape)
-            .glassHeaderMaterial(palette, shape)
+            // 2811/G1: the Selection role (clearer lens, brighter rim) over the same recorded backdrop.
+            .glassHeaderMaterial(palette, shape, GlassRole.Selection)
             // 2809/2: rim light instead of a selection hairline; the label keeps the selected foreground.
-            .trainPilotGlassRim(palette, shape)
+            .trainPilotGlassRim(palette, shape, GlassRole.Selection)
             .testTag("glass_selection_pill")
     )
 }

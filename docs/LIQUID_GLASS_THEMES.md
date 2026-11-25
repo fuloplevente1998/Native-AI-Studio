@@ -68,3 +68,24 @@ Saját AGSL/Compose kód, új függőség és Compose/Kotlin emelés nélkül. A
 - **Fejléc (2810/7):** mind az 5 felső fül és a Beállítások a fejléc alá nyúlik (`glassUnderlapRoute`), a görgetett tartalom elején `LocalGlassTopInset` távtartó; Fejlődésnél a szekciófülek fixek, ott a fejléc a hátteret mutatja.
 - Tesztek: `LiquidGlass2810Test` (tónus-alfa monoton 0,40→0,06, homály/telítés/perem, független finom rácson a plafon, API31–32 legrosszabb eset, szöveg ≥4,5:1, felületek glass úton csak glass palettán, régi út, fejléc-alatti fülek forrásszerkezete); 373/2808/2809 elvárások az új anyagra frissítve (egyenértékű vagy szigorúbb).
 - Csak készüléken: tényleges képi hatás 0/37/65/100-on, AGSL fordítás Samsungon, frame time (több AGSL felület + árnyék), API 31–32 út, Kezdőlap/Egészség fejléc-átlátszóság.
+
+## V8 (2811 G0+G1, 2026-11-25) – Liquid Glass 2.0 központi anyag, szerepek, fejléc
+Saját motor, új motor/függőség nélkül; csak a 33–40 család. Audit: `docs/LIQUID_GLASS_2_AUDIT.md`; spec: `docs/LIQUID_GLASS_2_SPEC.md`.
+- **Szerepek (`GlassMaterialRole.kt`, `GlassRole`):** Navigation, Panel, Tile, Button, Selection, Input, Overlay, Performance –
+  szorzók a csúszka-anyagra (tónus, homály, perem, mélység, külső árnyék, fénytörés, kromatikus, telítés). `GlassOptics.from(step, role)`
+  szerepenként és lépésenként cache-elt; Panel = a korábbi anyag pontosan. Tónus-szorzó ≤ 1, a `backdropCap` a szerep tónusára
+  újraszámolva → minden szerepnél tónus + háttér ≤ 0,13 plafon, a paletta szövegszínei változatlanul ≥4,5:1. Hierarchia: Panel
+  erősebb a Tile-nál (perem, mélység, árnyék, fénytörés); Tile a leghalkabb. Mérőképernyőn (`GlassRole.resolve`) minden felület
+  Performance: nincs homály/fénytörés/árnyék, halkabb perem.
+- **Perem:** méretfüggő fénytörés (hatótáv a felület mérete, legfeljebb ~120 dp; sarkokon +35%), irányfüggő spekuláris
+  (felül 100%, oldalt 40%, alul 27%, a fény felőli bal oldal kicsit erősebb; `GlassRimLight`, AGSL-lel azonos együtthatók),
+  vastagság (a megvilágított perem-test tónusa, a plafon ELŐTT), belső árnyék, szerep szerinti lágy külső árnyék, kromatikus
+  szél csak a perem külső részén (slope²), fehér keverés ≤ 60% (nincs neon). Új uniform: `thickness`; programok továbbra is egyszer fordulnak.
+- **Fejléc (2811/1):** gyökérok és javítás az audit 5. pontjában – Navigation szerep a fejlécen/nav-on, 5. háttérfolt a fejléc
+  bal fele alatt, a nav-sáv és a gyorsgombok semleges csempe-tónussal + peremmel (nincs opak kitöltés, nincs második lencse),
+  pill = Selection szerep, viselkedése változatlan. Közös komponensek: chip/gombok Button, lapok Overlay.
+- Tesztek: `LiquidGlassRoles2811Test` (Panel = régi anyag, szerepenként monoton/folytonos, Panel > Tile, szerepenkénti
+  kontrasztőr független rácson + API31–32, fejléc-szerep csak glass palettán, régi/saját téma kitöltése változatlan, fejléc-sáv
+  folt-súly ≥ 0,25, perem iránya); `LiquidGlassOptics373Test` uniform-készlet bővítve (`thickness`).
+- Csak készüléken: képi hatás 0/50/65/100%, fejléc görgetés tetején és tartalom fölött, A57 frame time (5. folt: ~25% több
+  jelenet-számítás), AGSL fordítás Samsungon (helyben skia-python SkSL ellenőrizve), API 31–32 út.

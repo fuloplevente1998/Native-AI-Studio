@@ -136,8 +136,10 @@ class LiquidGlassOptics373Test {
         fun uniforms(source: String) = Regex("""uniform\s+(?:shader|float|float2|float4|half4)\s+(\w+);""")
             .findAll(source).map { it.groupValues[1] }.toSet()
         val material = setOf("extent", "radii", "px", "bend", "bevel", "dispersion", "frost", "coat",
-            "saturation", "specular", "shade", "backdropCap", "ceiling", "lightDir", "tint")
-        // 2809/1: living backdrop (four drifting blobs) and the optional user image share one guard.
+            "saturation", "specular", "shade", "backdropCap", "ceiling", "lightDir", "tint",
+            // 2811/G1: rim thickness (light through the glass body, below the ceiling).
+            "thickness")
+        // 2809/1: living backdrop (drifting blobs; 2811/1: five, one under the header) and the optional user image share one guard.
         val sceneCommon = setOf("screen", "origin", "lumaCap", "knee", "guard", "base")
         assertEquals(sceneCommon + (0 until GlassScene.blobCount).flatMap { listOf("blob$it", "tone$it") },
             uniforms(GlassShaderSource.SCENE))

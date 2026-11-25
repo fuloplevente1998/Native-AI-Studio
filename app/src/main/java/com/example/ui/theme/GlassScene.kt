@@ -59,12 +59,24 @@ internal object GlassScene {
     /** Knee of the luminance guard, as a fraction of [lumaCap]: darker colours pass unchanged. */
     const val KNEE = .55f
     private const val WRAP_SECONDS = 36_000f
-    private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
-    private val periods = floatArrayOf(53f, 67f, 59f, 79f)
+    private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f, -108f)
+    private val periods = floatArrayOf(53f, 67f, 59f, 79f, 71f)
     // x, y (fraction of the screen), radius (fraction of the width).
+    // 2811/1: the fifth blob sits under the header's left half. Before it, the header band (top ~6 %) had
+    // only ~2 % blob colour on its left at some drift phases (only blob 0 reached it, from the right), so
+    // the Navigation lens saw the dark base and read as a flat grey-blue bar at scroll top.
     private val anchors = arrayOf(floatArrayOf(.84f, .12f, .76f), floatArrayOf(.10f, .40f, .80f),
-        floatArrayOf(.80f, .68f, .70f), floatArrayOf(.26f, .94f, .78f))
+        floatArrayOf(.80f, .68f, .70f), floatArrayOf(.26f, .94f, .78f), floatArrayOf(.20f, .02f, .74f))
+    /** Top band of the screen that the glass header/nav covers (fraction of the scene height). */
+    const val HEADER_BAND = .07f
     val blobCount: Int get() = anchors.size
+
+    /** Strongest blob weight at a root point (the AGSL `addBlob` weight); 0 = only the dark base. */
+    fun blobWeight(x: Float, y: Float, blobs: List<GlassBlob>): Float = blobs.maxOf { b ->
+        val dx = (x - b.x) / b.radius.coerceAtLeast(1f)
+        val dy = (y - b.y) / b.radius.coerceAtLeast(1f)
+        (b.strength * exp(-2.2f * (dx * dx + dy * dy))).coerceIn(0f, 1f)
+    }
 
     /**
      * Brightest luminance the page backdrop may reach. The palettes' text and outline colours are

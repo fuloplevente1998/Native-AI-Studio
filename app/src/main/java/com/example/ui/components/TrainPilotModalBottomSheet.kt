@@ -68,7 +68,7 @@ internal fun TrainPilotModalBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
-                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape) else Modifier)
+                .then(if (customPaint) Modifier.trainPilotGlassMaterial(palette, shape, com.example.ui.theme.GlassRole.Overlay) else Modifier)
                 // 2810/5: a Liquid Glass sheet on the page colour paints the same procedural backdrop, so
                 // its inner glass panels have colour to refract (sheets are separate windows).
                 .then(if (palette.isLiquidGlass && !customPaint && containerColor == palette.background)
