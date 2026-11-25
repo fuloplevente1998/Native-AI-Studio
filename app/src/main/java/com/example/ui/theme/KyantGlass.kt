@@ -143,7 +143,7 @@ internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, 
 /** Shared entry: only the matching window may sample a recorded backdrop. */
 @Composable
 internal fun Modifier.kyantGlassOrNull(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier? {
-    if (!KyantGlass.active(palette) || !LocalGlassOpticsEnabled.current) return null
+    if (LocalGlassOverlay.current || !KyantGlass.active(palette) || !LocalGlassOpticsEnabled.current) return null
     val scene = (if (role == GlassMaterialRole.Navigation || role == GlassMaterialRole.Selection)
         LocalKyantHeader.current ?: LocalKyantScene.current else LocalKyantScene.current).forThisWindow()
         ?: return null

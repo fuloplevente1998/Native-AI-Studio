@@ -74,6 +74,7 @@ import androidx.compose.ui.text.input.ImeAction
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
+import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
@@ -153,7 +154,9 @@ fun LogTabScreen(
             monthFullHu
     }
 
-    val filteredLogs = uiState.loggedWorkouts.filter { entry ->
+    val filteredLogs = remember(uiState.loggedWorkouts, uiState.logSearchQuery, uiState.language,
+        uiState.programs, uiState.exercises, rangeMinDay, rangeMaxDay, currentYearMonth, filterAllMonths, monthPrefixHu) {
+        uiState.loggedWorkouts.filter { entry ->
         val matchesSearch = uiState.logSearchQuery.isBlank() ||
             entry.titleHu.contains(uiState.logSearchQuery, ignoreCase = true) ||
             entry.localizedTitle(uiState.language, uiState.programs, uiState.exercises).contains(uiState.logSearchQuery, ignoreCase = true) ||
@@ -176,6 +179,7 @@ fun LogTabScreen(
             }
         }
         matchesSearch && matchesIntervalOrMonth
+        }
     }
 
     fun handleDayClick(dayNum: Int) {
@@ -301,15 +305,17 @@ fun LogTabScreen(
                 .fillMaxSize()
                 .trainPilotScreenBackdrop(palette)
                 .testTag("log_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
+            // The measured header inset scrolls with the list; no extra item or opaque clip.
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
+                end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-        item {
+        item(key = "log_search", contentType = "search") {
             CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
         }
 
         // Interactive Month & Date selector row (< | 2026. október v | >)
-        item {
+        item(key = "log_month", contentType = "month") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -405,7 +411,7 @@ fun LogTabScreen(
         }
 
         // Quick shortcut banner to Edzés részletei & Óra és szinkron
-        item {
+        item(key = "log_summary", contentType = "summary") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -487,7 +493,7 @@ fun LogTabScreen(
         }
 
         if (filteredLogs.isEmpty()) {
-            item {
+            item(key = "log_empty", contentType = "empty") {
                 Text(
                     text = trL(
                         uiState.language,
@@ -506,7 +512,7 @@ fun LogTabScreen(
             }
         }
 
-        items(filteredLogs, key = { it.id }) { logEntry ->
+        items(filteredLogs, key = { "workout_${it.id}" }, contentType = { "workout" }) { logEntry ->
             LogWorkoutCard(
                 entry = logEntry,
                 onClick = {
@@ -621,7 +627,7 @@ internal fun LogWorkoutCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(entry.localizedTitle(lang, programs, exercises),
+                Text(remember(entry, lang, programs, exercises) { entry.localizedTitle(lang, programs, exercises) },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary,

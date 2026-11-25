@@ -6,6 +6,10 @@ import com.example.ui.theme.selectionColors
 import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.overlayRoleRim
+import com.example.ui.theme.LocalGlassOverlay
 import com.example.ui.theme.glassCardFill
 import com.example.ui.components.trainPilotAnimatedExpansion
 
@@ -114,7 +118,9 @@ internal fun StudioHealthMetricsBrowser(
     val periodFormat = java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         val pillShape = RoundedCornerShape(14.dp)
-        Surface(shape = pillShape, color = palette.glassTile(palette.surfaceCard), modifier = Modifier.trainPilotGlassRim(palette, pillShape).weight(1f).heightIn(min = 48.dp)
+        Surface(shape = pillShape, color = palette.overlayRoleFill(palette.glassTile(palette.surfaceCard), GlassMaterialRole.Button), modifier = Modifier
+            .then(if (LocalGlassOverlay.current && palette.isLiquidGlass) Modifier.overlayRoleRim(palette, pillShape, GlassMaterialRole.Button)
+                else Modifier.trainPilotGlassRim(palette, pillShape)).weight(1f).heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), pillShape)
             .trainPilotClickable(pillShape) {
                 pickStart = from; pickEnd = to
@@ -153,8 +159,8 @@ internal fun StudioHealthMetricsBrowser(
             androidx.compose.runtime.LaunchedEffect(focusKey) {
                 if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
             }
-            Surface(shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true),
-                border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
+            Surface(shape = RoundedCornerShape(14.dp), color = palette.overlayRoleFill(palette.glassTile(palette.surfaceElevated, elevated = true), GlassMaterialRole.Tile),
+                border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().overlayRoleRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile).trainPilotAnimatedExpansion()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {
@@ -201,8 +207,10 @@ internal fun StudioHealthMetricsBrowser(
                                 cells.forEach { (metricKey, title, value) ->
                                     val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
                                     val tileShape = RoundedCornerShape(10.dp)
-                                    Surface(shape = tileShape, color = if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard,
-                                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                    val role = if (type == recordType) GlassMaterialRole.Selection else GlassMaterialRole.Tile
+                                    Surface(shape = tileShape, color = palette.overlayRoleFill(
+                                        if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
+                                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
                                             .trainPilotClickable(tileShape) { type = if (type == recordType) "" else recordType; recordsOpen = true }
                                             .testTag("journal_metric_${date}_$metricKey")) {
                                         Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {

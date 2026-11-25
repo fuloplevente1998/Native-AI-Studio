@@ -13,6 +13,9 @@ import com.example.ui.theme.glassTile
 import com.example.ui.theme.GlassMaterialRole
 
 import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.overlayRoleRim
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.clickable
@@ -92,11 +95,16 @@ private fun ModeSeparator(tag: String) {
 @Composable
 private fun ModeOption(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
     val p = LocalTrainPilotPalette.current
+    val role = if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Tile
+    val overlay = p.isLiquidGlass && LocalGlassOverlay.current
+    val shape = RoundedCornerShape(12.dp)
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (selected) p.glassControlFill(p.primary, GlassMaterialRole.Selection) else p.glassTile(p.surfaceElevated),
-        border = if (p.isLiquidGlass && selected) BorderStroke(1.dp, p.primary) else null,
-        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(p, RoundedCornerShape(12.dp))
+        shape = shape,
+        color = p.overlayRoleFill(
+            if (selected) p.glassControlFill(p.primary, GlassMaterialRole.Selection) else p.glassTile(p.surfaceElevated), role),
+        border = if (p.isLiquidGlass && selected && !overlay) BorderStroke(1.dp, p.primary) else null,
+        modifier = Modifier.fillMaxWidth().then(
+            if (overlay) Modifier.overlayRoleRim(p, shape, role) else Modifier.trainPilotGlassRim(p, shape))
             .semantics { this.selected = selected }
             .trainPilotClickable(RoundedCornerShape(12.dp), onClick = onClick).testTag(tag)
     ) {
@@ -183,8 +191,8 @@ internal fun StudioWorkoutModesDialog(
                     for ((index, row) in review.rows.withIndex()) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = p.glassTile(p.surfaceElevated),
-                            modifier = Modifier.fillMaxWidth().testTag("studio_modes_comparison_$index")
+                            color = p.overlayRoleFill(p.glassTile(p.surfaceElevated), GlassMaterialRole.Tile),
+                            modifier = Modifier.fillMaxWidth().overlayRoleRim(p, RoundedCornerShape(10.dp), GlassMaterialRole.Tile).testTag("studio_modes_comparison_$index")
                         ) {
                             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Text(row.day, color = p.textSecondary)
@@ -225,8 +233,8 @@ internal fun StudioWorkoutModesDialog(
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(workoutModeText(lang, "Alapértelmezett pihenőidő", "Default rest timer",
                             "Standard-Pausenzeit", "Timp implicit de pauză"), color = p.textPrimary)
-                        Surface(shape = RoundedCornerShape(10.dp), color = p.glassTile(p.surfaceElevated),
-                            modifier = Modifier.trainPilotClickable(RoundedCornerShape(10.dp), onClick = onCycleRest).testTag("studio_modes_rest")) {
+                        Surface(shape = RoundedCornerShape(10.dp), color = p.overlayRoleFill(p.glassTile(p.surfaceElevated), GlassMaterialRole.Button),
+                            modifier = Modifier.overlayRoleRim(p, RoundedCornerShape(10.dp), GlassMaterialRole.Button).trainPilotClickable(RoundedCornerShape(10.dp), onClick = onCycleRest).testTag("studio_modes_rest")) {
                             Text("${state.defaultRestSec} $unit ↻", color = p.primary,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 fontWeight = FontWeight.Bold)

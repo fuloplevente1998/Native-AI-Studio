@@ -40,6 +40,35 @@ class KyantK2IntegrationTest {
         }
     }
 
+    @Test fun coachDividerAndProgramDayPaintRespectThemeAndSelection() {
+        assertEquals(GlassMaterialRole.Button, programDayGlassRole(false))
+        assertEquals(GlassMaterialRole.Selection, programDayGlassRole(true))
+        for (seed in LiquidGlassPalettes.all) for (clarity in listOf(0, 50, 65, 100)) {
+            val p = seed.withGlassClarity(clarity)
+            assertEquals(p.textPrimary.copy(alpha = .16f), p.coachAdviceDividerColor())
+            val idle = p.programDayFill(false)
+            val active = p.programDayFill(true)
+            assertEquals(p.glassControlFill(p.surface, GlassMaterialRole.Button), idle)
+            assertEquals(p.glassControlFill(p.primary, GlassMaterialRole.Selection).alpha, active.alpha, .01f)
+            assertTrue(active.alpha > idle.alpha)
+            assertTrue(active.blue > active.red)
+            assertTrue(active.blue > active.green)
+            for (selected in listOf(false, true)) {
+                val fill = p.programDayFill(selected)
+                assertTrue(fill.alpha in 0.01f..0.45f)
+                val composite = fill.compositeOver(GlassOptics.lensWorstCase)
+                assertTrue(NativeThemeTokens.contrast(p.programDayTextColor(selected), composite) >= 4.5f)
+            }
+        }
+        for (p in TrainPilotPalettes.allPalettes) {
+            assertEquals(p.cardBorder, p.coachAdviceDividerColor())
+            assertEquals(p.surface, p.programDayFill(false))
+            assertEquals(p.primary, p.programDayFill(true))
+            assertEquals(p.textPrimary, p.programDayTextColor(false))
+            assertEquals(p.onPrimary, p.programDayTextColor(true))
+        }
+    }
+
     @Test fun navigationUsesSingleHeaderLensAndNestedLightControls() {
         fun source(path: String) = File("src/main/java/com/example/$path").readText()
         val header = source("ui/components/common/TopHeaderAndNav.kt")
