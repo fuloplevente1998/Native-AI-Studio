@@ -156,6 +156,7 @@ fun ActiveBilateralWorkoutScreen(
 
         com.example.ui.components.TrainPilotAlertDialog(
             onDismissRequest = { editingBilateralSet = null },
+            workoutEditor = true,
             containerColor = palette.surfaceElevated,
             title = {
                 Text(

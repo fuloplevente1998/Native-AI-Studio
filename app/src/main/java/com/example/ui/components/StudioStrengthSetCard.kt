@@ -1,13 +1,12 @@
 package com.example.ui.components
 
-import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
+import com.example.ui.components.WorkoutEditorDropdownMenu as DropdownMenu
 
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
@@ -139,7 +138,7 @@ internal fun StudioStrengthSetCard(
                             modifier = Modifier.size(20.dp))
                     }
                     DropdownMenu(expanded = menuOpen && enabled, onDismissRequest = { menuOpen = false },
-                        modifier = Modifier.then(if (p.isLiquidGlass) Modifier else Modifier.background(p.surface)).testTag("set_menu_${item.setNumber}_menu")) {
+                        modifier = Modifier.testTag("set_menu_${item.setNumber}_menu")) {
                         DropdownMenuItem(
                             text = { Text(tr("Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = p.danger) },
                             enabled = enabled,
@@ -220,7 +219,7 @@ private fun WorkoutSetValuePicker(
                 if (expanded && customValid == null) scroll.scrollTo(with(density) { (choices.indexOf(value).coerceAtLeast(0) * 48).dp.roundToPx() })
             }
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
-                scrollState = scroll, modifier = Modifier.heightIn(max = 300.dp).then(if (p.isLiquidGlass) Modifier else Modifier.background(p.surface)).testTag("${tag}_menu")) {
+                scrollState = scroll, modifier = Modifier.heightIn(max = 300.dp).testTag("${tag}_menu")) {
                 if (customValid != null) DropdownMenuItem(
                     text = { Text(tr("Egyedi érték…", "Custom value…", "Eigener Wert…", "Valoare personalizată…"), color = selection.foreground) },
                     modifier = Modifier.testTag("${tag}_custom"),
