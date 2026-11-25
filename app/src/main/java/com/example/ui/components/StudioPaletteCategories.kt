@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -52,8 +54,10 @@ internal fun StudioPaletteCategories(
         families.forEachIndexed { index, family ->
             val open = family == expanded
             val shape = RoundedCornerShape(14.dp)
-            Surface(shape = shape, color = palette.surfaceElevated,
+            // 2811/5: glass = translucent tile + Tile rim inside the glass Themes panel (legacy unchanged).
+            Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = open),
                 modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
+                    .trainPilotGlassRim(palette, shape)
                     .testTag("settings_theme_category_$index")) {
                 Column {
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
