@@ -25,6 +25,7 @@ on:
       - 'settings.gradle.kts'
       - 'gradle.properties'
       - 'scripts/verify_android_apk_metadata.py'
+      - 'scripts/verify_junit_xml.py'
       - 'scripts/prefetch_robolectric_sdk.py'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
@@ -134,6 +135,7 @@ jobs:
         shell: bash
         env:
           TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
         run: python3 scripts/verify_junit_xml.py
 
       - name: Upload unit test reports
@@ -201,7 +203,14 @@ jobs:
       - name: Run release R8 minification
         shell: bash
         if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
-        run: gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8
+        env:
+          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
+        run: |
+          if [[ "$KYANT_GATE" == "true" ]]; then
+            gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8 :wear:minifyReleaseWithR8
+          else
+            gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8
+          fi
 
       - name: Upload R8 Gradle task timing profile
         if: always()
@@ -211,3 +220,32 @@ jobs:
           path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
+
+  kyant-debug-dex:
+    # Compatibility gate, not an installable test artifact or production signing job.
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/kyant-glass'
+    name: Kyant debug DEX compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;36.0.0'
+          "$SDKMANAGER" --install 'platforms;android-36.1' || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: true
+      - name: Verify debug D8 dexing (no APK upload)
+        run: gradle --no-daemon --stacktrace :app:mergeProjectDexDebug :app:mergeExtDexDebug :app:mergeLibDexDebug
