@@ -6,6 +6,7 @@ import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.coachAdviceDividerColor
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -127,7 +128,7 @@ internal fun StudioCoachRecommendations(
                             "reduce", "easy", "pain" -> palette.danger
                             else -> palette.primary
                         }
-                        androidx.compose.material3.HorizontalDivider(color = palette.cardBorder)
+                        androidx.compose.material3.HorizontalDivider(thickness = 1.dp, color = palette.coachAdviceDividerColor())
                         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { openRow = if (open) null else row.id }
                             .testTag("studio_coach_advice_${row.id}"),
@@ -220,8 +221,9 @@ internal fun StudioCoachNextTrainingCard(
     val letterDay = target.title.trim().takeIf { it.length in 1..2 }
         ?: target.dayId.uppercase().takeIf { it in setOf("A", "B", "C", "D") }
     val shape = RoundedCornerShape(18.dp)
-    Surface(color = palette.tintedSurface(0.12f), shape = shape,
+    Surface(color = palette.glassCardFill(palette.tintedSurface(0.12f)), shape = shape,
         modifier = Modifier.fillMaxWidth().testTag("studio_coach_target")
+            .trainPilotGlassMaterial(palette, shape)
             .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(2.dp, palette.primary.copy(alpha = 0.85f), shape)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {

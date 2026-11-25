@@ -48,3 +48,22 @@ internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
     val coat = KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, glassClarity).tintAlpha
     return lerp(base, tint, coat)
 }
+
+/** 2812/3: keep the legacy advice divider; glass only needs a quiet, theme-derived line. */
+internal fun TrainPilotPalette.coachAdviceDividerColor(): Color =
+    if (isLiquidGlass) textPrimary.copy(alpha = .16f) else cardBorder
+
+internal fun programDayGlassRole(selected: Boolean): GlassMaterialRole =
+    if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button
+
+/** Static day selector paint. Reuse role opacity and bounded accent instead of another lens. */
+internal fun TrainPilotPalette.programDayFill(selected: Boolean): Color {
+    val legacy = if (selected) primary else surface
+    val role = programDayGlassRole(selected)
+    val paint = glassControlFill(legacy, role)
+    if (!isLiquidGlass || !selected) return paint
+    return GlassContrast.limit(primary, GLASS_TILE_LUMA).copy(alpha = paint.alpha)
+}
+
+internal fun TrainPilotPalette.programDayTextColor(selected: Boolean): Color =
+    if (selected && !isLiquidGlass) onPrimary else textPrimary
