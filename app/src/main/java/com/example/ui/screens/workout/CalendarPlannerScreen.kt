@@ -3,6 +3,11 @@ package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotGlassRim
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextDecoration
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -547,16 +552,25 @@ fun CalendarPlannerScreen(
                                         val evs = state.calendarEvents.filter { it.dayOfMonth == dayNumber && it.dateIso.startsWith(displayedYearMonth.toString()) }
                                         val completedEv = evs.firstOrNull { it.status == CalendarEventStatus.COMPLETED }
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
+                                        val isToday = displayedYearMonth.atDay(dayNumber) == today
+                                        val dayStyle = calendarDayAppearance(palette, isSelected, isToday, plannedEv != null)
+                                        val dayShape = RoundedCornerShape(10.dp)
 
                                         Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = when {
-                                                plannedEv != null -> palette.primary.copy(alpha = 0.12f)
-                                                else -> palette.surface
-                                            },
+                                            shape = dayShape,
+                                            color = dayStyle.fill,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(calendarCellHeight)
+                                                .then(when {
+                                                    dayStyle.selectedLens -> Modifier.trainPilotGlassMaterial(palette, dayShape, GlassMaterialRole.Selection)
+                                                    dayStyle.lightRim -> Modifier.trainPilotGlassRim(palette, dayShape)
+                                                    else -> Modifier
+                                                })
+                                                .then(if (palette.isLiquidGlass) Modifier.semantics {
+                                                    selected = isSelected
+                                                    if (isToday) stateDescription = trW(state.language, "Ma", "Today", "Heute", "Astăzi")
+                                                } else Modifier)
                                                 .trainPilotBorder(
                                                     width = if (isSelected) 1.8.dp else 1.dp,
                                                     color = if (isSelected) palette.primary else palette.cardBorder,
@@ -577,6 +591,7 @@ fun CalendarPlannerScreen(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         fontWeight = FontWeight.Bold
                                                     ),
+                                                    textDecoration = if (dayStyle.underlineToday) TextDecoration.Underline else TextDecoration.None,
                                                     color = palette.textPrimary
                                                 )
                                                 when {
@@ -641,14 +656,10 @@ fun CalendarPlannerScreen(
                                 contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})"),
                                 tint = palette.textSecondary)
                         }
-                        Button(
+                        CalendarPrimaryGlassButton(
                             onClick = { onOpenReplanModal(true) },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_replan_action"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = palette.onPrimary
-                            )
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Text(
                                 text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
@@ -744,9 +755,8 @@ fun CalendarPlannerScreen(
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
                             Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"), maxLines = 1)
                         }
-                        Button(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
+                        CalendarPrimaryGlassButton(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_plan_action")) {
                             Text(trW(state.language, "Tervezés", "Plan workouts", "Trainings planen", "Planifică"), fontWeight = FontWeight.Bold)
                         }
