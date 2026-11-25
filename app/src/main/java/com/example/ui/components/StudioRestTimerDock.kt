@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -72,9 +75,10 @@ internal fun StudioRestTimerDock(
         // COMPACT FLAT STICKY REST TIMER BAR
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceCard,
+            color = palette.glassTile(palette.surfaceCard, elevated = true),
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
                 .trainPilotBorder(
                     width = 1.dp,
                     color = if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
@@ -95,9 +99,10 @@ internal fun StudioRestTimerDock(
         // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = palette.surfaceCard,
+            color = palette.glassTile(palette.surfaceCard, elevated = true),
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                 .trainPilotBorder(0.5.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
                 .testTag("sticky_rest_timer_large")
         ) {
@@ -129,7 +134,7 @@ internal fun StudioRestTimerDock(
                             Box(Modifier.size(48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) { onLarge(false) }
                                 .semantics { contentDescription = collapse }.testTag("rest_dock_collapse"),
                                 contentAlignment = Alignment.Center) {
-                                Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceElevated) {
+                                Surface(shape = RoundedCornerShape(8.dp), color = palette.glassTile(palette.surfaceElevated, elevated = true)) {
                                     Icon(Icons.Default.ExpandMore, null, tint = palette.textSecondary,
                                         modifier = Modifier.padding(4.dp).size(18.dp))
                                 }
