@@ -10,8 +10,13 @@ lifecycleRuntimeKtx = "2.8.7"
 lifecycleViewmodelCompose = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
-kotlin = "2.2.10"
+# [Kyant integration] 2.3.10 (2026-02-04) = backdrop 1.0.6 stdlib; 2.2 left invalid non-local-return dex markers.
+kotlin = "2.3.10"
 composeBom = "2024.09.00"
+# Phone app only; Wear retains composeBom.
+# Backdrop 1.0.6 (2026-02-14) needs Compose foundation/ui 1.10.3 = BOM 2026.02.00.
+composeBomKyant = "2026.02.00"
+kyantBackdrop = "1.0.6"
 googleDevtoolsKsp = "2.3.5"
 navigationCompose = "2.8.9"
 paging = "3.3.6"
@@ -66,6 +71,8 @@ androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "l
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-bom-kyant = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBomKyant" }
+kyant-backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "kyantBackdrop" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
