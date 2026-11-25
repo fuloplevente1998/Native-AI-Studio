@@ -560,7 +560,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background)
+                .background(com.example.ui.theme.glassContentBackground(palette))
                 .padding(bodyPadding)
                 .then(glassCapture),
             contentAlignment = Alignment.TopCenter
