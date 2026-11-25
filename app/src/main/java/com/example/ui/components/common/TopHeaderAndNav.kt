@@ -4,6 +4,7 @@ import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassEffectsActive
@@ -366,7 +367,7 @@ internal fun TopNavPillItem(
     val ownGlass = !hosted && (selected || compact)
     val selectedModifier = if (glass) Modifier.glassPressMotion(source, true, itemShape)
         .selectable(selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape) else Modifier)
+        .then(if (ownGlass) Modifier.glassHeaderMaterial(palette, itemShape, if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Navigation) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)
 
     Surface(
@@ -500,7 +501,7 @@ fun TrainPilotBottomNavigationBar(
         tonalElevation = if (palette.isLiquidGlass) 0.dp else 8.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotGlassMaterial(palette, RoundedCornerShape(0.dp))
+            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp))
             .trainPilotBorder(width = 1.dp, color = palette.cardBorder.copy(alpha = 0.6f))
     ) {
         Row(
