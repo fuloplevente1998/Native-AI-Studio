@@ -40,9 +40,7 @@ Nincs új bitmap-readback, titok, felesleges réteg; a Kyant támogatását és 
 - K4: szűretlen teljes telefon, Wear, shared JVM, nyers XML: 0 failure/error/skipped, noSource csak valóban teszt nélküli modulnál;
   font/video ellenőrzés, app+wear R8, regressziók. Vizuális ellenőrzőlista minden oldal, 8 üvegpaletta, 0/50/65/100, régi/saját téma,
   világos fotó, nagy betű, csökkentett mozgás, Galaxy A57.
-- K5: külön, soha nem merge-elhető tesztág a sikeres K4 SHA-ból, külön csomagnév/eldobható debug signer;
-  ugyanazon SHA teljes CI és R8 zöld után APK, aapt/signature/SHA256/forrás ellenőrzés, Drive átadás.
-  Nem éles aláírás vagy kiadás. Main merge csak felhasználói készülékes elfogadás után.
+- K5 (felhasználói módosítás 2026-11-25): eredeti `com.TrainPilot.com` csomagnév, tartós TrainPilot release signer, nem külön tesztcsomag vagy debug kulcs. Teljes CI és R8 zöld után ellenőrzött, jóváhagyott aláírási út; azonos forrás SHA, aapt/signature/SHA256/forrás ellenőrzés, Drive átadás. A jelenlegi persistent-signing csak mainre engedélyezett; ezt a védelmet nem lazítjuk, main merge és kiadás továbbra is külön jóváhagyás. Az aláírt készülékes próba útját a végén egyeztetni kell, ha main még nem merge-elhető. Play-feltöltés nincs automatikusan.
 
 ## Rögzített referencia
 - #378 `b16bcd902d81d1393fd2268060be52937b080f23` – működő Kyant teszt; nem merge.
@@ -50,4 +48,4 @@ Nincs új bitmap-readback, titok, felesleges réteg; a Kyant támogatását és 
 - #380 G6 `04b942359b1da614019f4ad2bddbd827aa129bb4` – üveganyag, UI, optimalizálás, zöld CI; későbbi félkész G7 nem validált.
 - #386 `91d150e1cc137d197b389933af8fde2cef3770fb` – célzott Kyant felületi port, nem mainre merge.
 A régi ágak megmaradnak referenciának. Csak feat/kyant-glass ágra írunk; nincs verzióCode/Name emelés,
-nincs main módosítás, nincs Play/persistent signing. Helyi Gradle/emulátor tilos.
+nincs main módosítás és Play-feltöltés külön engedély nélkül. K0 D8 ellenőrzés: dexBuilderDebug + mergeExtDexDebug, nincs kulcs vagy APK-csomagolás. A tartós aláírás csak a jóváhagyott K5 átadáshoz. Helyi Gradle/emulátor tilos.
