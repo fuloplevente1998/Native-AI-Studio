@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,8 +39,9 @@ internal fun GlassAwareScaffold(
         Build.VERSION.SDK_INT >= 31 && glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen)
     val headerBackdrop = if (glassUnderlap) rememberGlassBackdrop() else null
     Scaffold(
-        modifier = Modifier.fillMaxSize().background(palette.background),
-        containerColor = palette.background,
+        // One root-aligned scene covers both the header and body, including non-underlap routes.
+        modifier = Modifier.fillMaxSize().background(palette.background).trainPilotGlassScene(palette),
+        containerColor = if (palette.isLiquidGlass) Color.Transparent else palette.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop) {
@@ -54,10 +56,10 @@ internal fun GlassAwareScaffold(
             bottom = innerPadding.calculateBottomPadding()
         ) else innerPadding
         val capture = if (headerBackdrop != null) Modifier.captureGlassBackdrop(headerBackdrop) else Modifier
-        // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
-        // header lens sees it too); the pages above stay transparent instead of repainting it.
+        // Capture foreground content only. The root scene is already behind the whole scaffold;
+        // the header lens supplies its own matching scene sample before compositing this layer.
         CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass) {
-            content(bodyPadding, capture.then(Modifier.trainPilotGlassScene(palette)),
+            content(bodyPadding, capture,
                 if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
         }
     }
