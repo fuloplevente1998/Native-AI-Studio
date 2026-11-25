@@ -142,14 +142,8 @@ private fun createContentBlur31(radius: Float, optics: GlassOptics): androidx.co
 /** Nested header elements share the header lens: no per-button capture, blur or shader.
  * A neutral, bounded translucent tint and a role-specific rim distinguish the selection.
  */
-internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color {
-    val t = clarity.coerceIn(0, 100) / 100f
-    return when (role) {
-        GlassMaterialRole.Selection -> GlassContrast.grey(GlassOptics.SURFACE_LUMA_MAX).copy(alpha = .36f - .12f * t)
-        GlassMaterialRole.Navigation -> glassTilePaint(clarity, false).copy(alpha = .08f - .04f * t)
-        else -> glassTilePaint(clarity, true)
-    }
-}
+internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color =
+    glassControlPaint(clarity, role)
 
 @Composable
 internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
