@@ -67,8 +67,10 @@ internal fun KyantScene?.forThisWindow(): KyantScene? {
  * coordinates. Only the scene is recorded, never the children, so no glass samples itself.
  */
 @Composable
-internal fun rememberKyantSceneBackdrop(palette: TrainPilotPalette): LayerBackdrop {
-    val scene = LocalGlassScene.current
+internal fun rememberKyantSceneBackdrop(
+    palette: TrainPilotPalette,
+    scene: GlassSceneState? = LocalGlassScene.current
+): LayerBackdrop {
     val onDraw: ContentDrawScope.() -> Unit = remember(palette, scene) { { drawKyantScene(palette, scene) } }
     return rememberLayerBackdrop(rememberGraphicsLayer(), onDraw)
 }

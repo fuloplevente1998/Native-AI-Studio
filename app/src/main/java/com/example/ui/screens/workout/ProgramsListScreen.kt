@@ -709,7 +709,7 @@ fun ProgramsListScreen(
                     .heightIn(min = 50.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Default.Edit,
                     contentDescription = null,
                     tint = palette.primary
                 )

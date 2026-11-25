@@ -390,14 +390,17 @@ fun CalendarPlannerScreen(
         // Always 6 week rows (empty trailing row for shorter months): month changes never resize the page.
         val calendarWeeks = 6
         // Reserve space for the complete three-row planner, its actions and month header.
-        // Never shrink touch targets: short windows and large fonts use the page scroll.
-        val calendarCellHeight = ((maxHeight - 424.dp) / calendarWeeks.toFloat()).coerceIn(48.dp, 52.dp)
+        // Compact day grid; planner action buttons retain 48 dp. Large fonts use the taller
+        // cells and the existing page scroll rather than truncating the bottom controls.
+        val largeFont = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.2f
+        val calendarCellHeight = ((maxHeight - 410.dp) / calendarWeeks.toFloat()).coerceIn(
+            if (largeFont) 48.dp else 40.dp, if (largeFont) 52.dp else 44.dp)
         val calendarPageHeight = maxHeight
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 4.dp)
                 .testTag("calendar_compact_page"),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
           Column(
             Modifier.fillMaxWidth().heightIn(min = calendarPageHeight - 8.dp).testTag("calendar_pinned_layout"),
@@ -435,8 +438,8 @@ fun CalendarPlannerScreen(
                     }
             ) {
                 Column(
-                    modifier = Modifier.padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.padding(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     // Header row: [ < ]   2026. Október 01.   [ > ]   [ X ]
                     Row(
@@ -534,7 +537,7 @@ fun CalendarPlannerScreen(
                     val firstDayOffset = displayedYearMonth.atDay(1).dayOfWeek.value - 1 // Monday=0 .. Sunday=6
                     val totalCells = calendarWeeks * 7
 
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         for (weekIdx in 0 until (totalCells / 7)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -630,14 +633,14 @@ fun CalendarPlannerScreen(
                 color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 6.dp)
+                    .padding(top = 4.dp)
                     .testTag("calendar_planning_block")
                     .trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
                     .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.padding(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -679,7 +682,7 @@ fun CalendarPlannerScreen(
                     val cadenceMap = listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap").associateBy { localizeCadenceLabel(it) }
                     val firstDayMap = listOf("Alap A", "Alap B").associateBy { localizeFirstDayLabel(it) }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f).testTag("calendar_field_cadence"),
                             compact = true,
@@ -705,7 +708,7 @@ fun CalendarPlannerScreen(
                             }
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f).testTag("calendar_field_start_date"),
                             compact = true,
@@ -728,7 +731,7 @@ fun CalendarPlannerScreen(
                             }
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f).testTag("calendar_field_duration"),
                             compact = true,

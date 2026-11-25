@@ -50,6 +50,8 @@ import com.example.ui.components.TrainPilotSwitch as Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -92,30 +94,48 @@ fun BackupRestoreScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val settingsViewModel: SettingsViewModel = viewModel()
-    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-    val gs = settingsState.googleSyncState
+    val settingsState = settingsViewModel.uiState.collectAsStateWithLifecycle()
+    // Only action availability and feedback belong to this screen. Sync timestamps and
+    // other cloud-card details are observed by StudioGoogleCloudSyncCard itself.
+    val cloudAction by remember(settingsState) {
+        derivedStateOf(structuralEqualityPolicy()) {
+            settingsState.value.googleSyncState.let { Triple(it.isBusy, it.stageMessage, it.connectedEmail) }
+        }
+    }
+    val (cloudBusy, cloudStage, cloudEmail) = cloudAction
+    val replacementBusy by remember(settingsState) {
+        derivedStateOf(structuralEqualityPolicy()) { settingsState.value.replacementBusy }
+    }
+    val maintenanceBusy by remember(settingsState) {
+        derivedStateOf(structuralEqualityPolicy()) { settingsState.value.maintenanceBusy }
+    }
     val activity = LocalActivity.current
     val lang = uiState.language
     val drive = uiState.selectedBackupFormat == "DRIVE"
     val inSheet = com.example.ui.components.LocalTrainPilotInSheet.current
     val localStatus = uiState.localBackupStatus
     var pickerMessage by remember { mutableStateOf<String?>(null) }
-    val driveFeedback = settingsState.googleActionFeedback?.takeIf { it.action == "drive" || it.action == "connect" }
+    val driveFeedback by remember(settingsState) {
+        derivedStateOf(structuralEqualityPolicy()) {
+            settingsState.value.googleActionFeedback?.takeIf { it.action == "drive" || it.action == "connect" }
+        }
+    }
+    val feedback = driveFeedback
     val driveBlock = when {
-        gs.isBusy -> gs.stageMessage.ifBlank { tr(lang, "Google-szinkron folyamatban…", "Google sync in progress…", "Google-Sync läuft…", "Sincronizarea Google este în curs…") }
-        settingsState.replacementBusy || localStatus?.busy == true ->
+        cloudBusy -> cloudStage.ifBlank { tr(lang, "Google-szinkron folyamatban…", "Google sync in progress…", "Google-Sync läuft…", "Sincronizarea Google este în curs…") }
+        replacementBusy || localStatus?.busy == true ->
             tr(lang, "Mentés vagy visszaállítás folyamatban.", "Backup or restore in progress.", "Sicherung oder Wiederherstellung läuft.", "Backup-ul sau restaurarea este în curs.")
-        settingsState.maintenanceBusy -> tr(lang, "Karbantartás folyamatban.", "Maintenance in progress.", "Wartung läuft.", "Mentenanță în curs.")
+        maintenanceBusy -> tr(lang, "Karbantartás folyamatban.", "Maintenance in progress.", "Wartung läuft.", "Mentenanță în curs.")
         activity == null -> tr(lang, "Nyisd meg újra ezt a képernyőt.", "Reopen this screen.", "Öffne diese Seite erneut.", "Redeschide acest ecran.")
-        uiState.isWorkoutSessionActive && gs.connectedEmail.isNotBlank() ->
+        uiState.isWorkoutSessionActive && cloudEmail.isNotBlank() ->
             tr(lang, "A Drive-szinkron előtt fejezd be az aktív edzést.", "Finish the active workout before syncing Drive.",
                 "Beende das laufende Training vor dem Drive-Sync.", "Încheie antrenamentul activ înainte de sincronizarea Drive.")
         else -> null
     }
     val status = when {
-        drive && driveBlock != null -> com.example.ui.viewmodel.LocalBackupStatus(driveBlock, busy = gs.isBusy || settingsState.maintenanceBusy)
+        drive && driveBlock != null -> com.example.ui.viewmodel.LocalBackupStatus(driveBlock, busy = cloudBusy || maintenanceBusy)
         pickerMessage != null -> com.example.ui.viewmodel.LocalBackupStatus(pickerMessage.orEmpty())
-        drive && driveFeedback != null -> com.example.ui.viewmodel.LocalBackupStatus(driveFeedback.message, failed = driveFeedback.failed)
+        drive && feedback != null -> com.example.ui.viewmodel.LocalBackupStatus(feedback.message, failed = feedback.failed)
         else -> localStatus
     }
     val mimeType = if (uiState.selectedBackupFormat == "ZIP") "application/zip" else "application/json"
@@ -181,14 +201,14 @@ fun BackupRestoreScreen(
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-            item {
+            item(key = "header") {
                 SubScreenTopBar(
                     title = strings.backupRestoreTitle,
                     onBack = onBack,
                     onOpenSettings = onOpenSettings
                 )
             }
-            item {
+            item(key = "formats") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
                         val sel = uiState.selectedBackupFormat == fmt
@@ -219,7 +239,7 @@ fun BackupRestoreScreen(
                     }
                 }
             }
-            if (drive) item {
+            if (drive) item(key = "cloud") {
                 StudioGoogleCloudSyncCard(
                     onShowBanner = onShowBanner,
                     onCloudSyncCompleted = onCloudSyncCompleted,
@@ -227,7 +247,7 @@ fun BackupRestoreScreen(
                     compact = true
                 )
             }
-            item {
+            item(key = "contents") {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = palette.glassTile(palette.surfaceCard),
@@ -254,12 +274,12 @@ fun BackupRestoreScreen(
                     }
                 }
             }
-            item {
+            item(key = "actions") {
                 com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
                         pickerMessage = null
                         if (drive) {
-                            if (gs.connectedEmail.isEmpty()) {
+                            if (cloudEmail.isEmpty()) {
                                 activity?.let { settingsViewModel.connectGoogle(it) }
                             } else {
                                 activity?.let { settingsViewModel.syncDriveCloud(it) }
@@ -268,7 +288,7 @@ fun BackupRestoreScreen(
                             exportLauncher.launch(defaultFileName)
                         }
                     },
-                    enabled = if (drive) driveBlock == null else localStatus?.busy != true && !gs.isBusy,
+                    enabled = if (drive) driveBlock == null else localStatus?.busy != true && !cloudBusy,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -279,7 +299,7 @@ fun BackupRestoreScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when {
-                            drive && gs.connectedEmail.isEmpty() -> tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google")
+                            drive && cloudEmail.isEmpty() -> tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google")
                             drive -> tr(lang, "Drive-mentés és szinkron", "Drive backup and sync", "Drive-Sicherung und Sync", "Backup și sincronizare Drive")
                             else -> "${tr(lang, "Mentés", "Backup", "Sichern", "Salvează")} (${uiState.selectedBackupFormat})"
                         },
@@ -288,7 +308,7 @@ fun BackupRestoreScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
-                if (drive && gs.connectedEmail.isNotBlank()) {
+                if (drive && cloudEmail.isNotBlank()) {
                     Text(tr(lang, "A szinkron a felhőből is visszaállít és összefésül.",
                         "Sync also restores and merges data from Drive.",
                         "Der Sync stellt Daten aus Drive wieder her und führt sie zusammen.",
@@ -302,8 +322,8 @@ fun BackupRestoreScreen(
                         importLauncher.launch(arrayOf("application/json", "application/zip", "application/octet-stream", "*/*"))
                     },
                     shape = RoundedCornerShape(14.dp),
-                    enabled = localStatus?.busy != true && !gs.isBusy && !settingsState.replacementBusy &&
-                        !settingsState.maintenanceBusy && !uiState.isWorkoutSessionActive,
+                    enabled = localStatus?.busy != true && !cloudBusy && !replacementBusy &&
+                        !maintenanceBusy && !uiState.isWorkoutSessionActive,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
@@ -335,7 +355,7 @@ fun BackupRestoreScreen(
                 status.failed -> palette.danger
                 status.busy -> palette.primary
                 pickerMessage == null && (!drive || driveBlock == null) &&
-                    (status === localStatus || driveFeedback != null) -> palette.success
+                    (status === localStatus || feedback != null) -> palette.success
                 else -> palette.textSecondary
             }
             Surface(

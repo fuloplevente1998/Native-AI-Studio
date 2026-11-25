@@ -383,10 +383,10 @@ data class LocalizedStrings(
 
     val createOrEditProgramAction: String
         get() = when (language) {
-            AppLanguage.HU -> "+ Új program létrehozása / Szerkesztő"
-            AppLanguage.EN -> "+ Create New Program / Editor"
-            AppLanguage.DE -> "+ Neues Programm / Editor"
-            AppLanguage.RO -> "+ Program nou / Editor"
+            AppLanguage.HU -> "Aktív program szerkesztése"
+            AppLanguage.EN -> "Edit active program"
+            AppLanguage.DE -> "Aktives Programm bearbeiten"
+            AppLanguage.RO -> "Editează programul activ"
         }
 
     val editProgramTitle: String

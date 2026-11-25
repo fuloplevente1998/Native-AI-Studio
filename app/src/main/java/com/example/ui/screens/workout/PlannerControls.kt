@@ -167,7 +167,7 @@ internal fun PlannerFieldTile(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
-                        .padding(horizontal = if (compact) 8.dp else 14.dp, vertical = if (compact) 4.dp else 12.dp),
+                        .padding(horizontal = if (compact) 8.dp else 14.dp, vertical = if (compact) 2.dp else 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

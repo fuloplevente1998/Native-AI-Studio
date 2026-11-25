@@ -29,6 +29,24 @@ import com.example.ui.viewmodel.updateLogSearch
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NavigationOriginRegressionTest {
+    @Test fun mainTabSwitchResetsOnlyDestinationAndChildReturnKeepsItsKey() {
+        val tabs = com.example.model.MainTab.entries
+        val none = com.example.model.SubScreen.NONE
+        val detail = com.example.model.SubScreen.LOG_WORKOUT_DETAIL
+        val start = IntArray(tabs.size)
+        for (from in tabs) for (to in tabs) {
+            val next = com.example.ui.components.advanceMainTabScrollEpochs(from, none, to, none, start)
+            if (from == to) assertSame(start, next)
+            else {
+                assertEquals(1, next[to.ordinal])
+                assertEquals(1, next.sum())
+            }
+            assertSame(next, com.example.ui.components.advanceMainTabScrollEpochs(to, none, to, detail, next))
+            assertSame(next, com.example.ui.components.advanceMainTabScrollEpochs(to, detail, to, none, next))
+            assertEquals(0, start.sum())
+        }
+    }
+
     @Test fun healthPanelsAreExclusiveAndGoalsOpenOnlyOnAnExplicitEntry() {
         val model = TrainPilotViewModel()
         model.openHealthAndExpand(weeklyGoals = true)
