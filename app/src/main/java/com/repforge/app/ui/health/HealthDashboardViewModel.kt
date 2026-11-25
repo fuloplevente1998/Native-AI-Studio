@@ -632,7 +632,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     _uiState.value.autoOnOpen) {
                     try {
                         com.repforge.app.WorkoutHealthAutoReconcile.recent(context, activity,
-                            if (allProviders) providerAvailability.filterValues { it }.keys else setOf(snapshot.provider),
+                            providerAvailability.filterValues { it }.keys,
                             guard)
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { /* Next visible sync may retry; no health values fabricated. */ }

@@ -149,3 +149,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | 2814/4 edzés-egészségadat audit | `docs/WORKOUT_HEALTH_2814.md`; `rf/NativeLiveWorkoutHealth.kt`, `StudioWorkoutSummaryPresentation.kt`, `NativeWorkoutHealth.kt`, `NativeWorkoutActiveWindows.kt`, `NativeWorkoutHealthSummary.kt`, `SamsungSdkReader.java`, `SamsungHealthRepository.kt`; teszt `WorkoutHealth2814ContractTest.kt` |
 
 | 2814 H2 automatikus edzés-egészség visszaolvasás | `rf/WorkoutHealthAutoReconcile.kt`, `rf/NativeWorkoutHealth.kt`, `rf/ui/health/HealthDashboardViewModel.kt`, `rf/data/db/TrainPilotDaos.kt`; teszt `WorkoutHealthAuto2814Test.kt` |
+
+| 2814 H1/H3 élő preview és külön energia | `ex/ui/components/StudioWorkoutHealthPreviews.kt`, `StudioLiveWorkoutHealth.kt`, `rf/NativeLiveWorkoutHealth.kt`, `NativeWorkoutHealthSummary.kt`, `StudioWorkoutSummaryPresentation.kt`, `rf/ui/journal/JournalWorkoutHealthSummary.kt`; teszt `WorkoutLiveHealth2814Test.kt` |

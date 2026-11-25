@@ -16,7 +16,7 @@ internal object NativeWorkoutHealthSummary {
     data class Metric(val values: Map<String, Double>, val evidence: List<Evidence>,
         val incomplete: Boolean, val overlapExcluded: Boolean)
     data class Result(val heart: Metric, val energy: Metric, val rejectedEvidence: Boolean,
-        val relationships: List<Relationship>)
+        val relationships: List<Relationship>, val activeEnergy: Metric, val totalEnergy: Metric)
     data class Relationship(val first: String, val second: String, val confirmedMirror: Boolean)
 
     fun read(workout: WorkoutHistoryEntity): Result {
@@ -123,6 +123,13 @@ internal object NativeWorkoutHealthSummary {
         val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind })
         val energyValues = if (energyRows.isEmpty() || energyKey == null) emptyMap() else
             mapOf(energyKey to energyRows.sumOf { number(it.data, energyKey)!! })
+        // Separate definitions for the detail screen. Keep the historical single-energy
+        // projection (Coach, legacy summary) unchanged; never add active to total.
+        fun separateEnergy(key: String): Metric {
+            val (rows, overlap) = select(evidence.filter { number(it.data, key) != null })
+            val values = if (rows.isEmpty()) emptyMap() else mapOf(key to rows.sumOf { number(it.data, key)!! })
+            return Metric(values, rows, incomplete(rows), overlap)
+        }
         val relationships = mutableListOf<Relationship>()
         for (i in evidence.indices) for (j in i + 1 until evidence.size) {
             val a = evidence[i]; val b = evidence[j]
@@ -132,7 +139,8 @@ internal object NativeWorkoutHealthSummary {
             relationships.add(Relationship(a.provider, b.provider, idsA.intersect(idsB).isNotEmpty()))
         }
         return Result(Metric(heartValues, heartRows, incomplete(heartRows) || heartValues.isEmpty(), heartOverlap),
-            Metric(energyValues, energyRows, incomplete(energyRows), energyOverlap), rejected, relationships.distinct())
+            Metric(energyValues, energyRows, incomplete(energyRows), energyOverlap), rejected, relationships.distinct(),
+            separateEnergy("activeCalories"), separateEnergy("totalCalories"))
     }
 
     private fun overlaps(a: Evidence, b: Evidence) = a.windows.any { x -> b.windows.any { y -> x.start < y.end && y.start < x.end } }

@@ -343,6 +343,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         viewModel.reloadHealthJournal()
     }
 
+    val liveWorkoutHealth = com.example.ui.components.rememberWorkoutHealthPreviews(
+        enabled = uiState.isWorkoutSessionActive && !uiState.isSavingWorkout &&
+            com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen) &&
+            health.autoOnOpen && !health.healthRefreshing,
+        workoutId = uiState.activeWorkoutId, generation = uiState.activeWorkoutGeneration,
+        hcEnabled = uiState.permissionHealthConnectEnabled, samsungEnabled = uiState.permissionSamsungHealthEnabled)
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     val canNavigateBack = uiState.currentSubScreen != SubScreen.NONE ||
@@ -363,6 +369,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     CompositionLocalProvider(
         LocalTrainPilotStrings provides strings,
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
+        com.example.ui.components.LocalWorkoutHealthPreviews provides liveWorkoutHealth,
         com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
         com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
         LocalOpenExerciseVideo provides { exTitle, exId ->

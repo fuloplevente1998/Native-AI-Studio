@@ -11,12 +11,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Read-only preview: no timer, owner, sensor, workout-frame or history writes. */
 internal object NativeLiveWorkoutHealth {
+    private val readMutex = Mutex()
     fun window(frame: JSONObject, end: Instant): JSONObject {
         check(frame.optBoolean("active") && !frame.optBoolean("finalizationPending") && !WorkoutOwnership193.pending(frame))
         check(frame.has("activeIntervals") || frame.optLong("pauseRevision") == 0L) { "Nincs igazolt aktív időablak." }
@@ -31,7 +34,13 @@ internal object NativeLiveWorkoutHealth {
         current.optLong("ownerEpoch193") == expected.optLong("ownerEpoch193") && current.optLong("pauseRevision") == expected.optLong("pauseRevision") &&
         current.optJSONArray("activeIntervals")?.toString() == expected.optJSONArray("activeIntervals")?.toString()
 
-    suspend fun read(context: Context, activity: Activity, provider: String): JSONObject = withContext(Dispatchers.Main.immediate) {
+    suspend fun read(context: Context, activity: Activity, provider: String,
+        expectedFrame: JSONObject? = null): JSONObject = withContext(Dispatchers.Main.immediate) {
+        readMutex.withLock { readLocked(context, activity, provider, expectedFrame) }
+    }
+
+    private suspend fun readLocked(context: Context, activity: Activity, provider: String,
+        expectedFrame: JSONObject?): JSONObject {
         NativeWorkoutHealthSource.requireProvider(provider)
         val owner = activity as? LifecycleOwner ?: error("Látható edzésképernyő szükséges.")
         val foreground = AtomicBoolean(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
@@ -41,6 +50,8 @@ internal object NativeLiveWorkoutHealth {
         owner.lifecycle.addObserver(observer)
         try {
             val expected = checkNotNull(ActiveWorkoutStore.current(context)) { "Nincs aktív edzés." }
+            check(expectedFrame == null || sameSession(expectedFrame, expected)) { "Workout changed" }
+            val feature = if (provider == HealthJournalStore.HC) NativePrivacyControls.HEALTH_CONNECT else NativePrivacyControls.SAMSUNG_HEALTH
             val ticket = NativeDataReplacement.continuationForCurrentData(context)
             val query = window(expected, Instant.now())
             val operation = currentCoroutineContext()
@@ -48,6 +59,7 @@ internal object NativeLiveWorkoutHealth {
                 operation.ensureActive()
                 check(foreground.get()) { "Az egészségadat-lekérés csak előtérben folytatható." }
                 ticket.requireCurrent(context)
+                NativePrivacyControls.requireEnabled(context, feature)
                 check(NativeHealthBackupGate.available() && sameSession(expected, ActiveWorkoutStore.current(context))) {
                     "Az edzés vagy az aktív időablak közben megváltozott; kérd le újra."
                 }
@@ -67,7 +79,7 @@ internal object NativeLiveWorkoutHealth {
                 },
                 samsung = { w -> SamsungHealthRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard) })
             guard()
-            result.put("readAt", Instant.now().toString())
+            return result.put("readAt", Instant.now().toString())
         } finally { owner.lifecycle.removeObserver(observer) }
     }
 }

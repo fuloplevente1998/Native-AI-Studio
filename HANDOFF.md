@@ -11,3 +11,5 @@
 - #791: 1290/0/0/0, telefon 1011, Wear 276, shared 3; R8 zöld, feltételes DEX skipped. Új head: GPS panelek, egészség ikongomb, switch thumb; Samsung edzésintervallum active/total és permission javítás. `docs/WORKOUT_HEALTH_2814.md` H1–H4 külön nyitott feladat: automatikus élő és lezárás utáni csatolás, késői reconcile, napi napló audit. CI újra ellenőrizendő.
 
 - H2 első passz: `WorkoutHealthAutoReconcile.kt` a meglévő foreground provider flight végén, 48h/4 query/15min throttle, mentett aktív intervallumok, autoOnOpen+privacy guard, nincs mentésfüggőség. `WorkoutHealthAuto2814Test` policy regresszió. H1/H3/H4 nyitott; új CI ellenőrizendő.
+
+- H1/H3 első passz: `StudioWorkoutHealthPreviews.kt` 2 perces foreground preview, mutexelt provider read, session/node/epoch/freshness, nested Wear, külön aktív/total detail projekció, mindkét provider késői retry. `WorkoutLiveHealth2814Test`. Napi napló hiánya és valós eszközös H4 nyitott. #792 cancelled, #793 R8 zöld, JVM ellenőrizendő; új head CI szükséges.
