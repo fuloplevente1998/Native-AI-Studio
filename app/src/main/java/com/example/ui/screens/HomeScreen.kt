@@ -1,5 +1,4 @@
 package com.example.ui.screens
-import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotFrame
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -514,8 +513,8 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
     title: String, subtitle: String, onClick: () -> Unit, enabled: Boolean = true, connected: Boolean? = null) {
     val p = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(14.dp)
-    Surface(color = p.glassCardFill(p.surface), shape = shape,
-        modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp).trainPilotGlassMaterial(p, shape)
+    Surface(color = p.glassTile(p.surface), shape = shape,
+        modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
             .trainPilotClickable(shape, enabled = enabled, onClick = onClick)) {
         Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {

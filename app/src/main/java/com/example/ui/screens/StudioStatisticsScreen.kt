@@ -1,6 +1,4 @@
 package com.example.ui.screens
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
@@ -158,8 +156,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
                         val trendKind = exerciseTrendKind(record)
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
-                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassCardFill(palette.surfaceCard),
-                            modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, MaterialTheme.shapes.large)
+                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
+                            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
                                 .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -332,8 +330,8 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
         val available = days.filter { it.stepsAvailable && it.dateIso >= from.toString() && it.dateIso < until.toString() }
         return if (available.isEmpty()) "—" else number.format(available.sumOf { it.steps })
     }
-    Surface(shape = MaterialTheme.shapes.large, color = palette.glassCardFill(palette.surfaceCard),
-        modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, MaterialTheme.shapes.large)
+    Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
+        modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
             .testTag("statistics_daily_activity")) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

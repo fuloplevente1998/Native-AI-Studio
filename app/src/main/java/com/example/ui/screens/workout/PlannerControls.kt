@@ -1,5 +1,4 @@
 package com.example.ui.screens
-import com.example.ui.theme.glassTile
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -97,7 +96,7 @@ internal fun PlannerFieldTile(
         Box(modifier = Modifier.fillMaxWidth()) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                color = palette.surfaceElevated,
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(

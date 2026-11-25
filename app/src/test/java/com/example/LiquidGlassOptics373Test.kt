@@ -2,7 +2,6 @@ package com.example
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.luminance
 import com.example.ui.theme.*
 import com.repforge.app.ui.theme.NativeThemeTokens
 import org.junit.Assert.*
@@ -15,11 +14,8 @@ import kotlin.math.abs
  * rendered worst cases, the glass gate (family + measurement screen) and reduced-motion rules.
  */
 class LiquidGlassOptics373Test {
-    // 2810/6: the API 31–32 veil became the colour-matrix contrast scale; the backdrop cap is new. Both grow
-    // towards Clear (more backdrop through) and are held to the same monotonic/continuity rule.
-    private fun GlassOptics.values() = listOf(blur, blurDp, bend, bevel, dispersion, coat, saturation, specular, shadow,
-        backdropCap, blurOnlyScale)
-    private val decreasing = setOf(0, 1, 5) // blur, blurDp, coat fall towards Clear
+    private fun GlassOptics.values() = listOf(blur, blurDp, bend, bevel, dispersion, coat, saturation, specular, shadow, veil)
+    private val decreasing = setOf(0, 1, 5, 9) // blur, blurDp, coat, veil fall towards Clear
 
     @Test fun sliderMapsEveryValueMonotonicallyAndContinuously() {
         val all = (0..100).map { GlassOptics.from(it) }
@@ -62,10 +58,8 @@ class LiquidGlassOptics373Test {
     }
 
     @Test fun textStaysReadableOnEveryRenderedGlassWorstCase() {
-        // 2810/6: the worst case is the glass luminance ceiling (a neutral grey), not a channel peak.
-        val peak = GlassOptics.lensWorstCase
-        assertEquals(GlassOptics.SURFACE_LUMA_MAX, peak.luminance(), .002f)
-        assertTrue(peak.red == peak.green && peak.green == peak.blue)
+        val peak = Color(GlassOptics.LENS_PEAK, GlassOptics.LENS_PEAK, GlassOptics.LENS_PEAK)
+        assertEquals(peak, GlassOptics.lensWorstCase)
         for (seed in LiquidGlassPalettes.all) for (clarity in 0..100 step 5) {
             val p = seed.withGlassClarity(clarity)
             val optics = GlassOptics.from(clarity)
@@ -73,10 +67,8 @@ class LiquidGlassOptics373Test {
             val a = GlassOptics.SCENE_ACCENT_MAX
             val scene = Color(p.background.red + (1 - p.background.red) * a,
                 p.background.green + (1 - p.background.green) * a, p.background.blue + (1 - p.background.blue) * a)
-            // Every modelled composite stays at or below the ceiling (the grey above is its worst case).
-            assertTrue(GlassContrast.worstComposite(optics.coat, optics.backdropCap) <= GlassOptics.SURFACE_LUMA_MAX)
-            val rendered = listOf(peak, scene, GlassOptics.blurOnlyWorstCase(clarity),
-                GlassContrast.grey(GlassScene.lumaCap), p.surface)
+            val rendered = listOf(peak, scene,
+                p.surface.copy(alpha = optics.veil).compositeOver(Color.White))
             val selection = p.selectionColors()
             for (surface in rendered) {
                 for (text in listOf(p.textPrimary, p.textSecondary, p.primary, p.secondary, p.success,
@@ -136,7 +128,7 @@ class LiquidGlassOptics373Test {
         fun uniforms(source: String) = Regex("""uniform\s+(?:shader|float|float2|float4|half4)\s+(\w+);""")
             .findAll(source).map { it.groupValues[1] }.toSet()
         val material = setOf("extent", "radii", "px", "bend", "bevel", "dispersion", "frost", "coat",
-            "saturation", "specular", "shade", "backdropCap", "ceiling", "lightDir", "tint")
+            "saturation", "specular", "shade", "peak", "lightDir", "tint")
         // 2809/1: living backdrop (four drifting blobs) and the optional user image share one guard.
         val sceneCommon = setOf("screen", "origin", "lumaCap", "knee", "guard", "base")
         assertEquals(sceneCommon + (0 until GlassScene.blobCount).flatMap { listOf("blob$it", "tone$it") },

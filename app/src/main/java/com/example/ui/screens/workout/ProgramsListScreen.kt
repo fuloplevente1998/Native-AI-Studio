@@ -1,6 +1,4 @@
 package com.example.ui.screens
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 import androidx.compose.runtime.key
@@ -455,8 +453,7 @@ fun ProgramsListScreen(
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
-            // 2810: in-scroll safe-area spacer, the tab scrolls under the glass header.
-            Spacer(modifier = Modifier.height(8.dp + com.example.ui.theme.LocalGlassTopInset.current))
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         Column(
@@ -466,10 +463,9 @@ fun ProgramsListScreen(
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = palette.glassCardFill(palette.surface),
+                color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotGlassMaterial(palette, RoundedCornerShape(24.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
@@ -520,10 +516,9 @@ fun ProgramsListScreen(
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.glassCardFill(palette.surface),
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .testTag("programs_active_program_card")
                 ) {
@@ -561,10 +556,9 @@ fun ProgramsListScreen(
             if (filteredPrograms.isEmpty() && state.programsTabCustomOnly) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.glassCardFill(palette.surface),
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                 ) {
                     Column(
@@ -606,14 +600,13 @@ fun ProgramsListScreen(
                 val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassCardFill(palette.surface),
+                    color = palette.glassTile(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         // Lift first so the frame moves with the card while dragging (2772).
                         .trainPilotReorderItem(programReorder, program.id, index)
                         .trainPilotAnimatedExpansion()
-                        // 2810/4: the glass material draws the rim; no extra outline stroke.
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
+                        .trainPilotGlassRim(palette, RoundedCornerShape(14.dp))
                         .trainPilotBorder(
                             if (program.isActive || isExpanded) 1.5.dp else 1.dp,
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,

@@ -49,6 +49,9 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 
 ## A felhasználó munkastílusa (tartós)
 - Telefonról irányít: rövid, magyar, telefonon olvasható válasz; hosszú naplót ne.
+- Modellválasztás: fő munkamenet Sonnet 5.5 (high/xhigh) – docs/FIXES/HANDOFF, egyértelmű CI-javítás,
+  build/aláírás-ellenőrzés, kis UI jóváhagyott mockup után. Opus 5.5 alagens: glass motor/shader/kontraszt,
+  telefon–óra szinkron (ownership/epoch/tombstone), adatvédelem/migráció, refaktor.
 - Visszajelzéseket **gyűjtő draft PR-ba** rögzítjük (`docs/FIXES_<verzió>.md` táblázat);
   kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.

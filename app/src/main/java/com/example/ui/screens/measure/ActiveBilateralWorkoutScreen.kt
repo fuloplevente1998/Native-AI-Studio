@@ -1,7 +1,5 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.activeWorkoutDockFrame
 import com.example.ui.components.StudioCompactAction
@@ -766,11 +764,10 @@ fun ActiveBilateralWorkoutScreen(
         // Fixed Sticky Bottom Area: Rest Timer Dock + Előző / Következő Navigation
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
+            color = palette.background, // 2776 (A): darker dock, separated from the set cards
             modifier = Modifier
                 .fillMaxWidth()
-                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp, glass = palette.isLiquidGlass)
-                .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp)
         ) {
             Column(
                 modifier = Modifier

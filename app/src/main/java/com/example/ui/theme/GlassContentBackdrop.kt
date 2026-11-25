@@ -63,8 +63,7 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
 /**
  * Render actual captured Compose content inside an independently positioned glass surface.
  * API 33+: platform blur chained into the TrainPilot lens shader (cached program, uniforms only).
- * API 31–32 (2810/6): platform blur + colour matrix (vibrancy, then the contrast scale
- * [GlassOptics.blurOnlyScale]) + white-ish tint + vector rim. Older / software: opaque paint.
+ * API 31–32: platform blur + opaque veil + vector rim. Older / software: opaque paint.
  */
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
@@ -81,9 +80,9 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
             val radii = outline.glassCornerRadii()
             val dimensions = IntSize(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
             val effect = if (!enabled) null else if (Build.VERSION.SDK_INT >= 33) runCatching {
-                GlassPrograms33.contentEffect(dimensions.width, dimensions.height, radii, optics, density = density, highlight = 0f)
+                GlassPrograms33.contentEffect(dimensions.width, dimensions.height, radii, optics, palette.surface, density, 0f)
             }.getOrNull() else if (Build.VERSION.SDK_INT >= 31) runCatching {
-                createContentBlur31(optics.blurDp.dp.toPx(), optics)
+                createContentBlur31(optics.blurDp.dp.toPx())
             }.getOrNull() else null
             lensLayer.renderEffect = effect
             val fallback = Brush.verticalGradient(listOf(palette.background, palette.customPageEnd ?: palette.background))
@@ -101,12 +100,12 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                             drawLayer(lensLayer)
                         }.isSuccess
                     if (live && Build.VERSION.SDK_INT < 33) {
-                        // The colour matrix bounds every channel; the thin tint stays under the ceiling.
-                        drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
+                        // Platform blur has no luminance guard: the veil keeps text >= 4.5:1 on white content.
+                        drawRect(palette.surface.copy(alpha = optics.veil))
                         drawGlassHighlights(path, palette, optics, 0f)
                     } else if (!live) {
                         drawRect(fallback)
-                        drawRect(glassFallbackPaint(palette.glassClarity))
+                        drawRect(palette.cardPaint)
                         drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
@@ -116,16 +115,6 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
 }
 
 @RequiresApi(31)
-private fun createContentBlur31(radius: Float, optics: GlassOptics): androidx.compose.ui.graphics.RenderEffect {
-    val blur = RenderEffect.createBlurEffect(radius.coerceAtLeast(.5f), radius.coerceAtLeast(.5f), Shader.TileMode.CLAMP)
-    val filter = android.graphics.ColorMatrixColorFilter(glassVibrancyMatrix(optics.saturation, optics.blurOnlyScale))
-    // Blur first, then vibrancy + contrast scale (the effect input is applied before the filter).
-    return RenderEffect.createColorFilterEffect(filter, blur).asComposeRenderEffect()
-}
-
-/** Saturation boost, then every channel scaled by [scale] (the API 31–32 contrast bound). */
-internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
-    val matrix = android.graphics.ColorMatrix().apply { setSaturation(saturation) }
-    matrix.postConcat(android.graphics.ColorMatrix().apply { setScale(scale, scale, scale, 1f) })
-    return matrix.array
-}
+private fun createContentBlur31(radius: Float): androidx.compose.ui.graphics.RenderEffect =
+    RenderEffect.createBlurEffect(radius.coerceAtLeast(.5f), radius.coerceAtLeast(.5f), Shader.TileMode.CLAMP)
+        .asComposeRenderEffect()

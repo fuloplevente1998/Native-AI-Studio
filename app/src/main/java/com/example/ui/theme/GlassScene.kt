@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.Lifecycle
@@ -52,8 +53,7 @@ internal data class GlassBlob(val x: Float, val y: Float, val radius: Float, val
 internal object GlassScene {
     /** Drift step: about 12 fps is enough for blobs that cross the screen in about a minute. */
     const val FRAME_MS = 83L
-    /** 2810/6: brighter, larger blobs: more colour for the glass to refract (still guarded). */
-    const val BLOB_STRENGTH = .95f
+    const val BLOB_STRENGTH = .85f
     /** Blob drift amplitude as a fraction of the screen. */
     const val DRIFT = .10f
     /** Knee of the luminance guard, as a fraction of [lumaCap]: darker colours pass unchanged. */
@@ -62,18 +62,16 @@ internal object GlassScene {
     private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
     private val periods = floatArrayOf(53f, 67f, 59f, 79f)
     // x, y (fraction of the screen), radius (fraction of the width).
-    private val anchors = arrayOf(floatArrayOf(.84f, .12f, .76f), floatArrayOf(.10f, .40f, .80f),
-        floatArrayOf(.80f, .68f, .70f), floatArrayOf(.26f, .94f, .78f))
+    private val anchors = arrayOf(floatArrayOf(.84f, .12f, .62f), floatArrayOf(.10f, .40f, .66f),
+        floatArrayOf(.80f, .68f, .56f), floatArrayOf(.26f, .94f, .64f))
     val blobCount: Int get() = anchors.size
 
     /**
      * Brightest luminance the page backdrop may reach. The palettes' text and outline colours are
-     * lifted against the glass ceiling ([GlassOptics.SURFACE_LUMA_MAX]); staying below it keeps text
-     * >= 4.5:1 and outlines >= 3:1 on every blob colour and on any user image. 2810/6: the ceiling
-     * rose (.084 -> .13), so the page is brighter; under glass the lens limits its own backdrop
-     * ([GlassOptics.backdropCap]) because the white-ish tint adds light.
+     * lifted against the lens worst case ([GlassOptics.lensWorstCase]); staying below its luminance
+     * keeps text >= 4.5:1 and outlines >= 3:1 on every blob colour and on any user image.
      */
-    val lumaCap: Float = GlassOptics.SURFACE_LUMA_MAX * .96f
+    val lumaCap: Float = GlassOptics.lensWorstCase.luminance() * .96f
 
     /** Off for legacy palettes and on the active measurement screens; static when motion is off. */
     fun mode(isLiquidGlass: Boolean, opticsEnabled: Boolean, motionEnabled: Boolean): GlassBackdropMode = when {
@@ -101,24 +99,20 @@ internal object GlassScene {
     /** Vivid hue rotations of the theme accent (the shader guards their luminance after mixing). */
     fun tones(palette: TrainPilotPalette): List<Color> {
         val hue = hueOf(palette.primary)
-        return hueOffsets.map { Color.hsv(((hue + it) % 360f + 360f) % 360f, .90f, 1f) }
+        return hueOffsets.map { Color.hsv(((hue + it) % 360f + 360f) % 360f, .80f, .95f) }
     }
 
-    /**
-     * Pre-guarded tones for the Compose path: an sRGB alpha mix of guarded colours stays guarded
-     * (the sRGB decode is convex). [cap]: the page guard, or a glass surface's [GlassOptics.backdropCap].
-     */
-    fun guardedTones(palette: TrainPilotPalette, cap: Float = lumaCap): List<Color> = tones(palette).map { guard(it, cap) }
+    /** Pre-guarded tones for the Compose path: an sRGB alpha mix of guarded colours stays guarded. */
+    fun guardedTones(palette: TrainPilotPalette): List<Color> = tones(palette).map(::guard)
 
     /** Page base: the palette backdrop with a gentle top-lit vignette, guarded like the shader. */
-    fun base(palette: TrainPilotPalette, v: Float, cap: Float = lumaCap): Color {
+    fun base(palette: TrainPilotPalette, v: Float): Color {
         val k = .80f + .20f * (1f - v.coerceIn(0f, 1f))
-        return guard(Color(palette.background.red * k, palette.background.green * k, palette.background.blue * k), cap)
+        return guard(Color(palette.background.red * k, palette.background.green * k, palette.background.blue * k))
     }
 
-    /** Exact mirror of the AGSL guard: luminance above the knee is softly compressed below [cap]. */
-    fun guard(color: Color, cap: Float = lumaCap): Color {
-        val lumaCap = cap.coerceAtLeast(1e-5f)
+    /** Exact mirror of the AGSL guard: luminance above the knee is softly compressed below [lumaCap]. */
+    fun guard(color: Color): Color {
         val r = linear(color.red.coerceIn(0f, 1f))
         val g = linear(color.green.coerceIn(0f, 1f))
         val b = linear(color.blue.coerceIn(0f, 1f))
@@ -131,9 +125,7 @@ internal object GlassScene {
     }
 
     /** Linear dim for a user image on the Compose path: even pure white stays at [lumaCap]. */
-    val imageScale: Float get() = imageScaleFor(lumaCap)
-
-    fun imageScaleFor(cap: Float): Float = srgb(cap.coerceIn(0f, 1f))
+    val imageScale: Float get() = srgb(lumaCap)
 
     fun linear(c: Float): Float = if (c <= .04045f) c / 12.92f else ((c + .055f) / 1.055f).pow(2.4f)
     fun srgb(l: Float): Float = if (l <= .0031308f) l * 12.92f else 1.055f * l.coerceAtLeast(0f).pow(1f / 2.4f) - .055f
@@ -222,21 +214,21 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
  * gradients, or the user image dimmed linearly so even white stays below the guard.
  */
 internal fun DrawScope.drawGlassSceneCompose(palette: TrainPilotPalette, scene: GlassSceneState?, origin: Offset,
-    sceneWidth: Float, sceneHeight: Float, cap: Float = GlassScene.lumaCap) {
+    sceneWidth: Float, sceneHeight: Float) {
     val top = (-origin.y / sceneHeight).coerceIn(0f, 1f)
     val bottom = ((size.height - origin.y) / sceneHeight).coerceIn(0f, 1f)
-    drawRect(Brush.verticalGradient(listOf(GlassScene.base(palette, top, cap), GlassScene.base(palette, bottom, cap))))
+    drawRect(Brush.verticalGradient(listOf(GlassScene.base(palette, top), GlassScene.base(palette, bottom))))
     val image = scene?.imageBitmap
     if (image != null) {
         val (scale, at) = GlassScene.crop(image.width, image.height, sceneWidth, sceneHeight)
-        val dim = GlassScene.imageScaleFor(cap)
+        val dim = GlassScene.imageScale
         drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(image.width, image.height),
             dstOffset = IntOffset((at.x - origin.x).roundToInt(), (at.y - origin.y).roundToInt()),
             dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
             colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(dim, dim, dim, 1f) }))
         return
     }
-    val tones = GlassScene.guardedTones(palette, cap)
+    val tones = GlassScene.guardedTones(palette)
     GlassScene.blobs(sceneWidth, sceneHeight, scene?.seconds ?: 0f).forEachIndexed { i, blob ->
         val tone = tones[i]
         drawRect(Brush.radialGradient(

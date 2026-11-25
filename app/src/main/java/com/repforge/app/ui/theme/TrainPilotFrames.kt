@@ -70,8 +70,6 @@ fun trainPilotFrameStroke(border: BorderStroke?): BorderStroke? =
  */
 fun liquidGlassDropsFrame(palette: com.example.ui.theme.TrainPilotPalette, color: Color): Boolean {
     if (!palette.isLiquidGlass) return false
-    // 2810/4: text-derived outlines are neutral even if a lifted accent ends up at the same colour.
-    if (color.copy(alpha = 1f) == palette.textPrimary.copy(alpha = 1f) && palette.primary.copy(alpha = 1f) != color.copy(alpha = 1f)) return true
     val semantic = listOf(palette.primary, palette.selectionColors().border, palette.danger, palette.success, palette.warning,
         TrainPilotActionAppearance.DARK_SAVE_OUTLINE, TrainPilotActionAppearance.DARK_NEGATIVE_OUTLINE)
     if (semantic.any { it.copy(alpha = 1f) == color.copy(alpha = 1f) }) return false

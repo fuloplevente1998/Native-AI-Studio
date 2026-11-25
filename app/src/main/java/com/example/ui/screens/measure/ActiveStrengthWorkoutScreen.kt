@@ -1,7 +1,5 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.activeWorkoutDockFrame
 import androidx.compose.ui.semantics.contentDescription
@@ -210,11 +208,10 @@ fun ActiveStrengthWorkoutScreen(
         // 2) Sticky < Előző | Következő > buttons
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = palette.glassCardFill(palette.background), // 2776 (A): darker dock; 2810/3: glass bar in Liquid Glass
+            color = palette.background, // 2776 (A): darker dock, separated from the set cards
             modifier = Modifier
                 .fillMaxWidth()
-                .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp, glass = palette.isLiquidGlass)
-                .trainPilotGlassMaterial(palette, RoundedCornerShape(20.dp))
+                .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp)
                 .pointerInput(isRestTimerLargeMode) {
                     detectVerticalDragGestures { _, dragAmount ->
                         if (dragAmount < -12f) {

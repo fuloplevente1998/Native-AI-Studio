@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotPageBackdrop
-import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -99,8 +97,6 @@ fun ProgressTabScreen(
             .trainPilotPageBackdrop(palette)
             .testTag("progress_tab_screen")
     ) {
-        // 2810: safe-area spacer under the glass header (the section tabs stay fixed below it).
-        Spacer(Modifier.height(LocalGlassTopInset.current))
         if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
             color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,

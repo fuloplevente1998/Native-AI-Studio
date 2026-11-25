@@ -47,23 +47,21 @@ internal object LiquidGlassPalettes {
 internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
     if (!isLiquidGlass) return this
     val clarity = value.coerceIn(0, 100)
+    val t = clarity / 100f
     val end = lerp(background, Color(0xFF080D17), .65f)
-    val optics = GlassOptics.from(clarity)
-    // 2810/6: the card paint is the thin white-ish tint (.40 Frosted -> .06 Clear). The representative
-    // opaque card (dialogs, legacy call sites) is that tint over the backdrop as the lens limits it.
-    val paint = GlassOptics.TINT.copy(alpha = optics.coat)
-    val card = paint.compositeOver(GlassScene.guard(background, optics.backdropCap))
+    // 2808/12: thinner card tint towards Clear (.82 -> .18), contrast lifted below as before.
+    val paint = GLASS_PAINT.copy(alpha = .82f - .64f * t)
+    val card = paint.compositeOver(background)
     val inner = lerp(card, Color.White, .05f)
-    val fallback = glassFallbackPaint(clarity)
-    // Worst cases of the rendered material: the glass ceiling (every lens/tint composite stays at or
-    // below SURFACE_LUMA_MAX), the guarded page, the V4 scene bound and the API 31–32 blur-only lens.
-    val rendered = listOf(GlassOptics.lensWorstCase, GlassContrast.grey(GlassScene.lumaCap),
-        GlassOptics.sceneWorstCase(background), GlassOptics.blurOnlyWorstCase(clarity))
-    // Inner tiles: the neutral tile tint (luminance below the ceiling) over any of these surfaces.
+    val optics = GlassOptics.from(clarity)
+    // Worst cases of the rendered material: brightest lens output (shader peak guard), brightest
+    // procedural page scene, and blur-only content (API 31-32) under the veil over pure white.
+    val rendered = listOf(GlassOptics.lensWorstCase, GlassOptics.sceneWorstCase(background),
+        card.copy(alpha = optics.veil).compositeOver(Color.White))
+    // 2809/3: inner tiles use the same paint at [glassTileAlpha] over any of these surfaces.
     val tiles = (rendered + listOf(card, background)).flatMap { under ->
         listOf(glassTilePaint(clarity, false), glassTilePaint(clarity, true)).map { it.compositeOver(under) } }
-    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner,
-        fallback.compositeOver(background), fallback.compositeOver(end)) + rendered + tiles +
+    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner) + rendered + tiles +
         listOf(.12f, .16f, .22f).map { primary.copy(alpha = it).compositeOver(card) }
     fun readable(seed: Color, minimum: Float): Color {
         for (step in 0..100) {
@@ -84,38 +82,22 @@ internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
         customCardPaint = paint, customPageEnd = end, glassClarity = clarity)
 }
 
-/** The previous dark glass paint: now only the API < 31 / software opaque fallback (2810/8). */
+/** The one Liquid Glass paint: cards use it at [withGlassClarity]'s card alpha, inner tiles thinner. */
 internal val GLASS_PAINT = Color(0xFF334359)
 
-/** Previous opaque path (API < 31, software rendering): [GLASS_PAINT] at .82 Frosted -> .18 Clear. */
-internal fun glassFallbackPaint(clarity: Int): Color = GLASS_PAINT.copy(alpha = .82f - .64f * clarity.coerceIn(0, 100) / 100f)
-
-/**
- * 2810/6 inner tile tint: a neutral blue-grey whose luminance stays below [GlassOptics.SURFACE_LUMA_MAX],
- * so a tile over any glass composite (an sRGB mix) can never lift it above the ceiling.
- */
-internal val GLASS_TILE = Color(0xFF58616F)
-internal val GLASS_TILE_ELEVATED = Color(0xFF5B6472)
-
-/** Inner tile alpha, continuous and strictly falling with the slider (.16 Frosted -> .10 Clear). */
-internal fun glassTileAlpha(clarity: Int): Float = .16f - .06f * clarity.coerceIn(0, 100) / 100f
+/** 2809/3: inner tile tint, continuous and strictly falling with the slider (.66 Frosted -> .12 Clear). */
+internal fun glassTileAlpha(clarity: Int): Float = .66f - .54f * clarity.coerceIn(0, 100) / 100f
 
 internal fun glassTilePaint(clarity: Int, elevated: Boolean): Color =
-    (if (elevated) GLASS_TILE_ELEVATED else GLASS_TILE).copy(alpha = glassTileAlpha(clarity))
+    (if (elevated) lerp(GLASS_PAINT, Color.White, .06f) else GLASS_PAINT).copy(alpha = glassTileAlpha(clarity))
 
 /**
  * 2809/3: colour of an inner tile (Sleep/Steps, program card, journal row, coach panel). Liquid Glass:
- * the low-opacity tile tint, so the glass card behind shows through; all other palettes and custom
- * themes: exactly [legacy].
+ * the low-opacity glass tint, so the backdrop / glass card behind shows through; all other palettes
+ * and custom themes: exactly [legacy].
  */
 internal fun TrainPilotPalette.glassTile(legacy: Color, elevated: Boolean = false): Color =
     if (isLiquidGlass) glassTilePaint(glassClarity, elevated) else legacy
-
-/**
- * 2810/5: fill of a content surface that is routed through the glass card path
- * ([trainPilotGlassCard]): transparent in Liquid Glass (the material paints it), exactly [legacy] otherwise.
- */
-internal fun TrainPilotPalette.glassCardFill(legacy: Color): Color = if (isLiquidGlass) Color.Transparent else legacy
 
 internal fun TrainPilotPalette.glassPageBrush(): Brush {
     val end = customPageEnd ?: background

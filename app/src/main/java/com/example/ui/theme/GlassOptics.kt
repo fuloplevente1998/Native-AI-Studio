@@ -15,16 +15,14 @@ internal val LocalGlassOpticsEnabled = androidx.compose.runtime.staticCompositio
  * TrainPilot Liquid Glass material as ONE continuous function of the family slider
  * (0 = Frosted, 100 = Clear Liquid). Every field is monotonic in the slider and moves by a
  * small, bounded amount per step, so a drag never jumps between looks. Independently authored
- * TrainPilot values. 2810/6: iOS-like layering (technique as in public Apache-2.0 backdrop engines,
- * own code): strong blur -> rim refraction -> vibrancy -> backdrop luminance limit -> thin white-ish
- * tint -> specular rim; readability comes from the backdrop limit, not from a dark tint.
+ * TrainPilot values; no third-party parameters or shader code.
  */
 internal data class GlassOptics(
     /** 0 Frosted .. 1 Clear. */
     val clarity: Float,
-    /** In-shader diffusion of the procedural scene, normalized to a phone-width scene ([blurDp] / [SCENE_REFERENCE_DP]). */
+    /** In-shader diffusion of the procedural scene, normalized to the scene size. */
     val blur: Float,
-    /** Backdrop blur radius (dp): platform blur on live content, in-shader diffusion on the scene. */
+    /** Platform blur radius (dp) applied to live captured content. */
     val blurDp: Float,
     /** Rim refraction, as a fraction of the shorter side. Zero on the flat center. */
     val bend: Float,
@@ -32,80 +30,53 @@ internal data class GlassOptics(
     val bevel: Float,
     /** Chromatic split; only applied inside the rim zone. */
     val dispersion: Float,
-    /** Alpha of the white-ish [TINT] over the backdrop (2810/6: .40 Frosted -> .06 Clear). */
+    /** Palette tint mixed over the backdrop. */
     val coat: Float,
     /** Backdrop vibrancy (1 = unchanged saturation). */
     val saturation: Float,
-    /** Specular rim highlight strength: alpha of the top edge line (sides/bottom are weaker). */
+    /** Specular rim highlight strength. */
     val specular: Float,
-    /** Inner depth shade along the rim (darkens only). */
+    /** Inner depth shade along the rim. */
     val shadow: Float,
-    /** Largest backdrop luminance under the tint ([GlassContrast.backdropCap]): grows towards Clear. */
-    val backdropCap: Float,
-    /** API 31–32 colour-matrix scale after the saturation boost ([GlassContrast.blurOnlyScale]). */
-    val blurOnlyScale: Float,
+    /** Opaque surface veil over blur-only content (API 31–32, which has no shader guard). */
+    val veil: Float,
 ) {
     companion object {
-        /**
-         * 2810/6: luminance ceiling of every glass composite (tint over the limited backdrop, page,
-         * tiles). White text keeps 5.8:1; palette text/accents are lifted against it ([lensWorstCase]).
-         */
-        const val SURFACE_LUMA_MAX = .13f
+        /** No lens output channel exceeds this sRGB value; palettes keep text readable against it. */
+        const val LENS_PEAK = .32f
         /** V4 scene bound; kept as an extra contrast surface (2809 page backdrop: [GlassScene.lumaCap]). */
         const val SCENE_ACCENT_MAX = .16f
-        const val FROSTED_BLUR_DP = 32f
-        const val CLEAR_BLUR_DP = 20f
-        const val SCENE_REFERENCE_DP = 411f
-        const val FROSTED_COAT = .40f
-        const val CLEAR_COAT = .06f
-        /** The white-ish glass tint (cool white). */
-        val TINT = Color(0xFFEEF3FB)
+        const val FROSTED_BLUR_DP = 24f
+        const val CLEAR_BLUR_DP = .5f
 
-        private val cache = arrayOfNulls<GlassOptics>(101)
+        fun from(value: Int): GlassOptics = from(value.toFloat())
 
-        fun from(value: Int): GlassOptics {
-            val step = value.coerceIn(0, 100)
-            return cache[step] ?: compute(step.toFloat()).also { cache[step] = it }
-        }
+        /** Brightest possible lens output (the shader caps every channel at [LENS_PEAK]). */
+        val lensWorstCase: Color get() = Color(LENS_PEAK, LENS_PEAK, LENS_PEAK)
 
-        /** Brightest possible glass composite: a neutral grey at [SURFACE_LUMA_MAX] (worst for light text). */
-        val lensWorstCase: Color get() = GlassContrast.grey(SURFACE_LUMA_MAX)
-
-        /** Upper bound of the V4 procedural page scene: the base mixed (sRGB, like AGSL) towards white. */
+        /** Upper bound of the procedural page scene: the base mixed (sRGB, like AGSL) towards white. */
         fun sceneWorstCase(background: Color): Color = Color(
             background.red + (1f - background.red) * SCENE_ACCENT_MAX,
             background.green + (1f - background.green) * SCENE_ACCENT_MAX,
             background.blue + (1f - background.blue) * SCENE_ACCENT_MAX)
 
-        /** API 31–32 blur-only content lens: brightest composite of tint over scaled, saturated content. */
-        fun blurOnlyWorstCase(clarity: Int): Color = from(clarity).let {
-            GlassContrast.grey(GlassContrast.blurOnlyWorst(it.coat, it.saturation, it.blurOnlyScale))
-        }
-
         fun from(value: Float): GlassOptics {
-            val v = if (value.isNaN()) 0f else value.coerceIn(0f, 100f)
-            return if (v == kotlin.math.floor(v)) from(v.toInt()) else compute(v)
-        }
-
-        private fun compute(value: Float): GlassOptics {
-            val t = value / 100f
-            val blurDp = FROSTED_BLUR_DP * (CLEAR_BLUR_DP / FROSTED_BLUR_DP).pow(t)
-            val coat = FROSTED_COAT - (FROSTED_COAT - CLEAR_COAT) * t
-            val saturation = 1.40f + .40f * t
+            val t = (if (value.isNaN()) 0f else value.coerceIn(0f, 100f)) / 100f
+            // 2808/12: the Clear end lets more backdrop through (thinner tint and veil, almost no
+            // diffusion); readability stays with LENS_PEAK and the palette's lifted text colors.
             return GlassOptics(
                 clarity = t,
-                blur = blurDp / SCENE_REFERENCE_DP,
-                // Exponential: equal slider steps read as equal perceived blur steps (32 -> 20 dp).
-                blurDp = blurDp,
+                blur = .095f * (1f - t) + .0005f,
+                // Exponential: equal slider steps read as equal perceived blur steps.
+                blurDp = FROSTED_BLUR_DP * (CLEAR_BLUR_DP / FROSTED_BLUR_DP).pow(t),
                 bend = .018f + .112f * t,
                 bevel = .30f + .25f * t,
                 dispersion = .004f + .056f * t * t,
-                coat = coat,
-                saturation = saturation,
-                specular = .30f + .15f * t,
-                shadow = .10f + .08f * t,
-                backdropCap = GlassContrast.backdropCap(coat),
-                blurOnlyScale = GlassContrast.blurOnlyScale(coat, saturation),
+                coat = .62f - .58f * t,
+                saturation = 1.08f + .22f * t,
+                specular = .18f + .34f * t,
+                shadow = .14f + .16f * t,
+                veil = .94f - .10f * t,
             )
         }
     }

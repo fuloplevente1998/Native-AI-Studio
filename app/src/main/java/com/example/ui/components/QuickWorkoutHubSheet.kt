@@ -1,8 +1,5 @@
 package com.example.ui.components
 
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.glassTile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,15 +68,14 @@ fun QuickWorkoutHubSheet(
                 qw(language, "Kültéri", "Outdoor", "Outdoor", "Exterior")
             )
             val segShape = RoundedCornerShape(14.dp)
-            Surface(shape = segShape, color = palette.glassCardFill(palette.surfaceCard),
+            Surface(shape = segShape, color = palette.surfaceCard,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
-                    .trainPilotGlassMaterial(palette, segShape)
                     .trainPilotBorder(1.dp, palette.cardBorder, segShape)) {
                 Row(Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     tabs.forEachIndexed { i, label ->
                         val selected = i == tab
                         val shape = RoundedCornerShape(11.dp)
-                        Surface(shape = shape, color = if (selected) palette.primary else palette.glassTile(palette.surfaceCard),
+                        Surface(shape = shape, color = if (selected) palette.primary else palette.surfaceCard,
                             // 2784: longer labels get more room; the whole word always shows (font steps down if needed).
                             modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 48.dp)
                                 .trainPilotClickable(shape) { onSelectTab(i) }.testTag("quick_tab_$i")) {
@@ -129,9 +125,8 @@ private fun QuickOutdoorTab(language: AppLanguage, onStartOutdoor: (String) -> U
                 pair.forEach { (label, name) ->
                     val on = name == selected
                     val shape = RoundedCornerShape(14.dp)
-                    Surface(shape = shape, color = if (on) palette.primary else palette.glassCardFill(palette.surfaceCard),
+                    Surface(shape = shape, color = if (on) palette.primary else palette.surfaceCard,
                         modifier = Modifier.weight(1f).heightIn(min = 52.dp)
-                            .then(if (on) Modifier else Modifier.trainPilotGlassMaterial(palette, shape))
                             .trainPilotBorder(1.dp, if (on) palette.primary else palette.cardBorder, shape)
                             .trainPilotClickable(shape) { selected = name }
                             .testTag("quick_outdoor_${name.lowercase()}")) {

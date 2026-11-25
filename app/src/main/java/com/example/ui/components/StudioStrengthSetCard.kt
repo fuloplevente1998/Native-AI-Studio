@@ -1,8 +1,5 @@
 package com.example.ui.components
 
-import com.example.ui.theme.glassCardFill
-import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.glassTile
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -74,17 +71,15 @@ internal fun StudioStrengthSetCard(
     val shape = RoundedCornerShape(14.dp)
     Surface(
         // 2775: a completed set reads green at a glance.
-        // 2810/3: Liquid Glass rows are glass over the workout backdrop (the green state is the frame).
-        color = p.glassCardFill(if (item.completed) androidx.compose.ui.graphics.lerp(p.surfaceElevated, p.success, 0.14f) else p.surfaceElevated),
+        color = if (item.completed) androidx.compose.ui.graphics.lerp(p.surfaceElevated, p.success, 0.14f) else p.surfaceElevated,
         shape = shape,
         // 2809/2: the active-set frame is a state marker and stays; neutral frames follow the glass gate.
-        // 2810/4: in Liquid Glass it is the plain accent (semantic), not the neutral page gradient.
         border = when {
             item.completed -> BorderStroke(1.dp, p.success.copy(alpha = 0.75f))
-            active -> if (p.isLiquidGlass) BorderStroke(1.dp, p.primary.copy(alpha = 0.75f)) else TrainPilotFrames.page(p.cardBorder, p.primary)
+            active -> TrainPilotFrames.page(p.cardBorder, p.primary)
             else -> com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f)))
         },
-        modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(p, shape).testTag("active_strength_set_${item.setNumber}")
+        modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
         Column {
         BoxWithConstraints(Modifier.padding(6.dp)) {
@@ -111,7 +106,7 @@ internal fun StudioStrengthSetCard(
                 val toggleShape = RoundedCornerShape(12.dp)
                 Surface(
                     shape = toggleShape,
-                    color = if (item.completed) p.success else p.glassTile(p.surface),
+                    color = if (item.completed) p.success else p.surface,
                     border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder)),
                     modifier = Modifier.size(48.dp).clip(toggleShape)
                         .toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
@@ -197,7 +192,7 @@ private fun WorkoutSetValuePicker(
     val valid = customValid?.invoke(canonical) == true
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth()) {
-            Surface(color = p.glassTile(p.surface), shape = RoundedCornerShape(10.dp),
+            Surface(color = p.surface, shape = RoundedCornerShape(10.dp),
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(0.5.dp, outline)),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .trainPilotClickable(RoundedCornerShape(10.dp), enabled = enabled) { custom = false; expanded = true }

@@ -31,11 +31,11 @@ internal fun GlassAwareScaffold(
     content: @Composable (PaddingValues, Modifier, Dp) -> Unit
 ) {
     // Only routes with an explicit in-scroll safe-area spacer can extend under glass navigation.
-    // 2810: all five top-nav tabs (not only Home/Health/Settings) scroll under the header, so the
-    // header, nav and pill lens see every tab's content (one recorded source, [captureGlassBackdrop]).
     val glassHost = uiState.sheetHostState()
     val glassUnderlap = palette.glassEffectsActive(LocalGlassOpticsEnabled.current) &&
-        Build.VERSION.SDK_INT >= 31 && glassUnderlapRoute(glassHost.currentTab, glassHost.currentSubScreen)
+        Build.VERSION.SDK_INT >= 31 &&
+        (glassHost.currentSubScreen == SubScreen.SETTINGS_MAIN ||
+            (glassHost.currentSubScreen == SubScreen.NONE && glassHost.currentTab in setOf(MainTab.HOME, MainTab.HEALTH)))
     val headerBackdrop = if (glassUnderlap) rememberGlassBackdrop() else null
     Scaffold(
         modifier = Modifier.fillMaxSize().background(palette.background),
@@ -62,13 +62,6 @@ internal fun GlassAwareScaffold(
         }
     }
 }
-
-/** The top-nav tabs; each one's scroll content starts with the [LocalGlassTopInset] spacer. */
-internal val GlassUnderlapTabs: Set<MainTab> = setOf(MainTab.HOME, MainTab.PROGRAMS, MainTab.WORKOUT, MainTab.PROGRESS, MainTab.HEALTH)
-
-/** Routes whose content extends under the glass header and is recorded for the header/nav lens. */
-internal fun glassUnderlapRoute(tab: MainTab, subScreen: SubScreen): Boolean =
-    subScreen == SubScreen.SETTINGS_MAIN || (subScreen == SubScreen.NONE && tab in GlassUnderlapTabs)
 
 /** True under [GlassAwareScaffold] in a glass palette: the root already paints the page backdrop. */
 internal val LocalGlassRootBackdrop = staticCompositionLocalOf { false }
