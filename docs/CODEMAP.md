@@ -132,3 +132,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | K2 popup and sheet finish | `ex/ui/components/TrainPilotDropdownMenu.kt`, `ex/ui/theme/GlassSurfaces.kt` (`glassOverlayFill`), `KyantWindowOverlay.kt` (`KyantStaticSheetBackdrop`), `TrainPilotModalBottomSheet.kt`, status banner in `ex/MainActivity.kt` |
 
 | K3 scene paint cache | `ex/ui/theme/GlassScenePaintCache.kt` (bounded last-value slots), `GlassScene.kt` (host-owned cache), `KyantK3CacheTest.kt` (reuse/invalidation) |
+
+| K3 single root scene | `ex/ui/theme/KyantGlass.kt` (`KyantSceneBackground`, reuse same captured layer), `GlassAwareScaffold.kt` (empty sibling before scaffold), `KyantK3CacheTest.kt` (source contract) |

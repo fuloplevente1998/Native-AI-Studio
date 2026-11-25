@@ -2,6 +2,7 @@ package com.example.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -45,37 +46,40 @@ internal fun GlassAwareScaffold(
     val contentLayer = if (kyant && glassUnderlap) rememberLayerBackdrop() else null
     val kyantScene = sceneLayer?.let { rememberKyantScene(it) }
     val kyantHeader = sceneLayer?.let { rememberKyantHeaderScene(it, contentLayer) }
-    Scaffold(
-        modifier = Modifier.fillMaxSize().background(palette.background)
-            .then(if (sceneLayer != null) Modifier.kyantSceneLayer(palette, sceneLayer)
-                else Modifier.trainPilotGlassScene(palette)),
-        containerColor = if (palette.isLiquidGlass) Color.Transparent else palette.background,
-        contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = {
-            CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop,
-                LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
-                topBar()
+    // Keep the scaffold at a stable composition position when optics are toggled.
+    Box(Modifier.fillMaxSize().background(palette.background)
+        .then(if (sceneLayer == null) Modifier.trainPilotGlassScene(palette) else Modifier)) {
+        if (sceneLayer != null) KyantSceneBackground(sceneLayer, Modifier.matchParentSize())
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = if (palette.isLiquidGlass) Color.Transparent else palette.background,
+            contentWindowInsets = WindowInsets.safeDrawing,
+            topBar = {
+                CompositionLocalProvider(LocalGlassHeaderBackdrop provides headerBackdrop,
+                    LocalKyantScene provides kyantScene, LocalKyantHeader provides kyantHeader) {
+                    topBar()
+                }
             }
-        }
-    ) { innerPadding ->
-        val direction = LocalLayoutDirection.current
-        val bodyPadding = if (glassUnderlap) PaddingValues(
-            start = innerPadding.calculateStartPadding(direction),
-            end = innerPadding.calculateEndPadding(direction),
-            bottom = innerPadding.calculateBottomPadding()
-        ) else innerPadding
-        val capture = when {
-            contentLayer != null -> Modifier.layerBackdrop(contentLayer)
-            headerBackdrop != null -> Modifier.captureGlassBackdrop(headerBackdrop)
-            else -> Modifier
-        }
-        // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
-        // header lens sees it too); the pages above stay transparent instead of repainting it.
-        // Only the top bar may sample captured body content; body controls must not sample themselves.
-        CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
-            LocalKyantScene provides kyantScene, LocalKyantHeader provides null) {
-            content(bodyPadding, capture,
-                if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
+        ) { innerPadding ->
+            val direction = LocalLayoutDirection.current
+            val bodyPadding = if (glassUnderlap) PaddingValues(
+                start = innerPadding.calculateStartPadding(direction),
+                end = innerPadding.calculateEndPadding(direction),
+                bottom = innerPadding.calculateBottomPadding()
+            ) else innerPadding
+            val capture = when {
+                contentLayer != null -> Modifier.layerBackdrop(contentLayer)
+                headerBackdrop != null -> Modifier.captureGlassBackdrop(headerBackdrop)
+                else -> Modifier
+            }
+            // 2809/1: one living backdrop behind every glass screen (inside the header capture, so the
+            // header lens sees it too); the pages above stay transparent instead of repainting it.
+            // Only the top bar may sample captured body content; body controls must not sample themselves.
+            CompositionLocalProvider(LocalGlassRootBackdrop provides palette.isLiquidGlass,
+                LocalKyantScene provides kyantScene, LocalKyantHeader provides null) {
+                content(bodyPadding, capture,
+                    if (glassUnderlap) innerPadding.calculateTopPadding() else 0.dp)
+            }
         }
     }
 }

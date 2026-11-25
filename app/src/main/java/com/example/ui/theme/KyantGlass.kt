@@ -4,18 +4,21 @@ import android.graphics.ColorMatrixColorFilter
 import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -78,6 +81,20 @@ private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSce
 internal fun Modifier.kyantSceneLayer(palette: TrainPilotPalette, backdrop: LayerBackdrop): Modifier {
     val scene = LocalGlassScene.current
     return drawBehind { drawKyantScene(palette, scene) }.layerBackdrop(backdrop)
+}
+
+/**
+ * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
+ * Backdrop 1.0.6 LayerBackdropNode.draw calls drawContent then records its custom onDraw.
+ * Our outer draw modifier runs that recording first, then displays the very same GraphicsLayer.
+ * No second procedural/photo draw, no additional graphics layer or bitmap, and no child capture.
+ */
+@Composable
+internal fun KyantSceneBackground(backdrop: LayerBackdrop, modifier: Modifier = Modifier) {
+    Box(modifier.drawWithContent {
+        drawContent()
+        drawLayer(backdrop.graphicsLayer)
+    }.layerBackdrop(backdrop))
 }
 
 /** Render a single role using the shared source; tiles stay on the inexpensive paint/rim path. */

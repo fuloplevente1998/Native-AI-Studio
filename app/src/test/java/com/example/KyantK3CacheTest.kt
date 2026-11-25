@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.*
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.File
 
 class KyantK3CacheTest {
     private val p = LiquidGlassPalettes.all.first()
@@ -50,6 +51,20 @@ class KyantK3CacheTest {
         assertNotSame(limited, frame(p.copy(primary = Color.Green), Offset(5f, 10f), 900f, 1800f, 1f, cap / 2))
         // Single-slot eviction, not a growing per-frame map.
         assertNotSame(first, frame())
+    }
+
+    @Test fun rootSceneRecordsBeforeDrawingTheSameLayerAndNeverWrapsScaffold() {
+        val root = File("src/main/java/com/example/ui/theme/GlassAwareScaffold.kt").readText()
+        val renderer = File("src/main/java/com/example/ui/theme/KyantGlass.kt").readText()
+        assertTrue(root.contains("KyantSceneBackground(sceneLayer, Modifier.matchParentSize())"))
+        assertFalse(root.contains("Modifier.kyantSceneLayer(palette, sceneLayer)"))
+        val sceneSibling = renderer.substringAfter("internal fun KyantSceneBackground(")
+            .substringBefore("/** Render a single role")
+        assertTrue(sceneSibling.contains("drawContent()\n        drawLayer(backdrop.graphicsLayer)"))
+        assertTrue(sceneSibling.contains("}.layerBackdrop(backdrop))"))
+        assertFalse(sceneSibling.contains("drawKyantScene("))
+        assertFalse(sceneSibling.contains("rememberGraphicsLayer("))
+        assertTrue(root.indexOf("KyantSceneBackground(sceneLayer") < root.indexOf("Scaffold(\n            modifier = Modifier.fillMaxSize()"))
     }
 
     @Test fun photoGeometryReusesDimensionsAndInvalidatesOnImageOrViewportResize() {
