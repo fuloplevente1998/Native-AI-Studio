@@ -15,8 +15,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -116,13 +117,14 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
-        val scrollState = rememberScrollState()
-        com.example.ui.components.TrainPilotScrollableBox(
-            scrollState = scrollState,
+        val listState = rememberLazyListState()
+        com.example.ui.components.TrainPilotScrollableListBox(
+            lazyListState = listState,
             modifier = Modifier.fillMaxSize()
         ) {
-            Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(horizontal = 12.dp, vertical = 4.dp)
-                .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("studio_statistics_screen"),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // 2779: three tabs in one row: Strength (records) · Cardio · Steps. The stored state stays
             // statsSubTab 0/1 + cardioFilterStepsMode, so the view model and saved settings are unchanged.
             val visibleTab = when {
@@ -130,7 +132,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 state.cardioFilterStepsMode -> 2
                 else -> 1
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            item(key = "statistics_tabs", contentType = "tabs") { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
                     statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
                 subTabLabels.forEachIndexed { index, label ->
@@ -144,22 +146,22 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         modifier = Modifier.weight(com.example.ui.components.trainPilotLabelWeight(label, subTabLabels)).heightIn(min = 48.dp)
                         .testTag("statistics_subtab_$index"))
                 }
-            }
+            } }
             if (state.statsSubTab == 0) {
                 when {
-                    state.savedRecordsLoading -> Text(statsTr(lang, "Rekordok betöltése…", "Loading records…", "Rekorde werden geladen…", "Se încarcă recordurile…"), color = palette.textSecondary)
+                    state.savedRecordsLoading -> item(key = "records_loading", contentType = "status") { Text(statsTr(lang, "Rekordok betöltése…", "Loading records…", "Rekorde werden geladen…", "Se încarcă recordurile…"), color = palette.textSecondary) }
                     state.savedRecordsError -> {
-                        Text(statsTr(lang, "A rekordok nem olvashatók.", "Records could not be read.", "Rekorde konnten nicht geladen werden.", "Recordurile nu pot fi citite."), color = palette.danger)
-                        TextButton(onClick = onRefreshRecords) { Text(statsTr(lang, "Újrapróbálás", "Retry", "Erneut versuchen", "Reîncearcă")) }
+                        item(key = "records_error", contentType = "status") { Text(statsTr(lang, "A rekordok nem olvashatók.", "Records could not be read.", "Rekorde konnten nicht geladen werden.", "Recordurile nu pot fi citite."), color = palette.danger) }
+                        item(key = "records_retry", contentType = "retry") { TextButton(onClick = onRefreshRecords) { Text(statsTr(lang, "Újrapróbálás", "Retry", "Erneut versuchen", "Reîncearcă")) } }
                     }
-                    state.savedExerciseBests.isEmpty() -> Text(statsTr(lang, "Még nincs mentett, befejezett sorozat.", "No saved completed sets yet.", "Noch keine gespeicherten Sätze.", "Nicio serie finalizată salvată încă."), color = palette.textSecondary)
-                    else -> state.savedExerciseBests.forEach { record ->
+                    state.savedExerciseBests.isEmpty() -> item(key = "records_empty", contentType = "status") { Text(statsTr(lang, "Még nincs mentett, befejezett sorozat.", "No saved completed sets yet.", "Noch keine gespeicherten Sätze.", "Nicio serie finalizată salvată încă."), color = palette.textSecondary) }
+                    else -> items(state.savedExerciseBests, key = { "record_${it.exerciseId}" }, contentType = { "record" }) { record ->
                         val expanded = selectedRecord == record.exerciseId
                         // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
                         val trendKind = exerciseTrendKind(record)
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
-                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassCardFill(palette.surfaceCard),
-                            modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, MaterialTheme.shapes.large)
+                        Surface(shape = MaterialTheme.shapes.large, color = palette.glassTile(palette.surfaceCard),
+                            modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, MaterialTheme.shapes.large)
                                 .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -178,7 +180,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                             style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                                     }
                                     if (trendKind != ExerciseTrendKind.NONE) {
-                                        val mini = trend.takeLast(8)
+                                        val mini = remember(trend) { trend.takeLast(8) }
                                         if (mini.size >= 2) Column(horizontalAlignment = Alignment.End,
                                             modifier = Modifier.padding(end = 4.dp).testTag("statistics_record_mini_${record.exerciseId}")) {
                                             ExerciseSparkline(mini, palette.primary)
@@ -201,14 +203,17 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                                 modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_record_period_${record.exerciseId}_$days"))
                                         }
                                     }
-                                    val shown = if (periodDays == 0) trend else trend.filter { !it.date.isBefore(LocalDate.now().minusDays(periodDays.toLong() - 1)) }
+                                    val today = LocalDate.now()
+                                    val shown = remember(trend, periodDays, today) {
+                                        if (periodDays == 0) trend else trend.filter { !it.date.isBefore(today.minusDays(periodDays.toLong() - 1)) }
+                                    }
                                     if (shown.size >= 2) {
                                         // 2785: tap a point → highlighted, info line shows date + value (default: latest).
                                         var sel by remember(record.exerciseId, periodDays, shown) { mutableIntStateOf(shown.lastIndex) }
                                         val selectedLabel = exerciseTrendPointLabel(shown[sel], trendKind, lang.code)
                                         Box(Modifier.fillMaxWidth().height(160.dp).testTag("statistics_record_chart_${record.exerciseId}")
                                             .trainPilotChartTap(shown, { x, w -> chartNearestIndex(x, w, shown.size) }, selectedLabel) { sel = it }) {
-                                            TrendCanvas(shown.map { it.value }, sel)
+                                            TrendCanvas(remember(shown) { shown.map { it.value } }, sel)
                                         }
                                         TrainPilotChartInfoLine(selectedLabel,
                                             Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
@@ -236,7 +241,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                             Box(Modifier.fillMaxWidth().height(160.dp)
                                                 .testTag("statistics_record_chart_${record.exerciseId}")
                                                 .trainPilotChartTap(points, { x, w -> chartNearestIndex(x, w, points.size) }, selectedLabel) { sel = it }) {
-                                                TrendCanvas(points.map { it.e1rmKg }, sel)
+                                                TrendCanvas(remember(points) { points.map { it.e1rmKg } }, sel)
                                             }
                                             TrainPilotChartInfoLine(selectedLabel,
                                                 Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
@@ -250,8 +255,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     }
                 }
             } else {
-                if (state.cardioFilterStepsMode) DailyActivityStatistics(state, number)
-                else NativeCardioProgressPanel(native, onRetry)
+                if (state.cardioFilterStepsMode) item(key = "daily_steps", contentType = "steps") { DailyActivityStatistics(state, number) }
+                else item(key = "cardio", contentType = "cardio") { NativeCardioProgressPanel(native, onRetry) }
             }
         }
     }

@@ -103,7 +103,7 @@ internal fun measuredReorderTarget(heights: List<Float>, gap: Float, index: Int,
 fun rememberTrainPilotReorderState(): TrainPilotReorderState = remember { TrainPilotReorderState() }
 
 /** Applied to each reorderable row: measures it, lifts the dragged row and slides the others aside. */
-fun Modifier.trainPilotReorderItem(state: TrainPilotReorderState, key: Any, index: Int): Modifier =
+fun Modifier.trainPilotReorderItem(state: TrainPilotReorderState, key: Any, index: Int, layerWhenIdle: Boolean = true): Modifier =
     composed {
         val shift by animateFloatAsState(
             targetValue = state.displacementFor(index),
@@ -118,7 +118,9 @@ fun Modifier.trainPilotReorderItem(state: TrainPilotReorderState, key: Any, inde
                     shadowElevation = 18f
                     scaleX = 1.02f
                     scaleY = 1.02f
-                } else Modifier.graphicsLayer { translationY = if (state.draggingKey == null) 0f else shift }
+                } else if (layerWhenIdle || state.draggingKey != null) Modifier.graphicsLayer {
+                    translationY = if (state.draggingKey == null) 0f else shift
+                } else Modifier
             )
     }
 

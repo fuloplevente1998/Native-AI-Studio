@@ -243,7 +243,7 @@ internal fun ProgramEditorContent(
                 color = palette.glassTile(palette.surface),
                 modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
                     .fillMaxWidth()
-                    .trainPilotReorderItem(exerciseReorder, ex.id, index)
+                    .trainPilotReorderItem(exerciseReorder, ex.id, index, layerWhenIdle = false)
                     .trainPilotAnimatedExpansion()
                     .trainPilotBorder(
                         width = if (isExpanded) 1.5.dp else 1.dp,
