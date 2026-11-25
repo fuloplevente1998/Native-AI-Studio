@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import com.example.ui.components.customThemeText
@@ -11,7 +12,6 @@ import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 import com.repforge.app.ui.theme.TrainPilotFrames
 
-import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -179,7 +179,7 @@ fun SettingsMainScreen(
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
-                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
                     .trainPilotAnimatedExpansion()
                     .testTag("settings_themes_group")
@@ -226,7 +226,7 @@ fun SettingsMainScreen(
                 shape = RoundedCornerShape(18.dp),
                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
                 modifier = Modifier
-                    .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                    .fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -240,7 +240,7 @@ fun SettingsMainScreen(
                             val selected = uiState.language == lang
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (selected) palette.primary else palette.surfaceElevated,
+                                color = if (selected) palette.primary else palette.glassTile(palette.surfaceElevated, elevated = true),
                                 modifier = Modifier
                                     .weight(1f)
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
@@ -263,7 +263,7 @@ fun SettingsMainScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
-                modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp)).testTag("settings_workout_group")
+                modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(22.dp)).testTag("settings_workout_group")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -409,9 +409,11 @@ internal fun SettingsActionRowCard(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = palette.surfaceCard,
+        // 2810/2: Liquid Glass rows sample the page backdrop like every card; legacy fill unchanged.
+        color = palette.glassTile(palette.surfaceCard),
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
             .trainPilotBorder(if (subtleBorder) 0.75.dp else 1.25.dp,
                 if (subtleBorder) palette.cardBorder.copy(alpha = 0.45f) else palette.sectionBorder,
                 RoundedCornerShape(18.dp))
