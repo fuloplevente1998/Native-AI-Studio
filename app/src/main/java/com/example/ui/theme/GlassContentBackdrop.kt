@@ -33,10 +33,11 @@ internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?>
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
 @Composable
-internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape): Modifier {
+internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
     val backdrop = LocalGlassHeaderBackdrop.current
-    return if (backdrop != null) liveGlassLens(backdrop, palette, shape)
-    else trainPilotGlassMaterial(palette, shape)
+    return if (backdrop != null) liveGlassLens(backdrop, palette, shape, role)
+    else trainPilotGlassMaterial(palette, shape, role)
 }
 
 @Composable
@@ -67,13 +68,14 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
  * [GlassOptics.blurOnlyScale]) + white-ish tint + vector rim. Older / software: opaque paint.
  */
 @Composable
-internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
+internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape,
+    role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
     if (!palette.isLiquidGlass) return this
     val enabled = LocalGlassOpticsEnabled.current
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
-    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity) }
+    val optics = remember(palette.glassClarity, role) { GlassOptics.forRole(palette.glassClarity, role) }
     return onGloballyPositioned { origin.value = it.positionInRoot() }
         .drawWithCache {
             val outline = shape.createOutline(size, layoutDirection, this)
