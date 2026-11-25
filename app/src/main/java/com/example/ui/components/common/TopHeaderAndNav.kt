@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassStateTile
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -442,7 +443,10 @@ fun TrainPilotRedCloseButton(
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(11.dp), color = lerp(
+        // 2811/G3: glass = translucent red state tint (red outline + glyph keep the meaning); legacy unchanged.
+        val closeFill = palette.glassStateTile(com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline,
+            com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground, strong = pressed)
+        Surface(shape = RoundedCornerShape(11.dp), color = if (palette.isLiquidGlass) closeFill else lerp(
             com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
             com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground, if (pressed) 0.10f else 0f),
             modifier = Modifier.size(size).clip(RoundedCornerShape(11.dp))

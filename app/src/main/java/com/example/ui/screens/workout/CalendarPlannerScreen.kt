@@ -3,6 +3,8 @@ package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.trainPilotGlassRim
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -445,6 +447,7 @@ fun CalendarPlannerScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), com.example.ui.theme.GlassRole.Button)
                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                                 .testTag("calendar_prev_month")
                         ) {
@@ -470,6 +473,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                    .trainPilotGlassRim(palette, RoundedCornerShape(12.dp), com.example.ui.theme.GlassRole.Button)
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                                     .testTag("calendar_next_month")
                             ) {
@@ -485,7 +489,7 @@ fun CalendarPlannerScreen(
                             if (state.currentSubScreen == SubScreen.CALENDAR_PLANNER) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = palette.danger.copy(alpha = 0.12f),
+                                    color = palette.glassStateTile(palette.danger, palette.danger.copy(alpha = 0.12f)),
                                     modifier = Modifier
                                         .size(48.dp)
                                         .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
@@ -524,6 +528,7 @@ fun CalendarPlannerScreen(
 
                     // Dynamic month grid with rounded dark cells matching Screenshot 7
                     val daysInMonth = displayedYearMonth.lengthOfMonth()
+                    val today = remember { java.time.LocalDate.now() }
                     val firstDayOffset = displayedYearMonth.atDay(1).dayOfWeek.value - 1 // Monday=0 .. Sunday=6
                     val totalCells = calendarWeeks * 7
 
@@ -548,15 +553,17 @@ fun CalendarPlannerScreen(
                                         val completedEv = evs.firstOrNull { it.status == CalendarEventStatus.COMPLETED }
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
 
+                                        // G2: glass day cell = tile / state tint; selected day = Selection lens.
+                                        val cellState = glassCalendarCell(palette, isSelected,
+                                            isToday = today == displayedYearMonth.atDay(dayNumber),
+                                            planned = plannedEv != null, completed = completedEv != null)
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = when {
-                                                plannedEv != null -> palette.primary.copy(alpha = 0.12f)
-                                                else -> palette.surface
-                                            },
+                                            color = cellState.fill,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(calendarCellHeight)
+                                                .then(cellState.material)
                                                 .trainPilotBorder(
                                                     width = if (isSelected) 1.8.dp else 1.dp,
                                                     color = if (isSelected) palette.primary else palette.cardBorder,
@@ -577,7 +584,7 @@ fun CalendarPlannerScreen(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         fontWeight = FontWeight.Bold
                                                     ),
-                                                    color = palette.textPrimary
+                                                    color = cellState.number
                                                 )
                                                 when {
                                                     completedEv != null -> {
@@ -641,7 +648,7 @@ fun CalendarPlannerScreen(
                                 contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})"),
                                 tint = palette.textSecondary)
                         }
-                        Button(
+                        com.repforge.app.ui.theme.TrainPilotButton(
                             onClick = { onOpenReplanModal(true) },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_replan_action"),
                             shape = RoundedCornerShape(14.dp),
@@ -744,7 +751,7 @@ fun CalendarPlannerScreen(
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
                             Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"), maxLines = 1)
                         }
-                        Button(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
+                        com.repforge.app.ui.theme.TrainPilotButton(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_plan_action")) {

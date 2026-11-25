@@ -18,6 +18,7 @@ import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.rememberGlassMotionEnabled
 import androidx.compose.ui.graphics.drawscope.scale
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassButtonColors
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -169,7 +170,10 @@ internal fun TrainPilotPressFeedback(
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val alpha = interactionAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    val feedbackColors = colors.copy(containerColor = tint.compositeOver(colors.containerColor))
+    // 2811/G3: in Liquid Glass every shared button (filled, outlined, text, save/delete) gets a translucent
+    // state tint of its own hue instead of a solid white/grey/accent block; legacy palettes: unchanged.
+    val base = LocalTrainPilotPalette.current.glassButtonColors(colors)
+    val feedbackColors = base.copy(containerColor = tint.compositeOver(base.containerColor))
     CompositionLocalProvider(LocalRippleConfiguration provides null) {
         content(feedbackColors, source)
     }

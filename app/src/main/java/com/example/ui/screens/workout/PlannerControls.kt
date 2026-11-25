@@ -1,5 +1,9 @@
 package com.example.ui.screens
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.GlassRole
+import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
 import com.repforge.app.ui.theme.trainPilotFrame
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -203,4 +207,30 @@ internal fun PlannerFieldTile(
             }
         }
     }
+}
+
+/** G2 (2811): look of one month cell. Legacy palettes: exactly the previous fill, text colour, no modifier. */
+internal class GlassCalendarCell(val fill: Color, val number: Color, val material: Modifier)
+
+/**
+ * Liquid Glass calendar day: neutral tile, planned = accent state tint, completed = success tint, today =
+ * accent number + raised tile, selected = the Selection lens (plus the kept accent outline). State is
+ * never colour alone: the A/B badge, the check mark and the outline carry it too.
+ */
+@Composable
+internal fun glassCalendarCell(palette: com.example.ui.theme.TrainPilotPalette, selected: Boolean, isToday: Boolean,
+    planned: Boolean, completed: Boolean): GlassCalendarCell {
+    if (!palette.isLiquidGlass) return GlassCalendarCell(
+        if (planned) palette.primary.copy(alpha = 0.12f) else palette.surface, palette.textPrimary, Modifier)
+    val shape = RoundedCornerShape(10.dp)
+    val fill = when {
+        planned -> palette.glassStateTile(palette.primary, palette.primary, strong = selected || isToday)
+        completed -> palette.glassStateTile(palette.success, palette.success)
+        else -> palette.glassTile(palette.surface, elevated = isToday)
+    }
+    val material = when {
+        selected -> Modifier.trainPilotGlassMaterial(palette, shape, GlassRole.Selection).trainPilotGlassRim(palette, shape, GlassRole.Selection)
+        else -> Modifier.trainPilotGlassRim(palette, shape, if (isToday) GlassRole.Button else GlassRole.Tile)
+    }
+    return GlassCalendarCell(fill, if (isToday) palette.primary else palette.textPrimary, material)
 }

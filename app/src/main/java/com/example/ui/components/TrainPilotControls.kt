@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTile
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.glassEffectsActive
+import com.example.ui.theme.glassStateTile
 import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
@@ -75,7 +77,8 @@ fun TrainPilotFilterChip(
     val glassChip = enabled && !selected && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
     Surface(
         shape = shape,
-        color = if (selected) selection.surface else if (glassChip) Color.Transparent else p.surfaceCard,
+        // 2811/G3: a selected glass chip is a strong accent state tint (outline + bold label keep the state).
+        color = if (selected) p.glassStateTile(p.primary, selection.surface, strong = true) else if (glassChip) Color.Transparent else p.surfaceCard,
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
         modifier = modifier.heightIn(min = 40.dp)
             .then(if (glassChip) Modifier.trainPilotGlassMaterial(p, shape, com.example.ui.theme.GlassRole.Button) else Modifier)
@@ -105,8 +108,9 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
     return OutlinedTextFieldDefaults.colors(
         focusedTextColor = p.textPrimary, unfocusedTextColor = p.textPrimary,
         disabledTextColor = p.textSecondary, errorTextColor = p.textPrimary,
-        focusedContainerColor = p.surfaceCard, unfocusedContainerColor = p.surfaceCard,
-        disabledContainerColor = p.surfaceCard, errorContainerColor = p.surfaceCard,
+        // 2811/G3 Input: glass fields are a translucent tile on the glass card (legacy: the card colour).
+        focusedContainerColor = p.glassTile(p.surfaceCard, elevated = true), unfocusedContainerColor = p.glassTile(p.surfaceCard),
+        disabledContainerColor = p.glassTile(p.surfaceCard), errorContainerColor = p.glassStateTile(p.danger, p.surfaceCard),
         cursorColor = p.primary, errorCursorColor = p.danger,
         // 2809/2: glass fields keep their filled container; the neutral outline vanishes, focus and error stay.
         focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
@@ -199,7 +203,7 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.glassEffectsActive(LocalGlassOpticsEnabled.current)
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (glass) p.primary.copy(alpha = .12f) else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
+    Surface(shape = shape, color = if (glass) p.glassStateTile(p.primary, p.primary, strong = true) else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
         border = if (glass) BorderStroke(1.dp, p.selectionColors().border) else null,
         modifier = modifier.heightIn(min = 48.dp)
             .then(if (glass) Modifier.trainPilotGlassMaterial(p, shape, com.example.ui.theme.GlassRole.Button) else Modifier)
