@@ -24,7 +24,8 @@ import java.text.NumberFormat
 import java.util.Locale
 
 internal data class WorkoutDayEnergy(val id: String, val name: String, val start: Instant, val end: Instant,
-    val active: Double?, val total: Double?, val partial: Boolean)
+    val active: Double?, val total: Double?, val partial: Boolean,
+    val activeCoverage: WorkoutEnergyCoverage.Status, val totalCoverage: WorkoutEnergyCoverage.Status)
 
 /** Exact provider snapshots only; no daily aggregate, synthetic sensor records or cross-source sum. */
 internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): WorkoutDayEnergy? {
@@ -38,7 +39,8 @@ internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): Work
         val total = values["totalCalories"]
         if (active == null && total == null) return null
         WorkoutDayEnergy(row.id, row.programName, Instant.parse(row.started), Instant.parse(row.finished),
-            active, total, data.optBoolean("partial"))
+            active, total, data.optBoolean("partial"),
+            WorkoutEnergyCoverage.status(data,"activeCalories"), WorkoutEnergyCoverage.status(data,"totalCalories"))
     }.getOrNull()
 }
 
@@ -83,16 +85,22 @@ internal fun HealthWorkoutEnergyDay(day: LocalDate, provider: String, type: Stri
         Text(word("Mentett edzések mért energiája (nem napi összeg)", "Saved workouts: measured energy (not daily total)",
             "Gespeicherte Trainingsenergie (keine Tagessumme)", "Energie măsurată la antrenamente (nu total zilnic)"),
             style = MaterialTheme.typography.labelMedium)
+        fun coverageLabel(status: WorkoutEnergyCoverage.Status): String = when(status) {
+            WorkoutEnergyCoverage.Status.PARTIAL_RAW -> word(" · hiányos rekordlefedettség", " · incomplete record coverage", " · lückenhafte Datensätze", " · acoperire parțială")
+            WorkoutEnergyCoverage.Status.UNKNOWN -> word(" · lefedettség nem igazolt", " · coverage unverified", " · Abdeckung ungeprüft", " · acoperire neverificată")
+            WorkoutEnergyCoverage.Status.MISSING -> word(" · nincs mérés", " · no measurement", " · keine Messung", " · fără măsurare")
+            else -> ""
+        }
         for (row in rows) {
             Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("health_workout_energy_${row.id}")) {
                 Text(row.name.ifBlank { word("Edzés", "Workout", "Training", "Antrenament") })
                 Text("${time.format(row.start)} – ${time.format(row.end)} · ${NativeWorkoutHealthSource.label(provider)}",
                     style = MaterialTheme.typography.labelSmall)
                 if (type != "TotalCaloriesBurnedRecord") row.active?.let {
-                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal")
+                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal${coverageLabel(row.activeCoverage)}")
                 }
                 if (type != "ActiveCaloriesBurnedRecord") row.total?.let {
-                    Text("${word("Teljes", "Total", "Gesamt", "Total")}: ${number.format(it)} kcal")
+                    Text("${word("Teljes", "Total", "Gesamt", "Total")}: ${number.format(it)} kcal${coverageLabel(row.totalCoverage)}")
                 }
                 if (row.partial) Text(word("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială"),
                     style = MaterialTheme.typography.labelSmall)

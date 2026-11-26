@@ -422,6 +422,12 @@ internal object HealthConnectLegacyBridge {
         val active = safeRaw("READ_ACTIVE_CALORIES_BURNED",ActiveCaloriesBurnedRecord::class)
         val total = safeRaw("READ_TOTAL_CALORIES_BURNED",TotalCaloriesBurnedRecord::class)
         val speeds = safeRaw("READ_SPEED",SpeedRecord::class)
+        WorkoutEnergyCoverage.record(out, "activeCalories", start, end,
+            active.map { WorkoutEnergyCoverage.Span(it.startTime,it.endTime,originalSource(it)) },
+            "READ_ACTIVE_CALORIES_BURNED" in keys, "READ_ACTIVE_CALORIES_BURNED", warnings)
+        WorkoutEnergyCoverage.record(out, "totalCalories", start, end,
+            total.map { WorkoutEnergyCoverage.Span(it.startTime,it.endTime,originalSource(it)) },
+            "READ_TOTAL_CALORIES_BURNED" in keys, "READ_TOTAL_CALORIES_BURNED", warnings)
         val sessionsJson = JSONArray()
         val rawSessions = exercises.map { record ->
             sessionsJson.put(ExternalWorkout.fromRecord(serialized(record)).summary())

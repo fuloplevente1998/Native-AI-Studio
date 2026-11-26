@@ -155,3 +155,5 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | 2814 egészségnapló mentett edzésenergia | `rf/ui/health/HealthWorkoutEnergyDay.kt`, `HealthRecordDayDetails.kt`, `rf/data/db/TrainPilotDaos.kt`, `ex/ui/components/StudioHealthRootEffects.kt` |
 
 | Samsung órás energia 2814 | `rf/SamsungSdkReader.java`, `SamsungHealthRepository.kt`, `rf/ui/health/SamsungHourlyEnergy.kt`, `HealthRecordDayDetails.kt`, `ex/ui/components/StudioHealthMetricsBrowser.kt`; teszt `SamsungHourlyEnergy2814Test.kt` |
+
+| 2815 kalória coverage és naplóparitás | `rf/WorkoutEnergyCoverage.kt`, `HealthConnectRepository.kt`, `HealthConnectLegacyBridge.kt`, `NativeWorkoutHealthSummary.kt`, `WorkoutHealthAutoReconcile.kt`, `rf/ui/health/HealthWorkoutEnergyDay.kt`, `rf/ui/journal/JournalWorkoutHealthSummary.kt`, `ex/ui/screens/health/HealthTodayTileExtras.kt`, `ex/ui/components/StudioHealthMetricsBrowser.kt`; teszt `WorkoutEnergyCoverage2815Test.kt` |

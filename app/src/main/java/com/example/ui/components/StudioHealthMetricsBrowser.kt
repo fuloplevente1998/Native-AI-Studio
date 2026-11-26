@@ -243,7 +243,8 @@ internal fun StudioHealthMetricsBrowser(
                         val filters = listOf(
                             "" to label("Mind", "All", "Alle", "Toate"),
                             "StepsRecord" to label("Lépés", "Steps", "Schritte", "Pași"),
-                            "ActiveCaloriesBurnedRecord" to label("Kalória", "Calories", "Kalorien", "Calorii"),
+                            "ActiveCaloriesBurnedRecord" to label("Aktív kcal", "Active kcal", "Aktiv kcal", "Kcal active"),
+                            "TotalCaloriesBurnedRecord" to label("Teljes kcal", "Total kcal", "Gesamt kcal", "Kcal totale"),
                             "DistanceRecord" to label("Táv", "Distance", "Distanz", "Distanță"),
                             "HeartRateRecord" to label("Pulzus", "Heart rate", "Puls", "Puls"),
                             "SleepSessionRecord" to label("Alvás", "Sleep", "Schlaf", "Somn"))

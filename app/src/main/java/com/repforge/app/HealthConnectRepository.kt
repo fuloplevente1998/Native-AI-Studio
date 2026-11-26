@@ -693,6 +693,12 @@ object HealthConnectRepository {
             putLongAgg(out, "heartRateSamples", p, m, time, "READ_HEART_RATE", HeartRateRecord.HEART_MEASUREMENTS_COUNT, warnings)
             putEnergyAgg(out, "activeCalories", p, m, time, "READ_ACTIVE_CALORIES_BURNED", ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, warnings)
             putEnergyAgg(out, "totalCalories", p, m, time, "READ_TOTAL_CALORIES_BURNED", TotalCaloriesBurnedRecord.ENERGY_TOTAL, warnings)
+            WorkoutEnergyCoverage.record(out, "activeCalories", t[0], t[1],
+                active.filter { src(it) != p.getContext().packageName }.map { WorkoutEnergyCoverage.Span(it.startTime, it.endTime, src(it)) },
+                p.allowed("READ_ACTIVE_CALORIES_BURNED"), "READ_ACTIVE_CALORIES_BURNED", warnings)
+            WorkoutEnergyCoverage.record(out, "totalCalories", t[0], t[1],
+                total.filter { src(it) != p.getContext().packageName }.map { WorkoutEnergyCoverage.Span(it.startTime, it.endTime, src(it)) },
+                p.allowed("READ_TOTAL_CALORIES_BURNED"), "READ_TOTAL_CALORIES_BURNED", warnings)
             putWorkoutEnergy(out, p, t, sessions, active, total)
             putDistanceAgg(out, p, m, time, warnings)
             speedStats(out, speeds, t)

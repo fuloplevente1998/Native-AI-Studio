@@ -23,6 +23,9 @@ internal object WorkoutHealthAutoPolicy {
         if (previous == null) return true
         val metrics = NativeWorkoutHealth.metrics(previous, false)
         if (metrics["activeCalories"] == null || previous.optBoolean("partial")) return true
+        if (previous.optString("provider") == HealthJournalStore.HC &&
+            listOf("activeCalories","totalCalories").any { WorkoutEnergyCoverage.status(previous,it) != WorkoutEnergyCoverage.Status.FULL_RAW })
+            return true
         val synced = runCatching { Instant.parse(previous.getString("syncedAt")).toEpochMilli() }.getOrDefault(0L)
         // Missing total energy may be published later even if active energy already arrived.
         // After the initial settle period it remains retryable within the existing lookback.
@@ -67,6 +70,11 @@ internal object WorkoutHealthAutoPolicy {
             val newRow = newWindows?.get(window) ?: return false
             val newFields = measured(newRow).keys
             if (!newFields.containsAll(oldFields) || failed(newRow, oldFields)) return false
+            for (key in oldFields.intersect(energyKeys)) {
+                val oldMs = WorkoutEnergyCoverage.knownMillis(oldRow,key)
+                val newMs = WorkoutEnergyCoverage.knownMillis(newRow,key)
+                if (oldMs != null && (newMs == null || newMs < oldMs)) return false
+            }
             gainsEnergy = gainsEnergy || (newFields - oldFields).any { it in energyKeys }
         }
         if (newWindows != null) for ((window, row) in newWindows) {

@@ -126,9 +126,12 @@ internal object NativeWorkoutHealthSummary {
         // Separate definitions for the detail screen. Keep the historical single-energy
         // projection (Coach, legacy summary) unchanged; never add active to total.
         fun separateEnergy(key: String): Metric {
-            val (rows, overlap) = select(evidence.filter { number(it.data, key) != null })
+            val candidates = evidence.filter { number(it.data, key) != null }
+            val (rows, overlap) = select(candidates.sortedByDescending { WorkoutEnergyCoverage.rank(it.data, key) })
             val values = if (rows.isEmpty()) emptyMap() else mapOf(key to rows.sumOf { number(it.data, key)!! })
-            return Metric(values, rows, incomplete(rows), overlap)
+            return Metric(values, rows, incomplete(rows) || rows.any {
+                WorkoutEnergyCoverage.status(it.data,key) == WorkoutEnergyCoverage.Status.PARTIAL_RAW
+            }, overlap)
         }
         val relationships = mutableListOf<Relationship>()
         for (i in evidence.indices) for (j in i + 1 until evidence.size) {

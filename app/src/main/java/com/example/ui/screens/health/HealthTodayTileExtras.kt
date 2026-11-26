@@ -218,21 +218,39 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                 lang = lang.name.lowercase())
         }
     }
-    val type = when (key) {
-        "sleep" -> "SleepSessionRecord"
-        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
-        else -> null
-    } ?: return
+    if (key != "sleep" && key != "calories") return
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
     val provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC
-    val generation by androidx.compose.runtime.produceState<Long?>(null, uiState.healthRefreshRevision) {
-        value = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.repforge.app.HealthJournalStore.get(context).generation() } }.getOrNull()
+    var energyType by remember(today, provider) { androidx.compose.runtime.mutableStateOf("ActiveCaloriesBurnedRecord") }
+    val type = if (key == "sleep") "SleepSessionRecord" else energyType
+    val snapshot by androidx.compose.runtime.produceState<org.json.JSONObject?>(null, today, provider, uiState.healthRefreshRevision) {
+        value = null
+        try {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.repforge.app.ui.health.NativeHealthJournal.load(com.repforge.app.HealthJournalStore.get(context),
+                    provider, "", com.repforge.app.ui.health.HealthJournalRange(today,today))
+            }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { value = null }
     }
-    val g = generation ?: return
-    // 2788: no empty "Today's records" block with a pager when there is nothing stored.
+    val data = snapshot ?: return
+    val g = data.getLong("generation")
+    if (key == "calories") {
+        Text(com.repforge.app.NativeWorkoutHealthSource.label(provider), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for ((filter, label) in listOf(
+                "ActiveCaloriesBurnedRecord" to tr(lang,"Aktív kcal","Active kcal","Aktiv kcal","Kcal active"),
+                "TotalCaloriesBurnedRecord" to tr(lang,"Teljes kcal","Total kcal","Gesamt kcal","Kcal totale"))) {
+                com.example.ui.components.TrainPilotFilterChip(selected = type == filter, onClick = { energyType = filter },
+                    label = { Text(label) }, modifier = Modifier.testTag("today_energy_filter_$filter"))
+            }
+        }
+    }
+    // Same persisted provider/day projection as the health journal, no additional SDK read.
     com.repforge.app.ui.health.HealthRecordDayDetails(today, provider, "", type, lang.name.lowercase(), g,
         "${uiState.healthRefreshRevision}", visible = true,
-        title = tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), hideWhenEmpty = true)
+        title = tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), hideWhenEmpty = true,
+        dailySummary = com.repforge.app.ui.health.NativeHealthJournal.day(data,provider,"",today))
 }
 
 
