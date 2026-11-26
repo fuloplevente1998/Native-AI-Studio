@@ -197,7 +197,14 @@ internal class TrainPilotWorkoutFinalization(
         // Apply only explicit per-exercise annotations before persisting the retryable canonical draft.
         if (!fromWatch) StudioWorkoutFeedback.mergePendingExerciseEdits(input, draft, System.currentTimeMillis())
         if (!fromWatch && input.has("feedback")) draft.put("feedback", input.get("feedback"))
-        phoneOwnedWatchRequest?.optJSONObject("healthSummary")?.let { draft.put("wear", JSONObject(it.toString())) }
+        // A live watch receipt can arrive before the phone-owned workout is saved;
+        // capture only the fresh current node/epoch and keep it marked provisional.
+        if (!fromWatch && ownsDraft && current?.optBoolean("finalizationPending") != true) {
+            val receipt = WearWorkoutEnergyEvidence.live(requireNotNull(current),WearLiveHealthStore.current(context),
+                WearLiveHealthStore.expectedNode351.value,Instant.now(),allowLegacyPreview = false)
+            WearWorkoutEnergyEvidence.attach(draft,receipt,setOf(id))
+        }
+        WearWorkoutEnergyEvidence.attach(draft,phoneOwnedWatchRequest?.optJSONObject("healthSummary"),setOf(id))
         // Retain the first finish timestamp across failed retries.
         val finished = current?.takeIf { ownsDraft && it.optBoolean("finalizationPending") }?.optString("finished")
             ?.takeIf { it.isNotBlank() } ?: draft.optString("finished").takeIf { it.isNotBlank() } ?: Instant.now().toString()

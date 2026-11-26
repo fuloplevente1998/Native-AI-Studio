@@ -19,13 +19,23 @@ internal object NativeWorkoutHealthSummary {
         val relationships: List<Relationship>, val activeEnergy: Metric, val totalEnergy: Metric)
     data class Relationship(val first: String, val second: String, val confirmedMirror: Boolean)
 
-    fun read(workout: WorkoutHistoryEntity): Result {
+    fun read(workout: WorkoutHistoryEntity): Result =
+        project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json))
+
+    /** Provider-specific daily workout row and the combined detail share the same validated windows. */
+    fun readProvider(workout: WorkoutHistoryEntity, provider: String): Result {
+        val snapshot = NativeWorkoutHealthSource.snapshot(parse(workout.health240Json), provider)
+        val selected = snapshot?.let { JSONObject().put("providers",JSONObject().put(provider,it)) }
+        return project(savedFrame(workout),null,selected)
+    }
+
+    private fun savedFrame(workout: WorkoutHistoryEntity): JSONObject {
         val saved = JSONObject().put("started", workout.started).put("finished", workout.finished)
         workout.activeIntervalsJson?.let { saved.put("activeIntervals", JSONArray(it)) }
         val raw = parse(workout.rawJson)
         saved.put("nativeHealthWindowStale", raw?.optBoolean("nativeHealthWindowStale") == true)
         saved.put("id", workout.id).put("syncId", workout.syncId).put("workoutKey", workout.workoutKey)
-        return project(saved, NativeSavedWearHealth.read(workout), parse(workout.health240Json))
+        return saved
     }
 
     internal fun project(workout: JSONObject, wear: JSONObject?, document: JSONObject?): Result {
@@ -84,11 +94,15 @@ internal object NativeWorkoutHealthSummary {
             return accepted to overlap
         }
         val expectedMs = active.sumOf { Duration.between(it.start, it.end).toMillis() }
+        fun energyRank(row: Evidence, key: String): Int =
+            if (row.provider == WEAR && (row.data.optBoolean("partial") ||
+                WearWorkoutEnergyEvidence.incompleteDuration(row.data,expectedMs))) 0
+            else WorkoutEnergyCoverage.rank(row.data,key)
         fun incomplete(rows: List<Evidence>) = rows.isEmpty() || rows.sumOf { it.milliseconds } < expectedMs || rows.any {
             it.data.optBoolean("partial") || (it.data.optJSONArray("warnings")?.length() ?: 0) > 0 ||
                 (it.data.optJSONArray("failedFields")?.length() ?: 0) > 0 ||
                 (it.data.optJSONObject("errors")?.length() ?: 0) > 0 ||
-                (it.provider == WEAR && it.legacyWindow) ||
+                (it.provider == WEAR && (it.legacyWindow || WearWorkoutEnergyEvidence.incompleteDuration(it.data,expectedMs))) ||
                 it.data.optBoolean("workoutEnergyProrated")
         }
         val (heartRows, heartOverlap) = select(evidence.filter { number(it.data, "averageHeartRate") != null })
@@ -122,14 +136,14 @@ internal object NativeWorkoutHealthSummary {
         val kind = energyCandidates.firstOrNull()?.let(::energyKind)
         val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind }
             .sortedByDescending { if (energyKey in setOf("activeCalories","totalCalories"))
-                WorkoutEnergyCoverage.rank(it.data, requireNotNull(energyKey)) else 0 })
+                energyRank(it, requireNotNull(energyKey)) else 0 })
         val energyValues = if (energyRows.isEmpty() || energyKey == null) emptyMap() else
             mapOf(energyKey to energyRows.sumOf { number(it.data, energyKey)!! })
         // Separate definitions for the detail and finish screens. Preserve the legacy
         // definition selection, but apply the same coverage ordering within each kind.
         fun separateEnergy(key: String): Metric {
             val candidates = evidence.filter { number(it.data, key) != null }
-            val (rows, overlap) = select(candidates.sortedByDescending { WorkoutEnergyCoverage.rank(it.data, key) })
+            val (rows, overlap) = select(candidates.sortedByDescending { energyRank(it, key) })
             val values = if (rows.isEmpty()) emptyMap() else mapOf(key to rows.sumOf { number(it.data, key)!! })
             return Metric(values, rows, incomplete(rows) || rows.any {
                 WorkoutEnergyCoverage.status(it.data,key) == WorkoutEnergyCoverage.Status.PARTIAL_RAW

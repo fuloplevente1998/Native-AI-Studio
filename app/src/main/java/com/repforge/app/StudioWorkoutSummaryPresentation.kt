@@ -108,7 +108,7 @@ internal object StudioWorkoutSummaryPresentation {
 
     /** Same typed projection as saved workout detail, scoped to the chosen provider and Wear. */
     fun projection(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
-        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Result? {
+        health: HealthSnapshot? = null, expectedNode: String? = null): NativeWorkoutHealthSummary.Result? {
         frame ?: return null
         NativeWorkoutHealthSource.requireProvider(provider)
         val id = frame.optString("workoutId").takeIf { it.isNotBlank() } ?: return null
@@ -122,16 +122,7 @@ internal object StudioWorkoutSummaryPresentation {
             val projection = fresh?.let { JSONObject(it.workoutJson) } ?: JSONObject(frame.toString())
                 .put("id", frame.optString("id").ifBlank { id }).put("syncId", id)
             if (projection.optString("finished").isBlank()) projection.put("finished", now.toString())
-            val liveWear = live?.takeIf {
-                WearLiveHealthStore.valid(it) && it.optString("workoutId") == id &&
-                    it.optLong("updatedAt") >= Instant.parse(frame.getString("started")).toEpochMilli() &&
-                    it.optLong("updatedAt") <= now.toEpochMilli()
-            }?.let { packet ->
-                // The current Wear DataItem wraps measured data in summary. Legacy flat
-                // receipts remain readable, but a nested mismatched workout is rejected.
-                val measured = packet.optJSONObject("summary") ?: packet
-                measured.takeIf { it.optString("workoutId", id) == id }
-            }
+            val liveWear = WearWorkoutEnergyEvidence.live(frame,live,expectedNode,now)
             val savedWear = NativeSavedWearHealth.fromRaw(frame)?.takeIf {
                 it.optString("workoutId").let { wearId -> wearId.isBlank() || wearId == id ||
                     wearId in listOf(frame.optString("id"), frame.optString("syncId"), frame.optString("workoutKey")) }

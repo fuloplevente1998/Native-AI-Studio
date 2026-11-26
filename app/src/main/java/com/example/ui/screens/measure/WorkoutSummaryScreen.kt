@@ -193,6 +193,7 @@ fun WorkoutSummaryScreen(
     remember(context) { ActiveWorkoutStore.current(context); com.repforge.app.WearLiveHealthStore.current(context) }
     val summaryFrame by ActiveWorkoutStore.snapshotFlow.collectAsState()
     val summaryLiveHealth by com.repforge.app.WearLiveHealthStore.liveHealthFlow.collectAsState()
+    val summaryExpectedNode by com.repforge.app.WearLiveHealthStore.expectedNode351.collectAsState()
     val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
         summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
     val summaryNow = java.time.Instant.now()
@@ -300,7 +301,7 @@ fun WorkoutSummaryScreen(
         }
 
         val energyProjection = com.repforge.app.StudioWorkoutSummaryPresentation.projection(
-            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth)
+            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth, summaryExpectedNode)
         val activeEnergy = energyProjection?.activeEnergy
         val totalEnergy = energyProjection?.totalEnergy
         val sessionEnergy = energyProjection?.energy?.takeIf { it.values.containsKey("workoutCalories") }

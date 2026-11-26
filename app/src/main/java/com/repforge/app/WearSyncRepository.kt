@@ -389,9 +389,7 @@ object WearSyncRepository {
 
                             // Attach watch Health Services summary if present
                             val healthSummary = command.optJSONObject("healthSummary")
-                            if (healthSummary != null) {
-                                historyObj.put("wear", healthSummary)
-                            }
+                            WearWorkoutEnergyEvidence.attach(historyObj,healthSummary,setOf(workoutId))
 
                             val feedback = command.optJSONObject("feedback")
                             if (feedback != null) historyObj.put("feedback", JSONObject(feedback.toString()).put("updatedAt", System.currentTimeMillis()))
@@ -495,9 +493,14 @@ object WearSyncRepository {
                         if (workoutId.isNotBlank() && summary != null) {
                             val existing = db.workoutHistoryDao().getWorkoutWithDetails(workoutId)
                             if (existing != null) {
-                                val raw = JSONObject(existing.workout.rawJson)
-                                raw.put("wear", summary)
-                                migrator.saveWorkoutJsonToRoom(raw)
+                                val saved = existing.workout
+                                val raw = LegacyWebViewMigrator.workoutJson(existing)
+                                val aliases = setOf(saved.id,saved.syncId,saved.workoutKey,workoutId).filter(String::isNotBlank).toSet()
+                                if (!raw.optBoolean("nativeHealthWindowStale") &&
+                                    WearWorkoutEnergyEvidence.accept(NativeSavedWearHealth.read(saved),summary,aliases)) {
+                                    raw.put("wear",JSONObject(summary.toString()))
+                                    migrator.saveWorkoutJsonToRoom(raw)
+                                }
                             }
                         }
                         withContext(Dispatchers.Main) {

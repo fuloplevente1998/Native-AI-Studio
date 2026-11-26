@@ -34,12 +34,13 @@ internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): Work
         val document = row.health240Json?.let { JSONObject(it) } ?: return null
         val data = NativeWorkoutHealthSource.snapshot(document, provider) ?: return null
         if (!NativeWorkoutHealth.matchesWindow(data, row)) return null
-        val values = NativeWorkoutHealth.metrics(data, false)
-        val active = values["activeCalories"]
-        val total = values["totalCalories"]
+        val result = NativeWorkoutHealthSummary.readProvider(row,provider)
+        val active = result.activeEnergy.values["activeCalories"]
+        val total = result.totalEnergy.values["totalCalories"]
         if (active == null && total == null) return null
         WorkoutDayEnergy(row.id, row.programName, Instant.parse(row.started), Instant.parse(row.finished),
-            active, total, data.optBoolean("partial"),
+            active, total, data.optBoolean("partial") || result.rejectedEvidence ||
+                (active != null && result.activeEnergy.incomplete) || (total != null && result.totalEnergy.incomplete),
             WorkoutEnergyCoverage.status(data,"activeCalories"), WorkoutEnergyCoverage.status(data,"totalCalories"))
     }.getOrNull()
 }
