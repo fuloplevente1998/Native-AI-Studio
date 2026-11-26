@@ -350,11 +350,7 @@ fun WorkoutSummaryScreen(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 energyRows.forEachIndexed { index, (label, metric) ->
                     val providers = metric.evidence.map { com.repforge.app.NativeWorkoutHealthSummary.label(it.provider) }.distinct().joinToString(", ")
-                    val uncertain = metric.incomplete || metric.evidence.any { row ->
-                        row.provider != com.repforge.app.NativeWorkoutHealthSummary.WEAR && metric.values.keys.any { key ->
-                            com.repforge.app.WorkoutEnergyCoverage.status(row.data,key) != com.repforge.app.WorkoutEnergyCoverage.Status.FULL_RAW
-                        }
-                    }
+                    val uncertain = metric.incomplete || metric.hasUnverifiedProviderCoverage
                     val value = metric.values.values.single()
                     Text("$label${if (index > 0) ": ${value.toInt()} kcal" else ""} · $providers" +
                         if (uncertain) tr(lang," · lefedettség hiányos vagy nem igazolt"," · incomplete or unverified coverage",

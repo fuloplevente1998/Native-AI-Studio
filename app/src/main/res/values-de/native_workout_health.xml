@@ -6,6 +6,7 @@
     <string name="journal_health_sources">Datenquellen</string>
     <string name="journal_health_missing">Für dieses Training ist noch keine Health-Connect-Abfrage gespeichert.</string>
     <string name="journal_health_stale">Die gespeicherten Health-Connect-Daten gehören zu einem anderen Zeitraum. Aktualisiere sie für das aktuelle Training.</string>
+    <string name="journal_health_no_update">Die Aktualisierung lieferte keine neuen Messdaten zum Speichern.</string>
     <string name="journal_health_empty">Für diesen Zeitraum sind keine Messdaten freigegeben.</string>
     <string name="journal_health_partial">Messung oder verfügbare Berechtigungen können zu unvollständigen Daten führen.</string>
     <string name="journal_health_prorated">Die dem Training zugeordnete Energie wird teilweise zeitanteilig berechnet.</string>

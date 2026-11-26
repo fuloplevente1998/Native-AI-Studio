@@ -94,11 +94,12 @@ internal object WorkoutEnergyCoverage {
         return runCatching { Status.valueOf(field.getString("status")) }.getOrDefault(Status.UNKNOWN)
     }
 
-    fun rank(data: JSONObject, key: String): Int = when(status(data,key)) {
-        Status.FULL_RAW -> 2
-        Status.UNKNOWN -> 1
-        else -> 0
-    }
+    // A union of accessible raw intervals does not establish the SDK aggregate's contributors.
+    fun aggregateStatus(data: JSONObject, key: String): Status =
+        status(data, key).let { if (it == Status.FULL_RAW) Status.UNKNOWN else it }
+
+    fun rank(data: JSONObject, key: String): Int =
+        if (aggregateStatus(data, key) == Status.UNKNOWN) 1 else 0
 
     fun knownMillis(data: JSONObject, key: String): Long? =
         data.optJSONObject("energyCoverage")?.optJSONObject(key)?.let {

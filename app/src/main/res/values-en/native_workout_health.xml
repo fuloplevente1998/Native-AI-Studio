@@ -6,6 +6,7 @@
     <string name="journal_health_sources">Data sources</string>
     <string name="journal_health_missing">No Health Connect query is saved for this workout yet.</string>
     <string name="journal_health_stale">Saved Health Connect data belongs to a different time window. Refresh it for the current workout.</string>
+    <string name="journal_health_no_update">The refresh returned no new measurement data to save.</string>
     <string name="journal_health_empty">No measurement data is shared for this time window.</string>
     <string name="journal_health_partial">Measurements or available permissions may make the data incomplete.</string>
     <string name="journal_health_prorated">Energy matched to the workout is partly prorated.</string>

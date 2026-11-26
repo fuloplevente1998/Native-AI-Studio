@@ -41,7 +41,7 @@ internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): Work
         WorkoutDayEnergy(row.id, row.programName, Instant.parse(row.started), Instant.parse(row.finished),
             active, total, data.optBoolean("partial") || result.rejectedEvidence ||
                 (active != null && result.activeEnergy.incomplete) || (total != null && result.totalEnergy.incomplete),
-            WorkoutEnergyCoverage.status(data,"activeCalories"), WorkoutEnergyCoverage.status(data,"totalCalories"))
+            WorkoutEnergyCoverage.aggregateStatus(data,"activeCalories"), WorkoutEnergyCoverage.aggregateStatus(data,"totalCalories"))
     }.getOrNull()
 }
 

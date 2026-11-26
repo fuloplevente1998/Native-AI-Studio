@@ -40,7 +40,7 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
     }
 
     internal suspend fun attach(request: Request, response: JSONObject, provider: String = HealthJournalStore.HC,
-        requirePublication: () -> Unit = {}) = NativeDataReplacement.mutate(context) {
+        requirePublication: () -> Unit = {}): Boolean = NativeDataReplacement.mutate(context) {
         requirePublication()
         currentCoroutineContext().ensureActive()
         request.ticket.requireCurrent(context)
@@ -61,7 +61,10 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
                 .put("syncedAt", Instant.now().toString())
             check(matchesWindow(health, current)) { "Provider returned different active workout intervals" }
             requirePublication()
-            val merged = NativeWorkoutHealthSource.attach(current.health240Json?.let { JSONObject(it) }, provider, health)
+            val document = current.health240Json?.let { JSONObject(it) }
+            val prior = NativeWorkoutHealthSource.snapshot(document, provider)?.takeIf { matchesWindow(it, current) }
+            if (!WorkoutHealthAutoPolicy.accept(prior, health)) return@withTransaction false
+            val merged = NativeWorkoutHealthSource.attach(document, provider, health)
             val raw = LegacyWebViewMigrator.workoutJson(latest).put("health240", merged)
             // All other fields come from the latest row, including edits made while the SDK was reading.
             // Original Wear telemetry/window markers stay separate; an HC refresh does not rewrite them.
@@ -69,11 +72,12 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             check(db.workoutHistoryDao().getWorkoutWithDetailsById(current.id)?.workout?.health240Json == merged.toString()) {
                 "Workout Health data was not stored"
             }
+            true
         }
     }
 
     suspend fun refresh(activity: Activity, expected: WorkoutHistoryEntity, provider: String = HealthJournalStore.HC,
-        automatic: Boolean = false, requireAutoGuard: () -> Unit = {}): Result<Unit> = withContext(Dispatchers.Main.immediate) {
+        automatic: Boolean = false, requireAutoGuard: () -> Unit = {}): Result<Boolean> = withContext(Dispatchers.Main.immediate) {
         val owner = activity as? LifecycleOwner
             ?: return@withContext Result.failure(IllegalStateException("Foreground lifecycle required"))
         val foreground = AtomicBoolean(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
@@ -109,16 +113,9 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
                 },
                 samsung = { window -> guard(); SamsungHealthRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard) })
             guard()
-            if (automatic) {
-                val prior = NativeWorkoutHealthSource.snapshot(request.expected.health240Json?.let { JSONObject(it) }, provider)
-                    ?.takeIf { matchesWindow(it, request.expected) }
-                if (!WorkoutHealthAutoPolicy.accept(prior, response)) return@withContext Result.success(Unit)
-                com.repforge.app.ui.health.NativeHealthForegroundAdmission.requireMainAdmission(context)
-            }
-            withContext(Dispatchers.IO) { attach(request, response, provider) {
-                if (automatic) guard()
-            } }
-            Result.success(Unit)
+            if (automatic) com.repforge.app.ui.health.NativeHealthForegroundAdmission.requireMainAdmission(context)
+            val stored = withContext(Dispatchers.IO) { attach(request, response, provider, requirePublication = guard) }
+            Result.success(stored)
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { Result.failure(failure) }
         finally { owner.lifecycle.removeObserver(observer) }

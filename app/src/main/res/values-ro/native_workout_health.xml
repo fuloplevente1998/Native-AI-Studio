@@ -6,6 +6,7 @@
     <string name="journal_health_sources">Surse de date</string>
     <string name="journal_health_missing">Nu există încă o interogare Health Connect salvată pentru acest antrenament.</string>
     <string name="journal_health_stale">Datele Health Connect salvate aparțin altui interval. Actualizează-le pentru antrenamentul curent.</string>
+    <string name="journal_health_no_update">Actualizarea nu a furnizat date noi de măsurare care să poată fi salvate.</string>
     <string name="journal_health_empty">Nu există date de măsurare partajate pentru acest interval.</string>
     <string name="journal_health_partial">Măsurătorile sau permisiunile disponibile pot duce la date incomplete.</string>
     <string name="journal_health_prorated">Energia asociată antrenamentului este parțial calculată proporțional cu timpul.</string>

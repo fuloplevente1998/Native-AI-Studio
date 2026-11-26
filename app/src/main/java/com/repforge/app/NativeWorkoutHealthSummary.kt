@@ -14,7 +14,9 @@ internal object NativeWorkoutHealthSummary {
         val milliseconds: Long get() = windows.sumOf { Duration.between(it.start, it.end).toMillis() }
     }
     data class Metric(val values: Map<String, Double>, val evidence: List<Evidence>,
-        val incomplete: Boolean, val overlapExcluded: Boolean)
+        val incomplete: Boolean, val overlapExcluded: Boolean) {
+        val hasUnverifiedProviderCoverage: Boolean get() = evidence.any { it.provider != WEAR }
+    }
     data class Result(val heart: Metric, val energy: Metric, val rejectedEvidence: Boolean,
         val relationships: List<Relationship>, val activeEnergy: Metric, val totalEnergy: Metric)
     data class Relationship(val first: String, val second: String, val confirmedMirror: Boolean)

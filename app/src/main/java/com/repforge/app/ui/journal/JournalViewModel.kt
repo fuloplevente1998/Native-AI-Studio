@@ -56,7 +56,8 @@ data class JournalUiState(
     val deleting: Boolean = false, val operationFailed: Boolean = false,
     val deletedWorkoutId: String? = null,
     val healthRefreshing: Boolean = false, val healthError: Int? = null,
-    val healthProvider: String = com.repforge.app.HealthJournalStore.HC, val healthStatus: String? = null
+    val healthProvider: String = com.repforge.app.HealthJournalStore.HC, val healthStatus: String? = null,
+    val healthStatusTextId: Int? = null
 )
 
 internal data class JournalEditState(val opened: NativeJournalEditor.Opened,
@@ -180,14 +181,14 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private fun cancelHealthRefresh() {
         healthRevision++
         healthJob?.cancel()
-        _uiState.update { it.copy(healthRefreshing = false, healthError = null) }
+        _uiState.update { it.copy(healthRefreshing = false, healthError = null, healthStatus = null, healthStatusTextId = null) }
     }
     fun requestSamsungWorkoutPermission(activity: android.app.Activity) {
         val state = _uiState.value
         if (state.healthProvider != com.repforge.app.HealthJournalStore.SAMSUNG || state.healthRefreshing) return
         val id = state.selectedWorkoutId ?: return
         val revision = ++healthRevision
-        _uiState.update { it.copy(healthRefreshing = true, healthStatus = null) }
+        _uiState.update { it.copy(healthRefreshing = true, healthStatus = null, healthStatusTextId = null) }
         healthJob = viewModelScope.launch {
             val result = com.repforge.app.SamsungHealthRepository.requestReadPermissions(activity)
             if (revision != healthRevision || _uiState.value.selectedWorkoutId != id ||
@@ -213,7 +214,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         if (activity == null) { _uiState.update { it.copy(healthError = R.string.journal_health_unavailable) }; return }
         val revision = ++healthRevision
         val provider = _uiState.value.healthProvider
-        _uiState.update { it.copy(healthRefreshing = true, healthError = null, healthStatus = null) }
+        _uiState.update { it.copy(healthRefreshing = true, healthError = null, healthStatus = null, healthStatusTextId = null) }
         healthJob = viewModelScope.launch {
             val result = NativeWorkoutHealth(context, database).refresh(activity, detail.workout, provider)
             if (revision == healthRevision && _uiState.value.selectedWorkoutId == detail.workout.id) {
@@ -225,12 +226,16 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 _uiState.update { it.copy(healthRefreshing = false, healthError = error,
-                    healthStatus = if (result.isSuccess) "${com.repforge.app.NativeWorkoutHealthSource.label(provider)}: lekérdezés befejezve"
-                        else result.exceptionOrNull()?.let { failure ->
+                    healthStatusTextId = R.string.journal_health_no_update.takeIf { result.getOrNull() == false },
+                    healthStatus = when (result.getOrNull()) {
+                        true -> "${com.repforge.app.NativeWorkoutHealthSource.label(provider)}: lekérdezés befejezve"
+                        false -> null
+                        null -> result.exceptionOrNull()?.let { failure ->
                             if (provider == com.repforge.app.HealthJournalStore.SAMSUNG)
                                 "Samsung Health: ${com.repforge.app.SamsungHealthRepository.errorCode(failure)} • ${failure.message.orEmpty().take(180)}"
                             else failure.message?.take(180)
-                        }) }
+                        }
+                    }) }
             }
         }
     }
