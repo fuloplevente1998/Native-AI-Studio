@@ -128,7 +128,11 @@ internal object StudioWorkoutSummaryPresentation {
                     wearId in listOf(frame.optString("id"), frame.optString("syncId"), frame.optString("workoutKey")) }
             }
             // A pulse-only or rejected live packet must not hide a saved measured energy value.
-            val wear = listOfNotNull(liveWear, savedWear).firstOrNull {
+            val admittedLive = liveWear?.takeIf {
+                !it.optBoolean("livePreview2815") ||
+                    WearWorkoutEnergyEvidence.accept(savedWear,it,setOf(id,frame.optString("id"),frame.optString("syncId"),frame.optString("workoutKey")).filter(String::isNotBlank).toSet())
+            }
+            val wear = listOfNotNull(admittedLive, savedWear).firstOrNull {
                 NativeWorkoutHealthSummary.project(projection, it, null).energy.values.isNotEmpty()
             }
             val document = fresh?.let { JSONObject(it.documentJson) } ?: frame.optJSONObject("health240")

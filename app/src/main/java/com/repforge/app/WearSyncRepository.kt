@@ -501,6 +501,22 @@ object WearSyncRepository {
                                     raw.put("wear",JSONObject(summary.toString()))
                                     migrator.saveWorkoutJsonToRoom(raw)
                                 }
+                            } else {
+                                // A summary received before phone save must not be acknowledged and
+                                // discarded. The exact active draft owns this measured metadata.
+                                withContext(Dispatchers.Main.immediate) {
+                                    val current = ActiveWorkoutStore.current(appContext)
+                                    if (current != null && current.optBoolean("active") &&
+                                        current.optString("workoutId") == workoutId &&
+                                        !current.optBoolean("finalizationPending") &&
+                                        !current.optBoolean("discardPending") &&
+                                        !current.optBoolean("nativeHealthWindowStale") &&
+                                        !com.repforge.shared.WorkoutOwnership193.pending(current)) {
+                                        val next = JSONObject(current.toString())
+                                        if (WearWorkoutEnergyEvidence.attach(next,summary,setOf(workoutId)))
+                                            ActiveWorkoutStore.saveOwned(appContext,next)
+                                    }
+                                }
                             }
                         }
                         withContext(Dispatchers.Main) {

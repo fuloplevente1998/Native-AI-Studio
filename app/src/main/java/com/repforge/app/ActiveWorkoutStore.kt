@@ -68,6 +68,7 @@ internal object ActiveWorkoutStore {
             )
             if (mergedLocalSeq > 0L) snapshot.put("localSequence", mergedLocalSeq)
             if (mergedWatchSeq > 0L) snapshot.put("watchSequence", mergedWatchSeq)
+            WearWorkoutEnergyEvidence.preserveDraft(previous,snapshot)
         }
         PhoneGpsRoute193.captureOrigin(context, snapshot)
         snapshot.put("schema", snapshot.optInt("schema", 1))

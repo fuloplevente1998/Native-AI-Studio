@@ -78,17 +78,17 @@ class NativeHealthJournalRegressionTest {
     @Test fun todayAndJournalEnergyFiltersReadSamePersistedProviderRowsWithoutUsingDailyTotals() = withStore { store ->
         val active = NativeDetailedHealthMetrics.recordType("activeCalories")
         val total = NativeDetailedHealthMetrics.recordType("totalCalories")
-        store.healthDay(day.toString(),JSONObject().put("activeCalories",300).put("totalCalories",1800),store.generation())
+        store.healthDay(day.toString(),JSONObject().put("activeCalories",250).put("totalCalories",1500),store.generation())
         store.importRecords(JSONArray()
-            .put(record("active",type = active,data = JSONObject().put("value",10.32)))
-            .put(record("total",type = total,data = JSONObject().put("value",48.3)))
+            .put(record("active",type = active,data = JSONObject().put("value",12.5)))
+            .put(record("total",type = total,data = JSONObject().put("value",55.5)))
             .put(record("other-provider",samsung,type = active))
             .put(record("other-day",date = day.minusDays(1),type = active)),store.generation())
         val today = NativeHealthJournal.load(store,hc,"",HealthJournalRange(day,day))
         val journal = NativeHealthJournal.load(store,hc,"",HealthJournalRange(day.minusDays(6),day))
         assertEquals(NativeHealthJournal.day(today,hc,"",day).toString(),NativeHealthJournal.day(journal,hc,"",day).toString())
         val reader = NativeHealthRecords(store)
-        for ((type,id,kcal) in listOf(Triple(active,"active",10.32),Triple(total,"total",48.3))) {
+        for ((type,id,kcal) in listOf(Triple(active,"active",12.5),Triple(total,"total",55.5))) {
             val first = reader.load(HealthRecordQuery(day,hc,type = type,generation = today.getLong("generation")))
             val second = reader.load(HealthRecordQuery(day,hc,type = type,generation = journal.getLong("generation")))
             assertEquals(first.rows,second.rows)

@@ -7,3 +7,5 @@
 - #801 e408132e 1303/0/0/0 + R8. Második passz: Samsung direct empty/error/grant metadata, HC34 workout raw read-only, finish typed projection + forrás/coverage, forráskártya és retry coverage. [skip ci], további audit és egységes CI később; nincs main/build.
 
 - Harmadik passz: `WearWorkoutEnergyEvidence.kt` current receipt guard, phone finalization provisional capture, monotonic durable late summary, rövid aktív órás duration rangsor; `readProvider` közös napi edzésenergia projekció. Wear 3 + Room és SQLite fixture, teljes közös CI ellenőrizendő. Fizikai mérés nyitott.
+
+- Záró passz: durable Wear summary aktív draftban + azonos workout/generation carry-forward, modern live vs saved revision; tényleges command ingress/projection fixture. Kódolási csomag közös CI-re kész; eszközös ellenőrzés nyitott. Main változatlan.

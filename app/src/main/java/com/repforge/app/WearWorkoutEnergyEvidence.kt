@@ -39,7 +39,7 @@ internal object WearWorkoutEnergyEvidence {
 
     fun accept(previous: JSONObject?, next: JSONObject, aliases: Set<String>): Boolean {
         val id = next.optString("workoutId")
-        if (id.isBlank() || id !in aliases) return false
+        if (id.isBlank() || id !in aliases || (next.has("schema") && next.optInt("schema") != 1)) return false
         if (previous == null || previous.optString("workoutId").let { it.isNotBlank() && it !in aliases }) return true
         val oldWatch = previous.optString("watchId")
         val newWatch = next.optString("watchId")
@@ -56,8 +56,23 @@ internal object WearWorkoutEnergyEvidence {
         return true
     }
 
-    fun attach(frame: JSONObject, next: JSONObject?, aliases: Set<String>) {
-        if (next != null && accept(NativeSavedWearHealth.fromRaw(frame),next,aliases))
-            frame.put("wear",JSONObject(next.toString()))
+    fun attach(frame: JSONObject, next: JSONObject?, aliases: Set<String>): Boolean {
+        if (next == null || !accept(NativeSavedWearHealth.fromRaw(frame),next,aliases)) return false
+        frame.put("wear",JSONObject(next.toString()))
+        return true
+    }
+
+    /** Engine projections do not own this metadata. Keep it across same-generation draft
+     * updates; never carry it across a different workout or a stale edited window. */
+    fun preserveDraft(previous: JSONObject, next: JSONObject) {
+        val id = next.optString("workoutId")
+        if (id.isBlank() || id != previous.optString("workoutId") ||
+            next.optLong("generation") != previous.optLong("generation") ||
+            next.optBoolean("nativeHealthWindowStale") || previous.optBoolean("nativeHealthWindowStale")) return
+        val old = NativeSavedWearHealth.fromRaw(previous) ?: return
+        if (old.optString("workoutId") != id) return
+        val incoming = NativeSavedWearHealth.fromRaw(next)
+        if (incoming == null || !accept(old,incoming,setOf(id)))
+            next.put("wear",JSONObject(old.toString()))
     }
 }

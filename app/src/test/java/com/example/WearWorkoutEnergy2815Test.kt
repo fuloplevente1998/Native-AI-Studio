@@ -49,6 +49,16 @@ class WearWorkoutEnergy2815Test {
         assertTrue(WearWorkoutEnergyEvidence.accept(old,data(5,250.0),setOf("w")))
         assertTrue(WearWorkoutEnergyEvidence.accept(data().put("livePreview2815",true),data(),setOf("w")))
         assertFalse(WearWorkoutEnergyEvidence.accept(old,data(),setOf("w")))
+        val previous = frame().put("generation",1).put("wear",old)
+        val projected = frame().put("generation",1)
+        WearWorkoutEnergyEvidence.preserveDraft(previous,projected)
+        assertEquals(200.0,projected.getJSONObject("wear").getDouble("totalCalories"),0.0)
+        val other = frame().put("generation",2)
+        WearWorkoutEnergyEvidence.preserveDraft(previous,other)
+        assertFalse(other.has("wear"))
+        val newer = frame().put("generation",1).put("wear",data(5,250.0))
+        WearWorkoutEnergyEvidence.preserveDraft(previous,newer)
+        assertEquals(250.0,newer.getJSONObject("wear").getDouble("totalCalories"),0.0)
     }
 
     @Test fun shorterWatchDurationDoesNotHideBetterEnergyAndNeverAddsDifferentDefinitions() {
