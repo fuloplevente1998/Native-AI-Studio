@@ -13,6 +13,7 @@ import com.repforge.app.data.store.TrainPilotUserSettings
 import com.repforge.app.ui.coach.*
 import com.repforge.app.ui.workout.NativeTrainingModeProposal
 import com.repforge.app.ActiveWorkoutStore
+import com.repforge.app.HealthJournalStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -89,13 +90,41 @@ class WorkoutCoachAdviceRegressionTest {
     private suspend fun read(frame: JSONObject = frame(), settings: TrainPilotUserSettings = prefs) =
         NativeCoachAdviceRepository(db).loadActiveExercise(frame, "coach-press", settings, readiness, now)
 
+    @Test fun coachLoadsProgramAdviceWithALegacySamsungPreference() {
+        val journal = HealthJournalStore.get(context)
+        val oldProvider = native { journal.preferences().optString("provider", HealthJournalStore.HC) }
+        native {
+            journal.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG))
+            TrainPilotSettingsStore(context).setActiveProgramId("coach-program")
+        }
+        val owner = ViewModelStore()
+        val model = CoachViewModel(context as Application, db)
+        owner.put("coach", model)
+        try {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
+            while (model.state.value.loading) {
+                shadowOf(Looper.getMainLooper()).idle()
+                check(System.nanoTime() < deadline) { "Coach load timed out" }
+                Thread.sleep(5)
+            }
+            val state = model.state.value
+            assertFalse(state.error)
+            assertEquals(HealthJournalStore.HC, state.provider)
+            assertEquals("coach-program", state.target?.programId)
+            assertTrue(state.exercises.isNotEmpty())
+            assertEquals(HealthJournalStore.SAMSUNG, native { journal.preferences().getString("provider") })
+        } finally {
+            owner.clear()
+            native { journal.setPreferences(JSONObject().put("provider", oldProvider)) }
+        }
+    }
+
     @Test fun repeatedCoachReloadsKeepPriorSnapshotAndCoalesceWithoutCancellingReads() {
         val reads = java.util.concurrent.atomic.AtomicInteger()
         val cancellations = java.util.concurrent.atomic.AtomicInteger()
         val gates = List(3) { kotlinx.coroutines.CompletableDeferred<Unit>() }
         val owner = ViewModelStore()
-        val provider = com.repforge.app.HealthJournalStore.get(context).preferences()
-            .optString("provider", com.repforge.app.HealthJournalStore.HC)
+        val provider = HealthJournalStore.HC
         val model = CoachViewModel(context as Application, db) {
             val index = reads.getAndIncrement()
             try { gates[index].await() }
@@ -270,8 +299,13 @@ class WorkoutCoachAdviceRegressionTest {
     }
 
     @Test fun observerLoadsAdviceWithoutExplicitModeAndRefreshesSameCountHistoryEdit() {
-        native { TrainPilotSettingsStore(context).importPortableSettings(JSONObject()
-            .put("settings", JSONObject().put("trainingModes197", JSONObject.NULL))) }
+        val journal = HealthJournalStore.get(context)
+        val oldProvider = native { journal.preferences().optString("provider", HealthJournalStore.HC) }
+        native {
+            journal.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG))
+            TrainPilotSettingsStore(context).importPortableSettings(JSONObject()
+                .put("settings", JSONObject().put("trainingModes197", JSONObject.NULL)))
+        }
         ActiveWorkoutStore.saveOwned(context, frame())
         val owner = ViewModelStore()
         val model = WorkoutCoachAdviceViewModel(context as Application, db)
@@ -304,6 +338,7 @@ class WorkoutCoachAdviceRegressionTest {
         } finally {
             owner.clear()
             ActiveWorkoutStore.clear(context)
+            native { journal.setPreferences(JSONObject().put("provider", oldProvider)) }
             shadowOf(Looper.getMainLooper()).idle()
         }
     }

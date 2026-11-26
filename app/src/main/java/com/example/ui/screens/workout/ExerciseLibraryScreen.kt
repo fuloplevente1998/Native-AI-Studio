@@ -139,7 +139,7 @@ fun ExerciseLibraryScreen(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
             .verticalScroll(rememberScrollState())
             .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp, bottom = 24.dp)
     ) {

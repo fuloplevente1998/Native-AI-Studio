@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -162,6 +163,12 @@ internal class GlassSceneState {
     // UI-thread cache shared by the visible and recorded scene; no bitmap or view references.
     val paintCache = GlassScenePaintCache()
     var seconds by mutableFloatStateOf(0f)
+    private var openSheets by mutableIntStateOf(0)
+    val coveredBySheet: Boolean get() = openSheets > 0
+
+    fun sheetOpened() { openSheets++ }
+    fun sheetClosed() { openSheets-- }
+
     private var currentImage by mutableStateOf<Bitmap?>(null)
     var image: Bitmap?
         get() = currentImage
@@ -217,7 +224,9 @@ internal fun GlassSceneHost(imagePath: String, loadImage: suspend (String) -> Bi
     val mode = GlassScene.mode(palette.isLiquidGlass, LocalGlassOpticsEnabled.current,
         rememberGlassMotionEnabled(), powerSave)
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val ticking = GlassScene.ticks(mode, lifecycle.isAtLeast(Lifecycle.State.STARTED), hasPhoto = state.image != null)
+    val ticking = GlassScene.ticks(
+        mode, lifecycle.isAtLeast(Lifecycle.State.STARTED) && !state.coveredBySheet, hasPhoto = state.image != null
+    )
     val wantImage = GlassScene.usesImage(palette.isLiquidGlass, imagePath)
     LaunchedEffect(wantImage, imagePath) {
         state.image = if (!wantImage) null else withContext(Dispatchers.IO) { runCatching { loadImage(imagePath) }.getOrNull() }

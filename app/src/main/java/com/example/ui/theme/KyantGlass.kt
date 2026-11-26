@@ -199,7 +199,7 @@ internal fun rememberKyantHeaderScene(scene: LayerBackdrop, content: LayerBackdr
 }
 
 @Composable
-internal fun rememberKyantScene(backdrop: LayerBackdrop, samplesContent: Boolean = false): KyantScene {
+internal fun rememberKyantScene(backdrop: Backdrop, samplesContent: Boolean = false): KyantScene {
     val view = LocalView.current
     return remember(backdrop, view, samplesContent) { KyantScene(backdrop, view, samplesContent) }
 }

@@ -82,6 +82,7 @@ internal fun CoachDetailScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val nativeState by model.state.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(nativeState.variationSaved) { if (nativeState.variationSaved) onCoachProgramChanged() }
     val readiness = nativeState.readiness
     val hasScore = readiness?.score != null
@@ -261,6 +262,28 @@ internal fun CoachDetailScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        if (!nativeState.initialLoading && (!hasScore || nativeState.error || nativeState.refreshFailed || nativeState.refreshing)) {
+            item {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (nativeState.refreshFailed) Text(
+                        tr(uiState.language, "Az egészségadatok frissítése sikertelen.", "Health data refresh failed.",
+                            "Gesundheitsdaten konnten nicht aktualisiert werden.", "Actualizarea datelor de sănătate a eșuat."),
+                        color = palette.danger, modifier = Modifier.testTag("studio_coach_refresh_failed")
+                    )
+                    com.repforge.app.ui.theme.TrainPilotOutlinedButton(
+                        onClick = { model.refreshHealth(context as? android.app.Activity) },
+                        enabled = !nativeState.loading && !nativeState.refreshing,
+                        modifier = Modifier.fillMaxWidth().testTag("studio_coach_refresh_health")
+                    ) {
+                        Text(if (nativeState.refreshing)
+                            tr(uiState.language, "Frissítés…", "Refreshing…", "Wird aktualisiert…", "Se actualizează…")
+                        else tr(uiState.language, "Egészségadatok frissítése", "Refresh health data",
+                            "Gesundheitsdaten aktualisieren", "Actualizează datele de sănătate"))
                     }
                 }
             }
