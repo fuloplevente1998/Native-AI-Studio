@@ -22,8 +22,14 @@ Fájlok: `app/src/main/java/com/repforge/app/NativeWorkoutHealthSummary.kt` (`re
 ## C) Egészségnapló / Mai állapot: Health Connect egyetlen forrás
 Ellenőrzés és minimális igazítás: a napi adatok forrása a Health Connect (a Samsung csak a kapcsolóval, ahogy eddig). Ne módosítsd, ha már így működik; csak győződj meg róla, hogy az A pont nem rontja el.
 
+## D) Átvétel a #414-ből (fix/journal-health-glass-followup, head 14286ef1; a #414-et NEM merge-eljük)
+Vedd át az ág tartalmából CSAK ezt a két részt, a cél-ágadba (git diff origin/main...origin/fix/journal-health-glass-followup, fájlonként):
+1. **Helyi idő:** `app/src/main/java/com/example/model/StudioWorkoutDates.kt` + `StudioWorkoutDatesTest.kt` (UTC → helyi idő, téli/nyári, éjfél, offset regresszió) és a hozzá tartozó kijelzés `LogWorkoutDetailScreen.kt` / `StudioWorkoutHealth.kt` (mérési időablakok helyi kijelzése).
+2. **Statikus üvegfesték** a kártyákon/füleken: `overlayRoleFill(..., GlassMaterialRole.Panel)` az „Edzés pulzus és energia" kártyán és a Forrás fül tartalmán; nincs külön homályréteg.
+NE vedd át: a Health Connect-elsőbbséget és a `readJournal/projectJournal` HC-prioritás logikát a TrainPilot edzés ágon (az A pont váltja ki: Wear-only), és NE cseréld vissza a forrás-címkét: az importált (külső) edzésnél maradjon a #411-es `NativeWorkoutHealthSummary.labels(...)` („Samsung Health – Health Connecten át"). A #414-es kapcsoló-kapuzás a közvetlen Samsung/Wear UI-ra (kikapcsolva nem jelenik meg a felületen) maradhat, ha nem ütközik az A ponttal; a nyers adat soha nem törlődik. Tesztek: a #414 tesztjei közül azok jöjjenek át, amelyek a helyi időt és a kapcsoló-kapuzást védik; a HC-elsőbbség tesztet (48,3 vs 6,4) cseréld az A pont új szabályának tesztjére.
+
 ## Tesztek
 Tiszta logikai: TrainPilot edzés + Wear mérés → látszik; + csak HC/Samsung evidence → „Nincs óramérés", HC adat tárolva marad; importált edzés → saját forrás; részleges Wear → jelzéssel látszik; tipp megjelenési szabály (van/nincs Wear mérés, importált, „Később").
 
 ## Kész, ha
-A–C kész, CI zöld (nyers XML számok), verzió változatlan (281300/281302), a merge-et és a buildet a felhasználó munkamenete végzi.
+A–D kész, CI zöld (nyers XML számok), verzió változatlan (281300/281302), a merge-et és a buildet a felhasználó munkamenete végzi.
