@@ -30,7 +30,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassStateTile
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.overlayRoleRim
+import com.example.ui.theme.programDaySelectionAccent
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import java.time.LocalDate
@@ -64,6 +69,9 @@ fun TrainPilotRangeCalendarSheet(
     onDismiss: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val primaryActionFill = if (palette.isLiquidGlass)
+        palette.glassStateTile(programDaySelectionAccent, palette.primary, strong = true) else palette.primary
+    val primaryActionText = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary
     val rangeMin = if (start != null && end != null) minOf(start, end) else start
     val rangeMax = if (start != null && end != null) maxOf(start, end) else start
     TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "${tagPrefix}_calendar_sheet") {
@@ -96,17 +104,20 @@ fun TrainPilotRangeCalendarSheet(
             // Emphasized actions: Today = filled primary, Clear = red tonal (2772).
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val shape = RoundedCornerShape(12.dp)
-                Surface(shape = shape, color = palette.primary, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    .trainPilotClickable(shape) { onToday() }.testTag("${tagPrefix}_jump_today_button")) {
+                Surface(shape = shape, color = primaryActionFill, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    .overlayRoleRim(palette, shape, GlassMaterialRole.Selection)
+                    .trainPilotClickable(shape, stretchOnDrag = true) { onToday() }.testTag("${tagPrefix}_jump_today_button")) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 12.dp), horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Today, null, tint = palette.onPrimary, modifier = Modifier.size(18.dp))
-                        Text(" $todayLabel", color = palette.onPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                        Icon(Icons.Default.Today, null, tint = primaryActionText, modifier = Modifier.size(18.dp))
+                        Text(" $todayLabel", color = primaryActionText, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
                     }
                 }
-                Surface(shape = shape, color = palette.danger.copy(alpha = 0.12f), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                Surface(shape = shape, color = palette.glassStateTile(palette.danger, palette.danger.copy(alpha = 0.12f)),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    .overlayRoleRim(palette, shape, GlassMaterialRole.Button)
                     .trainPilotBorder(1.5.dp, palette.danger.copy(alpha = 0.45f), shape)
-                    .trainPilotClickable(shape) { onClear() }.testTag("${tagPrefix}_clear_filter_button")) {
+                    .trainPilotClickable(shape, stretchOnDrag = true) { onClear() }.testTag("${tagPrefix}_clear_filter_button")) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 12.dp), horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Close, null, tint = palette.danger, modifier = Modifier.size(18.dp))
@@ -135,15 +146,17 @@ fun TrainPilotRangeCalendarSheet(
                                 val inRange = rangeMin != null && rangeMax != null && date in rangeMin..rangeMax
                                 val isToday = date == today
                                 val shape = RoundedCornerShape(10.dp)
+                                val marker = if (isEdge) primaryActionText else palette.primary
                                 Surface(
                                     shape = shape,
                                     color = when {
-                                        isEdge -> palette.primary
-                                        inRange -> palette.primary.copy(alpha = 0.28f)
-                                        else -> palette.surfaceElevated
+                                        isEdge -> primaryActionFill
+                                        inRange -> palette.glassStateTile(programDaySelectionAccent, palette.primary.copy(alpha = 0.28f))
+                                        else -> palette.overlayRoleFill(palette.surfaceElevated, GlassMaterialRole.Tile)
                                     },
                                     modifier = Modifier.weight(1f).height(44.dp)
                                         .testTag("${tagPrefix}_calendar_day_$dayNum")
+                                        .then(if (isEdge) Modifier.overlayRoleRim(palette, shape, GlassMaterialRole.Selection) else Modifier)
                                         .trainPilotBorder(if (isToday || isEdge) 1.5.dp else 1.dp,
                                             if (isToday || isEdge) palette.primary else palette.cardBorder, shape)
                                         .trainPilotClickable(shape) { onDayClick(date) }
@@ -152,9 +165,8 @@ fun TrainPilotRangeCalendarSheet(
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text("$dayNum", style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = if (isEdge || inRange || isToday) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isEdge) palette.onPrimary else palette.textPrimary)
-                                            if (hasMark(date)) Box(Modifier.size(4.dp).clip(CircleShape)
-                                                .background(if (isEdge) palette.onPrimary else palette.primary))
+                                                color = if (isEdge) primaryActionText else palette.textPrimary)
+                                            if (hasMark(date)) Box(Modifier.size(4.dp).clip(CircleShape).background(marker))
                                         }
                                     }
                                 }
@@ -165,7 +177,7 @@ fun TrainPilotRangeCalendarSheet(
             }
             com.repforge.app.ui.theme.TrainPilotButton(
                 onClick = onDismiss,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = primaryActionFill, contentColor = primaryActionText),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("${tagPrefix}_calendar_done")
             ) { Text(doneLabel, fontWeight = FontWeight.Bold) }
         }
