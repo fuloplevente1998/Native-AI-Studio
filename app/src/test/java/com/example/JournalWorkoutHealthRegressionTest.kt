@@ -272,6 +272,8 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("130 bpm")
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
+        list.performScrollToNode(hasTestTag("journal_summary_energy_activeCalories_value"))
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertTextEquals("100 kcal")
         compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
         compose.onNodeWithTag("log_detail_open_watch_sync").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_2"))

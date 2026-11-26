@@ -212,6 +212,9 @@ interface WorkoutHistoryDao {
     @Query("SELECT * FROM workout_history WHERE originDevice IN ('phone','watch') AND finishedEpochMs BETWEEN :fromMs AND :toMs ORDER BY finishedEpochMs DESC, id LIMIT :limit")
     suspend fun recentNativeWorkoutsForHealth(fromMs: Long, toMs: Long, limit: Int): List<WorkoutHistoryEntity>
 
+    @Query("SELECT * FROM workout_history WHERE originDevice IN ('phone','watch') AND finishedEpochMs >= :fromMs AND finishedEpochMs < :toMs ORDER BY finishedEpochMs DESC, id LIMIT 50")
+    fun observeNativeWorkoutHealthDay(fromMs: Long, toMs: Long): Flow<List<WorkoutHistoryEntity>>
+
     @Query("""
         SELECT s.rowId AS setRowId, e.exerciseId,
           COALESCE(NULLIF(l.nameHu, ''), NULLIF(e.nameHu, ''), e.exerciseId) AS nameHu,

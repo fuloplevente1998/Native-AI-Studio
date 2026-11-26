@@ -52,6 +52,10 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
         catch (_: Exception) { error = true }
     }
     if (!visible) return
+    // Keep saved workout aggregates separate from raw provider sensor records and their pager.
+    if (cursors.size == 1 && source.isBlank() && type in setOf("", "ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord")) {
+        HealthWorkoutEnergyDay(day, provider, type, language, generation, refreshKey)
+    }
     val emptyFirstPage = cached?.rows?.isEmpty() == true && cursors.size == 1
     if (hideWhenEmpty && (emptyFirstPage || (cached == null && !error))) return
     if (title != null) Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

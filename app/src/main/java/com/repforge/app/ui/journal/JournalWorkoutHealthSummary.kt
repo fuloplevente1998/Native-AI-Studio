@@ -43,7 +43,7 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         val energy = listOf(result.activeEnergy, result.totalEnergy).filter { it.values.isNotEmpty() }
         val displayEnergy = if (energy.isEmpty()) listOf(result.energy) else energy
         val displayed = listOf("summary_heart" to result.heart) +
-            displayEnergy.mapIndexed { index, metric -> (if (index == 0) "summary_energy" else "summary_energy_total") to metric }
+            displayEnergy.map { metric -> "summary_energy" to metric }
         for ((tag, metric) in displayed) {
             // Sample counts remain part of the native aggregation and Source details,
             // but are technical provenance, not a headline workout measurement.
