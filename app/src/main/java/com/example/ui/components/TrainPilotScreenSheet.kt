@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.platform.testTag
 import com.example.ui.theme.LocalTrainPilotPalette
 
@@ -29,10 +30,13 @@ import com.example.ui.theme.LocalTrainPilotPalette
  * For inline rows and cards only; ModalBottomSheet already owns its bottom-up animation.
  * Normal system animator scale and accessibility motion settings are respected by Compose.
  */
-fun Modifier.trainPilotAnimatedExpansion(): Modifier =
-    this.animateContentSize(
+internal val LocalTrainPilotSheetMotion = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+fun Modifier.trainPilotAnimatedExpansion(): Modifier = composed {
+    if (LocalTrainPilotSheetMotion.current) Modifier else Modifier.animateContentSize(
         animationSpec = androidx.compose.animation.core.tween(durationMillis = 220)
     )
+}
 
 /** Expanding detail rows fade in and grow together instead of snapping into the layout. */
 @androidx.compose.runtime.Composable
@@ -41,6 +45,11 @@ fun TrainPilotAnimatedDisclosure(
     modifier: Modifier = Modifier,
     content: @androidx.compose.runtime.Composable () -> Unit
 ) {
+    // No intermediate heights (and therefore no animated anchor changes) inside sheets.
+    if (LocalTrainPilotSheetMotion.current) {
+        if (visible) androidx.compose.foundation.layout.Box(modifier) { content() }
+        return
+    }
     androidx.compose.animation.AnimatedVisibility(
         visible = visible,
         modifier = modifier,
@@ -79,7 +88,7 @@ fun TrainPilotScreenSheet(
     testTag: String,
     /** Explicit full-height editor/viewport opt-in; ordinary browsing sheets wrap content. */
     fillHeight: Boolean = false,
-    /** Paint the frozen window scene directly for short, frequently opened detail sheets. */
+    /** Compatibility flag: all glass sheets now use the frozen scene directly. */
     staticGlass: Boolean = false,
     content: @Composable () -> Unit
 ) {
