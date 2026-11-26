@@ -226,8 +226,8 @@ object SamsungHealthRepository {
             val permissionState = result.optJSONObject("permissions") ?: JSONObject()
             val deniedFields = mapOf(
                 "READ_STEPS" to listOf("steps"),
-                "READ_ACTIVE_CALORIES_BURNED" to listOf("activeCalories"),
-                "READ_TOTAL_CALORIES_BURNED" to listOf("totalCalories"),
+                "READ_ACTIVE_CALORIES_BURNED" to listOf("activeCalories", "activeCaloriesHourly"),
+                "READ_TOTAL_CALORIES_BURNED" to listOf("totalCalories", "totalCaloriesHourly"),
                 "READ_DISTANCE" to listOf("distanceMeters"),
                 "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries"),
                 "READ_SLEEP" to listOf("sleepSessions"),

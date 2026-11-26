@@ -19,3 +19,5 @@
 - Napló energia projection regresszió: tényleges Room fixture, HC 100 kcal, másik provider, megváltozott aktív ablak és külső edzés kizárva; meglévő UI tesztben mindkét energia assertion.
 
 - #796 head 973de52f zöld, 1296/0/0/0, R8. Utolsó célzott javítás: késői részleges energia befogadása csak meglévő top-level és per-window mezők megőrzésével; stale ablak újraolvasás, prepare interval guard, pontos HC hiány üzenet. Új CI ellenőrizendő; nincs merge/build.
+
+- #797 zöld (nyers XML ellenőrizendő). Régi 1.5.3 képernyős reprodukció: Samsung napi energia megvan, nyers rekord hiány. Grouped SDK activity summary active/total napi JSON, külön órás naplómegjelenítés, új `SamsungHourlyEnergy2814Test`; új CI és valós SDK/bucket/latency ellenőrzés szükséges.

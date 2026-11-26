@@ -262,7 +262,8 @@ internal fun StudioHealthMetricsBrowser(
                     }
                     StudioNativeEditorTheme {
                         HealthRecordDayDetails(date, provider, source, type, language, snapshot.getLong("generation"),
-                            "$revision:${snapshot.getLong("generation")}", expanded && recordsOpen)
+                            "$revision:${snapshot.getLong("generation")}", expanded && recordsOpen,
+                            dailySummary = raw)
                     }
                 }
             }
