@@ -5,11 +5,11 @@ import org.json.JSONObject
 
 /** Sequential provider reads, never provider selection or measurement aggregation. */
 internal object NativeHealthProviderBatch {
-    val providers = listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)
+    val providers = listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)
     enum class Status { SUCCESS, PARTIAL, UNAVAILABLE, FAILED }
     data class Outcome(val provider: String, val status: Status, val message: String = "", val retryable: Boolean = false, val changeTrackingUnavailable: Boolean = false)
     data class Report(val outcomes: List<Outcome>) {
-        val successful get() = outcomes.all { it.status == Status.SUCCESS }
+        val successful get() = outcomes.isNotEmpty() && outcomes.all { it.status == Status.SUCCESS }
         val failed get() = outcomes.none { it.status == Status.SUCCESS || it.status == Status.PARTIAL }
         val partial get() = !successful && !failed
         val retryable get() = outcomes.any { it.retryable }
@@ -31,9 +31,11 @@ internal object NativeHealthProviderBatch {
     }
 
     suspend fun run(available: (String) -> Boolean, guard: () -> Unit,
+        includeSamsung: Boolean = true,
         sync: suspend (String) -> Result<JSONObject>): Report {
         val results = mutableListOf<Outcome>()
         for (provider in providers) {
+            if (!includeSamsung && provider == HealthJournalStore.SAMSUNG) continue
             guard()
             if (!available(provider)) {
                 results.add(Outcome(provider, Status.UNAVAILABLE))

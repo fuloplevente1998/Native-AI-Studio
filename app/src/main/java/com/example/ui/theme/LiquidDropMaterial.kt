@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,18 +35,17 @@ internal fun liquidDropPaints(palette: TrainPilotPalette, role: GlassMaterialRol
  * The cheap material uses no backdrop and adds only the shared vector bevel. */
 @Composable
 internal fun Modifier.liquidDropMaterial(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
-    accent: Color? = null, live: Boolean = true, allowMeasurement: Boolean = false): Modifier {
+    accent: Color? = null, live: Boolean = true, allowMeasurement: Boolean = false,
+    pressSource: MutableInteractionSource? = null
+): Modifier {
     if (!palette.isLiquidGlass) return this
+    val fullOptics = LocalGlassOpticsEnabled.current
     val optical = liquidDropUsesLens(true, KyantGlass.supported, LocalGlassPowerSave.current,
-        LocalGlassOverlay.current, LocalGlassOpticsEnabled.current, LocalGlassChromeUnderlap.current,
+        LocalGlassOverlay.current, fullOptics, LocalGlassChromeUnderlap.current,
         allowMeasurement, live, role)
     if (optical) {
         val scene = LocalKyantScene.current.forThisWindow()
-        if (scene != null) {
-            val lens = kyantGlass(scene, palette, shape, role)
-            return if (accent == null) lens else lens.background(
-                GlassContrast.limit(accent, GLASS_TILE_LUMA).copy(alpha = .20f), shape)
-        }
+        if (scene != null) return kyantGlass(scene, palette, shape, role, accent, pressSource.takeIf { fullOptics })
     }
     return background(Brush.verticalGradient(liquidDropPaints(palette, role, accent)), shape)
         .trainPilotGlassRim(palette, shape, role)

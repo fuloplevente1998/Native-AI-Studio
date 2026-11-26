@@ -436,6 +436,7 @@ class UiUx219RegressionTest {
             watchName = "Galaxy Watch7 (ZW4J)",
             watchConnected = true,
             watchAppAvailable = true,
+            permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true),
             dailySteps = 4314,
             activeCaloriesKcal = 154,
             dailyHealthAvailableFields = setOf("steps", "activeCalories"),

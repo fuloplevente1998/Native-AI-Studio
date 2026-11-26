@@ -181,6 +181,11 @@ class Collector2786RegressionTest {
         launcher.performClick()
         val sheet = compose.onNodeWithTag("health_connect_sheet")
         sheet.assertExists()
+        compose.onNodeWithTag("health_open_watch_sync_card").assertDoesNotExist()
+        compose.runOnIdle {
+            state = state.copy(watchConnected = true, watchAppAvailable = true,
+                permissionAccess = state.permissionAccess.copy(trainPilotWearEnabled = true))
+        }
         compose.onNodeWithTag("health_open_watch_sync_card").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("health_sync_button").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("health_connect_close").performClick()

@@ -55,13 +55,14 @@ internal fun MainTodayStatusTile(
     titleTag: String = "today_tile_title"
 ) {
     val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(16.dp)
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.background.copy(alpha = 0.55f),
+        shape = shape,
+        color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
         modifier = modifier
-            .liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Tile, live = false)
-            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-            .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
+            .trainPilotGlassRim(palette, shape, GlassMaterialRole.Tile)
+            .trainPilotBorder(1.dp, palette.cardBorder, shape)
+            .trainPilotClickable(shape, onClick = onClick)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = if (compact) 5.dp else 6.dp),

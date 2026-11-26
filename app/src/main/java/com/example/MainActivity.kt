@@ -373,7 +373,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             }
         }
     ) {
-        if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
+        if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog(
+            uiState.showConnectedWatch, uiState.permissionSamsungHealthEnabled
+        ) { showLiveHealth = false }
 
         // 0. Fallback Exercise Video Modal Dialog (only when missing/invalid URL or external browser launch fails)
         uiState.videoModalExerciseTitle?.let { exTitle ->
@@ -948,7 +950,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
 
                     SubScreen.WATCH_AND_SYNC -> {
-                        androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.requestWatchDeviceInfo() }
+                        LaunchedEffect(uiState.trainPilotWearEnabled) {
+                            if (uiState.trainPilotWearEnabled) viewModel.requestWatchDeviceInfo()
+                        }
                         WatchAndSyncScreen(
                             uiState = uiState,
                             strings = strings,
@@ -1213,17 +1217,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     requestedJournalFocus = homeJournalFocus,
                                     onJournalFocusConsumed = { homeJournalFocus = null },
                                     onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
-                                    uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
-                                        lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
+                                    uiState = uiState.copy(primaryHealthSourceSamsung = false,
+                                        lastHealthSyncLabel = health.lastSyncByProvider[com.repforge.app.HealthJournalStore.HC] ?: "—", lastHealthReadLabel = health.lastReadAt,
                                         healthLastSyncByProvider = health.lastSyncByProvider,
                                         healthRefreshRevision = health.refreshRevision,
                                         healthAutoOnOpen = health.autoOnOpen,
                                         healthBackgroundOptedIn = health.hcBackground,
                                         healthBackgroundScheduled = health.hcBackgroundScheduled,
                                         samsungGrantedCount = health.samsungGrantedCount,
-                                        healthProviderStatus = (if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
-                                            if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
-                                        else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
+                                        healthProviderStatus = (if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
                                     strings = strings,
                                     onToggleHealthSection = { section ->
                                         val returnToLog = section == "connect" && uiState.expandedHealthConnect &&
@@ -1236,20 +1238,16 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
                                     onUpdateWeight = { id, kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr, editingId = id) },
                                     onWeightPhotosUpdated = viewModel::refreshPrivatePhotoCount,
-                                    onTogglePrimaryHealthSource = { nativeHealth.setProvider(
-                                        if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
-                                        else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },
+                                    onTogglePrimaryHealthSource = { requestPlatformPermission(if (uiState.permissionSamsungHealthEnabled) "samsung_off" else "samsung_on") },
                                     onTriggerHealthSync = { nativeHealth.syncAllHealth(activity) },
-                                    onReadHealthSource = { source -> nativeHealth.syncProviderHealth(activity, source) },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
                                     onDeleteWeightLog = { id -> viewModel.deleteBodyWeightLog(id) },
-                                    onSelectHealthSource = { samsung -> nativeHealth.setProvider(
-                                        if (samsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC, activity) },
+                                    onSelectHealthSource = { enabled -> requestPlatformPermission(if (enabled) "samsung_on" else "samsung_off") },
                                     onRequestHealthPermissions = {
                                         requestPlatformPermission(
-                                            com.example.ui.components.StudioHealthPermissionRouting.sourceManageAction(health.provider)
+                                            com.example.ui.components.StudioHealthPermissionRouting.sourceManageAction(com.repforge.app.HealthJournalStore.HC)
                                         )
                                     }
                                 )

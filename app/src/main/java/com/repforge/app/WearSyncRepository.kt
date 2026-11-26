@@ -1049,7 +1049,9 @@ object WearSyncRepository {
         withContext(Dispatchers.Main) {
             val requestedAt = SystemClock.elapsedRealtime()
             try {
+                NativePrivacyControls.requireEnabled(activity, NativePrivacyControls.TRAINPILOT_WEAR)
                 val nodes = Wearable.getNodeClient(activity).connectedNodes.await()
+                NativePrivacyControls.requireEnabled(activity, NativePrivacyControls.TRAINPILOT_WEAR)
                 val current = ActiveWorkoutStore.current(activity)
                 if (SystemClock.elapsedRealtime() - requestedAt > 15_000L) {
                     return@withContext Result.failure(IllegalStateException("The watch start request expired."))

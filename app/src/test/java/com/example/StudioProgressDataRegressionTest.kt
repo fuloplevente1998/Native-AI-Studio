@@ -129,18 +129,11 @@ class StudioProgressDataRegressionTest {
         health.syncMeta(JSONObject().put("lastSyncAt_samsung_health", "2026-11-02T08:00:00Z"))
         health.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG))
         model.bindNativeEnvironment(context, store, db, scope)
-        awaitCondition { model.uiState.value.dailySteps == 7000 && model.uiState.value.dailyHealthDate == day }
-        assertEquals(7000, model.uiState.value.weeklyTotalSteps)
-        assertEquals(1000, model.uiState.value.activeCaloriesKcal)
-        assertEquals(1500, model.uiState.value.totalCaloriesKcal)
+        awaitCondition { model.uiState.value.dailySteps == 8000 && model.uiState.value.dailyHealthDate == day }
+        assertEquals(1200, model.uiState.value.activeCaloriesKcal)
+        assertFalse("totalCalories" in model.uiState.value.dailyHealthAvailableFields)
         assertTrue("steps" in model.uiState.value.dailyHealthAvailableFields)
         assertEquals(1, model.uiState.value.weeklyHealthDays.count { it.stepsAvailable })
-        assertEquals("2026-11-02T08:00:00Z", model.uiState.value.dailyHealthLastSyncIso)
-        health.setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
-        model.reloadHealthJournal()
-        // Provider changed: Samsung's values are cleared at once, never shown as Health Connect data.
-        assertEquals(0, model.uiState.value.dailySteps)
-        awaitCondition { model.uiState.value.dailySteps == 8000 }
         // 2779: a reload of the same provider keeps the values on screen until the new ones arrive (no "—" flash).
         model.reloadHealthJournal()
         assertEquals(8000, model.uiState.value.dailySteps)
@@ -149,6 +142,7 @@ class StudioProgressDataRegressionTest {
         assertEquals("—", model.uiState.value.dailyHealthLastSyncIso)
         health.erase()
         health.samsungDay(day, JSONObject().put("steps", 7000), JSONArray(), health.generation())
+        com.repforge.app.NativePrivacyControls.set(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH, true)
         model.reloadHealthJournal()
         awaitCondition { model.uiState.value.dailySteps == 7000 }
         assertEquals(7000, model.uiState.value.weeklyTotalSteps)

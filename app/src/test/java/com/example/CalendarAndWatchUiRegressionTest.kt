@@ -51,7 +51,8 @@ class CalendarAndWatchUiRegressionTest {
         assertTrue("Dark calendar must follow the changed palette", panelLuminance() < 0.3f)
     }
     @Test fun tappingTheConnectedWatchRequestsInfoAndBusyPreventsDuplicates() {
-        var state by mutableStateOf(TrainPilotUiState(watchConnected = true, watchAppAvailable = true, watchName = "Real Watch"))
+        var state by mutableStateOf(TrainPilotUiState(watchConnected = true, watchAppAvailable = true, watchName = "Real Watch",
+            permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true)))
         var requests = 0
         compose.setContent { TrainPilotTheme {
             WatchAndSyncScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {},

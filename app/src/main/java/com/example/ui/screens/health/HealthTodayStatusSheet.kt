@@ -86,7 +86,8 @@ internal fun StudioTodayStatusDetailSheet(
     val maxDetailHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp
     com.example.ui.components.TrainPilotScreenSheet(
         onDismiss = onDismiss,
-        testTag = "health_today_tile_sheet"
+        testTag = "health_today_tile_sheet",
+        staticGlass = true
     ) {
         val currentDaily = uiState.dailyHealthDate == today.toString()
         val activeEnergy = if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields)

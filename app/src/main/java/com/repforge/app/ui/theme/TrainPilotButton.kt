@@ -4,9 +4,7 @@ import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
-import com.example.ui.theme.glassControlFill
 import com.example.ui.theme.liquidDropMaterial
-import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import com.example.ui.theme.trainPilotGlassRim
@@ -124,19 +122,18 @@ fun TrainPilotGlassPrimaryButton(
 ) {
     val palette = LocalTrainPilotPalette.current
     val glass = useGlassPrimaryAction(palette, enabled, colors, preserveSemanticPaint)
-    TrainPilotButton(
-        onClick = onClick,
-        modifier = if (glass) modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Selection,
-            accent = palette.primary, allowMeasurement = true) else modifier,
-        enabled = enabled,
-        shape = shape,
-        colors = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint),
-        elevation = if (glass) null else elevation,
-        border = border,
-        contentPadding = contentPadding,
-        interactionSource = interactionSource,
-        content = content,
-    )
+    if (!glass) {
+        TrainPilotButton(onClick, modifier, enabled, shape, colors, elevation, border,
+            contentPadding, interactionSource, content)
+        return
+    }
+    val paint = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint)
+    TrainPilotPressFeedback(paint, enabled, interactionSource) { feedbackColors, source ->
+        val surface = modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Selection,
+            accent = palette.primary, allowMeasurement = true, pressSource = source)
+        Button(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape,
+            feedbackColors, null, border, contentPadding, source, content)
+    }
 }
 
 /** Text actions use the same native shape and full-surface interaction feedback. */

@@ -18,6 +18,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.*
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 /** One transient preview and one durable commit per completed slider interaction. */
 internal data class GlassThemeAccess(
@@ -113,11 +115,18 @@ private fun LiquidGlassBackdropPicker(access: GlassThemeAccess, language: AppLan
 @Composable
 private fun LiquidGlassMaterialPreview(p: TrainPilotPalette, language: AppLanguage) {
     val shape = RoundedCornerShape(18.dp)
-    val backdrop = rememberGlassBackdrop()
+    val kyant = KyantGlass.active(p) && LocalGlassOpticsEnabled.current
+    val kyantLayer = if (kyant) rememberLayerBackdrop() else null
+    val previewScene = kyantLayer?.let { rememberKyantScene(it, samplesContent = true) }
+    val compatibilityLayer = if (kyant) null else rememberGlassBackdrop()
     val scroll = androidx.compose.foundation.rememberScrollState()
     Box(Modifier.fillMaxWidth().height(164.dp).clip(shape).testTag("liquid_glass_preview")) {
-        Row(Modifier.fillMaxSize().captureGlassBackdrop(backdrop)
-            .background(p.background)
+        val capture = when {
+            kyantLayer != null -> Modifier.layerBackdrop(kyantLayer)
+            compatibilityLayer != null -> Modifier.captureGlassBackdrop(compatibilityLayer)
+            else -> Modifier
+        }
+        Row(Modifier.fillMaxSize().then(capture).background(p.background)
             .horizontalScroll(scroll).padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -126,8 +135,12 @@ private fun LiquidGlassMaterialPreview(p: TrainPilotPalette, language: AppLangua
                     .background(if (i % 2 == 0) p.primary else p.secondary.copy(alpha = .65f), RoundedCornerShape(12.dp)))
             }
         }
-        Column(Modifier.align(Alignment.Center).fillMaxWidth(.82f).clip(shape)
-            .liveGlassLens(backdrop, p, shape).padding(12.dp),
+        val glass = when {
+            previewScene != null -> Modifier.kyantGlass(previewScene, p, shape, GlassMaterialRole.Panel)
+            compatibilityLayer != null -> Modifier.clip(shape).liveGlassLens(compatibilityLayer, p, shape)
+            else -> Modifier
+        }
+        Column(Modifier.align(Alignment.Center).fillMaxWidth(.82f).then(glass).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(customThemeText(language, "Élő üvegelőnézet", "Live glass preview",
                 "Live-Glasvorschau", "Previzualizare sticlă"), color = Color.White,

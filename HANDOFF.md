@@ -1,7 +1,10 @@
-# TrainPilot Native – 2811 átadó
+# TrainPilot Native – Health Connect-központú átállás
 
-- Alap: main `32ea75e9`, #401, 1.5.4 (281000/281002). A Play-kiadási jegyzet alapja az 1.5.0 (280600/280602).
-- `fix/workout-health-refresh`: közös tranzakciós védelem kézi és automatikus visszaolvasáshoz. Üres vagy gyengébb válasz esetén megmarad a mentett mérés.
-- A Napló Forrás lapja a szünetekkel tagolt edzés részleges aktív/teljes energiáját a mentett összesítő projekcióból veszi. A HC nyers rekordlefedettség az aggregátum eredetétől külön marad.
-- Célzott Room, Compose és coverage regressziók. Eszközön a Samsung Health és Health Connect késleltetett adatpublikációja még ellenőrizendő.
-- 1.5.4. Telefon 281100, Wear OS 281102. Négy nyelvű Play szöveg a `docs/PLAY_LISTING.md` fájlban. Kiadás a zöld PR CI és main CI után.
+- #403, #404, `feat/403-health-connect`. Alap: main `5d3b8a09`, 1.5.4 (281100/281102), #402. A korábbi Play-jegyzet alapja 1.5.0 (280600/280602).
+- A telefon a Health Connectet használja elsődlegesen napi és mentett edzésadatokhoz. Samsung Health és TrainPilot Wear OS külön engedélyezhető. A napi tartalék egy mérőszámhoz egy forrást választ. A meglévő mérések eredete megmarad.
+- Az edzés pulzusa az aktív időablak mintáiból számolható. Utólag érkező pulzus a korábbi energia megőrzésével kerül a mentett edzéshez. Az aktív és az összes kcal külön jelenik meg.
+- Egy kompakt Egészségnapló van, napi összesítővel, megnyitható mentett edzésekkel és lenyitható mérési rekordokkal. A mért érték forrása a részletekben érhető el.
+- Új órás kapcsolatjelzés és átadás csak a bekapcsolt integrációnál és igazolt kapcsolatnál jelenik meg. A futó órás edzés vezérlése visszavehető. Az órás alkalmazáskód változatlan. [Beállítási mockup](https://drive.google.com/file/d/1aKeFCvQjnEV8kZDedUroSbeXE20QiI1A/view)
+- A telefonon az edzés közbeni visszajelzés és a befejezés után megjelenő lap közös szerkesztőt használ.
+- A #351 és #359 készülékes esetei a #403-ban követhetők. A Health Connect-csomag `24951d4d` CI-je 1319 teszten ment át, ebből 276 órás. A készülékes próba nyitott. [CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45873078732)
+- A #405 és a #403 közös buildbe kerül. A #378 a Kyant-referencia a mostani üvegfelületeken. A fő és körvonalas gombok Kyant-lencséje rugós animációt kap, az érintésfény az aktuális felületre rajzol, a Mai állapot rövid lapja közvetlenül festi a fagyasztott hátteret. Áttetsző Fejlődés, Kardió és Lépések vezérlők és kártyák. Az első nyitás teljesítményét és a látványt készüléken kell ellenőrizni.

@@ -41,14 +41,14 @@ class WorkoutHealthSummaryRegressionTest {
         assertEquals(120.0, result.heart.values.getValue("averageHeartRate"), 0.0)
         assertEquals(2.0, result.heart.values.getValue("heartRateSamples"), 0.0)
         assertEquals(80.0, result.energy.values.getValue("activeCalories"), 0.0)
-        assertEquals(listOf("wear"), result.heart.evidence.map { it.provider })
+        assertEquals(listOf(HealthJournalStore.HC), result.heart.evidence.map { it.provider })
         assertTrue(result.heart.overlapExcluded)
         assertTrue(result.relationships.any { it.confirmedMirror })
         assertEquals(before, document.toString()); assertEquals(beforeWear, wear.toString())
     }
     @Test fun adjacentEqualValuesRemainSeparateAndHeartUsesSampleCounts() {
-        val document = providers(snapshot(row(start, middle, 100.0, 80.0, 1)),
-            snapshot(row(middle, end, 160.0, 80.0, 3)))
+        val document = providers(null, snapshot(row(start, middle, 100.0, 80.0, 1),
+            row(middle, end, 160.0, 80.0, 3)))
         val result = NativeWorkoutHealthSummary.project(workout(), null, document)
         assertEquals(145.0, result.heart.values.getValue("averageHeartRate"), 0.0)
         assertEquals(4.0, result.heart.values.getValue("heartRateSamples"), 0.0)
@@ -56,10 +56,20 @@ class WorkoutHealthSummaryRegressionTest {
         assertFalse(result.energy.incomplete); assertFalse(result.energy.overlapExcluded)
         assertEquals(2, result.energy.evidence.size)
     }
+    @Test fun aSecondProviderDoesNotFillAnotherIntervalOfTheSameMetric() {
+        val samsung = snapshot(row(start, middle, bpm = 100.0, kcal = 50.0))
+        val hc = snapshot(row(middle, end, bpm = 160.0, kcal = 80.0))
+        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(samsung, hc))
+        assertEquals(160.0, result.heart.values.getValue("averageHeartRate"), 0.0)
+        assertEquals(80.0, result.activeEnergy.values.getValue("activeCalories"), 0.0)
+        assertEquals(HealthJournalStore.HC, result.activeEnergy.evidence.single().provider)
+        assertTrue(result.heart.incomplete)
+        assertTrue(result.activeEnergy.incomplete)
+    }
     @Test fun partialOverlapNeverProratesAndIndependentKnownWindowsSurvive() {
         val five = "2026-11-01T10:05:00Z"; val fifteen = "2026-11-01T10:15:00Z"
-        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(
-            snapshot(row(start, middle)), snapshot(row(five, fifteen, kcal = 900.0), row(fifteen, end, kcal = 20.0))))
+        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(null,
+            snapshot(row(start, middle), row(five, fifteen, kcal = 900.0), row(fifteen, end, kcal = 20.0))))
         assertEquals(100.0, result.energy.values.getValue("activeCalories"), 0.0)
         assertTrue(result.energy.incomplete); assertTrue(result.energy.overlapExcluded)
         assertEquals(2, result.energy.evidence.size)
@@ -67,9 +77,10 @@ class WorkoutHealthSummaryRegressionTest {
     @Test fun noUnweightedAverageOfMeansAndNoActivePlusTotal() {
         val a = row(start, middle).apply { remove("heartRateSamples"); remove("activeCalories"); put("totalCalories", 50) }
         val b = row(middle, end).put("activeCalories", 999)
-        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(snapshot(a), snapshot(b)))
+        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(null, snapshot(a, b)))
         assertTrue(result.heart.values.isEmpty())
-        assertEquals(mapOf("totalCalories" to 50.0), result.energy.values)
+        assertEquals(mapOf("activeCalories" to 999.0), result.activeEnergy.values)
+        assertEquals(mapOf("totalCalories" to 50.0), result.totalEnergy.values)
         assertTrue(result.energy.incomplete)
     }
     @Test fun zeroMissingInvalidAndStaleDataAreDistinct() {
@@ -104,7 +115,7 @@ class WorkoutHealthSummaryRegressionTest {
         val a = row(start, middle).apply { remove("activeCalories"); put("workoutCalories", 10) }
         val b = row(middle, end).apply { remove("activeCalories"); put("workoutCalories", 30) }
         val result = NativeWorkoutHealthSummary.project(workout(), null, providers(snapshot(a), snapshot(b)))
-        assertEquals(10.0, result.energy.values.getValue("workoutCalories"), 0.0)
+        assertEquals(30.0, result.energy.values.getValue("workoutCalories"), 0.0)
         assertTrue(result.energy.incomplete)
     }
     @Test fun activeWindowReadKeepsActualPerWindowEvidenceAndProviderErrors() = runBlocking {

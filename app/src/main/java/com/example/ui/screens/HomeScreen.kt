@@ -445,8 +445,10 @@ fun HomeScreen(
                                         if (state.watchAppAvailable) state.watchName else strings.watchConnectedSub, status, onOpenWatchAndSync,
                                         enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
                                 }
-                                val shortcuts = listOf(PageLayoutBlock("quick", strings.quickWorkoutTitle),
-                                    PageLayoutBlock("watch", tr("Óra", "Watch", "Uhr", "Ceas")))
+                                val shortcuts = buildList {
+                                    add(PageLayoutBlock("quick", strings.quickWorkoutTitle))
+                                    if (state.showConnectedWatch) add(PageLayoutBlock("watch", tr("Óra", "Watch", "Uhr", "Ceas")))
+                                }
                                 if (sideBySide) PageLayoutHorizontalRow(layout, "shortcuts", shortcuts,
                                     TrainPilotCardSpacing.CardRowGap) { shortcut, modifier ->
                                     if (shortcut == "quick") quick(modifier) else watch(modifier)

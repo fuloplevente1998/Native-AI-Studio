@@ -21,8 +21,7 @@ internal object NativeSelectedCoachReadings {
     suspend fun load(context: Context, db: TrainPilotDatabase, now: Instant, zone: ZoneId): Snapshot {
         val store = HealthJournalStore.get(context)
         val generation = store.generation()
-        val provider = store.preferences().optString("provider", HealthJournalStore.HC)
-        require(provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
+        val provider = HealthJournalStore.HC
         val today = now.atZone(zone).toLocalDate()
         val hcEnabled = NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT)
         val samsungEnabled = NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH)
@@ -39,11 +38,11 @@ internal object NativeSelectedCoachReadings {
             else -> if (samsungEnabled) NativeHealthProviderData.recentRecoveryDays(store, channel, today)
                 else emptyList()
         }
-        val alternate = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC else HealthJournalStore.SAMSUNG
+        val alternate = HealthJournalStore.SAMSUNG
         val history = db.workoutHistoryDao().getCoachRecentHistory(
             now.minus(Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli()).map { JSONObject(it) }
         val result = HealthReadingsProjection.coachReadiness(provider, rows(provider), rows(alternate), history, now, zone)
-        check(store.generation() == generation && store.preferences().optString("provider", HealthJournalStore.HC) == provider &&
+        check(store.generation() == generation &&
             hcEnabled == NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT) &&
             samsungEnabled == NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH)) {
             "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."

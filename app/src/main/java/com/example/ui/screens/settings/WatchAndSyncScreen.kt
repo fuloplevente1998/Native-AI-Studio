@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
@@ -98,7 +99,21 @@ fun WatchAndSyncScreen(
             )
         }
 
-        item(key = "watch-info") {
+        item(key = "wear-integration") {
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("TrainPilot Wear OS", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                    Text(tr(uiState.language, "Órás mérés és edzésvezérlés", "Watch recording and workout control",
+                        "Uhrmessung und Trainingssteuerung", "Măsurare și control pe ceas"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                }
+                com.example.ui.components.TrainPilotSwitch(uiState.trainPilotWearEnabled,
+                    onCheckedChange = { onRequestPermission(if (it) "wear_on" else "wear_off") },
+                    modifier = Modifier.testTag("settings_trainpilot_wear_switch")
+                        .semantics { contentDescription = "TrainPilot Wear OS" })
+            }
+        }
+        if (uiState.trainPilotWearEnabled || (uiState.isWorkoutSessionActive && uiState.showWatchWorkoutControls)) item(key = "watch-info") {
             StudioWatchInformationCard(
                 data = uiState.watchInfoCardData.copy(loading = uiState.watchInfoLoading || uiState.watchInfoCardData.loading),
                 onRefresh = onRefreshWatchInfo
@@ -106,7 +121,7 @@ fun WatchAndSyncScreen(
         }
 
         // Section 2: Aktív edzés vezérlése (Mockup 4/4 #2 side-by-side mode cards + gold button + bullets)
-        item(key = "workout-control") {
+        if (uiState.isWorkoutSessionActive && uiState.showWatchWorkoutControls) item(key = "workout-control") {
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,

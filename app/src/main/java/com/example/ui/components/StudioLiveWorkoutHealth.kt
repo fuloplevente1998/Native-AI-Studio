@@ -57,12 +57,12 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
     }
 }
 
-@Composable internal fun StudioLiveWorkoutHealthDialog(onDismiss: () -> Unit) {
+@Composable internal fun StudioLiveWorkoutHealthDialog(showWatch: Boolean, samsungEnabled: Boolean, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val activity = remember(context) { context.healthActivity() }
     val scope = rememberCoroutineScope()
     val requestPermission = LocalRequestWorkoutHealthPermission.current
-    var provider by remember { mutableStateOf(HealthJournalStore.HC) }
+    var provider by remember(samsungEnabled) { mutableStateOf(HealthJournalStore.HC) }
     val previews = LocalWorkoutHealthPreviews.current
     val currentFrame by com.repforge.app.ActiveWorkoutStore.snapshotFlow.collectAsState()
     val frameKey = WorkoutLiveHealthPolicy.sessionKey(currentFrame)
@@ -73,7 +73,8 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
     LaunchedEffect(frameKey) {
         while (true) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(1000) }
     }
-    val watch = WorkoutLiveHealthPolicy.watchMetrics(currentFrame, liveWear, expectedNode, now)
+    val watch = if (showWatch) WorkoutLiveHealthPolicy.watchMetrics(currentFrame, liveWear, expectedNode, now)
+        else emptyMap()
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
@@ -93,7 +94,9 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
     }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
+                for (source in com.repforge.app.NativeHealthProviderBatch.providers.filter {
+                    it == HealthJournalStore.HC || samsungEnabled
+                }) {
                     com.example.ui.components.TrainPilotFilterChip(selected = provider == source, enabled = !busy,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         onClick = { provider = source; result = null; message = "" },

@@ -5,22 +5,23 @@ import android.app.job.JobScheduler
 
 /**
  * App-level opt-in is independent of Android/provider grants. System permission changes
- * must never re-enable a feature the user explicitly turned off. Existing installs retain
- * their pre-upgrade behavior until a choice is made. No health/workout records are erased.
+ * must never re-enable a feature the user explicitly turned off. Existing explicit choices
+ * remain valid. Optional direct integrations default off and preserve stored history.
  */
 object NativePrivacyControls {
     const val GPS = "gps"
     const val NOTIFICATIONS = "notifications"
     const val HEALTH_CONNECT = "health_connect"
     const val SAMSUNG_HEALTH = "samsung_health"
+    const val TRAINPILOT_WEAR = "trainpilot_wear"
     private const val PREFS = "trainpilot-privacy-controls-v1"
-    private val keys = setOf(GPS, NOTIFICATIONS, HEALTH_CONNECT, SAMSUNG_HEALTH)
+    private val keys = setOf(GPS, NOTIFICATIONS, HEALTH_CONNECT, SAMSUNG_HEALTH, TRAINPILOT_WEAR)
 
     @JvmStatic
     fun enabled(context: Context, feature: String): Boolean {
         require(feature in keys) { "Unknown privacy feature" }
         return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(feature, true)
+            .getBoolean(feature, feature !in setOf(SAMSUNG_HEALTH, TRAINPILOT_WEAR))
     }
 
     /** Synchronous durable commit: workers recheck this flag before publishing any records. */
@@ -45,7 +46,7 @@ object NativePrivacyControls {
                 if (!enabled) (app.getSystemService(Context.JOB_SCHEDULER_SERVICE) as? JobScheduler)
                     ?.cancel(HealthBackgroundJob.ID)
             }
-            SAMSUNG_HEALTH -> Unit // Direct reads gate against the flag at admission + commit.
+            SAMSUNG_HEALTH, TRAINPILOT_WEAR -> Unit // Optional integrations recheck the durable choice at admission.
         }
     }
 

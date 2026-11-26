@@ -689,10 +689,15 @@ object HealthConnectRepository {
                 .put("start", t[0].toString())
                 .put("end", t[1].toString())
             putLongAgg(out, "steps", p, m, time, "READ_STEPS", StepsRecord.STEPS_COUNT_TOTAL, warnings)
-            putLongAgg(out, "averageHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_AVG, warnings)
-            putLongAgg(out, "minHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MIN, warnings)
-            putLongAgg(out, "maxHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MAX, warnings)
-            putLongAgg(out, "heartRateSamples", p, m, time, "READ_HEART_RATE", HeartRateRecord.HEART_MEASUREMENTS_COUNT, warnings)
+            val samples = hrs.asSequence().filter { src(it) != p.getContext().packageName }.flatMap { record ->
+                record.samples.asSequence().map { NativeWorkoutHeartRate.Sample(it.time, it.beatsPerMinute, src(record)) }
+            }
+            if (!NativeWorkoutHeartRate.fromSamples(out, t[0], t[1], samples)) {
+                putLongAgg(out, "averageHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_AVG, warnings)
+                putLongAgg(out, "minHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MIN, warnings)
+                putLongAgg(out, "maxHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MAX, warnings)
+                putLongAgg(out, "heartRateSamples", p, m, time, "READ_HEART_RATE", HeartRateRecord.HEART_MEASUREMENTS_COUNT, warnings)
+            }
             putEnergyAgg(out, "activeCalories", p, m, time, "READ_ACTIVE_CALORIES_BURNED", ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, warnings)
             putEnergyAgg(out, "totalCalories", p, m, time, "READ_TOTAL_CALORIES_BURNED", TotalCaloriesBurnedRecord.ENERGY_TOTAL, warnings)
             WorkoutEnergyCoverage.record(out, "activeCalories", t[0], t[1],

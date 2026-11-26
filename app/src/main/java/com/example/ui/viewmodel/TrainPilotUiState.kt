@@ -150,7 +150,10 @@ data class WeeklyHealthDaySummary(
     val activeCaloriesMeasured: Int? = null,
     /** 2788: measured total daily energy incl. resting (null = not measured). */
     val totalCaloriesKcal: Int? = null,
-    val stepProvider: String? = null
+    val stepProvider: String? = null,
+    val activeCaloriesProvider: String? = null,
+    val totalCaloriesProvider: String? = null,
+    val sleepProvider: String? = null
 )
 
 /** Read-only comparison for the exact saved native program and mode proposal. */
@@ -192,7 +195,8 @@ data class StudioPermissionAccess(
     val healthConnectEnabled: Boolean = false,
     val healthConnectGranted: Boolean = false,
     val samsungHealthEnabled: Boolean = false,
-    val samsungHealthGranted: Boolean = false
+    val samsungHealthGranted: Boolean = false,
+    val trainPilotWearEnabled: Boolean = false
 )
 
 data class TrainPilotUiState(
@@ -470,6 +474,9 @@ data class TrainPilotUiState(
     val permissionNotificationsGranted: Boolean get() = permissionAccess.notificationsGranted
     val permissionHealthConnectEnabled: Boolean get() = permissionAccess.healthConnectEnabled
     val permissionHealthConnectGranted: Boolean get() = permissionAccess.healthConnectGranted
+    val trainPilotWearEnabled: Boolean get() = permissionAccess.trainPilotWearEnabled
+    val showConnectedWatch: Boolean get() = trainPilotWearEnabled && watchAppAvailable && watchConnected
+    val showWatchWorkoutControls: Boolean get() = showConnectedWatch || watchControlPending || !phoneControlsWorkout
     val permissionSamsungHealthEnabled: Boolean get() = permissionAccess.samsungHealthEnabled
     val permissionSamsungHealthGranted: Boolean get() = permissionAccess.samsungHealthGranted
 }

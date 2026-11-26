@@ -69,7 +69,6 @@ class LiquidGlass2808Test {
             assertTrue(r >= GlassTouchBubble.MIN_RADIUS_DP * density - 1e-3f)
             assertTrue(r <= GlassTouchBubble.MAX_RADIUS_DP * density + 1e-3f)
         }
-        assertTrue("slight magnification only", GlassTouchBubble.MAGNIFY in .05f..0.15f)
         assertEquals(0f, GlassTouchBubble.alpha(0f), 0f)
         assertEquals(0f, GlassTouchBubble.alpha(-.3f), 0f)
         assertEquals(1f, GlassTouchBubble.alpha(1.2f), 0f)
@@ -80,14 +79,12 @@ class LiquidGlass2808Test {
         assertEquals(Offset(20f, 30f), GlassTouchBubble.clampToBounds(Offset(20f, 30f), Size(100f, 48f)))
     }
 
-    @Test fun touchBubbleShaderIsOwnSourceAndPremultipliedSafe() {
-        val src = GlassTouchBubble.LENS_SOURCE
-        val uniforms = Regex("""uniform\s+(?:shader|float|float2)\s+(\w+);""").findAll(src).map { it.groupValues[1] }.toSet()
-        assertEquals(setOf("content", "center", "radius", "strength", "magnify"), uniforms)
-        assertTrue(src.contains("half4 main(float2 pos)"))
-        assertTrue("lift towards alpha, never above it", src.contains("half3(c.a)"))
-        assertEquals(src.count { it == '{' }, src.count { it == '}' })
-        assertEquals(src.count { it == '(' }, src.count { it == ')' })
+    @Test fun touchHighlightUsesTheExistingControlLayerEvenForAQuickTap() {
+        val source = java.io.File("src/main/java/com/example/ui/theme/GlassTouchBubble.kt").readText()
+        assertFalse(source.contains("RuntimeShader"))
+        assertFalse(source.contains("graphicsLayer"))
+        assertTrue(source.indexOf("progress.animateTo(1f") < source.indexOf("snapshotFlow { heldPress }"))
+        assertTrue(source.contains("PointerEventPass.Initial"))
     }
 
     @Test fun pressPathCarriesTheBubbleForButtonsChipsAndNav() {

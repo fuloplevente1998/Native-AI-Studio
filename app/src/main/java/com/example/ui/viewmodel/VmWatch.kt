@@ -50,6 +50,7 @@ fun TrainPilotViewModel.toggleWatchControlMode(activity: android.app.Activity? =
                 com.repforge.app.NativeWearCompanion.reachable(ctx, nodes.single().id)
             }) { "A TrainPilot Wear OS alkalmazás nem érhető el. Telepítsd a telefonos APK-val párosított óraalkalmazást." }
             if (active.optString("timerOwner", "phone") == "phone") {
+                com.repforge.app.NativePrivacyControls.requireEnabled(ctx, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR)
                 check(!com.repforge.app.DistanceTrackingService.snapshot(ctx).optBoolean("active")) {
                     "Aktív GPS-mérés közben nem adható át a vezérlés. Előbb fejezd be a GPS-mérést."
                 }

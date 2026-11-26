@@ -1,6 +1,10 @@
 package com.repforge.app.ui.progress
 
 import com.example.ui.components.chartDateLabel
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.components.trainPilotChartMarkColor
 import com.example.ui.components.trainPilotChartSelection
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -41,13 +45,16 @@ import kotlin.math.roundToLong
 @Composable
 internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Unit) {
     val colors = LocalTrainPilotColors.current
+    val palette = LocalTrainPilotPalette.current
+    val panelShape = MaterialTheme.shapes.large
+    val tileFill = palette.glassTile(colors.card2)
     val context = LocalContext.current
     val strings = remember(context, state.language) { nativeResources(context, state.language) }
     val model = state.cardio
     var recordsOpen by remember { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = colors.card),
+    Card(Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, panelShape).testTag("progress_cardio"),
+        shape = panelShape,
+        colors = CardDefaults.cardColors(containerColor = palette.glassCardFill(colors.card)),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when {
@@ -92,7 +99,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Un
                             else tr("nincs edzés", "no workout", "kein Training", "fără antrenament")
                         val week = model.weeks[selectedWeek.coerceIn(0, model.weeks.lastIndex)]
                         val end = week.weekStartDate.plusDays(6)
-                        Column(Modifier.fillMaxWidth().background(colors.card2, RoundedCornerShape(10.dp))
+                        Column(Modifier.fillMaxWidth().background(tileFill, RoundedCornerShape(10.dp))
                             .padding(horizontal = 10.dp, vertical = 6.dp).testTag("progress_cardio_selected_week")) {
                             Row(Modifier.fillMaxWidth()) {
                                 Text("${week.weekStartDate.monthValue}.${"%02d".format(week.weekStartDate.dayOfMonth)}.–" +
@@ -124,7 +131,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Un
                     val displayedRecords = if (recordsOpen) model.records else model.records.take(2)
                     displayedRecords.forEach { record ->
                         Column(Modifier.fillMaxWidth()
-                            .background(colors.card2, MaterialTheme.shapes.large)
+                            .background(tileFill, MaterialTheme.shapes.large)
                             .trainPilotBorder(1.dp, colors.line, MaterialTheme.shapes.large).padding(10.dp)
                             .testTag("progress_cardio_record_${record.exerciseId}_${record.roundedDistanceMeters}")) {
                             Text("${activityNames[record.exerciseId] ?: record.exerciseId} · " +

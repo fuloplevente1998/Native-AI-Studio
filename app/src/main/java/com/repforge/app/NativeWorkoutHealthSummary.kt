@@ -84,14 +84,26 @@ internal object NativeWorkoutHealthSummary {
                 } else rejected = true
             }
         }
+        evidence.sortBy { if (it.provider == HealthJournalStore.HC) 0 else 1 }
         fun number(data: JSONObject, key: String) = (data.opt(key) as? Number)?.toDouble()
             ?.takeIf { it.isFinite() && it >= 0 && (!key.contains("HeartRate") || it > 0) }
-        fun select(candidates: List<Evidence>): Pair<List<Evidence>, Boolean> {
+        fun select(candidates: List<Evidence>, rank: (Evidence) -> Int = { 0 },
+            separateHeartOrigins: Boolean = false): Pair<List<Evidence>, Boolean> {
+            val primary = candidates.filter { it.provider == HealthJournalStore.HC }.ifEmpty { candidates }
+            val ranked = primary.sortedByDescending(rank)
+            val provider = ranked.firstOrNull()?.provider ?: return emptyList<Evidence>() to false
+            val source = ranked.filter { it.provider == provider }
+            val origin = if (separateHeartOrigins && provider == HealthJournalStore.HC)
+                NativeWorkoutHeartRate.preferredOrigin(source.map { it.data })
+            else null
+            val selected = if (origin == null) source else source.filter { it.data.optString("heartRateOrigin") == origin }
             val accepted = mutableListOf<Evidence>()
             var overlap = false
-            // Input order is a stable, visible priority: saved Wear, direct Samsung, then HC.
-            for (candidate in candidates) {
+            for (candidate in selected) {
                 if (accepted.any { overlaps(it, candidate) }) overlap = true else accepted.add(candidate)
+            }
+            overlap = overlap || candidates.any { row ->
+                row !in selected && accepted.any { overlaps(it, row) }
             }
             return accepted to overlap
         }
@@ -107,7 +119,8 @@ internal object NativeWorkoutHealthSummary {
                 (it.provider == WEAR && (it.legacyWindow || WearWorkoutEnergyEvidence.incompleteDuration(it.data,expectedMs))) ||
                 it.data.optBoolean("workoutEnergyProrated")
         }
-        val (heartRows, heartOverlap) = select(evidence.filter { number(it.data, "averageHeartRate") != null })
+        val (heartRows, heartOverlap) = select(evidence.filter { number(it.data, "averageHeartRate") != null },
+            separateHeartOrigins = true)
         val heartValues = linkedMapOf<String, Double>()
         val weighted = heartRows.all { (number(it.data, "heartRateSamples") ?: 0.0) > 0 }
         // One original aggregate is safe; multiple means require actual sample counts.
@@ -136,16 +149,15 @@ internal object NativeWorkoutHealthSummary {
                 ?: "unknown:${row.provider}:${row.windows}" else energyKey.orEmpty()
         val energyCandidates = evidence.filter { energyKey != null && energyNumber(it.data, energyKey) != null }
         val kind = energyCandidates.firstOrNull()?.let(::energyKind)
-        val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind }
-            .sortedByDescending { if (energyKey in setOf("activeCalories","totalCalories"))
+        val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind },
+            rank = { if (energyKey in setOf("activeCalories", "totalCalories"))
                 energyRank(it, requireNotNull(energyKey)) else 0 })
         val energyValues = if (energyRows.isEmpty() || energyKey == null) emptyMap() else
             mapOf(energyKey to energyRows.sumOf { number(it.data, energyKey)!! })
-        // Separate definitions for the detail and finish screens. Preserve the legacy
-        // definition selection, but apply the same coverage ordering within each kind.
+        // Each energy definition independently uses the primary provider or one fallback.
         fun separateEnergy(key: String): Metric {
             val candidates = evidence.filter { number(it.data, key) != null }
-            val (rows, overlap) = select(candidates.sortedByDescending { energyRank(it, key) })
+            val (rows, overlap) = select(candidates, rank = { energyRank(it, key) })
             val values = if (rows.isEmpty()) emptyMap() else mapOf(key to rows.sumOf { number(it.data, key)!! })
             return Metric(values, rows, incomplete(rows) || rows.any {
                 WorkoutEnergyCoverage.status(it.data,key) == WorkoutEnergyCoverage.Status.PARTIAL_RAW

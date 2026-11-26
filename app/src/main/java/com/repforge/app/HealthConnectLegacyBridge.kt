@@ -397,17 +397,6 @@ internal object HealthConnectLegacyBridge {
                 warnings.put("$permission: "+(e.message ?: e.javaClass.simpleName)) }
         }
         measure("READ_STEPS","steps") { value(StepsRecord.COUNT_TOTAL) }
-        measure("READ_HEART_RATE","averageHeartRate") { value(HeartRateRecord.BPM_AVG) }
-        measure("READ_HEART_RATE","minHeartRate") { value(HeartRateRecord.BPM_MIN) }
-        measure("READ_HEART_RATE","maxHeartRate") { value(HeartRateRecord.BPM_MAX) }
-        measure("READ_HEART_RATE","heartRateSamples") { value(HeartRateRecord.MEASUREMENTS_COUNT) }
-        measure("READ_ACTIVE_CALORIES_BURNED","activeCalories") {
-            value(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)?.inKilocalories
-        }
-        measure("READ_TOTAL_CALORIES_BURNED","totalCalories") {
-            value(TotalCaloriesBurnedRecord.ENERGY_TOTAL)?.inKilocalories
-        }
-        measure("READ_DISTANCE","distanceMeters") { value(DistanceRecord.DISTANCE_TOTAL)?.inMeters }
         suspend fun <T : Record> safeRaw(permission: String, type: KClass<T>): List<T> {
             if (permission !in keys) return emptyList()
             return try { readAll(client,type,start,end,guard)
@@ -418,6 +407,22 @@ internal object HealthConnectLegacyBridge {
                 emptyList()
             }
         }
+        val samples = safeRaw("READ_HEART_RATE", HeartRateRecord::class).asSequence().flatMap { record ->
+            record.samples.asSequence().map { NativeWorkoutHeartRate.Sample(it.time, it.beatsPerMinute, originalSource(record)) }
+        }
+        if (!NativeWorkoutHeartRate.fromSamples(out, start, end, samples)) {
+            measure("READ_HEART_RATE","averageHeartRate") { value(HeartRateRecord.BPM_AVG) }
+            measure("READ_HEART_RATE","minHeartRate") { value(HeartRateRecord.BPM_MIN) }
+            measure("READ_HEART_RATE","maxHeartRate") { value(HeartRateRecord.BPM_MAX) }
+            measure("READ_HEART_RATE","heartRateSamples") { value(HeartRateRecord.MEASUREMENTS_COUNT) }
+        }
+        measure("READ_ACTIVE_CALORIES_BURNED","activeCalories") {
+            value(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)?.inKilocalories
+        }
+        measure("READ_TOTAL_CALORIES_BURNED","totalCalories") {
+            value(TotalCaloriesBurnedRecord.ENERGY_TOTAL)?.inKilocalories
+        }
+        measure("READ_DISTANCE","distanceMeters") { value(DistanceRecord.DISTANCE_TOTAL)?.inMeters }
         val exercises = safeRaw("READ_EXERCISE",ExerciseSessionRecord::class)
         val active = safeRaw("READ_ACTIVE_CALORIES_BURNED",ActiveCaloriesBurnedRecord::class)
         val total = safeRaw("READ_TOTAL_CALORIES_BURNED",TotalCaloriesBurnedRecord::class)

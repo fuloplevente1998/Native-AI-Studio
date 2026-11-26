@@ -13,6 +13,10 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import com.example.ui.theme.GlassMotion
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.LocalKyantScene
+import com.example.ui.theme.forThisWindow
 import com.example.ui.theme.glassEffectsActive
 import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.rememberGlassMotionEnabled
@@ -120,7 +124,10 @@ fun Modifier.trainPilotCombinedClickable(
  */
 @Composable
 internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean, shape: Shape? = null): Modifier {
-    if (!LocalTrainPilotPalette.current.glassEffectsActive(LocalGlassOpticsEnabled.current)) return this
+    val palette = LocalTrainPilotPalette.current
+    if (!palette.glassEffectsActive(LocalGlassOpticsEnabled.current)) return this
+    val kyant = KyantGlass.active(palette) &&
+        (LocalGlassOverlay.current || LocalKyantScene.current.forThisWindow() != null)
     val motion = rememberGlassMotionEnabled()
     val held by source.collectIsPressedAsState()
     val press = animateFloatAsState(
@@ -135,7 +142,7 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
         scale(factor, factor) {
             this@drawWithContent.drawContent()
             val glow = progress.coerceIn(0f, 1f) * GlassMotion.PRESS_HIGHLIGHT
-            if (glow > .001f) {
+            if (glow > .001f && !kyant) {
                 val light = Brush.radialGradient(listOf(Color.White.copy(alpha = glow), Color.Transparent),
                     center = Offset(size.width * .3f, 0f), radius = maxOf(size.width, size.height) * .9f)
                 if (shape == null) drawRect(light) else {

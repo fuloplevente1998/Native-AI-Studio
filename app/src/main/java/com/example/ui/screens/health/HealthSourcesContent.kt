@@ -41,9 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
@@ -66,56 +65,24 @@ internal fun HealthSourcesContent(
     onToggleSyncDetails: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = if (uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
-            modifier = Modifier
-                .weight(1f)
-                .trainPilotBorder(
-                    width = if (uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
-                    color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
-                .semantics { selected = uiState.primaryHealthSourceSamsung }
-                .testTag("health_provider_samsung")
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                Text(
-                    if (uiState.samsungGrantedCount < 0) tr(uiState.language, "Engedély még nem igazolt", "Permission not verified yet", "Berechtigung noch nicht bestätigt", "Permisiune încă neverificată")
-                    else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} ${tr(uiState.language, "adatkör", "scopes", "Bereiche", "domenii")}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary
-                )
-            }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("health_provider_connect")) {
+            Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+            Text(tr(uiState.language, "Elsődleges adatforrás", "Primary data source",
+                "Primäre Datenquelle", "Sursa principală de date"), color = palette.textSecondary,
+                style = MaterialTheme.typography.labelSmall)
         }
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = if (!uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
-            modifier = Modifier
-                .weight(1f)
-                .trainPilotBorder(
-                    width = if (!uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
-                    color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
-                .semantics { selected = !uiState.primaryHealthSourceSamsung }
-                .testTag("health_provider_connect")
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                Text(
-                    "● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} ${tr(uiState.language, "engedély", "permissions", "Berechtigungen", "permisiuni")}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary
-                )
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                Text(tr(uiState.language, "Kiegészítő adatforrás", "Supplementary data source",
+                    "Ergänzende Datenquelle", "Sursă suplimentară de date"), color = palette.textSecondary,
+                    style = MaterialTheme.typography.labelSmall)
             }
+            com.example.ui.components.TrainPilotSwitch(uiState.permissionSamsungHealthEnabled,
+                onCheckedChange = onSelectHealthSource,
+                modifier = Modifier.testTag("health_provider_samsung")
+                    .semantics { contentDescription = "Samsung Health" })
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,55 +131,59 @@ internal fun HealthSourcesContent(
         }
 
         ExternalWorkoutImportPanel(uiState.language, enabled = !uiState.healthSyncBusy)
-        Spacer(Modifier.height(10.dp))
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = palette.glassTile(palette.surfaceCard),
-            modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
-                .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                .trainPilotClickable(RoundedCornerShape(20.dp)) {
-                    closeSheet()
-                    onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC)
-                }
-                .testTag("health_open_watch_sync_card")
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        if (uiState.showConnectedWatch) {
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = palette.glassTile(palette.surfaceCard),
+                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(20.dp))
+                    .fillMaxWidth()
+                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                    .trainPilotClickable(RoundedCornerShape(20.dp)) {
+                        closeSheet()
+                        onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC)
+                    }
+                    .testTag("health_open_watch_sync_card")
             ) {
-                MockupWatchGraphicBadge(size = 46.dp)
-                Column(modifier = Modifier.weight(1f)) {
-                    val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
-                        "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
-                    val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
-                    Text(
-                        text = watchTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textPrimary
-                    )
-                    Text(
-                        text = when {
-                            uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
-                            uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
-                            else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    MockupWatchGraphicBadge(size = 46.dp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
+                            "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
+                        val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
+                        Text(
+                            text = watchTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = when {
+                                uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
+                                uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
+                                else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = palette.primary
                     )
                 }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = palette.primary
-                )
             }
+            Spacer(Modifier.height(10.dp))
         }
-        Spacer(Modifier.height(10.dp))
 
-        listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
+        com.repforge.app.NativeHealthProviderBatch.providers.filter {
+            it == com.repforge.app.HealthJournalStore.HC || uiState.permissionSamsungHealthEnabled
+        }.forEach { provider ->
             val lastSuccess = uiState.healthLastSyncByProvider[provider]
             val time = runCatching {
                 java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")

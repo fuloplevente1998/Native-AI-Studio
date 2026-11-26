@@ -63,8 +63,12 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             requirePublication()
             val document = current.health240Json?.let { JSONObject(it) }
             val prior = NativeWorkoutHealthSource.snapshot(document, provider)?.takeIf { matchesWindow(it, current) }
-            if (!WorkoutHealthAutoPolicy.accept(prior, health)) return@withTransaction false
-            val merged = NativeWorkoutHealthSource.attach(document, provider, health)
+            val accepted = if (WorkoutHealthAutoPolicy.accept(prior, health)) health else {
+                if (provider == HealthJournalStore.HC && prior != null)
+                    NativeWorkoutHeartRate.addMissing(prior, health)
+                else null
+            } ?: return@withTransaction false
+            val merged = NativeWorkoutHealthSource.attach(document, provider, accepted)
             val raw = LegacyWebViewMigrator.workoutJson(latest).put("health240", merged)
             // All other fields come from the latest row, including edits made while the SDK was reading.
             // Original Wear telemetry/window markers stay separate; an HC refresh does not rewrite them.

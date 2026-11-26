@@ -33,6 +33,7 @@ class HomeCompactStatusRegressionTest {
             listOf(ProgramDayModel("a", "A", "Alap A", "A", 60, emptyList())))
         val state = TrainPilotUiState(profileComplete = true, programs = listOf(program),
             watchName = "Real Watch", watchConnected = true, watchAppAvailable = true,
+            permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true),
             dailySteps = 100, activeCaloriesKcal = 37, currentHrBpm = 61, restingHrBpm = 55,
             dailyHealthAvailableFields = setOf("steps", "activeCalories"),
             todayPulseReading = PulseDayReading(

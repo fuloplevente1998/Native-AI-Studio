@@ -117,7 +117,6 @@ fun HealthTabScreen(
     onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
     onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
     onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) },
-    onReadHealthSource: ((String) -> Unit)? = null,
     /** 2788: edit an existing weight entry in place (id, kg, date label). */
     onUpdateWeight: (String, Float, String) -> Unit = { _, kg, date -> onSaveNewWeight(kg, date) },
     onWeightPhotosUpdated: () -> Unit = {},
@@ -698,11 +697,12 @@ fun HealthTabScreen(
                 HealthSectionLauncher(
                     icon = Icons.Default.Link,
                     title = sourcesTitle,
-                    subtitle = listOf(
-                        "Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—",
-                        "Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—",
-                        tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
-                    ).joinToString(" · "),
+                    subtitle = buildList {
+                        add("Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—")
+                        if (uiState.permissionSamsungHealthEnabled)
+                            add("Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—")
+                        if (uiState.showConnectedWatch) add(tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " ✓")
+                    }.joinToString(" · "),
                     onOpen = { onToggleHealthSection("connect") },
                     customLeadingBadge = { MockupHealthConnectBadge(size = 34.dp) }
                 )
@@ -822,14 +822,19 @@ fun HealthTabScreen(
                     ) {
                         if (journal) {
                             com.example.ui.components.StudioHealthMetricsBrowser(
-                                initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
-                                    else com.repforge.app.HealthJournalStore.HC,
                                 language = uiState.language.code.lowercase(),
                                 refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
-                                onRefreshProvider = onReadHealthSource,
+                                onRefresh = onTriggerHealthSync,
                                 refreshBusy = uiState.healthSyncBusy,
                                 focus = journalFocus,
-                                focusKey = journalFocusKey
+                                focusKey = journalFocusKey,
+                                samsungSupplement = uiState.permissionSamsungHealthEnabled,
+                                workouts = uiState.loggedWorkouts,
+                                workoutTitle = { it.localizedTitle(uiState.language, uiState.programs) },
+                                onOpenWorkout = { workoutId ->
+                                    closeSheet()
+                                    onOpenLoggedWorkout(workoutId)
+                                }
                             )
                         } else {
                             HealthSourcesContent(

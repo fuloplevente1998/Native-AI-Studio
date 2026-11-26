@@ -101,7 +101,7 @@ internal object StudioWorkoutSummaryPresentation {
         health: HealthSnapshot? = null): Double? = energy(frame, live, now, provider, health)
         ?.values?.values?.singleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
 
-    /** Preserve the journal's Wear priority, then use only the selected provider. */
+    /** The selected phone provider and admissible Wear measurements use the journal's source policy. */
     fun energy(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
         health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Metric? =
         projection(frame, live, now, provider, health)?.energy

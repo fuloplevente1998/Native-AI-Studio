@@ -79,6 +79,8 @@ fun TrainPilotScreenSheet(
     testTag: String,
     /** 2782: tabbed sheets open at full height so switching tabs never changes the sheet height. */
     fillHeight: Boolean = false,
+    /** Paint the frozen window scene directly for short, frequently opened detail sheets. */
+    staticGlass: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -89,6 +91,7 @@ fun TrainPilotScreenSheet(
         modifier = Modifier.trainPilotSheetTopSafeArea().testTag(testTag),
         containerColor = palette.background,
         contentColor = palette.textPrimary,
+        staticGlass = staticGlass,
         dragHandle = {
             androidx.compose.foundation.layout.Box(
                 Modifier

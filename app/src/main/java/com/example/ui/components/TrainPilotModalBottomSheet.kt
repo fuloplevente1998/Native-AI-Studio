@@ -1,5 +1,12 @@
 package com.example.ui.components
+import com.example.ui.theme.GlassContrast
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.GlassOptics
+import com.example.ui.theme.KyantMaterialSpec
 import com.example.ui.theme.KyantWindowOverlay
+import com.example.ui.theme.LocalGlassScene
+import com.example.ui.theme.drawGlassSceneCompose
+import com.example.ui.theme.freezeSheetScene
 import com.example.ui.theme.LocalGlassOverlay
 import com.example.ui.theme.sheetUsesGlass
 import androidx.compose.runtime.CompositionLocalProvider
@@ -42,8 +49,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -109,6 +119,7 @@ internal fun TrainPilotModalBottomSheet(
         else BottomSheetDefaults.DragHandle()
     },
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.windowInsets },
+    staticGlass: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = BottomSheetDefaults.ExpandedShape
@@ -116,7 +127,11 @@ internal fun TrainPilotModalBottomSheet(
     // Paint over a known gradient inside the sheet, not the unknown content/scrim behind it.
     val customPaint = palette.customCardPaint != null && containerColor == palette.surface
     val glass = sheetUsesGlass(palette, containerColor)
-    val optical = glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current
+    val glassSupported = glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current
+    val optical = glassSupported && !staticGlass
+    val paintFrozenScene = glassSupported && staticGlass
+    val parentScene = LocalGlassScene.current
+    val frozenScene = if (paintFrozenScene) remember(parentScene) { freezeSheetScene(parentScene) } else null
     val scope = rememberCoroutineScope()
     val fill = if (glass) palette.glassOverlayFill(containerColor) else if (customPaint) palette.background else containerColor
     var handleHeight by remember { mutableIntStateOf(0) }
@@ -141,7 +156,7 @@ internal fun TrainPilotModalBottomSheet(
         modifier = modifier,
         sheetState = sheetState,
         shape = shape,
-        containerColor = if (optical) Color.Transparent else fill,
+        containerColor = if (optical || paintFrozenScene) Color.Transparent else fill,
         contentColor = contentColor,
         dragHandle = if (glass || dragHandle == null) null else {
             { Box(Modifier.observeSheetGesture(heightLock, releasePin).onSizeChanged { handleHeight = it.height }) { dragHandle() } }
@@ -212,7 +227,19 @@ internal fun TrainPilotModalBottomSheet(
         if (optical) {
             KyantWindowOverlay(palette, shape, staticSheet = true) { backdrop -> panel(backdrop) }
         } else {
-            CompositionLocalProvider(LocalGlassOverlay provides glass) { panel(Modifier) }
+            val staticBackdrop = if (frozenScene == null) Modifier else {
+                val tint = GlassOptics.TINT.copy(alpha =
+                    KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, palette.glassClarity).tintAlpha)
+                val backdropCap = GlassContrast.backdropCap(tint.alpha)
+                Modifier.clip(shape).drawBehind {
+                    // The same guarded scene as the Kyant window, painted directly while the
+                    // sheet moves. No GraphicsLayer recording or first-use lens shader.
+                    drawGlassSceneCompose(palette, frozenScene, Offset.Zero,
+                        size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f), backdropCap)
+                    drawRect(tint)
+                }
+            }
+            CompositionLocalProvider(LocalGlassOverlay provides glass) { panel(staticBackdrop) }
         }
     }
 }
