@@ -190,33 +190,47 @@ internal fun StudioHealthMetricsBrowser(
                     }
                     val available = metrics.filter { it.isAvailable }
                     Surface(color = Color.Transparent, modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
-                        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
-                                Text(date.format(dayFormat), fontWeight = FontWeight.Bold, color = palette.textPrimary,
-                                    modifier = Modifier.weight(1f))
+                        Column {
+                            val headerShape = RoundedCornerShape(12.dp)
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .trainPilotClickable(headerShape, stretchOnDrag = true) { expanded = !expanded }
+                                    .testTag("journal_day_$date")
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(date.format(dayFormat), fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    if (!expanded) {
+                                        val steps = metrics.first { it.key == "steps" }
+                                        val line = buildList {
+                                            add(Triple("steps", if (steps.isAvailable) steps.valueText else "—", steps.unit.ifBlank { steps.label }))
+                                            sleepText?.let { add(Triple("sleep", it, label("alvás", "sleep", "Schlaf", "somn"))) }
+                                            listOf("activeCalories", "averageHeartRate").forEach { key -> metrics.first { it.key == key }.takeIf { it.isAvailable }
+                                                ?.let { add(Triple(key, it.valueText, it.unit)) } }
+                                            if (dayWorkouts.isNotEmpty()) add(Triple("workouts", dayWorkouts.size.toString(),
+                                                label("edzés", if (dayWorkouts.size == 1) "workout" else "workouts", "Training", "antrenamente")))
+                                        }
+                                        androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().testTag("journal_day_line_$date"),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            line.forEachIndexed { index, (metricKey, value, unit) ->
+                                                if (index > 0) Text("·", color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+                                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
+                                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                                                if (unit.isNotBlank()) Text(unit, color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+                                            }
+                                        }
+                                    }
+                                }
                                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                     contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
                             }
-                            if (!expanded) {
-                                val steps = metrics.first { it.key == "steps" }
-                                val line = buildList {
-                                    add(Triple("steps", if (steps.isAvailable) steps.valueText else "—", steps.unit.ifBlank { steps.label }))
-                                    sleepText?.let { add(Triple("sleep", it, label("alvás", "sleep", "Schlaf", "somn"))) }
-                                    listOf("activeCalories", "averageHeartRate").forEach { key -> metrics.first { it.key == key }.takeIf { it.isAvailable }
-                                        ?.let { add(Triple(key, it.valueText, it.unit)) } }
-                                    if (dayWorkouts.isNotEmpty()) add(Triple("workouts", dayWorkouts.size.toString(),
-                                        label("edzés", if (dayWorkouts.size == 1) "workout" else "workouts", "Training", "antrenamente")))
-                                }
-                                androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().testTag("journal_day_line_$date"),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    line.forEachIndexed { index, (metricKey, value, unit) ->
-                                        if (index > 0) Text("·", color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                                        Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
-                                            modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
-                                        if (unit.isNotBlank()) Text(unit, color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                                    }
-                                }
-                            } else {
+                            if (expanded) Column(
+                                Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 val tiles = buildList {
                                     sleepText?.let { add(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), it)) }
                                     available.filter { it.key in visibleHealthJournalMetrics || type == NativeDetailedHealthMetrics.recordType(it.key) }

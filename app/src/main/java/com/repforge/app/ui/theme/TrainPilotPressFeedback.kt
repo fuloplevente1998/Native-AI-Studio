@@ -13,14 +13,17 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.clipPath
 import com.example.ui.theme.GlassMotion
+import com.example.ui.theme.GlassControlDrag
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.LocalGlassOverlay
 import com.example.ui.theme.LocalKyantScene
 import com.example.ui.theme.forThisWindow
 import com.example.ui.theme.glassEffectsActive
+import com.example.ui.theme.glassDragStretch
+import com.example.ui.theme.glassDragTransform
 import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.rememberGlassMotionEnabled
-import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlin.math.max
@@ -86,9 +90,14 @@ private fun interactionAlpha(source: MutableInteractionSource, enabled: Boolean)
 
 /** Button-like rows share the same shaped feedback without a second growing ripple. */
 @Composable
-fun Modifier.trainPilotClickable(shape: Shape, enabled: Boolean = true, onClick: () -> Unit): Modifier {
+fun Modifier.trainPilotClickable(
+    shape: Shape,
+    enabled: Boolean = true,
+    stretchOnDrag: Boolean = false,
+    onClick: () -> Unit
+): Modifier {
     val source = remember { MutableInteractionSource() }
-    return trainPilotPressIndication(shape, source, enabled)
+    return trainPilotPressIndication(shape, source, enabled, stretchOnDrag)
         .clickable(interactionSource = source, indication = null, enabled = enabled,
             role = Role.Button, onClick = onClick)
 }
@@ -100,11 +109,12 @@ fun Modifier.trainPilotCombinedClickable(
     enabled: Boolean = true,
     onClickLabel: String? = null,
     onLongClickLabel: String? = null,
+    stretchOnDrag: Boolean = false,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ): Modifier {
     val source = remember { MutableInteractionSource() }
-    return trainPilotPressIndication(shape, source, enabled)
+    return trainPilotPressIndication(shape, source, enabled, stretchOnDrag)
         .combinedClickable(
             interactionSource = source,
             indication = null,
@@ -123,12 +133,18 @@ fun Modifier.trainPilotCombinedClickable(
  * the highlight remains (no scale). Draw-only: layout and the accessible touch bounds stay put.
  */
 @Composable
-internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled: Boolean, shape: Shape? = null): Modifier {
+internal fun Modifier.glassPressMotion(
+    source: MutableInteractionSource,
+    enabled: Boolean,
+    shape: Shape? = null,
+    stretchOnDrag: Boolean = false
+): Modifier {
     val palette = LocalTrainPilotPalette.current
     if (!palette.glassEffectsActive(LocalGlassOpticsEnabled.current)) return this
     val kyant = KyantGlass.active(palette) &&
         (LocalGlassOverlay.current || LocalKyantScene.current.forThisWindow() != null)
     val motion = rememberGlassMotionEnabled()
+    val drag = if (stretchOnDrag && motion && enabled) remember { GlassControlDrag() } else null
     val held by source.collectIsPressedAsState()
     val press = animateFloatAsState(
         targetValue = if (enabled && held) 1f else 0f,
@@ -136,10 +152,14 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
         label = "glass press"
     )
     // 2808/11: the touch bubble rides inside the same scaled draw (glass + motion only, see GlassTouchBubble).
-    return drawWithContent {
+    return then(drag?.observe() ?: Modifier).drawWithContent {
         val progress = press.value
         val factor = if (motion) GlassMotion.pressScale(progress) else 1f
-        scale(factor, factor) {
+        val travel = drag?.let { glassDragTransform(it.offset, 5.dp.toPx(), progress.coerceIn(0f, 1f)) } ?: Offset.Zero
+        withTransform({
+            translate(travel.x, travel.y)
+            scale(factor + glassDragStretch(travel.x, size.width), factor + glassDragStretch(travel.y, size.height))
+        }) {
             this@drawWithContent.drawContent()
             val glow = progress.coerceIn(0f, 1f) * GlassMotion.PRESS_HIGHLIGHT
             if (glow > .001f && !kyant) {
@@ -157,11 +177,11 @@ internal fun Modifier.glassPressMotion(source: MutableInteractionSource, enabled
 /** Paint on the visual child while the accessible parent retains the larger hit area. */
 @Composable
 internal fun Modifier.trainPilotPressIndication(
-    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true
+    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true, stretchOnDrag: Boolean = false
 ): Modifier {
     val alpha = interactionAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    return glassPressMotion(source, enabled, shape).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
+    return glassPressMotion(source, enabled, shape, stretchOnDrag).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
 }
 
 /** A held press covers the whole painted outline, including wide buttons. */

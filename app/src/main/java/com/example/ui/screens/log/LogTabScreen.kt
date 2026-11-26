@@ -614,7 +614,7 @@ internal fun LogWorkoutCard(
         shape = shape,
         color = Color.Transparent,
         modifier = Modifier.fillMaxWidth()
-            .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
+            .trainPilotClickable(RoundedCornerShape(8.dp), stretchOnDrag = true) { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
     ) {
         Row(

@@ -302,6 +302,7 @@ fun ExerciseLibraryScreen(
                         .then(if (inQueue) Modifier.trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp)) else Modifier)
                         .trainPilotCombinedClickable(
                             shape = RoundedCornerShape(14.dp),
+                            stretchOnDrag = true,
                             onLongClickLabel = trW(state.language, "Műveletek: $name", "Actions: $name", "Aktionen: $name", "Acțiuni: $name"),
                             onLongClick = { rowMenuOpen = true },
                             onClick = { onSelectExercise(ex.id) }
@@ -338,7 +339,7 @@ fun ExerciseLibraryScreen(
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onStartExerciseNow(ex) }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp), stretchOnDrag = true) { onStartExerciseNow(ex) }
                                         .semantics { contentDescription = "$startLabel: $name" }
                                         .testTag("exercise_library_start_now_${ex.id}")
                                 ) {
@@ -357,7 +358,7 @@ fun ExerciseLibraryScreen(
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier.size(48.dp)
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { rowMenuOpen = true }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp), stretchOnDrag = true) { rowMenuOpen = true }
                                             .semantics { contentDescription = trW(state.language, "További műveletek: $name", "More actions: $name", "Weitere Aktionen: $name", "Mai multe acțiuni: $name") }
                                             .testTag("exercise_library_more_${ex.id}")
                                     ) {
