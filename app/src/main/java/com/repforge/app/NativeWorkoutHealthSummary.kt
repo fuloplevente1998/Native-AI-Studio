@@ -228,7 +228,7 @@ internal object NativeWorkoutHealthSummary {
             for (row in usable.filter { it.provider == provider }) {
                 if (accepted.any { overlaps(it, row) }) overlap = true else accepted.add(row)
             }
-            if (accepted.isEmpty()) null else Triple(accepted, overlap, accepted.sumOf(::covered))
+            if (accepted.isEmpty()) null else Triple(accepted, overlap, accepted.sumOf { covered(it) })
         }.maxByOrNull { it.third } ?: return Metric(emptyMap(), emptyList(), true, false)
         return Metric(mapOf("totalCalories" to best.first.sumOf(value)), best.first,
             incomplete = true, overlapExcluded = best.second)
