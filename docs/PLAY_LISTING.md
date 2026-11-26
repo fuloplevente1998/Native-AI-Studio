@@ -27,7 +27,7 @@ A TrainPilottal megtervezheted az edzéseidet, naplózhatod a sorozatokat és k�
 **Fejlődés és egészség**
 • Napló kereséssel és időszak-szűrővel, rekordok, statisztikák, izomcsoport-terhelés
 • A Health Connect engedéllyel beolvassa a kompatibilis alkalmazásokkal megosztott lépés-, alvás-, pulzus- és energiaadatokat. A Samsung Health külön bekapcsolható kiegészítő adatforrás.
-• Ha az adatok rendelkezésre állnak, a TrainPilot az edzés aktív időszakaihoz társítja a pulzust és az energiafelhasználást. Az aktív és az összes kalória külön jelenik meg.
+• Az Egészségnaplóban a napi aktív és a napi teljes kalória külön összesítve jelenik meg. Ha elérhető a mérés, az edzéshez a teljes energiafelhasználás (aktív és nyugalmi energia) tartozik, az explicit szünetek nélkül.
 • Az Egészségnapló tömör napi összesítőt ad. A mérések forrása és az edzések részletei megnyithatók.
 • Coach: napi felkészültség és edzésjavaslat a saját adataid alapján
 
@@ -59,7 +59,7 @@ TrainPilot helps you plan workouts, log your sets and track progress. Use the ph
 **Progress and health**
 • Log with search and period filter, records, statistics, muscle-group load
 • With your permission, Health Connect reads steps, sleep, heart rate and energy data shared by compatible apps. Samsung Health is available as an optional supplementary source.
-• When readings are available, TrainPilot associates heart rate and energy with your active workout intervals. Active and total calories appear separately.
+• The health journal shows daily active and daily total calories separately. When readings are available, workouts show total energy (active and resting) during workout intervals, excluding explicit pauses.
 • The health journal gives you a compact daily overview. Open measurement details to see the source or review a saved workout.
 • Coach: daily readiness and a workout suggestion based on your own data
 
@@ -79,24 +79,28 @@ A telefonos változások a Play Console 280600-as buildjéhez (1.5.0) viszonyít
 
 ```text
 <hu-HU>
-• Pontosabb Health Connect-visszaolvasás. A pulzus az edzés aktív időszakaihoz társítható, az aktív és az összes kalória külön látszik. Samsung Health opcionális.
-• Kompakt Egészségnapló és egységes edzés-visszajelzés.
-• Egyedi témák és továbbfejlesztett Liquid Glass. Áttetsző kártyák, vízcseppszerű érintési hatás és rugózó gombanimáció.
+• Napi aktív és teljes kalória, edzésenként teljes kcal az explicit szünetek nélkül.
+• Health Connect és Coach javítások. A Samsung Health opcionális, bekapcsolva jelenik meg.
+• Kapcsolt eszközök: látható szinkronállapot.
+• Optimalizált Liquid Glass és tartalomhoz igazodó felcsúszó ablakok.
 </hu-HU>
 <de-DE>
-• Verbesserter Health-Connect-Abgleich. Pulswerte können aktiven Trainingsphasen zugeordnet werden. Aktive und gesamte Kalorien werden getrennt angezeigt. Samsung Health ist optional.
-• Kompaktes Gesundheitstagebuch und einheitliches Trainingsfeedback.
-• Eigene Designs und verbessertes Liquid Glass mit transparenten Karten und animierten Tasten.
+• Aktive und gesamte Tageskalorien; gesamte Trainingskalorien ohne explizite Pausen.
+• Verbesserungen für Health Connect und Coach. Samsung Health erscheint nur bei aktivierter Integration.
+• Sichtbarer Synchronisierungsstatus für verbundene Geräte.
+• Optimiertes Liquid Glass und inhaltsabhängige Dialoghöhe.
 </de-DE>
 <en-US>
-• Improved Health Connect syncing. Heart rate can be linked to active workout intervals, with active and total calories shown separately. Samsung Health is optional.
-• A compact health journal and a consistent workout feedback layout.
-• Custom themes and refined Liquid Glass with translucent cards, droplet-like touch feedback and spring animations.
+• Daily active and total calories; workout total calories exclude explicit pauses.
+• Health Connect and Coach fixes. Optional Samsung Health appears when enabled.
+• Visible sync status for connected devices.
+• Optimized Liquid Glass and content-sized bottom sheets.
 </en-US>
 <ro>
-• Sincronizare îmbunătățită cu Health Connect. Pulsul poate fi asociat intervalelor active ale antrenamentului, iar caloriile active și totale apar separat. Samsung Health este opțional.
-• Jurnal de sănătate compact și aspect unitar pentru feedbackul de antrenament.
-• Teme personalizate și Liquid Glass rafinat, cu carduri translucide și animații la atingere.
+• Calorii zilnice active și totale; calorii totale pe antrenament, fără pauzele explicite.
+• Corecții Health Connect și Coach. Samsung Health apare când integrarea opțională este activată.
+• Starea sincronizării pentru dispozitivele conectate.
+• Liquid Glass optimizat și panouri adaptate conținutului.
 </ro>
 ```
 
