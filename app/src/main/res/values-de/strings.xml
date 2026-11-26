@@ -665,4 +665,8 @@
     <string name="native_timer_defaults_save">Speichern</string>
     <string name="studio_progress_latest_1rm">Letzte 1RM-Schätzung</string>
     <string name="studio_progress_best_1rm">Beste 1RM-Schätzung</string>
+    <string name="journal_wear_install_tip">Installiere für genaue Puls- und Kalorienmessungen die TrainPilot-App auf deiner Uhr. Vom Telefon gestartete Trainings starten dann automatisch die Messung auf der Uhr.</string>
+    <string name="journal_wear_install">Auf Uhr installieren</string>
+    <string name="journal_wear_tip_later">Später</string>
+    <string name="journal_wear_install_unavailable">Der Play Store kann nicht geöffnet werden.</string>
 </resources>

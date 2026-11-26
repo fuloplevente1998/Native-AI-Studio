@@ -665,4 +665,8 @@
     <string name="native_timer_defaults_save">Mentés</string>
     <string name="studio_progress_latest_1rm">Legutóbbi 1RM-becslés</string>
     <string name="studio_progress_best_1rm">Legjobb 1RM-becslés</string>
+    <string name="journal_wear_install_tip">A pontos pulzushoz és kalóriához telepítsd az órára a TrainPilot appot. A telefonról indított edzés ilyenkor automatikusan elindítja az óra mérését.</string>
+    <string name="journal_wear_install">Telepítés az órára</string>
+    <string name="journal_wear_tip_later">Később</string>
+    <string name="journal_wear_install_unavailable">A Play Áruház nem nyitható meg.</string>
 </resources>

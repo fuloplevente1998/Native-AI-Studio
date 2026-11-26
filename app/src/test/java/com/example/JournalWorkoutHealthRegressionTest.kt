@@ -244,6 +244,38 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
     }
 
+    @Test fun missingWearShowsTipEvenWithHealthConnectAndLaterIsPerWorkout() {
+        val saved = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val row = saved.workout.copy(wearMetricsJson = null, rawJson = JSONObject(saved.workout.rawJson).apply {
+            remove("wear"); remove("healthSummary"); remove("healthWear129")
+        }.toString())
+        var selected by androidx.compose.runtime.mutableStateOf(saved.copy(workout = row))
+        compose.setContent { TrainPilotTheme {
+            com.repforge.app.ui.journal.JournalWorkoutHealthSummary(selected, nativeResources(context, "hu"), "hu")
+        } }
+        compose.onNodeWithTag("journal_wear_measurement_missing").assertTextEquals("Nincs óramérés ehhez az edzéshez.")
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_install").assertHasClickAction()
+        compose.onNodeWithTag("journal_wear_tip_later").performClick()
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_measurement_missing").assertExists()
+        compose.runOnIdle { selected = saved.copy(workout = row.copy(id = "another-workout")) }
+        compose.onNodeWithTag("journal_wear_install_tip").assertExists()
+        compose.runOnIdle { selected = saved.copy(workout = row) }
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        compose.runOnIdle { selected = saved }
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        compose.runOnIdle { selected = saved.copy(workout = row.copy(id = "import", originDevice = "external")) }
+        compose.onNodeWithTag("journal_external_metrics").assertExists()
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        assertEquals("market://details?id=com.TrainPilot.com", com.repforge.app.ui.journal.wearInstallIntent().data.toString())
+        assertEquals("https://play.google.com/store/apps/details?id=com.TrainPilot.com",
+            com.repforge.app.ui.journal.wearInstallIntent(web = true).data.toString())
+        assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
+    }
+
     @Test fun sourceCardRestorationKeepsWearOnly() {
         val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val restoration = StateRestorationTester(compose)

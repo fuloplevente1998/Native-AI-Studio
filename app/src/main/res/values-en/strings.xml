@@ -665,4 +665,8 @@
     <string name="native_timer_defaults_save">Save</string>
     <string name="studio_progress_latest_1rm">Latest estimated 1RM</string>
     <string name="studio_progress_best_1rm">Best estimated 1RM</string>
+    <string name="journal_wear_install_tip">For accurate heart rate and calories, install the TrainPilot app on your watch. Workouts started from your phone will then automatically start watch measurement.</string>
+    <string name="journal_wear_install">Install on watch</string>
+    <string name="journal_wear_tip_later">Later</string>
+    <string name="journal_wear_install_unavailable">Unable to open the Play Store.</string>
 </resources>
