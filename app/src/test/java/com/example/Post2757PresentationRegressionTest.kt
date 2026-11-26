@@ -101,8 +101,9 @@ class Post2757PresentationRegressionTest {
     @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {
         var journalFocus: Pair<String, String>? = null
         var openedCoach = false
+        var state by mutableStateOf(TrainPilotUiState())
         compose.setContent { TrainPilotTheme {
-            HomeScreen(TrainPilotUiState(), TrainPilotStrings.forLanguage(AppLanguage.HU),
+            HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                 onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                 onOpenWatchAndSync = {}, onOpenCoachReadiness = {}, onOpenGoalsDialog = {},
                 onOpenPersonalPlanner = {}, onOpenHealthJournal = { journalFocus = it },
@@ -134,7 +135,15 @@ class Post2757PresentationRegressionTest {
             assertEquals(java.time.LocalDate.now().toString() to "SleepSessionRecord", journalFocus)
         }
         compose.onNodeWithTag("home_today_recovery").performScrollTo().performClick()
+        compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
+        compose.runOnIdle {
+            state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = true))
+        }
         compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.runOnIdle {
+            state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = false))
+        }
+        compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
         compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(openedCoach) }
     }

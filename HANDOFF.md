@@ -1,5 +1,7 @@
 # TrainPilot Native – Health Connect-központú átállás
 
+- #820 CI: 1045 telefonos tesztből 1 hibás, R8 sikeres. A régi Home-regresszió még feltétlen Samsung Energy csempét várt. A teszt most kikapcsolt, bekapcsolt és ismét kikapcsolt állapotot ellenőriz, a hat csempe és Coach navigációs ellenőrzése változatlan.
+
 - Közös #407 + #408 kiadás: a sheet tag ütközés javítva; a teljes integrált CI után merge és main signing.
 
 - #408 folytatás: napi aktív/napi teljes energia összesítés; edzésben kizárólag teljes kcal az aktív intervallumok uniójára (2/10 órás pause nem része). Egy teljes forrás, részleges időablak nem teljes érték. Samsung közvetlen opcionális UI, megőrzött rekordok, HC elsődleges. CI és készülékes ellenőrzés szükséges.
