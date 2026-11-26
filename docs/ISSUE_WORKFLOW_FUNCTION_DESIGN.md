@@ -26,3 +26,39 @@ elkülönülnek. A meglévő bug/enhancement címkék megmaradnak:
 
 Ez a dokumentum a szervezést és meglévő branch/PR-szabályt pontosítja.
 A visszajelzés-rögzítés nem jelent engedélyezett új APK-kört vagy elkészült javítást.
+
+## Verziószám-emelés és kiadás
+
+Felhasználói döntés (2026-11-26): a már ellenőrzött kód puszta belső
+verziószám-emelése miatt ne ismételjük meg a teljes regressziót. A kiadás előtt
+ellenőrizzük a Playen már használt telefonos és Wear-kódokat, a két új kódot,
+valamint a Play-listing szövegét; lehetőleg mindez kerüljön a teljes CI elé.
+A meglévő séma (telefon 00, Wear 02) és a versionName maradjon meg, kivéve
+külön felhasználói döntés esetén.
+
+### Tervezett szűkített kiadási kapu (még nincs implementálva)
+
+1. A forrás egy már zöld, megbízható main CI SHA leszármazottja; a korábbi futás
+   JVM, nyers JUnit XML és R8 eredménye igazolt.
+2. A két SHA teljes diffjét ellenőrizni kell: csak az app/build.gradle.kts
+   és wear/build.gradle.kts versionCode értékei és hozzájuk tartozó kommentek,
+   valamint kiadási dokumentáció változhatnak. Ellenőrizni kell, hogy a kód nem
+   használja a versionCode-ot viselkedési vagy migrációs döntéshez. Minden más,
+   illetve bizonytalan változás teljes CI-t igényel.
+3. Az új kódok magasabbak és nem foglaltak a Playen, az alkalmazásazonosító,
+   versionName, függőségek, signer és kiadási konfiguráció változatlan.
+4. Az új main SHA-ról egyetlen friss signed telefon/Wear APK+AAB pár készüljön.
+   Az R8/resource shrinking, csomag-metaadat, tartós signer és artifact digest
+   ellenőrzések kötelezőek. A korábbi CI-t nem szabad az új SHA saját teljes
+   regressziójaként feltüntetni.
+5. Új forrás esetén az elavult aláíró futást állítsuk le, ha még fut és a
+   megfelelő jogosultság/eszköz rendelkezésre áll. Ne állítsuk le az új CI-t,
+   ne indítsunk duplikált signingot. Ha nincs leállítási lehetőség, a régi
+   artifactot ne adjuk át kiadásként. Dokumentáljuk a pontos SHA-kat és futásokat.
+
+A jelenlegi trainpilot-android-ci és trainpilot-persistent-signing workflow
+változatlanul teljes main CI-t követel az automatikus aláíráshoz. A szűkített
+útvonalat külön jóváhagyott és tesztelt workflow-módosításnak kell bevezetnie,
+nem kézi ellenőrzéskihagyással. A dokumentáció módosítása önmagában nem
+engedélyez új kiadást vagy Play-publikálást. Futó kiadás közben csak külön
+dokumentációs ágat használjunk, amíg az aktuális SHA-hoz kötött aláírás meg nem történt.

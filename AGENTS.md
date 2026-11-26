@@ -99,6 +99,22 @@ Extra High (`xhigh`) nem engedélyezett. Pontos költségarányt ellenőrzött
   ágra külön teljes futást; az automatikus PR-kör a javító commitban `[skip ci]`
   jelöléssel kihagyható, utána a teljes main-kapu kötelező. A workflow ellenőrzéseit
   ne gyengítsd. Félkész kód nem része a kész csomagnak; külön APK-kör nem kell.
+- Kiadás előtt ellenőrizd a Play Console-ban már felhasznált versionCode-okat (telefon és
+  Wear); ha nincs közvetlen hozzáférés, kérd a felhasználó által igazolt értékeket.
+  Az engedélyezett emelést és a Play-listing véglegesítését a teljes main CI előtt
+  egy commitcsomagba kell foglalni. A versionName csak külön kérésre változik.
+- **Kizárólag versionCode-emelés (2026-11-26):** egy már sikeres, megbízható main
+  CI után ne ismételd szükségtelenül a teljes regressziót, ha az új main és az
+  igazolt SHA teljes diffje kizárólag a telefon/Wear versionCode értékeit,
+  kapcsolódó kommentjeit és kiadási dokumentációt érinti. A korábbi nyers JVM XML
+  és R8 eredményét, a diffet és az új forrás SHA-ját rögzítsd. Bármilyen más
+  kód-, függőség-, Gradle-, manifest-, migrációs vagy CI-változás, verziófüggő
+  működés, illetve bizonytalan előzmény esetén a teljes main-kapu kötelező.
+  A gyors kiadásnál is új release APK/AAB páros, R8/resource shrinking, metaadat,
+  tartós signer és artifact digest ellenőrzés szükséges. A workflow csak külön
+  ellenőrzött, szűkített kiadási útvonal bevezetése után használhatja a korábbi CI-t;
+  addig a jelenlegi kapu érvényes, a manuális indítás nem kerülőút.
+  Részletek: [kiadási munkarend](docs/ISSUE_WORKFLOW_FUNCTION_DESIGN.md#verziószám-emelés-és-kiadás).
 - Pontos source SHA és nyers XML alapján jelents: tesztszám, failure/error/skipped.
   A letöltött artifact digestjét ellenőrizd. APK-nál package/verzió/hash/tartós signer
   és phone/Wear páros ellenőrzés kell. Teljes aláírt URL-t vagy hosszú logot ne írj ki.
