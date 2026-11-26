@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.glassStateTile
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -215,7 +216,8 @@ fun BackupRestoreScreen(
                         val interaction = remember(fmt) { MutableInteractionSource() }
                         val pressed by interaction.collectIsPressedAsState()
                         val shape = RoundedCornerShape(10.dp)
-                        val background = if (sel) palette.primary else palette.surfaceCard
+                        val background = if (sel) palette.glassStateTile(palette.primary, palette.primary, strong = true)
+                            else palette.glassTile(palette.surfaceCard)
                         Box(
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                                 .testTag("backup_format_$fmt")
@@ -225,14 +227,15 @@ fun BackupRestoreScreen(
                         ) {
                             Surface(
                                 shape = shape,
-                                color = lerp(background, palette.primary, if (pressed) 0.12f else 0f),
+                                color = if (palette.isLiquidGlass) background else lerp(background, palette.primary, if (pressed) 0.12f else 0f),
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clip(shape)
                                     .indication(interaction, ripple())
+                                    .trainPilotGlassRim(palette, shape)
                                     .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, shape)
                                     .testTag("backup_format_${fmt}_visual")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(fmt, fontWeight = FontWeight.Bold, color = if (sel) palette.onPrimary else palette.textPrimary)
+                                    Text(fmt, fontWeight = FontWeight.Bold, color = if (sel && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary)
                                 }
                             }
                         }

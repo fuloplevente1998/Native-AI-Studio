@@ -21,7 +21,7 @@ internal class GlassScenePaintCache {
         }
     }
 
-    private data class ToneKey(val primary: Color, val cap: Float)
+    private data class ToneKey(val paletteId: Int, val primary: Color, val cap: Float)
     private data class BaseKey(val background: Color, val top: Float, val bottom: Float, val cap: Float)
     private data class BlobKey(val tone: ToneKey, val origin: Offset, val width: Float,
         val height: Float, val seconds: Float)
@@ -33,7 +33,7 @@ internal class GlassScenePaintCache {
     private val photo = Slot<Float, ColorFilter>()
 
     fun guardedTones(palette: TrainPilotPalette, cap: Float): List<Color> =
-        tones.get(ToneKey(palette.primary, cap)) { GlassScene.guardedTones(palette, cap) }
+        tones.get(ToneKey(palette.id, palette.primary, cap)) { GlassScene.guardedTones(palette, cap) }
 
     fun baseBrush(palette: TrainPilotPalette, top: Float, bottom: Float, cap: Float): Brush =
         base.get(BaseKey(palette.background, top, bottom, cap)) {
@@ -42,7 +42,7 @@ internal class GlassScenePaintCache {
 
     fun blobBrushes(palette: TrainPilotPalette, origin: Offset, width: Float, height: Float,
         seconds: Float, cap: Float): List<Brush> =
-        blobs.get(BlobKey(ToneKey(palette.primary, cap), origin, width, height, seconds)) {
+        blobs.get(BlobKey(ToneKey(palette.id, palette.primary, cap), origin, width, height, seconds)) {
             val colors = guardedTones(palette, cap)
             GlassScene.blobs(width, height, seconds).mapIndexed { i, blob ->
                 val tone = colors[i]

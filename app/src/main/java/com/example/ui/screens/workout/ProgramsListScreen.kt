@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import com.example.ui.theme.glassStateTile
+import androidx.compose.foundation.background
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.glassControlFill
 import com.example.ui.theme.GlassMaterialRole
@@ -443,9 +445,14 @@ fun ProgramsListScreen(
         )
     }
 
+    val listShape = RoundedCornerShape(24.dp)
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(horizontal = 6.dp)
+            .trainPilotGlassMaterial(palette, listShape)
+            .background(palette.glassCardFill(palette.surface), listShape)
+            .trainPilotBorder(1.dp, palette.cardBorder, listShape)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
@@ -606,65 +613,60 @@ fun ProgramsListScreen(
 
             // Reorder requires measured neighbours, including offscreen cards. Keep its existing
             // scroll container and stable composition identity; repeated cards use paint, not a lens.
-            filteredPrograms.forEachIndexed { index, program -> key(program.id) {
-                val progName = program.localizedName(state.language)
-                val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surface),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // Lift first so the frame moves with the card while dragging (2772).
-                        .trainPilotReorderItem(programReorder, program.id, index, layerWhenIdle = false)
-                        .trainPilotAnimatedExpansion()
-                        // 2810/4: the glass material draws the rim; no extra outline stroke.
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile)
-                        .trainPilotBorder(
-                            if (program.isActive || isExpanded) 1.5.dp else 1.dp,
-                            if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
-                            RoundedCornerShape(14.dp)
-                        )
-                        .testTag("program_card_${program.id}")
-                ) {
-                    ProgramCardContent(
-                        program = program,
-                        language = state.language,
-                        isExpanded = isExpanded,
-                        tagPrefix = "",
-                        emblemSize = 36.dp,
-                        onActivateProgram = { onActivateProgram(program.id) },
-                        onOpenMoreActions = {
-                            actionSheetSnapshot = program
-                            actionSheetProgramId = program.id
-                        },
-                        headerModifier = Modifier.trainPilotCombinedClickable(
-                            shape = RoundedCornerShape(14.dp),
-                            onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
-                            onLongClick = {
+            Column(Modifier.fillMaxWidth()) {
+                filteredPrograms.forEachIndexed { index, program -> key(program.id) {
+                    val progName = program.localizedName(state.language)
+                    val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
+                    if (index > 0) HorizontalDivider(color = palette.cardBorder.copy(alpha = .40f))
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (program.isActive || isExpanded)
+                            palette.glassStateTile(palette.primary, palette.primary.copy(alpha = .09f)) else Color.Transparent,
+                        modifier = Modifier.fillMaxWidth()
+                            .trainPilotReorderItem(programReorder, program.id, index, layerWhenIdle = false)
+                            .trainPilotAnimatedExpansion()
+                            .testTag("program_card_${program.id}")
+                    ) {
+                        ProgramCardContent(
+                            program = program,
+                            language = state.language,
+                            isExpanded = isExpanded,
+                            tagPrefix = "",
+                            emblemSize = 36.dp,
+                            onActivateProgram = { onActivateProgram(program.id) },
+                            onOpenMoreActions = {
                                 actionSheetSnapshot = program
                                 actionSheetProgramId = program.id
                             },
-                            onClick = { requestInlineEditor(program.id, INLINE_EDITOR_HOST_PROGRAMS) }
-                        ),
-                        expandedContent = { inlineEditor(program, inlinePending) },
-                        reorderSlot = {
-                            com.example.ui.components.TrainPilotReorderHandle(
-                                state = programReorder,
-                                key = program.id,
-                                index = index,
-                                lastIndex = filteredPrograms.lastIndex,
-                                gap = TrainPilotCardSpacing.CardGap,
-                                label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
-                                moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
-                                moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
-                                testTag = "program_drag_handle_${program.id}",
-                                onMove = onMoveProgramOrder,
-                                modifier = Modifier.padding(end = 2.dp)
-                            )
-                        }
-                    )
-                }
-            } }
+                            headerModifier = Modifier.trainPilotCombinedClickable(
+                                shape = RoundedCornerShape(14.dp),
+                                onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
+                                onLongClick = {
+                                    actionSheetSnapshot = program
+                                    actionSheetProgramId = program.id
+                                },
+                                onClick = { requestInlineEditor(program.id, INLINE_EDITOR_HOST_PROGRAMS) }
+                            ),
+                            expandedContent = { inlineEditor(program, inlinePending) },
+                            reorderSlot = {
+                                com.example.ui.components.TrainPilotReorderHandle(
+                                    state = programReorder,
+                                    key = program.id,
+                                    index = index,
+                                    lastIndex = filteredPrograms.lastIndex,
+                                    gap = 1.dp,
+                                    label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
+                                    moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
+                                    moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
+                                    testTag = "program_drag_handle_${program.id}",
+                                    onMove = onMoveProgramOrder,
+                                    modifier = Modifier.padding(end = 2.dp)
+                                )
+                            }
+                        )
+                    }
+                } }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

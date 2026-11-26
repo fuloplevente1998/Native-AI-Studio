@@ -96,7 +96,10 @@ class Collector2786RegressionTest {
         header.performClick()
         compose.runOnIdle { assertTrue(state.expandedHealthWeeklyGoals) }
         val list = compose.onNodeWithTag("health_tab_screen")
-        // 2788: one steps section, no second card to open.
+        list.performScrollToNode(hasTestTag("health_weekly_steps_section_toggle"))
+        compose.onNodeWithTag("health_weekly_steps_bars").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_steps_section_toggle").performClick()
+        compose.onNodeWithTag("health_weekly_minutes_bars").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("health_weekly_steps_bars_info"))
         val info = compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
         info.assertTextContains("lépés", substring = true)
@@ -149,6 +152,8 @@ class Collector2786RegressionTest {
                 {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
         val screen = compose.onNodeWithTag("health_tab_screen")
+        screen.performScrollToNode(hasTestTag("health_weekly_steps_section_toggle"))
+        compose.onNodeWithTag("health_weekly_steps_section_toggle").performClick()
         screen.performScrollToNode(hasTestTag("health_weekly_steps_bars_info"))
         compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
             .assertTextContains("977", substring = true)

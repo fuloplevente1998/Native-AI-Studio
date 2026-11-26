@@ -82,7 +82,7 @@ class Collector2788RegressionTest {
         info.assertTextContains("teljes: nincs adat", substring = true)
     }
 
-    @Test fun todaySheetsReserveOneViewportAndTheirCloseButtonsAllowReopening() {
+    @Test fun todaySheetsOnlyReserveAViewportForChartsAndAsynchronousDetails() {
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
@@ -94,9 +94,13 @@ class Collector2788RegressionTest {
             sheet.assertExists()
             val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
             val height = card.bottom - card.top
-            assertTrue("$key should reserve a viewport even without data", height > 450.dp)
-            firstHeight?.let { assertTrue("$key must use the same height", kotlin.math.abs((height - it).value) <= 1f) }
-            firstHeight = height
+            if (key in setOf("sleep", "calories", "pulse", "steps")) {
+                assertTrue("$key should reserve a viewport even without data", height > 450.dp)
+                firstHeight?.let { assertTrue("$key must use the stable viewport", kotlin.math.abs((height - it).value) <= 1f) }
+                firstHeight = height
+            } else {
+                assertTrue("$key should wrap compact content", height < requireNotNull(firstHeight))
+            }
             compose.onNodeWithTag("health_today_tile_close").performClick()
             sheet.assertDoesNotExist()
         }

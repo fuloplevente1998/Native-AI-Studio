@@ -49,7 +49,8 @@ fun NativeWorkoutRouteMapBox(
     routeKeys: List<String> = emptyList(),
     refreshToken: Int = 0,
     mapContentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
-    showZoomControls: Boolean = true
+    showZoomControls: Boolean = true,
+    fitRecordedRoute: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -69,6 +70,7 @@ fun NativeWorkoutRouteMapBox(
     var segments by remember(routeKeys) {
         mutableStateOf<List<List<Pair<Double, Double>>>>(emptyList())
     }
+    var routeRead by remember(routeKeys) { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(routeKeys, refreshToken) {
         segments = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             com.repforge.app.ui.journal.WorkoutRouteCoordinates.loadAll(context, routeKeys)?.segments.orEmpty()
@@ -76,6 +78,7 @@ fun NativeWorkoutRouteMapBox(
                     lat.isFinite() && lon.isFinite() && lat in -90.0..90.0 && lon in -180.0..180.0
                 } }
         }
+        routeRead = true
     }
     val points = remember(segments) {
         segments.flatten().map { (lat, lon) -> com.google.android.gms.maps.model.LatLng(lat, lon) }
@@ -91,13 +94,15 @@ fun NativeWorkoutRouteMapBox(
         runCatching { com.google.android.gms.common.GoogleApiAvailability.getInstance()
             .isGooglePlayServicesAvailable(context) == com.google.android.gms.common.ConnectionResult.SUCCESS }.getOrDefault(false)
     }
-    var loaded by remember { mutableStateOf(false) }
-    var timedOut by remember { mutableStateOf(false) }
-    var retry by remember { mutableIntStateOf(0) }
-    androidx.compose.runtime.LaunchedEffect(configured, playServicesAvailable, retry) {
+    val recordedRouteKey = routeKeys.takeIf { fitRecordedRoute }
+    val waitingForRecordedRoute = fitRecordedRoute && points.isEmpty()
+    var loaded by remember(recordedRouteKey) { mutableStateOf(false) }
+    var timedOut by remember(recordedRouteKey) { mutableStateOf(false) }
+    var retry by remember(recordedRouteKey) { mutableIntStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(configured, playServicesAvailable, retry, recordedRouteKey, waitingForRecordedRoute) {
         loaded = false
         timedOut = false
-        if (configured && playServicesAvailable) {
+        if (configured && playServicesAvailable && !waitingForRecordedRoute) {
             kotlinx.coroutines.delay(15_000)
             if (!loaded) timedOut = true
         }
@@ -109,7 +114,20 @@ fun NativeWorkoutRouteMapBox(
         val googleControlsHeight = maxHeight - mapContentPadding.calculateTopPadding() -
             mapContentPadding.calculateBottomPadding()
         val lang = LocalTrainPilotStrings.current.language
-        if (!configured || !playServicesAvailable) {
+        if (waitingForRecordedRoute) {
+            val message = if (!routeRead && routeKeys.isNotEmpty()) when (lang) {
+                AppLanguage.HU -> "Útvonal betöltése…"
+                AppLanguage.EN -> "Loading route…"
+                AppLanguage.DE -> "Route wird geladen…"
+                AppLanguage.RO -> "Se încarcă traseul…"
+            } else when (lang) {
+                AppLanguage.HU -> "Nincs mentett útvonal."
+                AppLanguage.EN -> "No saved route."
+                AppLanguage.DE -> "Keine gespeicherte Route."
+                AppLanguage.RO -> "Nu există un traseu salvat."
+            }
+            Text(message, color = palette.textSecondary, modifier = Modifier.padding(12.dp))
+        } else if (!configured || !playServicesAvailable) {
             val missingMapsText = if (!configured) {
                 when (lang) {
                     AppLanguage.HU -> "Google Maps nincs beállítva. Az útvonal helyben megmarad."
@@ -147,12 +165,29 @@ fun NativeWorkoutRouteMapBox(
                 AppLanguage.DE -> "Ziel"
                 AppLanguage.RO -> "Sosire"
             }
-            androidx.compose.runtime.key(retry) {
-                val camera = com.google.maps.android.compose.rememberCameraPositionState()
-                // Only actual recorded coordinates move the camera. No synthetic GPS location.
-                androidx.compose.runtime.LaunchedEffect(loaded, points.firstOrNull()) {
-                    if (loaded) points.firstOrNull()?.let { point ->
-                        camera.move(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(point, 16f))
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val fitPadding = with(density) { minOf(48.dp, maxWidth / 4, maxHeight / 4).roundToPx() }
+            androidx.compose.runtime.key(retry, recordedRouteKey) {
+                val firstPoint = points.firstOrNull()
+                val camera = com.google.maps.android.compose.rememberCameraPositionState {
+                    if (fitRecordedRoute && firstPoint != null) {
+                        position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(firstPoint, 16f)
+                    }
+                }
+                val bounds = remember(points, fitRecordedRoute) {
+                    if (!fitRecordedRoute || firstPoint == null || points.none { it != firstPoint }) null
+                    else com.google.android.gms.maps.model.LatLngBounds.builder().apply {
+                        points.forEach { include(it) }
+                    }.build()
+                }
+                androidx.compose.runtime.LaunchedEffect(loaded, firstPoint, bounds) {
+                    if (loaded && firstPoint != null) {
+                        val update = if (bounds != null) {
+                            com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds, fitPadding)
+                        } else {
+                            com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(firstPoint, 16f)
+                        }
+                        camera.move(update)
                     }
                 }
                 com.google.maps.android.compose.GoogleMap(

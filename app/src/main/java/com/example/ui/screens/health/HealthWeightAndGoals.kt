@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.healthDetailsToggle
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
@@ -39,6 +40,8 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -118,8 +121,6 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
-    // 2788: one section per goal (no nested cards, no second "daily breakdown" to open): summary, bar,
-    // tappable day columns with day names, then the days themselves. The only place of the 7-day history.
     val goal = com.example.ui.components.weeklyGoalSummary(uiState, today)
     val lang = uiState.language
     val langCode = lang.name.lowercase()
@@ -129,13 +130,21 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val weekWorkouts = goalDays.sumOf { it.workoutCount }
 
     @Composable
-    fun Section(title: String, tag: String, content: @Composable () -> Unit) {
+    fun Section(title: String, tag: String, progress: @Composable () -> Unit, content: @Composable () -> Unit) {
+        var expanded by rememberSaveable { mutableStateOf(false) }
         Surface(shape = RoundedCornerShape(18.dp), color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
             modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile)
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                content()
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .healthDetailsToggle(expanded, lang, RoundedCornerShape(10.dp)) { expanded = !expanded }
+                    .testTag("${tag}_toggle"), verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary, modifier = Modifier.weight(1f))
+                    Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
+                }
+                if (expanded) content()
+                progress()
             }
         }
     }
@@ -161,18 +170,20 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val workouts = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
         .sortedByDescending { it.localWorkoutDate() }
     var historySheet by rememberSaveable { mutableStateOf<String?>(null) }
-    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"), "health_weekly_workouts_section") {
+    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"), "health_weekly_workouts_section", progress = {
+        GoalProgress(
+            "${goal.workoutsDone} / ${goal.workoutsTarget} " +
+                if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
+                else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta"),
+            goal.workoutFraction, "health_weekly_workouts_section_summary")
+    }) {
         Text(tr(lang, "Utolsó 7 nap: $weekWorkouts edzés · $weeklyMinutesCurrent perc", "Last 7 days: $weekWorkouts workouts · $weeklyMinutesCurrent min",
                 "Letzte 7 Tage: $weekWorkouts Trainings · $weeklyMinutesCurrent Min.", "Ultimele 7 zile: $weekWorkouts antrenamente · $weeklyMinutesCurrent min"),
             style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_minutes_total"))
         com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.toDouble().takeIf { d.workoutCount > 0 } },
             label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars",
             lang = langCode, showScale = true, detailIcon = Icons.Default.FitnessCenter)
-        GoalProgress(
-            "${goal.workoutsDone} / ${goal.workoutsTarget} " +
-                if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
-                else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta"),
-            goal.workoutFraction, "health_weekly_workouts_section_summary")
+
         if (workouts.isEmpty()) {
             Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -185,7 +196,12 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     }
 
     val measuredDays = goalDays.count { it.stepsAvailable }
-    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"), "health_weekly_steps_section") {
+    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"), "health_weekly_steps_section", progress = {
+        GoalProgress(
+            if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%",
+            if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f),
+            "health_weekly_steps_section_summary")
+    }) {
         Text(tr(lang, "Utolsó 7 nap · $measuredDays/7 nap adat · $primaryProviderName", "Last 7 days · $measuredDays/7 days of data · $primaryProviderName",
                 "Letzte 7 Tage · $measuredDays/7 Tage mit Daten · $primaryProviderName", "Ultimele 7 zile · $measuredDays/7 zile cu date · $primaryProviderName"),
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
@@ -199,10 +215,7 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
                 tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
                 detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
         }
-        GoalProgress(
-            if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%",
-            if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f),
-            "health_weekly_steps_section_summary")
+
         if (measuredDays > 0) {
             TextButton(onClick = { historySheet = "steps" },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
