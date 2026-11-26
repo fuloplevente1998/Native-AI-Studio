@@ -130,6 +130,19 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(data.toString(), JSONObject(restored.workout.health240Json!!).toString())
     }
 
+    @Test fun dailyJournalWorkoutEnergyUsesOnlySavedProviderAndExactActiveWindow() {
+        val snapshot = response().put("windowStart", start).put("windowEnd", end)
+        val row = seed(health = snapshot).workout.copy(originDevice = "phone")
+        val measured = com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.HC)!!
+        assertEquals(100.0, measured.active!!, 0.001)
+        assertNull(measured.total)
+        assertEquals(java.time.Instant.parse(start), measured.start)
+        assertEquals(java.time.Instant.parse(end), measured.end)
+        assertNull(com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.SAMSUNG))
+        assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(activeIntervalsJson = null), HealthJournalStore.HC))
+        assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(originDevice = "external"), HealthJournalStore.HC))
+    }
+
     @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
         val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val native = NativeWorkoutHealth(context, db)

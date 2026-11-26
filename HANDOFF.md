@@ -15,3 +15,5 @@
 - H1/H3 első passz: `StudioWorkoutHealthPreviews.kt` 2 perces foreground preview, mutexelt provider read, session/node/epoch/freshness, nested Wear, külön aktív/total detail projekció, mindkét provider késői retry. `WorkoutLiveHealth2814Test`. Napi napló hiánya és valós eszközös H4 nyitott. #792 cancelled, #793 R8 zöld, JVM ellenőrizendő; új head CI szükséges.
 
 - #794 R8 zöld, két JVM hiba: régi total UI tag és MainActivity line cap; fix a meglévő test/cap megőrzésével. `StudioHealthRootEffects.kt`, `HealthWorkoutEnergyDay.kt`: mentett provider/ablak energia külön naplórész, nem raw rekord, nem napi összeg. Új CI ellenőrizendő.
+
+- Napló energia projection regresszió: tényleges Room fixture, HC 100 kcal, másik provider, megváltozott aktív ablak és külső edzés kizárva; meglévő UI tesztben mindkét energia assertion.
