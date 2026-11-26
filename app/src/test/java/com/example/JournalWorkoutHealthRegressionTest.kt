@@ -298,6 +298,30 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
     }
 
+    @Test fun workoutStatisticsShowOnlyWearTotalAndNeverSubstituteActiveEnergy() {
+        val saved = seed()
+        val full = JSONObject().put("averageHeartRate", 128).put("maxHeartRate", 161)
+            .put("activeCalories", 47.8).put("totalCalories", 312)
+        var selected by androidx.compose.runtime.mutableStateOf(saved.copy(workout =
+            saved.workout.copy(wearMetricsJson = full.toString())))
+        compose.setContent { TrainPilotTheme {
+            com.repforge.app.ui.journal.JournalWorkoutHealthSummary(selected, nativeResources(context, "hu"), "hu")
+        } }
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("128 bpm")
+        compose.onNodeWithTag("journal_summary_heart_maxHeartRate_value").assertTextEquals("161 bpm")
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("312 kcal")
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        val activeOnly = JSONObject().put("activeCalories", 47.8)
+        compose.runOnIdle { selected = saved.copy(workout = saved.workout.copy(wearMetricsJson = activeOnly.toString())) }
+        compose.onNodeWithTag("journal_summary_total_missing").assertExists()
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        val projection = NativeWorkoutHealthSummary.readJournal(saved.workout.copy(wearMetricsJson = full.toString()))
+        assertEquals(47.8, projection.activeEnergy.values.getValue("activeCalories"), 0.001)
+        assertEquals(312.0, projection.workoutTotal.values.getValue("totalCalories"), 0.001)
+    }
+
     @Test fun importedSourceKeepsSamsungViaHealthConnectAndOwnMetrics() {
         val saved = seed()
         val imported = saved.copy(workout = saved.workout.copy(originDevice = "external",

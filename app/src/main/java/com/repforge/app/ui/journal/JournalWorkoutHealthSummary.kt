@@ -62,9 +62,15 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
             JournalWearInstallTip(detail.workout.id, text)
         } else {
             JournalHealthMetrics(values.filterKeys { it.endsWith("HeartRate") }, "summary_heart", text, number, compact = true)
-            JournalHealthMetrics(values.filterKeys { it.endsWith("Calories") }, "summary_energy", text, number, compact = true)
-            val measured = listOf(result.heart, result.activeEnergy, result.workoutTotal).filter { it.values.isNotEmpty() }
-            val partial = measured.any { it.incomplete } || values.size < 4
+            // Only the measured total is a workout headline; active energy remains stored.
+            val total = values.filterKeys { it == "totalCalories" }
+            JournalHealthMetrics(total, "summary_energy", text, number, compact = true)
+            if (total.isEmpty()) Text(text.getString(R.string.health_metric_totalcalories) + ": " +
+                text.getString(R.string.journal_no_data), color = colors.muted,
+                modifier = Modifier.testTag("journal_summary_total_missing"))
+            val measured = listOf(result.heart, result.workoutTotal).filter { it.values.isNotEmpty() }
+            val partial = measured.any { it.incomplete } ||
+                !values.keys.containsAll(setOf("averageHeartRate", "maxHeartRate", "totalCalories"))
             Text(local("Forrás: TrainPilot WearOS", "Source: TrainPilot WearOS", "Quelle: TrainPilot WearOS",
                 "Sursă: TrainPilot WearOS") + if (partial) " · " +
                 local("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială") else "",
