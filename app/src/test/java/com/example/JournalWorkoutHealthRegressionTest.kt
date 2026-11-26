@@ -196,6 +196,21 @@ class JournalWorkoutHealthRegressionTest {
         assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(originDevice = "external"), HealthJournalStore.HC))
     }
 
+    @Test fun dailyHealthProviderProjectionIsIndependentOfWearOnlyJournal() {
+        val saved = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val row = saved.workout.copy(originDevice = "phone")
+        val before = row.health240Json
+        val wear = NativeWorkoutHealthSummary.readJournal(row)
+        assertEquals(200.0, wear.workoutTotal.values.getValue("totalCalories"), 0.001)
+        assertTrue(wear.activeEnergy.values.isEmpty())
+        val hc = com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.HC)!!
+        assertEquals(100.0, hc.active!!, 0.001)
+        assertNull(hc.total)
+        assertTrue(hc.activeEvidence.evidence.all { it.provider == HealthJournalStore.HC })
+        assertNull(com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.SAMSUNG))
+        assertEquals(before, row.health240Json)
+    }
+
     @Test fun dailyJournalKeepsPartialProviderEnergyWhileWorkoutSourceIsWearOnly() {
         val data = response().put("windowStart",start).put("windowEnd",end)
         data.getJSONArray("measurementWindows").getJSONObject(1).remove("activeCalories")
