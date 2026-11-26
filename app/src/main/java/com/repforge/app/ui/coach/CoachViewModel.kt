@@ -3,14 +3,12 @@ package com.repforge.app.ui.coach
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.repforge.app.HealthJournalStore
 import com.repforge.app.data.db.CalendarScheduleEntity
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONObject
 import java.time.*
 
 internal data class CoachTarget(val programId: String, val dayId: String, val title: String,
@@ -108,8 +106,6 @@ internal class CoachViewModel internal constructor(application: Application,
     }
 
     private suspend fun readCoach() {
-        val provider = HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC)
-        if (_state.value.provider != provider) _state.value = _state.value.copy(readiness = null, exercises = emptyList())
         _state.value = _state.value.copy(loading = true, error = false)
         try {
             val loaded = withContext(Dispatchers.IO) { snapshotReader?.invoke() ?: readCanonical() }
@@ -128,9 +124,6 @@ internal class CoachViewModel internal constructor(application: Application,
         val selected = NativeSelectedCoachReadings.load(app, db, now, zone)
         val target = NativeCoachTargets(db).select(settings.activeProgramId, settings.language, now, zone)
         val advice = NativeCoachAdviceRepository(db).load(target, settings, selected.readiness, now)
-        check(HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC) == selected.provider) {
-            "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."
-        }
         CoachUiState(false, false, settings.language, selected.readiness, target,
             refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed,
             exercises = advice, provider = selected.provider, variationSaved = _state.value.variationSaved,

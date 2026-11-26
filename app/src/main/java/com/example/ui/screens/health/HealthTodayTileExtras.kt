@@ -219,7 +219,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                 lang = lang.name.lowercase())
         }
     }
-    if (key != "sleep" && key != "calories") return
+    if (key != "sleep") return
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
     var energyType by remember(today) { androidx.compose.runtime.mutableStateOf("ActiveCaloriesBurnedRecord") }
     val type = if (key == "sleep") "SleepSessionRecord" else energyType

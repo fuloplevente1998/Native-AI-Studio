@@ -774,8 +774,7 @@ fun HealthTabScreen(
         com.example.ui.components.TrainPilotRouteSheet(
             routeKey = healthSectionSheet,
             onDismiss = closeSheet,
-            testTag = "health_${healthSectionSheet}_sheet",
-            fillHeight = journal
+            testTag = "health_${healthSectionSheet}_sheet"
         ) {
             healthSectionState.SaveableStateProvider(healthSectionSheet) {
                 Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {

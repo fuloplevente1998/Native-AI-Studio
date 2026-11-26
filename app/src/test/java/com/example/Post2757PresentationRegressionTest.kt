@@ -52,7 +52,7 @@ class Post2757PresentationRegressionTest {
                 timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
         fun assertBodyReachesSheetBottom() {
-            val sheet = compose.onNodeWithTag("quick_workout_sheet_full").getUnclippedBoundsInRoot()
+            val sheet = compose.onNodeWithTag("quick_workout_sheet_host_body").getUnclippedBoundsInRoot()
             val body = compose.onNodeWithTag("quick_workout_body").getUnclippedBoundsInRoot()
             assertEquals("Scrollable body must use the entire space below the tabs", sheet.bottom, body.bottom)
         }
@@ -80,11 +80,30 @@ class Post2757PresentationRegressionTest {
         compose.runOnIdle { assertEquals(1, dismissed); assertEquals(last, started) }
     }
 
+    @Test fun quickSheetGrowsForLongerContentWithoutForcingShortTabsToFullHeight() {
+        var tab by mutableIntStateOf(0)
+        compose.setContent { TrainPilotTheme {
+            QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, {}, {},
+                strengthContent = { androidx.compose.material3.Text("Short content") },
+                timedContent = {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxHeight())
+                })
+        } }
+        val content = compose.onNodeWithTag("quick_workout_sheet_host_body")
+        val short = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        compose.onNodeWithTag("quick_tab_1").performClick()
+        val tall = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        assertTrue("Short content must not reserve the full viewport", tall > short)
+        compose.onNodeWithTag("quick_tab_0").performClick()
+        assertEquals(short, content.getUnclippedBoundsInRoot().let { it.bottom - it.top })
+    }
+
     @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {
         var journalFocus: Pair<String, String>? = null
         var openedCoach = false
+        var state by mutableStateOf(TrainPilotUiState())
         compose.setContent { TrainPilotTheme {
-            HomeScreen(TrainPilotUiState(), TrainPilotStrings.forLanguage(AppLanguage.HU),
+            HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                 onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                 onOpenWatchAndSync = {}, onOpenCoachReadiness = {}, onOpenGoalsDialog = {},
                 onOpenPersonalPlanner = {}, onOpenHealthJournal = { journalFocus = it },
@@ -116,7 +135,15 @@ class Post2757PresentationRegressionTest {
             assertEquals(java.time.LocalDate.now().toString() to "SleepSessionRecord", journalFocus)
         }
         compose.onNodeWithTag("home_today_recovery").performScrollTo().performClick()
+        compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
+        compose.runOnIdle {
+            state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = true))
+        }
         compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.runOnIdle {
+            state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = false))
+        }
+        compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
         compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(openedCoach) }
     }

@@ -30,7 +30,9 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         return
     }
     val colors = LocalTrainPilotColors.current
-    val result = remember(detail.workout) { NativeWorkoutHealthSummary.read(detail.workout) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val samsungEnabled = com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
+    val result = remember(detail.workout, samsungEnabled) { NativeWorkoutHealthSummary.read(detail.workout, samsungEnabled) }
     val number = remember(language) { NumberFormat.getNumberInstance(Locale.forLanguageTag(language)).apply { maximumFractionDigits = 1 } }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
@@ -40,8 +42,7 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Edzés pulzus és energia", "Workout heart rate and energy", "Trainingspuls und Energie", "Puls și energie antrenament"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)
-        val energy = listOf(result.activeEnergy, result.totalEnergy).filter { it.values.isNotEmpty() }
-        val displayEnergy = if (energy.isEmpty()) listOf(result.energy) else energy
+        val displayEnergy = listOf(result.workoutTotal)
         val displayed = listOf("summary_heart" to result.heart) +
             displayEnergy.map { metric -> "summary_energy" to metric }
         for ((tag, metric) in displayed) {

@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.model.BodyWeightLogItem
@@ -81,7 +82,7 @@ class Collector2788RegressionTest {
         info.assertTextContains("teljes: nincs adat", substring = true)
     }
 
-    @Test fun allTodayTileCloseButtonsDismissAndTheTilesCanReopen() {
+    @Test fun todaySheetsFitShortContentsAndTheirCloseButtonsAllowReopening() {
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
@@ -90,6 +91,10 @@ class Collector2788RegressionTest {
             tile.performClick()
             val sheet = compose.onNodeWithTag("health_today_tile_sheet")
             sheet.assertExists()
+            if (key == "steps" || key == "sleep") {
+                val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
+                assertTrue("$key should wrap when there is little data", card.bottom - card.top < 500.dp)
+            }
             compose.onNodeWithTag("health_today_tile_close").performClick()
             sheet.assertDoesNotExist()
         }

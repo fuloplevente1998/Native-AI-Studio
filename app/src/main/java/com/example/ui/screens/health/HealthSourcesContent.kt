@@ -130,7 +130,7 @@ internal fun HealthSourcesContent(
             }
         }
 
-        ExternalWorkoutImportPanel(uiState.language, enabled = !uiState.healthSyncBusy)
+        ExternalWorkoutImportPanel(uiState.language, enabled = !uiState.healthSyncBusy, samsungEnabled = uiState.permissionSamsungHealthEnabled)
         if (uiState.showConnectedWatch) {
             Spacer(Modifier.height(10.dp))
             Surface(

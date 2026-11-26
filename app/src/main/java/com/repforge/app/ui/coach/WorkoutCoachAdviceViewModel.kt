@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.repforge.app.ActiveWorkoutStore
-import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.store.TrainPilotSettingsStore
@@ -65,12 +64,10 @@ internal class WorkoutCoachAdviceViewModel internal constructor(application: App
                         NativeDataReplacement.mutate(app) {
                             val now = Instant.now()
                             val selected = NativeSelectedCoachReadings.load(app, db, now, ZoneId.systemDefault())
-                            val advice = db.withTransaction {
+                            db.withTransaction {
                                 NativeCoachAdviceRepository(db).loadActiveExercise(JSONObject(raw), id, prefs,
                                     selected.readiness, now)
                             }
-                            check(HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC) == selected.provider)
-                            advice
                         }
                     }
                     // A selection change may arrive while Room is reading. Never publish its old advice.

@@ -296,9 +296,11 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         val feature = if (provider == HealthJournalStore.HC) NativePrivacyControls.HEALTH_CONNECT
             else NativePrivacyControls.SAMSUNG_HEALTH
         if (!NativePrivacyControls.enabled(context, feature)) {
-            model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
+            val message = privacyMessage(model.uiState.value.language.name,
                 "Ez az adatforrás ki van kapcsolva.", "This health source is off.",
-                "Diese Gesundheitsquelle ist ausgeschaltet.", "Această sursă de sănătate este oprită."))
+                "Diese Gesundheitsquelle ist ausgeschaltet.", "Această sursă de sănătate este oprită.")
+            if (healthActionJob?.isActive != true) model.updateHealthSyncStatus(false, failed = true, message = message)
+            model.showBannerMessage(message)
             return
         }
         if (healthActionJob?.isActive == true) {

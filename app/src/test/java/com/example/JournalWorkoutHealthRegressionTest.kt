@@ -215,8 +215,8 @@ class JournalWorkoutHealthRegressionTest {
             }
         }
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("50 kcal")
-        compose.onNodeWithTag("journal_hc_coverage_activeCalories").assertTextContains("Részleges mérés", substring = true)
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_totalCalories_value").assertDoesNotExist()
     }
 
     @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
@@ -236,7 +236,7 @@ class JournalWorkoutHealthRegressionTest {
                 androidx.compose.foundation.lazy.LazyColumn(Modifier.testTag("provider_list")) {
                     item {
                         JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
-                            provider = provider, selectProvider = { provider = it }) { reads.add(provider) }
+                            provider = provider, selectProvider = { provider = it }, samsungEnabled = true) { reads.add(provider) }
                     }
                 }
             }
@@ -281,7 +281,7 @@ class JournalWorkoutHealthRegressionTest {
         val selectedProviders = mutableListOf<String>()
         compose.setContent { TrainPilotTheme {
             JournalHealthPanel(detail, nativeResources(context, "hu"), "hu", true, null, true,
-                provider = HealthJournalStore.HC, selectProvider = { selectedProviders += it }) { }
+                provider = HealthJournalStore.HC, selectProvider = { selectedProviders += it }, samsungEnabled = true) { }
         } }
         compose.onNodeWithTag("journal_provider_samsung_health").assertIsEnabled().performClick()
         compose.onNodeWithTag("journal_samsung_health_status").assertExists()
@@ -361,8 +361,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
-        list.performScrollToNode(hasTestTag("journal_summary_energy_activeCalories_value"))
-        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertTextEquals("100 kcal")
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
         compose.onNodeWithTag("log_detail_open_watch_sync").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_2"))
@@ -372,8 +371,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        list.performScrollToNode(hasTestTag("journal_hc_activeCalories_value"))
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("100 kcal")
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_provider_wear"))
         compose.onNodeWithTag("journal_provider_wear").performClick()
         list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))

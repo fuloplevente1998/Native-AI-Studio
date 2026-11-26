@@ -531,14 +531,14 @@ fun AnatomicalMuscleHeatmapCard(
     }
     if (showWorkoutRows && selectedMuscleObj != null && onOpenWorkout != null) {
         TrainPilotScreenSheet(onDismiss = { showWorkoutRows = false },
-            testTag = "muscle_workouts_sheet", fillHeight = true) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+            testTag = "muscle_workouts_sheet") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${selectedMuscleObj.localizedName(lang)} · ${periodOptions[selectedPeriodIdx]}",
                         Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     TrainPilotRedCloseButton(onClick = { showWorkoutRows = false })
                 }
-                androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f)) {
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false)) {
                     val rows = selectedMuscleObj.workoutRows.filter { it.workoutId.isNotBlank() }
                     items(rows.size) { index ->
                         val entry = rows[index]

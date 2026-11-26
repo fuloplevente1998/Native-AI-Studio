@@ -143,7 +143,7 @@ class LegacyRestoreEvidenceRegressionTest {
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_hc_totalCalories_value").assertTextEquals("72,2 kcal")
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("8 kcal")
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
     }
     @Test fun samsungHealthConnectAndWearRespectBackupConsentInBothJsonAndZipWithoutDeletingLocalData() {
         restore()

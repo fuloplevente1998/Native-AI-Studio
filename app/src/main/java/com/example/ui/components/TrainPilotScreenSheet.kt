@@ -77,7 +77,7 @@ fun sheetAwareFillMaxSize(): Modifier =
 fun TrainPilotScreenSheet(
     onDismiss: () -> Unit,
     testTag: String,
-    /** 2782: tabbed sheets open at full height so switching tabs never changes the sheet height. */
+    /** Explicit full-height editor/viewport opt-in; ordinary browsing sheets wrap content. */
     fillHeight: Boolean = false,
     /** Paint the frozen window scene directly for short, frequently opened detail sheets. */
     staticGlass: Boolean = false,
@@ -103,7 +103,7 @@ fun TrainPilotScreenSheet(
         }
     ) {
         androidx.compose.runtime.CompositionLocalProvider(LocalTrainPilotInSheet provides true) {
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().testTag("${testTag}_host_body")
                 .then(if (fillHeight) Modifier.fillMaxHeight().testTag("${testTag}_full") else Modifier)) { content() }
         }
     }

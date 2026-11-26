@@ -59,8 +59,8 @@ fun QuickWorkoutHubSheet(
     timedContent: @Composable () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
-    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet", fillHeight = true) {
-        Column(Modifier.fillMaxSize()) {
+    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet") {
+        Column(Modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(qw(language, "Gyors edzés", "Quick workout", "Schnelltraining", "Antrenament rapid"),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
@@ -101,7 +101,7 @@ fun QuickWorkoutHubSheet(
                     }
                 }
             }
-            Box(Modifier.fillMaxWidth().weight(1f).testTag("quick_workout_body")) {
+            Box(Modifier.fillMaxWidth().weight(1f, fill = false).testTag("quick_workout_body")) {
                 when (tab) {
                     0 -> strengthContent()
                     1 -> timedContent()
@@ -125,7 +125,7 @@ private fun QuickOutdoorTab(language: AppLanguage, onStartOutdoor: (String) -> U
     )
     var selected by rememberSaveable { mutableStateOf(activities.first().second) }
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 16.dp),
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         activities.chunked(2).forEach { pair ->

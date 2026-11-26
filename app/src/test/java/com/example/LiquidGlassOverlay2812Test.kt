@@ -27,9 +27,23 @@ class LiquidGlassOverlay2812Test {
         assertEquals(500, lock.heightFor(true, 0, 500))
         lock.measured(500)
         assertEquals(640, lock.heightFor(true, 0, 800))
+        assertTrue("a new measured height must be applied after settling", lock.release())
         assertNull(lock.heightFor(false, 0, 800))
         lock.measured(420)
         assertEquals(420, lock.heightFor(true, 0, 800))
+        assertFalse("unchanged size requires no new layout", lock.release())
+        assertFalse(lock.hasPin)
+    }
+
+    @Test fun rootBackdropRemainsPausedUntilTheLastSheetCloses() {
+        val root = GlassSceneState()
+        assertFalse(root.coveredBySheet)
+        root.sheetOpened()
+        root.sheetOpened()
+        root.sheetClosed()
+        assertTrue(root.coveredBySheet)
+        root.sheetClosed()
+        assertFalse(root.coveredBySheet)
     }
 
     @Test fun everySheetColorFollowsPaletteNotColor() {

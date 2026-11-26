@@ -43,7 +43,8 @@ internal object NativeHealthRefresh {
         requestSamsungPermission: Boolean = false,
         requireScreenGuard: () -> Unit = {}
     ): Result<JSONObject> =
-        readDay(context, activity, LocalDate.now(), requestSamsungPermission, requireScreenGuard)
+        execute(context, activity, LocalDate.now(), requestSamsungPermission, requireScreenGuard,
+            providerOverride = HealthJournalStore.HC)
 
     suspend fun readDay(
         context: Context,

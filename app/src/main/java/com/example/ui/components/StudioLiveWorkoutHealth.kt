@@ -119,7 +119,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
             listOfNotNull(result, previews[provider]).maxByOrNull { it.optString("readAt") }?.let { data ->
                 Text(NativeWorkoutHealthSource.label(provider), color = palette.primary, style = MaterialTheme.typography.titleSmall)
                 Text("${word("Időablak", "Time window", "Zeitfenster", "Interval orar")}: ${data.optString("start")} – ${data.optString("end")}")
-                val metrics = NativeWorkoutHealth.metrics(data, false)
+                val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "workoutCalories")
                 com.repforge.app.ui.journal.JournalHealthMetrics(metrics, "live", com.repforge.app.ui.text.nativeResources(context, langCode),
                     java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag(langCode)))
                 if (metrics.isEmpty()) Text(word(

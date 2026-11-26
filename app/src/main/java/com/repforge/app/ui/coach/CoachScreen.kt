@@ -78,7 +78,9 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
         }
         val signals = listOf(words[7] to readiness?.samsungScore, words[8] to readiness?.trainpilotScore,
             words[9] to readiness?.sleepMinutes, "HRV (ms)" to readiness?.hrvMs,
-            words[10] to readiness?.baselineMs, words[11] to readiness?.load)
+            words[10] to readiness?.baselineMs, words[11] to readiness?.load).filter { (label, _) ->
+            label != words[7] || com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
+        }
         for (pair in signals.chunked(2)) item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for ((label, n) in pair) Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = colors.card2)) {

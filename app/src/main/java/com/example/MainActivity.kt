@@ -1267,8 +1267,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         // 2782: closes only this sheet; a second dismiss (system back + sheet) no longer
                         // pops further and lands on Home.
                         onDismiss = { viewModel.dismissSheetRoute(sheetRoute, sheetDepth) },
-                        testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}",
-                        fillHeight = sheetRoute in com.example.ui.components.TrainPilotFullHeightSheetRoutes
+                        testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}"
                     ) { renderRoute(uiState) } // retained browsing route content
                 }
             }
