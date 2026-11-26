@@ -7,6 +7,8 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.KyantWindowOverlay
+import com.example.ui.theme.LocalGlassChromeUnderlap
+import com.example.ui.theme.LocalGlassPowerSave
 import com.repforge.app.ui.theme.trainPilotFrame
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,7 +45,8 @@ internal fun TrainPilotAlertDialog(
     titleContentColor: Color = Color.Unspecified,
     textContentColor: Color = Color.Unspecified,
     tonalElevation: Dp = 0.dp,
-    properties: DialogProperties = DialogProperties(usePlatformDefaultWidth = false)
+    properties: DialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+    workoutEditor: Boolean = false
 ) {
     val p = LocalTrainPilotPalette.current
     val background = containerColor.takeIf { it != Color.Unspecified } ?: p.surfaceCard
@@ -59,10 +62,12 @@ internal fun TrainPilotAlertDialog(
         val panel: @Composable (Modifier, Color) -> Unit = { overlay, fill ->
             MaterialTheme(typography = compactType) {
                 Surface(color = fill, shape = shape, tonalElevation = tonalElevation,
+                    border = if (workoutEditor) workoutEditorFrame(p) else null,
                     modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
                         .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
                         .then(overlay)
-                        .then(if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Overlay)
+                        .then(if (workoutEditor) Modifier.trainPilotSoftGlow(p.primary, shape, 4.dp)
+                            else if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Overlay)
                             else Modifier.trainPilotSoftGlow(p.primary, shape, 4.dp)
                                 .trainPilotFrame(TrainPilotFrames.page(p.sectionBorder, p.primary), shape))) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -94,11 +99,15 @@ internal fun TrainPilotAlertDialog(
                 }
             }
         }
-        if (glass && KyantGlass.active(p) && LocalGlassOpticsEnabled.current) {
-            KyantWindowOverlay(p, shape) { overlay -> panel(overlay, Color.Transparent) }
+        // Only the explicitly opted-in workout dialog gets the static local lens. The
+        // measurement cards and the general optics gate remain untouched.
+        val workoutOptics = workoutEditor && LocalGlassChromeUnderlap.current && !LocalGlassPowerSave.current
+        if (glass && (LocalGlassOpticsEnabled.current || workoutOptics) && KyantGlass.active(p)) {
+            KyantWindowOverlay(p, shape, staticSheet = workoutEditor) { overlay -> panel(overlay, Color.Transparent) }
         } else {
             CompositionLocalProvider(LocalGlassOverlay provides glass) {
-                panel(Modifier, if (glass) p.glassOverlayFill(background) else background)
+                panel(Modifier, if (workoutEditor) workoutEditorFill(p, background)
+                    else if (glass) p.glassOverlayFill(background) else background)
             }
         }
     }

@@ -121,6 +121,11 @@ internal object StudioWorkoutSummaryPresentation {
                 WearLiveHealthStore.valid(it) && it.optString("workoutId") == id &&
                     it.optLong("updatedAt") >= Instant.parse(frame.getString("started")).toEpochMilli() &&
                     it.optLong("updatedAt") <= now.toEpochMilli()
+            }?.let { packet ->
+                // The current Wear DataItem wraps measured data in summary. Legacy flat
+                // receipts remain readable, but a nested mismatched workout is rejected.
+                val measured = packet.optJSONObject("summary") ?: packet
+                measured.takeIf { it.optString("workoutId", id) == id }
             }
             val savedWear = NativeSavedWearHealth.fromRaw(frame)?.takeIf {
                 it.optString("workoutId").let { wearId -> wearId.isBlank() || wearId == id ||

@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.repforge.app.ui.theme.trainPilotFrame
@@ -195,9 +198,10 @@ internal fun CoachDetailScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(1f)
+                                .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile, live = false)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
@@ -217,9 +221,10 @@ internal fun CoachDetailScreen(
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(1f)
+                                .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile, live = false)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
@@ -236,9 +241,10 @@ internal fun CoachDetailScreen(
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(1f)
+                                .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile, live = false)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
@@ -286,9 +292,10 @@ internal fun CoachExerciseAdviceRow(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = palette.glassTile(palette.surfaceElevated, elevated = true),
+        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
         modifier = Modifier
             .fillMaxWidth()
+            .liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
             .trainPilotClickable(RoundedCornerShape(12.dp)) { onClick() }
     ) {
         Row(

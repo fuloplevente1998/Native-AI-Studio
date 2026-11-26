@@ -159,5 +159,4 @@ internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Col
 
 @Composable
 internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
-    if (!palette.isLiquidGlass) this else background(glassHeaderControlPaint(palette.glassClarity, role), shape)
-        .trainPilotGlassRim(palette, shape, role)
+    if (!palette.isLiquidGlass) this else liquidDropMaterial(palette, shape, role, live = false)

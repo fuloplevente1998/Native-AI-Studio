@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.layout.size
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +41,7 @@ import com.example.ui.theme.overlayRoleFill
 import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.liquidDropMaterial
 import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
@@ -80,16 +83,15 @@ fun TrainPilotFilterChip(
     Surface(
         shape = shape,
         color = when {
-            overlay -> p.overlayRoleFill(p.surfaceCard, role)
-            glassChip && selected -> p.glassControlFill(selection.surface, GlassMaterialRole.Selection)
+            glassChip -> Color.Transparent
             selected -> selection.surface
-            glassChip -> p.glassTile(p.surfaceCard)
             else -> p.surfaceCard
         },
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
         modifier = modifier.heightIn(min = if (p.isLiquidGlass) 48.dp else 40.dp)
-            .then(if (overlay) Modifier.overlayRoleRim(p, shape, role)
-                else Modifier.trainPilotGlassRim(p, shape, if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Tile))
+            .then(if (glassChip) Modifier.liquidDropMaterial(p, shape, role,
+                accent = if (selected) p.primary else null, live = selected && !overlay)
+                else Modifier)
             .semantics { this.selected = selected }
             .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {
@@ -119,9 +121,9 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
         focusedContainerColor = p.glassTile(p.surfaceCard, elevated = true), unfocusedContainerColor = p.glassTile(p.surfaceCard),
         disabledContainerColor = p.surfaceCard, errorContainerColor = p.glassTile(p.surfaceCard),
         cursorColor = p.primary, errorCursorColor = p.danger,
-        // 2809/2: glass fields keep their filled container; the neutral outline vanishes, focus and error stay.
+        // Input boundaries are functional, not decorative: keep a visible quiet outline, focus and error.
         focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
-        unfocusedBorderColor = if (com.repforge.app.ui.theme.liquidGlassDropsFrame(p, outline)) Color.Transparent else outline,
+        unfocusedBorderColor = if (p.isLiquidGlass) p.cardBorder.copy(alpha = .60f) else outline,
         disabledBorderColor = if (p.isLiquidGlass) Color.Transparent else p.cardBorder.copy(alpha = 0.5f), errorBorderColor = p.danger,
         focusedLabelColor = selection.foreground, unfocusedLabelColor = p.textSecondary,
         disabledLabelColor = p.textSecondary, errorLabelColor = p.danger,
@@ -210,10 +212,11 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.isLiquidGlass
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (glass) p.glassControlFill(p.primary, GlassMaterialRole.Selection) else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
+    Surface(shape = shape, color = if (glass) Color.Transparent else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
         border = if (glass) BorderStroke(1.dp, p.selectionColors().border) else null,
         modifier = modifier.heightIn(min = 48.dp)
-            .then(if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Button) else Modifier)
+            .then(if (glass) Modifier.liquidDropMaterial(p, shape, GlassMaterialRole.Selection,
+                accent = p.primary, allowMeasurement = true) else Modifier)
             .trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
@@ -228,9 +231,9 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.isLiquidGlass
     val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
-    Surface(shape = shape, color = if (glass) p.glassControlFill(p.surfaceElevated, GlassMaterialRole.Button) else p.surfaceElevated, border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, p.cardBorder)),
+    Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, p.cardBorder)),
         modifier = modifier.heightIn(min = 48.dp)
-            .then(if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Button) else Modifier)
+            .then(if (glass) Modifier.liquidDropMaterial(p, shape, GlassMaterialRole.Button) else Modifier)
             .trainPilotClickable(shape, enabled = enabled) { onClick() }) {
         androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
@@ -239,8 +242,8 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
     }
 }
 
-/** Material switch semantics, gestures, sizing and legacy colors are unchanged. Glass tracks are
- * bounded, inexpensive state paint; no independent blur, layer capture or animation. */
+/** Keep native switch semantics and layout; a small shaped thumb highlight is drawn inside
+ * the Material thumb, not over the hit area or the track. No independent backdrop. */
 @Composable
 internal fun TrainPilotSwitch(
     checked: Boolean,
@@ -259,5 +262,14 @@ internal fun TrainPilotSwitch(
         uncheckedBorderColor = p.cardBorder
     ) else colors
     androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange,
-        modifier = modifier, enabled = enabled, colors = glassColors)
+        modifier = modifier, enabled = enabled, colors = glassColors,
+        thumbContent = if (p.isLiquidGlass && enabled) ({
+            // A small inset shine; the native thumb retains the checked/unchecked color.
+            androidx.compose.foundation.Canvas(Modifier.size(10.dp)) {
+                drawCircle(Color.White.copy(alpha = .42f), radius = size.minDimension * .24f,
+                    center = androidx.compose.ui.geometry.Offset(size.width * .35f, size.height * .30f))
+                drawCircle(Color.Black.copy(alpha = .20f), radius = size.minDimension * .20f,
+                    center = androidx.compose.ui.geometry.Offset(size.width * .69f, size.height * .72f))
+            }
+        }) else null)
 }

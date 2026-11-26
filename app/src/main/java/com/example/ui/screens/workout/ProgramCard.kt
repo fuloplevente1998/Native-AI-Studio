@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
@@ -126,8 +128,9 @@ internal fun ProgramCardContent(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = palette.glassTile(palette.primary, elevated = true),
-                            modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Button)
+                            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.primary,
+                            modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Selection,
+                                accent = palette.primary, live = false)
                                 .testTag("${tagPrefix}program_activate_visual_${program.id}")
                         ) {
                             Text(

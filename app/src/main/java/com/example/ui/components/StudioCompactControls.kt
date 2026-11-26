@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.ui.graphics.Color
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -54,8 +58,9 @@ internal fun StudioCompactActionRow(actions: List<StudioCompactAction>, modifier
             verticalArrangement = Arrangement.spacedBy(4.dp), maxItemsInEachRow = count) {
             actions.forEach { action ->
                 TrainPilotTextButton(onClick = action.onClick, enabled = action.enabled,
-                    modifier = Modifier.weight(1f).heightIn(min = 40.dp), shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.textButtonColors(containerColor = palette.surfaceElevated,
+                    modifier = Modifier.weight(1f).heightIn(min = 40.dp)
+                        .then(if (action.enabled) Modifier.liquidDropMaterial(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Button, live = false) else Modifier), shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.textButtonColors(containerColor = if (palette.isLiquidGlass && action.enabled) Color.Transparent else palette.surfaceElevated,
                         contentColor = palette.textPrimary), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
                     Text(action.label, style = style, maxLines = 1, softWrap = false)
                 }
@@ -100,13 +105,15 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
         }
     }
     val toggle: @Composable () -> Unit = {
-        Surface(shape = RoundedCornerShape(10.dp), color = if (item.completed) palette.success else palette.surfaceCard,
+        Surface(shape = RoundedCornerShape(10.dp), color = if (palette.isLiquidGlass) Color.Transparent else if (item.completed) palette.success else palette.surfaceCard,
             border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (item.completed) palette.success else palette.cardBorder)),
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
+            modifier = Modifier.size(48.dp).liquidDropMaterial(palette, RoundedCornerShape(10.dp),
+                if (item.completed) GlassMaterialRole.Selection else GlassMaterialRole.Button,
+                accent = if (item.completed) palette.success else null, live = false).clip(RoundedCornerShape(10.dp))
                 .toggleable(value = item.completed, role = Role.Checkbox, onValueChange = { onToggle() }).testTag("bilateral_set_${item.setNumber}_complete")) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Check, word("Sorozat kész", "Set complete", "Satz fertig", "Serie completă"),
-                    tint = if (item.completed) palette.onPrimary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                    tint = if (item.completed && palette.isLiquidGlass) palette.success else if (item.completed) palette.onPrimary else palette.textSecondary, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -118,9 +125,11 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
             val full = if (left) word("Bal oldal", "Left side", "Linke Seite", "Partea stângă")
                 else word("Jobb oldal", "Right side", "Rechte Seite", "Partea dreaptă")
             val shape = RoundedCornerShape(10.dp)
-            Surface(shape = shape, color = if (recorded) palette.success.copy(alpha = .16f) else palette.surfaceCard,
+            Surface(shape = shape, color = if (palette.isLiquidGlass) Color.Transparent else if (recorded) palette.success.copy(alpha = .16f) else palette.surfaceCard,
                 border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (recorded) palette.success else palette.cardBorder)),
-                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 56.dp).trainPilotClickable(shape, onClick = onEdit)
+                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 56.dp)
+                    .liquidDropMaterial(palette, shape, GlassMaterialRole.Input, accent = if (recorded) palette.success else null, live = false)
+                    .trainPilotClickable(shape, onClick = onEdit)
                     .semantics { contentDescription = "$full: $seconds $unit" }
                     .testTag("bilateral_set_${item.setNumber}_${if (left) "left" else "right"}_value")) {
                 Column(Modifier.padding(horizontal = 6.dp, vertical = 5.dp),

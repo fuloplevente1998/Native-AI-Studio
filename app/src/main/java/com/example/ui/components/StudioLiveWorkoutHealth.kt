@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -41,7 +45,9 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         com.example.model.AppLanguage.DE -> de
         com.example.model.AppLanguage.RO -> ro
     }
-    IconButton(onClick = open, modifier = Modifier.size(48.dp).testTag("workout_read_health")) {
+    IconButton(onClick = open, modifier = Modifier.size(48.dp)
+        .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Button, live = false)
+        .testTag("workout_read_health")) {
         Icon(Icons.Default.FavoriteBorder, contentDescription = word(
             "Edzés egészségadatainak lekérése",
             "Read workout health data",
@@ -57,7 +63,17 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
     val scope = rememberCoroutineScope()
     val requestPermission = LocalRequestWorkoutHealthPermission.current
     var provider by remember { mutableStateOf(HealthJournalStore.HC) }
-    var result by remember { mutableStateOf<JSONObject?>(null) }
+    val previews = LocalWorkoutHealthPreviews.current
+    val currentFrame by com.repforge.app.ActiveWorkoutStore.snapshotFlow.collectAsState()
+    val frameKey = WorkoutLiveHealthPolicy.sessionKey(currentFrame)
+    var result by remember(frameKey) { mutableStateOf<JSONObject?>(null) }
+    val liveWear by com.repforge.app.WearLiveHealthStore.liveHealthFlow.collectAsState()
+    val expectedNode by com.repforge.app.WearLiveHealthStore.expectedNode351.collectAsState()
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(frameKey) {
+        while (true) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(1000) }
+    }
+    val watch = WorkoutLiveHealthPolicy.watchMetrics(currentFrame, liveWear, expectedNode, now)
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
@@ -87,7 +103,18 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
             TrainPilotOutlinedButton(enabled = !busy, onClick = { requestPermission(provider) }) {
                 Text("${NativeWorkoutHealthSource.label(provider)} • ${word("engedélyek", "permissions", "Berechtigungen", "permisiuni")}")
             }
-            result?.let { data ->
+            if (watch.isNotEmpty()) {
+                Text("TrainPilot Wear OS", style = MaterialTheme.typography.titleSmall, color = palette.primary)
+                watch["heartRate"]?.let { value ->
+                    Text("${word("Aktuális pulzus", "Current heart rate", "Aktueller Puls", "Puls curent")}: ${value.toInt()} bpm")
+                }
+                com.repforge.app.ui.journal.JournalHealthMetrics(watch - "heartRate", "live_wear",
+                    com.repforge.app.ui.text.nativeResources(context, langCode),
+                    java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag(langCode)))
+                HorizontalDivider()
+            }
+            listOfNotNull(result, previews[provider]).maxByOrNull { it.optString("readAt") }?.let { data ->
+                Text(NativeWorkoutHealthSource.label(provider), color = palette.primary, style = MaterialTheme.typography.titleSmall)
                 Text("${word("Időablak", "Time window", "Zeitfenster", "Interval orar")}: ${data.optString("start")} – ${data.optString("end")}")
                 val metrics = NativeWorkoutHealth.metrics(data, false)
                 com.repforge.app.ui.journal.JournalHealthMetrics(metrics, "live", com.repforge.app.ui.text.nativeResources(context, langCode),
@@ -112,7 +139,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
             busy = true; result = null; message = word("Lekérdezés…", "Querying…", "Abfrage läuft…", "Interogare…")
             scope.launch {
                 try {
-                    result = NativeLiveWorkoutHealth.read(context, activity!!, provider)
+                    result = NativeLiveWorkoutHealth.read(context, activity!!, provider, currentFrame)
                     message = "${NativeWorkoutHealthSource.label(provider)}: ${word("lekérdezés befejezve", "query completed", "Abfrage abgeschlossen", "interogare finalizată")}"
                 } catch (error: Exception) {
                     if (error is CancellationException) throw error

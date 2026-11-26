@@ -40,7 +40,11 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Edzés pulzus és energia", "Workout heart rate and energy", "Trainingspuls und Energie", "Puls și energie antrenament"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)
-        for ((tag, metric) in listOf("summary_heart" to result.heart, "summary_energy" to result.energy)) {
+        val energy = listOf(result.activeEnergy, result.totalEnergy).filter { it.values.isNotEmpty() }
+        val displayEnergy = if (energy.isEmpty()) listOf(result.energy) else energy
+        val displayed = listOf("summary_heart" to result.heart) +
+            displayEnergy.map { metric -> "summary_energy" to metric }
+        for ((tag, metric) in displayed) {
             // Sample counts remain part of the native aggregation and Source details,
             // but are technical provenance, not a headline workout measurement.
             val visibleValues = metric.values.filterKeys { it != "heartRateSamples" }
@@ -48,9 +52,9 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
             if (visibleValues.isEmpty()) Text(text.getString(R.string.journal_no_data), color = colors.muted,
                 modifier = Modifier.testTag("journal_${tag}_missing"))
         }
-        val providers = (result.heart.evidence + result.energy.evidence)
+        val providers = displayed.flatMap { it.second.evidence }
             .map { NativeWorkoutHealthSummary.label(it.provider) }.distinct()
-        val status = if (result.heart.incomplete || result.energy.incomplete || result.rejectedEvidence)
+        val status = if (displayed.any { it.second.incomplete } || result.rejectedEvidence)
             local("Részleges / hiányzó mérés", "Partial / missing measurement",
                 "Teilweise / fehlende Messung", "Măsurare parțială / lipsă") else null
         val footer = listOfNotNull(providers.takeIf { it.isNotEmpty() }?.joinToString(", "), status).joinToString(" · ")

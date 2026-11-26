@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.GlassMaterialRole
+
+import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassStateTile
@@ -283,8 +287,8 @@ fun ExerciseLibraryScreen(
                     name.split(Regex("\\s+")).maxOfOrNull { measurer.measure(it, style = nameStyle).size.width } ?: 0
                 }
                 Surface(
-                    shape = RoundedCornerShape(14.dp), color = palette.glassTile(palette.surface),
-                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(14.dp)).fillMaxWidth()
+                    shape = RoundedCornerShape(14.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surface,
+                    modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile, live = false).fillMaxWidth()
                         .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
                         .trainPilotCombinedClickable(

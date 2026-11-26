@@ -373,8 +373,50 @@ final class SamsungSdkReader {
             safe(DataTypes.STEPS, () -> number(out, "steps", aggregate(DataType.StepsType.TOTAL, start, end)), "steps");
             return out;
         }
+        // ActivitySummary is aggregate-only. Preserve the SDK's actual grouped boundaries
+        // and values separately from raw HealthDataPoint records and from daily totals.
+        private JSONArray hourlyEnergy(AggregateOperation<Float, AggregateRequest.LocalTimeBuilder<Float>> operation,
+                                       Instant start, Instant end) throws Exception {
+            ZoneId zone = ZoneId.systemDefault();
+            LocalDateTime from = LocalDateTime.ofInstant(start, zone), to = LocalDateTime.ofInstant(end, zone);
+            if (!start.isBefore(end) || !from.isBefore(to)) throw new IllegalArgumentException("Invalid local energy window");
+            var request = operation.getRequestBuilder().setLocalTimeFilterWithGroup(
+                LocalTimeFilter.of(from, to, true, false), LocalTimeGroup.of(LocalTimeGroupUnit.HOURLY, 1)).build();
+            requireForeground.run();
+            var response = store.aggregateDataAsync(request).get(30, TimeUnit.SECONDS);
+            requireForeground.run();
+            if (response.getPageToken() != null && !response.getPageToken().isEmpty())
+                throw new IllegalStateException("Incomplete Samsung hourly energy");
+            TreeMap<Instant, JSONObject> groups = new TreeMap<>();
+            Instant lastEnd = null;
+            // Sort the SDK response before checking overlap. Reject ambiguous DST buckets rather than guess.
+            var rows = new ArrayList<>(response.getDataList());
+            rows.sort(Comparator.comparing(AggregatedData::getStartTime));
+            for (var row : rows) {
+                LocalDateTime a = row.getStartLocalDateTime(), b = row.getEndLocalDateTime();
+                Float value = row.getValue();
+                if (value == null) continue;
+                if (!Float.isFinite(value) || value < 0 || a == null || b == null ||
+                    zone.getRules().getValidOffsets(a).size() != 1 || zone.getRules().getValidOffsets(b).size() != 1)
+                    throw new IllegalStateException("Invalid or ambiguous Samsung energy bucket");
+                Instant x = row.getStartTime(), y = row.getEndTime();
+                if (x == null || y == null || !x.equals(a.atZone(zone).toInstant()) || !y.equals(b.atZone(zone).toInstant()) ||
+                    x.isBefore(start) || y.isAfter(end) || !y.isAfter(x) ||
+                    Duration.between(x,y).compareTo(Duration.ofHours(1)) > 0 ||
+                    (lastEnd != null && x.isBefore(lastEnd)))
+                    throw new IllegalStateException("Samsung energy bucket outside requested interval or overlapping");
+                groups.put(x, new JSONObject().put("start", x.toString()).put("end", y.toString()).put("kcal", value));
+                lastEnd = y;
+            }
+            return new JSONArray(groups.values());
+        }
+
         JSONObject daily(Instant start, Instant end) throws Exception {
             JSONObject out = wellness(start, end); activity(out, start, end); heart(out, start, end); sleep(out, start, end); energyScore(out, start, end);
+            safe(DataTypes.ACTIVITY_SUMMARY, () -> out.put("activeCaloriesHourly", hourlyEnergy(
+                DataType.ActivitySummaryType.TOTAL_ACTIVE_CALORIES_BURNED, start, end)), "activeCaloriesHourly");
+            safe(DataTypes.ACTIVITY_SUMMARY, () -> out.put("totalCaloriesHourly", hourlyEnergy(
+                DataType.ActivitySummaryType.TOTAL_CALORIES_BURNED, start, end)), "totalCaloriesHourly");
             // No HRV/RMSSD field exists in Samsung's 1.1.0 Data SDK. Never derive one from HR or Energy Score.
             out.put("hrvRmssdMs", JSONObject.NULL);
             // Store completed sessions in the same durable journal as other direct SDK records.
@@ -429,6 +471,22 @@ final class SamsungSdkReader {
         }
         JSONObject workout(Instant start, Instant end) throws Exception {
             JSONObject out = base(start, end);
+            // ActivitySummary uses the requested local-time interval, not the daily total.
+            // Keep these two definitions separate from ExerciseSession.getCalories().
+            // A local-time filter cannot disambiguate a repeated/skipped hour at an offset change.
+            // In that case leave the window aggregate unavailable rather than count extra time.
+            ZoneId zone = ZoneId.systemDefault();
+            boolean exactLocalWindow = zone.getRules().getOffset(start).equals(zone.getRules().getOffset(end))
+                && zone.getRules().getValidOffsets(LocalDateTime.ofInstant(start, zone)).size() == 1
+                && zone.getRules().getValidOffsets(LocalDateTime.ofInstant(end, zone)).size() == 1;
+            if (exactLocalWindow) {
+                safe(DataTypes.ACTIVITY_SUMMARY, () -> number(out, "activeCalories", aggregate(DataType.ActivitySummaryType.TOTAL_ACTIVE_CALORIES_BURNED, start, end)), "activeCalories");
+                safe(DataTypes.ACTIVITY_SUMMARY, () -> number(out, "totalCalories", aggregate(DataType.ActivitySummaryType.TOTAL_CALORIES_BURNED, start, end)), "totalCalories");
+            } else if (allowed(DataTypes.ACTIVITY_SUMMARY)) {
+                out.put("activeCalories", JSONObject.NULL); out.put("totalCalories", JSONObject.NULL);
+                failed.put("activeCalories"); failed.put("totalCalories");
+                errors.put("activeCalories", "AMBIGUOUS_LOCAL_TIME_WINDOW"); errors.put("totalCalories", "AMBIGUOUS_LOCAL_TIME_WINDOW");
+            }
             safe(DataTypes.STEPS, () -> number(out, "steps", aggregate(DataType.StepsType.TOTAL, start, end)), "steps");
             heart(out, start, end);
             out.put("workoutEnergyVersion", 1); out.put("workoutEnergyProvider", HealthJournalStore.SAMSUNG);

@@ -35,12 +35,11 @@ internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape:
     if (LocalGlassOverlay.current) return background(glassOverlayRolePaint(palette.glassClarity, role), shape)
         .overlayRoleRim(palette, shape, role)
     if (role == GlassMaterialRole.Tile) return trainPilotGlassRim(palette, shape, role)
-    // Controls and active measurement only composite a bounded tint over the shared scene.
-    // No additional sampling, blur, lens, shadow or procedural scene per control.
+    // Dense/measurement surfaces keep a bounded paint with a curved vector edge. Actual
+    // lenses are admitted through the explicit shared drop path, never by opening the route gate.
     if (!LocalGlassOpticsEnabled.current || role == GlassMaterialRole.Button ||
         role == GlassMaterialRole.Input || role == GlassMaterialRole.Performance)
-        return background(palette.glassControlFill(palette.surface, role), shape)
-            .trainPilotGlassRim(palette, shape, role)
+        return liquidDropMaterial(palette, shape, role, live = false)
     return kyantGlassOrNull(palette, shape, role) ?: glassSceneModifier(palette, shape)
 }
 
@@ -180,8 +179,16 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
             0f to Color.White.copy(alpha = strength),
             .5f to Color.White.copy(alpha = strength * .40f),
             1f to Color.White.copy(alpha = strength * .27f))
+        // Cache the brushes with the outline, not once per draw during a ticking workout.
+        val bevel = Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = .02f),
+            .50f to Color.Black.copy(alpha = .06f),
+            1f to Color.Black.copy(alpha = .32f))
         onDrawWithContent {
             drawContent()
-            clipPath(path) { drawPath(path, shine, style = Stroke(2.dp.toPx())) }
+            clipPath(path) {
+                drawPath(path, bevel, style = Stroke(6.dp.toPx()))
+                drawPath(path, shine, style = Stroke(2.dp.toPx()))
+            }
         }
     }

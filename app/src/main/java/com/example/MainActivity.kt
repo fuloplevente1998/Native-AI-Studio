@@ -318,31 +318,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         if (cloudInstallRevision > 0) viewModel.refreshAfterCloudSync(context)
     }
     val activity = context as? android.app.Activity
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner, activity) {
-        val lifecycle = lifecycleOwner.lifecycle
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, _ ->
-            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) nativeHealth.appVisible(activity)
-            else nativeHealth.appHidden(activity)
-        }
-        lifecycle.addObserver(observer)
-        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) nativeHealth.appVisible(activity)
-        onDispose { lifecycle.removeObserver(observer); nativeHealth.appHidden(activity) }
-    }
-    // 2805: a saved workout pulls fresh Health data (calories, heart rate) right away, without waiting for the timer.
-    var workoutSaveSeen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(uiState.isSavingWorkout, uiState.isWorkoutSessionActive) {
-        if (workoutSaveSeen && !uiState.isSavingWorkout && !uiState.isWorkoutSessionActive) nativeHealth.afterWorkoutSaved()
-        workoutSaveSeen = uiState.isSavingWorkout
-    }
-    androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
-        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-            failed = health.syncFailed, message = health.syncMessage)
-    }
-    androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
-        viewModel.reloadHealthJournal()
-    }
-
+    val liveWorkoutHealth = com.example.ui.components.StudioHealthRootEffects(viewModel, uiState, nativeHealth, health, activity)
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     val canNavigateBack = uiState.currentSubScreen != SubScreen.NONE ||
@@ -363,6 +339,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     CompositionLocalProvider(
         LocalTrainPilotStrings provides strings,
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
+        com.example.ui.components.LocalWorkoutHealthPreviews provides liveWorkoutHealth,
         com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
         com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
         LocalOpenExerciseVideo provides { exTitle, exId ->

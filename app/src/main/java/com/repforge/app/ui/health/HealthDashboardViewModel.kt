@@ -600,6 +600,13 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     }
                     Unit
                 }
+                // The saved workout is already durable. Prioritize its exact-window read even
+                // if the unrelated daily/change-feed read is slow or fails.
+                com.repforge.app.WorkoutHealthAutoReconcile.attemptBeforeDaily(
+                    sceneCurrent() && day == LocalDate.now() && _uiState.value.autoOnOpen) {
+                    com.repforge.app.WorkoutHealthAutoReconcile.recent(context, activity,
+                        providerAvailability.filterValues { it }.keys, guard)
+                }
                 // The history query is never replaced by sync output. Manual historical reads remain callable.
                 val result = if (allProviders) {
                     val report = NativeHealthProviderBatch.run(

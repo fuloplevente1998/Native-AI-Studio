@@ -46,3 +46,23 @@ internal fun TrainPilotDropdownMenu(
             modifier = modifier, scrollState = scrollState, border = border, content = content)
     }
 }
+
+/** The workout value/action menus are real shaped popup surfaces, not a square background
+ * modifier on the scrolling content. The gradient border is a cheap edge light, not live blur. */
+@Composable
+internal fun WorkoutEditorDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val p = LocalTrainPilotPalette.current
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest,
+        modifier = modifier, scrollState = scrollState,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = workoutEditorFill(p, p.surfaceElevated), tonalElevation = 0.dp,
+        border = workoutEditorFrame(p)) {
+        CompositionLocalProvider(LocalContentColor provides p.textPrimary) { content() }
+    }
+}

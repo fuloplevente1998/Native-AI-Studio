@@ -4,6 +4,8 @@ import com.example.ui.theme.glassTouchBubble
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.liquidDropMaterial
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,8 +37,16 @@ fun TrainPilotOutlinedButton(
     // 2808 #13: glass palettes drop neutral hairline outlines; semantic (accent/danger/success/warning) stay.
     val effectiveBorder = trainPilotFrameStroke(border)
     val palette = LocalTrainPilotPalette.current
-    val surface = if (enabled) modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button) else modifier
-    TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
+    // Only the ordinary translucent default can be swapped; semantic/custom fills keep their paint.
+    val glass = enabled && palette.isLiquidGlass &&
+        colors.containerColor == MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f)
+    val surface = when {
+        glass -> modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Button)
+        enabled -> modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
+        else -> modifier
+    }
+    val paint = if (glass) colors.copy(containerColor = Color.Transparent, contentColor = palette.textPrimary) else colors
+    TrainPilotPressFeedback(paint, enabled, interactionSource) { feedbackColors, source ->
         OutlinedButton(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)
     }
 }

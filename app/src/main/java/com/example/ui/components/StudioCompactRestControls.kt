@@ -18,6 +18,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
+import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.readablePrimaryLabel
 import com.repforge.app.ui.theme.NativeThemeTokens
 
@@ -70,8 +73,10 @@ internal fun StudioCompactRestControls(
                         .trainPilotClickable(shape, enabled = enabled, onClick = click),
                         contentAlignment = Alignment.Center) {
                         Surface(shape = shape,
-                            color = if (highlighted) { if (running) p.primary else p.success } else p.surfaceElevated,
-                            modifier = Modifier.fillMaxWidth().height(43.2.dp).testTag("compact_rest_${tag}_visual")) {
+                            color = if (p.isLiquidGlass && !highlighted) Color.Transparent else if (highlighted) { if (running) p.primary else p.success } else p.surfaceElevated,
+                            modifier = Modifier.fillMaxWidth().height(43.2.dp)
+                                .then(if (!highlighted) Modifier.liquidDropMaterial(p, shape, GlassMaterialRole.Button, live = false) else Modifier)
+                                .testTag("compact_rest_${tag}_visual")) {
                             Box(contentAlignment = Alignment.Center) { content() }
                         }
                     }

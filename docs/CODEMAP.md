@@ -141,3 +141,17 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | K3 battery saver | `ex/ui/theme/GlassPowerSave.kt` (host-only power mode observer), `GlassScene.kt` (static drift gate), `KyantK3CacheTest.kt` (mode matrix) |
 
 | 2813 görgethető tartalom és mért fix glass sávok | `ex/ui/theme/GlassScrollChrome.kt`, `MeasuredScrollChrome.kt`, `GlassAwareScaffold.kt`, `GlassContentBackdrop.kt` (külön chrome gate, list capture, in-scroll top/bottom padding); teszt `GlassScrollChrome2813Test.kt` |
+
+| 2814 edzés-prompt és értékmenü | `ex/ui/components/WorkoutFeedbackPopup.kt`, `WorkoutEditorAppearance.kt`, `StudioActiveWorkoutPresentation.kt`, `TrainPilotAlertDialog.kt`, `TrainPilotDropdownMenu.kt`, `StudioStrengthSetCard.kt`; teszt `WorkoutEditorAppearance2814Test.kt` |
+
+| Liquid Drop 2814 (L1–L6) | `ex/ui/theme/LiquidDropMaterial.kt` (policy, bounded paint, same-window lens), `KyantMaterialSpec.kt`, `KyantGlass.kt`, `TrainPilotGlassEngine.kt` (cached bevel); common `TrainPilotControls.kt`, `rf/ui/theme/TrainPilot{Button,OutlinedButton,ActionButtons}.kt`; teszt `LiquidDrop2814Test.kt` |
+
+| 2814/4 edzés-egészségadat audit | `docs/WORKOUT_HEALTH_2814.md`; `rf/NativeLiveWorkoutHealth.kt`, `StudioWorkoutSummaryPresentation.kt`, `NativeWorkoutHealth.kt`, `NativeWorkoutActiveWindows.kt`, `NativeWorkoutHealthSummary.kt`, `SamsungSdkReader.java`, `SamsungHealthRepository.kt`; teszt `WorkoutHealth2814ContractTest.kt` |
+
+| 2814 H2 automatikus edzés-egészség visszaolvasás | `rf/WorkoutHealthAutoReconcile.kt`, `rf/NativeWorkoutHealth.kt`, `rf/ui/health/HealthDashboardViewModel.kt`, `rf/data/db/TrainPilotDaos.kt`; teszt `WorkoutHealthAuto2814Test.kt` |
+
+| 2814 H1/H3 élő preview és külön energia | `ex/ui/components/StudioWorkoutHealthPreviews.kt`, `StudioLiveWorkoutHealth.kt`, `rf/NativeLiveWorkoutHealth.kt`, `NativeWorkoutHealthSummary.kt`, `StudioWorkoutSummaryPresentation.kt`, `rf/ui/journal/JournalWorkoutHealthSummary.kt`; teszt `WorkoutLiveHealth2814Test.kt` |
+
+| 2814 egészségnapló mentett edzésenergia | `rf/ui/health/HealthWorkoutEnergyDay.kt`, `HealthRecordDayDetails.kt`, `rf/data/db/TrainPilotDaos.kt`, `ex/ui/components/StudioHealthRootEffects.kt` |
+
+| Samsung órás energia 2814 | `rf/SamsungSdkReader.java`, `SamsungHealthRepository.kt`, `rf/ui/health/SamsungHourlyEnergy.kt`, `HealthRecordDayDetails.kt`, `ex/ui/components/StudioHealthMetricsBrowser.kt`; teszt `SamsungHourlyEnergy2814Test.kt` |

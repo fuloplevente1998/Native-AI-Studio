@@ -2,7 +2,8 @@ package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -95,16 +96,42 @@ internal fun rememberExerciseFeedbackNext(state: TrainPilotUiState, onNext: () -
         state.currentSubScreen, state.isWorkoutSessionActive) { mutableStateOf(false) }
     if (pending) TrainPilotAlertDialog(onDismissRequest = { pending = false },
         modifier = Modifier.testTag("active_feedback_prompt"),
-        title = { Text(feedbackWord(state, "Gyakorlat visszajelzés", "Exercise feedback", "Übungsfeedback", "Feedback exercițiu")) },
-        text = { StudioActiveExerciseFeedback(state, onEffort, onNote) },
-        confirmButton = { TextButton(onClick = { if (pending) { pending = false; onNext() } },
-            enabled = !state.isSavingWorkout, modifier = Modifier.testTag("active_feedback_next")) {
-            Text(feedbackWord(state, "Tovább", "Continue", "Weiter", "Continuă"))
-        } },
-        dismissButton = { TextButton(onClick = { if (pending) { pending = false; onNext() } },
-            enabled = !state.isSavingWorkout, modifier = Modifier.testTag("active_feedback_skip")) {
-            Text(feedbackWord(state, "Kihagyás", "Skip", "Überspringen", "Omite"))
-        } })
+        workoutEditor = true,
+        title = {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(feedbackWord(state, "Gyakorlat visszajelzés", "Exercise feedback", "Übungsfeedback", "Feedback exercițiu"),
+                    modifier = Modifier.weight(1f), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                IconButton(onClick = { pending = false }, modifier = Modifier.testTag("active_feedback_close")) {
+                    Icon(Icons.Default.Close, feedbackWord(state, "Bezárás", "Close", "Schließen", "Închide"),
+                        tint = LocalTrainPilotPalette.current.textSecondary)
+                }
+            }
+        },
+        text = {
+            val exercise = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)
+            if (exercise != null) {
+                val same = state.exerciseFeedbackWorkoutId == state.activeWorkoutId
+                WorkoutFeedbackPopup(
+                    exerciseName = exercise.localizedName(state.language),
+                    effort = if (same) StudioWorkoutFeedback.efforts.getOrNull(state.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
+                    note = if (same) state.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
+                    language = state.language.name.lowercase(),
+                    enabled = state.isWorkoutSessionActive && !state.isSavingWorkout,
+                    onEffort = { onEffort(exercise.id, StudioWorkoutFeedback.efforts.indexOf(it)) },
+                    onNote = { onNote(exercise.id, it) },
+                    tag = "active_feedback_${state.activeWorkoutId}_${exercise.id}")
+            }
+        },
+        confirmButton = { WorkoutFeedbackAction(
+            text = feedbackWord(state, "Tovább", "Continue", "Weiter", "Continuă"),
+            primary = true, enabled = !state.isSavingWorkout,
+            modifier = Modifier.testTag("active_feedback_next"),
+            onClick = { if (pending) { pending = false; onNext() } }) },
+        dismissButton = { WorkoutFeedbackAction(
+            text = feedbackWord(state, "Kihagyás", "Skip", "Überspringen", "Omite"),
+            primary = false, enabled = !state.isSavingWorkout,
+            modifier = Modifier.testTag("active_feedback_skip"),
+            onClick = { if (pending) { pending = false; onNext() } }) })
     return {
         if (state.isWorkoutSessionActive && !state.isSavingWorkout && exerciseId != null) {
             val answered = state.exerciseFeedbackWorkoutId == state.activeWorkoutId &&
