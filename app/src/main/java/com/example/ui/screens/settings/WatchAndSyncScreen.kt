@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.trainPilotScreenBackdrop
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 
 import com.example.ui.theme.liquidDropMaterial
 
@@ -76,7 +80,7 @@ fun WatchAndSyncScreen(
     LazyColumn(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .testTag("watch_and_sync_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -315,6 +319,30 @@ fun WatchAndSyncScreen(
             )
         }
 
+        if (uiState.healthSyncBusy || uiState.healthSyncMessage.isNotBlank()) item(key = "health-sync-status") {
+            val statusColor = when {
+                uiState.healthSyncFailed -> palette.danger
+                uiState.healthSyncPartial -> palette.warning
+                else -> palette.textPrimary
+            }
+            Row(Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (uiState.healthSyncBusy) CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp).testTag("connected_health_sync_busy"),
+                    color = palette.primary, strokeWidth = 2.dp)
+                Text(
+                    text = uiState.healthSyncMessage.ifBlank {
+                        tr(uiState.language, "Szinkronizálás folyamatban…", "Sync in progress…",
+                            "Synchronisierung läuft…", "Sincronizare în curs…")
+                    },
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f).testTag("connected_health_sync_status")
+                )
+            }
+        }
+
         item(key = "health-connect") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -322,7 +350,8 @@ fun WatchAndSyncScreen(
                 modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile, live = false)
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc_permission") }
+                    .trainPilotClickable(RoundedCornerShape(18.dp), enabled = !uiState.healthSyncBusy) { onRequestPermission("hc") }
+                    .testTag("connected_health_hc_sync")
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -338,16 +367,20 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = if (uiState.permissionHealthConnectEnabled) {
+                            text = if (!uiState.permissionHealthConnectEnabled) {
+                                tr(uiState.language, "Kikapcsolva a beállításokban", "Disabled in settings", "In den Einstellungen deaktiviert", "Dezactivat în setări")
+                            } else if (uiState.permissionHealthConnectGranted || uiState.healthGrantedCount > 0) {
                                 "${tr(uiState.language, "Engedélyezett", "Granted", "Erteilt", "Acordate")}: ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}"
                             } else {
                                 tr(uiState.language, "Nincs olvasási engedély • engedélykérés", "No read permission • request access", "Keine Leseberechtigung • Zugriff anfordern", "Fără permisiune de citire • solicită acces")
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = palette.success
+                            color = if (uiState.permissionHealthConnectEnabled && (uiState.permissionHealthConnectGranted || uiState.healthGrantedCount > 0)) palette.success else palette.textSecondary
                         )
                         Text(
-                            text = if (uiState.permissionHealthConnectEnabled) {
+                            text = if (!uiState.permissionHealthConnectEnabled) {
+                                tr(uiState.language, "Engedélyezd az adatforrást a beállításokban", "Enable the source in settings", "Aktiviere die Quelle in den Einstellungen", "Activează sursa în setări")
+                            } else if (uiState.permissionHealthConnectGranted || uiState.healthGrantedCount > 0) {
                                 tr(uiState.language, "Koppints a Health Connect szinkronizálásához", "Tap to sync Health Connect", "Tippen zum Synchronisieren von Health Connect", "Atinge pentru a sincroniza Health Connect")
                             } else {
                                 tr(uiState.language, "Pulzus, alvás, lépések, elégetett kalória, edzések", "Heart rate, sleep, steps, calories burned, workouts", "Puls, Schlaf, Schritte, Kalorien, Trainings", "Puls, somn, pași, calorii arse, antrenamente")
@@ -365,14 +398,15 @@ fun WatchAndSyncScreen(
             }
         }
 
-        item(key = "samsung") {
+        if (uiState.permissionSamsungHealthEnabled) item(key = "samsung") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                 modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile, live = false)
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("samsung") }
+                    .trainPilotClickable(RoundedCornerShape(18.dp), enabled = !uiState.healthSyncBusy) { onRequestPermission("samsung") }
+                    .testTag("connected_health_samsung_sync")
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -403,16 +437,16 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = if (uiState.permissionSamsungHealthEnabled) {
+                            text = if (uiState.permissionSamsungHealthGranted) {
                                 tr(uiState.language, "Olvasási engedély igazolva", "Read permission verified", "Leseberechtigung bestätigt", "Permisiune de citire verificată")
                             } else {
                                 tr(uiState.language, "Nincs igazolt olvasási engedély", "No verified read permission", "Keine bestätigte Leseberechtigung", "Nicio permisiune de citire verificată")
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = palette.success
+                            color = if (uiState.permissionSamsungHealthGranted) palette.success else palette.textSecondary
                         )
                         Text(
-                            text = if (uiState.permissionSamsungHealthEnabled) {
+                            text = if (uiState.permissionSamsungHealthGranted) {
                                 tr(uiState.language, "Koppints a Samsung Health szinkronizálásához", "Tap to sync Samsung Health", "Tippen zum Synchronisieren von Samsung Health", "Atinge pentru a sincroniza Samsung Health")
                             } else {
                                 tr(uiState.language, "Koppints az engedély megadásához és szinkronhoz", "Tap to grant permission and sync", "Tippen für Berechtigung und Synchronisierung", "Atinge pentru permisiune și sincronizare")

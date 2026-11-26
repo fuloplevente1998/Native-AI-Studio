@@ -1,5 +1,7 @@
 # TrainPilot Native – Health Connect-központú átállás
 
+- Kapcsolt eszközök javítása, `fix/connected-devices-health-sync`: témakövető háttér a közös üveglap felett, HC szinkron a meglévő `hc` akcióval, látható folyamat/eredmény/hiba és kettős indítás tiltása. Samsung csempe csak bekapcsolt kiegészítőnél, engedély és kapcsoló külön. Wear útvonal változatlan. UI regresszió hozzáadva; CI és készülékes ellenőrzés nyitott.
+
 - #403, #404, `feat/403-health-connect`. Alap: main `5d3b8a09`, 1.5.4 (281100/281102), #402. A korábbi Play-jegyzet alapja 1.5.0 (280600/280602).
 - A telefon a Health Connectet használja elsődlegesen napi és mentett edzésadatokhoz. Samsung Health és TrainPilot Wear OS külön engedélyezhető. A napi tartalék egy mérőszámhoz egy forrást választ. A meglévő mérések eredete megmarad.
 - Az edzés pulzusa az aktív időablak mintáiból számolható. Utólag érkező pulzus a korábbi energia megőrzésével kerül a mentett edzéshez. Az aktív és az összes kcal külön jelenik meg.

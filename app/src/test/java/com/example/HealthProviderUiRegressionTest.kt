@@ -78,6 +78,59 @@ class HealthProviderUiRegressionTest {
         list.performScrollToNode(hasTestTag("health_today_header_sync"))
         compose.onNodeWithTag("health_today_header_sync").assertIsNotEnabled()
     }
+    @Test fun connectedDevicesSyncRoutesShowFeedbackAndRespectSamsungSupplement() {
+        val requested = mutableListOf<String>()
+        var state by mutableStateOf(TrainPilotUiState(
+            permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(
+                healthConnectEnabled = true, healthConnectGranted = true,
+                samsungHealthEnabled = false, samsungHealthGranted = true),
+            healthGrantedCount = 17, healthPermissionCount = 17))
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.WatchAndSyncScreen(state,
+                TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {},
+                onRequestPermission = { requested.add(it) })
+        } }
+        val list = compose.onNodeWithTag("watch_and_sync_screen")
+        val hc = compose.onNodeWithTag("connected_health_hc_sync")
+        val samsung = compose.onNodeWithTag("connected_health_samsung_sync")
+        list.performScrollToNode(hasTestTag("connected_health_hc_sync"))
+        samsung.assertDoesNotExist()
+        hc.performClick()
+        assertEquals(listOf("hc"), requested)
+        compose.runOnIdle {
+            state = state.copy(healthSyncBusy = true, healthSyncMessage = "Health Connect: hozzáférés ellenőrzése…")
+        }
+        list.performScrollToNode(hasTestTag("connected_health_sync_status"))
+        compose.onNodeWithTag("connected_health_sync_status").assertTextEquals("Health Connect: hozzáférés ellenőrzése…")
+        compose.onNodeWithTag("connected_health_sync_busy").assertExists()
+        list.performScrollToNode(hasTestTag("connected_health_hc_sync"))
+        hc.assertIsNotEnabled()
+        compose.runOnIdle {
+            state = state.copy(healthSyncBusy = false, healthSyncMessage = "Health Connect: szinkron befejezve",
+                permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = true, samsungHealthGranted = false))
+        }
+        list.performScrollToNode(hasTestTag("connected_health_sync_status"))
+        compose.onNodeWithTag("connected_health_sync_status").assertTextEquals("Health Connect: szinkron befejezve")
+        list.performScrollToNode(hasTestTag("connected_health_samsung_sync"))
+        samsung.assertTextContains("Nincs igazolt olvasási engedély", substring = true).performClick()
+        assertEquals(listOf("hc", "samsung"), requested)
+        compose.runOnIdle {
+            state = state.copy(healthSyncBusy = true, healthSyncMessage = "Samsung Health: hozzáférés ellenőrzése…")
+        }
+        samsung.assertIsNotEnabled()
+        compose.runOnIdle {
+            state = state.copy(healthSyncBusy = false, healthSyncFailed = true,
+                healthSyncMessage = "Samsung Health: PERMISSION_DENIED")
+        }
+        list.performScrollToNode(hasTestTag("connected_health_sync_status"))
+        compose.onNodeWithTag("connected_health_sync_status").assertTextEquals("Samsung Health: PERMISSION_DENIED")
+        compose.runOnIdle {
+            state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = false))
+        }
+        samsung.assertDoesNotExist()
+        assertEquals(listOf("hc", "samsung"), requested)
+    }
+
     @Test fun samsungSwitchDoesNotChangeThePrimaryHealthConnectSource() {
         val selected = mutableListOf<Boolean>()
         var state by mutableStateOf(TrainPilotUiState(expandedHealthConnect = true,
