@@ -40,6 +40,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
@@ -77,7 +78,7 @@ internal class SheetHeightLock {
 
     fun heightFor(held: Boolean, min: Int, max: Int): Int? {
         if (!held) {
-            pinnedHeight = null
+            release()
             return null
         }
         val height = pinnedHeight ?: lastHeight?.also { pinnedHeight = it }
@@ -85,6 +86,13 @@ internal class SheetHeightLock {
     }
 
     fun measured(height: Int) { lastHeight = height }
+
+    /** Only request a new layout if the content measured a different height during motion. */
+    fun release(): Boolean {
+        val pinned = pinnedHeight ?: return false
+        pinnedHeight = null
+        return lastHeight != pinned
+    }
 }
 
 /** Observes the inner body/handle only. A pointer event must never invalidate sheet measurement. */
@@ -132,6 +140,12 @@ internal fun TrainPilotModalBottomSheet(
     val paintFrozenScene = glassSupported && staticGlass
     val parentScene = LocalGlassScene.current
     val frozenScene = if (paintFrozenScene) remember(parentScene) { freezeSheetScene(parentScene) } else null
+    if (glass && parentScene != null) {
+        DisposableEffect(parentScene) {
+            parentScene.sheetOpened()
+            onDispose { parentScene.sheetClosed() }
+        }
+    }
     val scope = rememberCoroutineScope()
     val fill = if (glass) palette.glassOverlayFill(containerColor) else if (customPaint) palette.background else containerColor
     var handleHeight by remember { mutableIntStateOf(0) }
@@ -142,12 +156,12 @@ internal fun TrainPilotModalBottomSheet(
             // Let Material's drag settle start before invalidating the pinned layout.
             withFrameNanos { }
             snapshotFlow { sheetState.isAnimationRunning }.first { !it }
-            if (!heightLock.pointerHeld && heightLock.hasPin) releaseGeneration++
+            if (!heightLock.pointerHeld && heightLock.release()) releaseGeneration++
         }
     }
     LaunchedEffect(sheetState) {
         snapshotFlow { sheetState.isAnimationRunning }.collect { running ->
-            if (!running && !heightLock.pointerHeld && heightLock.hasPin) releaseGeneration++
+            if (!running && !heightLock.pointerHeld && heightLock.release()) releaseGeneration++
         }
     }
     ModalBottomSheet(

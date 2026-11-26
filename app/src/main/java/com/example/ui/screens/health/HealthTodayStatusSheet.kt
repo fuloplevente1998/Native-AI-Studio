@@ -102,11 +102,7 @@ internal fun StudioTodayStatusDetailSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                // 2784: opens to its content, at most ~2/3 of the screen.
-                // Steps/sleep can receive new details while Material is opening. Reserve their
-                // bounded scroll viewport from the first measure, even with empty data.
-                .then(if (activeKey == "steps" || activeKey == "sleep") Modifier.height(maxDetailHeight)
-                    else Modifier.heightIn(max = maxDetailHeight))
+                .heightIn(max = maxDetailHeight)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                 .testTag("health_today_tile_expanded_card")
         ) {
