@@ -52,7 +52,7 @@ class Post2757PresentationRegressionTest {
                 timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
         fun assertBodyReachesSheetBottom() {
-            val sheet = compose.onNodeWithTag("quick_workout_sheet_content").getUnclippedBoundsInRoot()
+            val sheet = compose.onNodeWithTag("quick_workout_sheet_host_body").getUnclippedBoundsInRoot()
             val body = compose.onNodeWithTag("quick_workout_body").getUnclippedBoundsInRoot()
             assertEquals("Scrollable body must use the entire space below the tabs", sheet.bottom, body.bottom)
         }
@@ -89,7 +89,7 @@ class Post2757PresentationRegressionTest {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxHeight())
                 })
         } }
-        val content = compose.onNodeWithTag("quick_workout_sheet_content")
+        val content = compose.onNodeWithTag("quick_workout_sheet_host_body")
         val short = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
         compose.onNodeWithTag("quick_tab_1").performClick()
         val tall = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }

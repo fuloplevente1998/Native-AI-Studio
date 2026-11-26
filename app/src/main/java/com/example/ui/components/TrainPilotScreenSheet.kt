@@ -103,7 +103,7 @@ fun TrainPilotScreenSheet(
         }
     ) {
         androidx.compose.runtime.CompositionLocalProvider(LocalTrainPilotInSheet provides true) {
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().testTag("${testTag}_content")
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().testTag("${testTag}_host_body")
                 .then(if (fillHeight) Modifier.fillMaxHeight().testTag("${testTag}_full") else Modifier)) { content() }
         }
     }
