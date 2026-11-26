@@ -215,7 +215,7 @@ class JournalWorkoutHealthRegressionTest {
             }
         }
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("50 kcal")
         compose.onNodeWithTag("journal_hc_totalCalories_value").assertDoesNotExist()
     }
 
@@ -361,7 +361,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
-        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertTextEquals("100 kcal")
         compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
         compose.onNodeWithTag("log_detail_open_watch_sync").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_2"))
@@ -371,7 +371,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("100 kcal")
         list.performScrollToNode(hasTestTag("journal_provider_wear"))
         compose.onNodeWithTag("journal_provider_wear").performClick()
         list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))

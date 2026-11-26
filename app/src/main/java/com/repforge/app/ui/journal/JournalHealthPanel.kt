@@ -74,7 +74,9 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
     var expandedSource by (expandedState ?: localExpanded)
     val wearExpanded = expandedSource == "wear"
-    val samsungExpanded = samsungEnabled && expandedSource == HealthJournalStore.SAMSUNG
+    val savedSamsung = NativeWorkoutHealthSource.snapshot(document, HealthJournalStore.SAMSUNG) != null
+    val showSamsung = samsungEnabled || savedSamsung
+    val samsungExpanded = showSamsung && expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
@@ -82,7 +84,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
-                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { samsungEnabled || it.first != HealthJournalStore.SAMSUNG }) {
+                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { showSamsung || it.first != HealthJournalStore.SAMSUNG }) {
                 val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
                 Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
                     shape = MaterialTheme.shapes.medium,
@@ -120,7 +122,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             if (wear?.optBoolean("partial") == true) Text(text.getString(R.string.journal_health_partial), color = colors.muted)
             Text(text.getString(R.string.journal_health_separate_energy), color = colors.muted)
         }
-        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { samsungEnabled || it != HealthJournalStore.SAMSUNG }) key(source) {
+        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { showSamsung || it != HealthJournalStore.SAMSUNG }) key(source) {
             val tag = if (source == HealthJournalStore.HC) "hc" else "samsung"
             val health = NativeWorkoutHealthSource.snapshot(document, source)
             val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
@@ -140,9 +142,10 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     val data = health!!
                     val projection = remember(workout, source) { NativeWorkoutHealthSummary.readProvider(workout, source) }
                     val total = projection.workoutTotal
-                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories", "workoutCalories") + total.values
+                    val active = projection.activeEnergy
+                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories", "workoutCalories") + total.values + active.values
                     JournalHealthMetrics(metrics, tag, text, number)
-                    for ((energyKey, metric) in listOf("totalCalories" to total)) {
+                    for ((energyKey, metric) in listOf("totalCalories" to total, "activeCalories" to active)) {
                         val reason = when {
                             energyKey !in metrics ->
                                 local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")
@@ -153,7 +156,8 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                         }
                         val label = if (energyKey == "activeCalories") text.getString(R.string.health_metric_activecalories)
                             else text.getString(R.string.health_metric_totalcalories)
-                        Text("$label: $reason", color = colors.muted, style = MaterialTheme.typography.labelSmall,
+                        val origin = NativeWorkoutHealthSummary.labels(metric, energyKey, language)
+                        Text(listOfNotNull("$label: $reason", origin.takeIf(String::isNotBlank)).joinToString(" · "), color = colors.muted, style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.testTag("journal_${tag}_coverage_$energyKey"))
                     }
                     if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
@@ -178,7 +182,8 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     if (names.isNotEmpty()) Text("${text.getString(R.string.journal_health_sources)}: ${names.joinToString(", ")}", color = colors.muted)
                     Text("${text.getString(R.string.journal_health_synced)}: ${time(data.optString("syncedAt"))}", color = colors.muted)
                 }
-                TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() }, enabled = enabled && !refreshing,
+                TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() },
+                    enabled = enabled && !refreshing && (source != HealthJournalStore.SAMSUNG || samsungEnabled),
                     modifier = Modifier.fillMaxWidth().testTag("journal_${tag}_health_refresh")) {
                     Text(if (refreshing && selected) text.getString(R.string.journal_health_refreshing)
                         else "${NativeWorkoutHealthSource.label(source)} • ${text.getString(R.string.journal_health_read)}")
@@ -190,7 +195,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 if (selected) {
                     status?.let { Text(it, color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_result")) }
                     error?.let { Text(text.getString(it), color = colors.dangerText, modifier = Modifier.testTag("journal_${tag}_health_error")) }
-                    permissions?.invoke(source)
+                    if (source != HealthJournalStore.SAMSUNG || samsungEnabled) permissions?.invoke(source)
                 }
             }
         }
