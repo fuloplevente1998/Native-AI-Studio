@@ -30,7 +30,7 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         return
     }
     val colors = LocalTrainPilotColors.current
-    val result = remember(detail.workout) { NativeWorkoutHealthSummary.read(detail.workout) }
+    val result = remember(detail.workout) { NativeWorkoutHealthSummary.readJournal(detail.workout) }
     val number = remember(language) { NumberFormat.getNumberInstance(Locale.forLanguageTag(language)).apply { maximumFractionDigits = 1 } }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
@@ -40,34 +40,21 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Edzés pulzus és energia", "Workout heart rate and energy", "Trainingspuls und Energie", "Puls și energie antrenament"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)
-        val displayed = listOf(
-            Triple("summary_heart", "averageHeartRate", result.heart),
-            Triple("summary_energy", "totalCalories", result.workoutTotal)
-        ) + listOf(Triple("summary_energy", "activeCalories", result.activeEnergy)).filter { it.third.values.isNotEmpty() }
-        for ((tag, key, metric) in displayed) {
-            val visibleValues = metric.values.filterKeys { it != "heartRateSamples" }
-            JournalHealthMetrics(visibleValues, tag, text, number)
-            if (visibleValues.isNotEmpty()) {
-                val sources = NativeWorkoutHealthSummary.labels(metric, key, language)
-                val coverage = when {
-                    metric.incomplete -> local("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială")
-                    key != "averageHeartRate" && metric.hasUnverifiedProviderCoverage ->
-                        local("Lefedettség nem igazolt", "Coverage unverified", "Abdeckung ungeprüft", "Acoperire neverificată")
-                    else -> null
-                }
-                Text(listOfNotNull(sources.takeIf { it.isNotBlank() }, coverage).joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall, color = colors.muted)
-            }
-            if (visibleValues.isEmpty()) Text(text.getString(R.string.journal_no_data), color = colors.muted,
-                modifier = Modifier.testTag("journal_${tag}_missing"))
+        val values = NativeWorkoutHealthSummary.journalValues(result)
+        if (values.isEmpty()) {
+            Text(local("Nincs óramérés ehhez az edzéshez.", "No watch measurement for this workout.",
+                "Keine Uhrmessung für dieses Training.", "Nu există măsurători de pe ceas pentru acest antrenament."),
+                color = colors.muted, modifier = Modifier.testTag("journal_wear_measurement_missing"))
+        } else {
+            JournalHealthMetrics(values.filterKeys { it.endsWith("HeartRate") }, "summary_heart", text, number, compact = true)
+            JournalHealthMetrics(values.filterKeys { it.endsWith("Calories") }, "summary_energy", text, number, compact = true)
+            val measured = listOf(result.heart, result.activeEnergy, result.workoutTotal).filter { it.values.isNotEmpty() }
+            val partial = measured.any { it.incomplete } || values.size < 4
+            Text(local("Forrás: TrainPilot WearOS", "Source: TrainPilot WearOS", "Quelle: TrainPilot WearOS",
+                "Sursă: TrainPilot WearOS") + if (partial) " · " +
+                local("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială") else "",
+                style = MaterialTheme.typography.labelSmall, color = colors.muted,
+                modifier = Modifier.testTag("journal_summary_sources"))
         }
-        val providers = displayed.map { (_, key, metric) -> NativeWorkoutHealthSummary.labels(metric, key, language) }
-            .filter { it.isNotBlank() }.distinct()
-        val status = if (displayed.any { it.third.incomplete } || result.rejectedEvidence)
-            local("Részleges / hiányzó mérés", "Partial / missing measurement",
-                "Teilweise / fehlende Messung", "Măsurare parțială / lipsă") else null
-        val footer = listOfNotNull(providers.takeIf { it.isNotEmpty() }?.joinToString(", "), status).joinToString(" · ")
-        if (footer.isNotBlank()) Text(footer, color = colors.muted, style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.testTag("journal_summary_sources"))
     }
 }

@@ -1,47 +1,24 @@
 package com.repforge.app.ui.journal
-import com.repforge.app.ui.theme.trainPilotFrame
 
-import com.example.ui.components.trainPilotAnimatedExpansion
-
-import com.repforge.app.ui.theme.trainPilotClickable
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
-import com.repforge.app.ui.theme.TrainPilotFrames
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import com.repforge.app.HealthJournalStore
-import com.repforge.app.NativeWorkoutHealth
 import com.repforge.app.NativeWorkoutHealthSummary
-import com.repforge.app.NativeWorkoutHealthSource
-import com.repforge.app.NativeSavedWearHealth
 import com.repforge.app.R
 import com.repforge.app.data.db.WorkoutHistoryWithDetails
 import com.repforge.app.ui.theme.LocalTrainPilotColors
-import org.json.JSONObject
+import com.repforge.app.ui.theme.TrainPilotFrames
+import com.repforge.app.ui.theme.trainPilotFrame
 import java.text.NumberFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.util.Locale
 
-/** One open source at a time; each shows only its own saved data. */
+/** TrainPilot history has one measurement source; imported workouts keep their own evidence. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android.content.res.Resources,
     language: String, refreshing: Boolean, error: Int?, enabled: Boolean,
@@ -51,189 +28,38 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     samsungEnabled: Boolean = com.repforge.app.NativePrivacyControls.enabled(androidx.compose.ui.platform.LocalContext.current, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH),
     refresh: () -> Unit) {
     if (detail.workout.originDevice == "external") {
-        // The generic health-window refresh aggregates all origins; it is not a valid
-        // substitute for an imported session's own-source evidence.
         JournalExternalWorkoutMetrics(detail, text, language)
         return
     }
     val colors = LocalTrainPilotColors.current
-    val workout = detail.workout
-    val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
-    val wear = remember(workout.wearMetricsJson, workout.rawJson) { NativeSavedWearHealth.read(workout) }
-    val document = remember(workout.health240Json) { parseHealth(workout.health240Json) }
-    val summary = remember(workout, samsungEnabled) { NativeWorkoutHealthSummary.read(workout, samsungEnabled) }
+    val summary = remember(detail.workout) { NativeWorkoutHealthSummary.readJournal(detail.workout) }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
-    val locale = remember(language) { Locale.forLanguageTag(language) }
-    val number = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 } }
-    val date = remember(locale) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-        .withLocale(locale).withZone(ZoneId.systemDefault()) }
-    fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
-    // Do not restore the previous version's independent Boolean slots as a String state.
-    val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
-    var expandedSource by (expandedState ?: localExpanded)
-    val wearExpanded = expandedSource == "wear"
-    val savedSamsung = NativeWorkoutHealthSource.snapshot(document, HealthJournalStore.SAMSUNG) != null
-    val showSamsung = samsungEnabled || savedSamsung
-    val samsungExpanded = showSamsung && expandedSource == HealthJournalStore.SAMSUNG
-    val hcExpanded = expandedSource == HealthJournalStore.HC
-    Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
+    Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
-        .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        JournalLinkedExternalSources(workout.rawJson, text, language)
-        Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            for ((source, title) in listOf("wear" to "TrainPilot WearOS",
-                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { showSamsung || it.first != HealthJournalStore.SAMSUNG }) {
-                val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
-                Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.weight(1f).heightIn(min = 72.dp)
-                        .trainPilotFrame(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
-                        .trainPilotClickable(MaterialTheme.shapes.medium, enabled = enabled) {
-                            expandedSource = if (expanded) null else source
-                        }.semantics {
-                            selected = expanded
-                            stateDescription = text.getString(if (expanded) R.string.journal_source_expanded else R.string.journal_source_collapsed)
-                        }.testTag("journal_provider_$source")) {
-                    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        com.example.ui.components.TrainPilotFitText(
-                            title, style = MaterialTheme.typography.labelLarge, color = colors.text,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = colors.accent)
-                    }
-                }
-            }
+        .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(local("Forrás", "Source", "Quelle", "Sursă"), style = MaterialTheme.typography.titleMedium, color = colors.text)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(local("Pulzus, energia", "Heart rate, energy", "Puls, Energie", "Puls, energie"),
+                color = colors.text, modifier = Modifier.weight(1f))
+            Text("TrainPilot WearOS", color = colors.text, style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.testTag("journal_wear_source"))
         }
-        JournalHealthSourceContent("wear", "TrainPilot WearOS", wearExpanded) {
-            Text("Health Services", color = colors.muted)
-            JournalHealthSourceEvidence(summary, "wear", language)
-            if (wear != null && raw?.optBoolean("nativeHealthWindowStale") == true) {
-                Text(text.getString(R.string.journal_edit_stale), color = colors.muted)
-                raw.optJSONObject("nativeOriginalHealthWindow")?.let {
-                    Text("${text.getString(R.string.journal_health_window)}: ${time(it.optString("started"))} – ${time(it.optString("finished"))}", color = colors.muted)
-                }
-            }
-            val metrics = wear?.let { NativeWorkoutHealth.metrics(it, true) }.orEmpty()
-            JournalHealthMetrics(metrics, "wear", text, number)
-            if (metrics.isEmpty()) Text(text.getString(R.string.journal_no_data), color = colors.muted)
-            if (wear?.optBoolean("partial") == true) Text(text.getString(R.string.journal_health_partial), color = colors.muted)
-            Text(text.getString(R.string.journal_health_separate_energy), color = colors.muted)
-        }
-        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { showSamsung || it != HealthJournalStore.SAMSUNG }) key(source) {
-            val tag = if (source == HealthJournalStore.HC) "hc" else "samsung"
-            val health = NativeWorkoutHealthSource.snapshot(document, source)
-            val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
-            val selected = source == provider
-            JournalHealthSourceContent(tag, NativeWorkoutHealthSource.label(source),
-                if (source == HealthJournalStore.SAMSUNG) samsungExpanded else hcExpanded) {
-                JournalHealthSourceEvidence(summary, source, language)
-                Text("${text.getString(R.string.journal_health_window)}: ${time(health?.let { it.optString("windowStart", it.optString("start")) } ?: workout.started)} – ${time(health?.let { it.optString("windowEnd", it.optString("end")) } ?: workout.finished)}")
-                health?.optJSONArray("measurementWindows")?.let { windows ->
-                    for (index in 0 until windows.length()) windows.optJSONObject(index)?.let { window ->
-                        Text("${window.optString("start")} – ${window.optString("end")}", color = colors.muted)
-                    }
-                }
-                if (!current) Text(text.getString(if (health == null) R.string.journal_no_data else R.string.journal_health_stale),
-                    color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_status"))
-                else {
-                    val data = health!!
-                    val projection = remember(workout, source) { NativeWorkoutHealthSummary.readProvider(workout, source) }
-                    val total = projection.workoutTotal
-                    val active = projection.activeEnergy
-                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories", "workoutCalories") + total.values + active.values
-                    JournalHealthMetrics(metrics, tag, text, number)
-                    for ((energyKey, metric) in listOf("totalCalories" to total, "activeCalories" to active)) {
-                        val reason = when {
-                            energyKey !in metrics ->
-                                local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")
-                            metric.incomplete ->
-                                local("Részleges mérés","Partial measurement","Teilweise Messung","Măsurare parțială")
-                            else ->
-                                local("Lefedettség nem igazolt","Coverage unverified","Abdeckung ungeprüft","Acoperire neverificată")
-                        }
-                        val label = if (energyKey == "activeCalories") text.getString(R.string.health_metric_activecalories)
-                            else text.getString(R.string.health_metric_totalcalories)
-                        val origin = NativeWorkoutHealthSummary.labels(metric, energyKey, language)
-                        Text(listOfNotNull("$label: $reason", origin.takeIf(String::isNotBlank)).joinToString(" · "), color = colors.muted, style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.testTag("journal_${tag}_coverage_$energyKey"))
-                    }
-                    if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
-                    if (data.optBoolean("partial") || (data.optJSONArray("warnings")?.length() ?: 0) > 0)
-                        Text(text.getString(R.string.journal_health_partial), color = colors.muted)
-                    if (metrics.containsKey("workoutCalories")) {
-                        val types = data.optJSONArray("workoutEnergyTypes")
-                        val names = (0 until (types?.length() ?: 0)).map { types!!.optString(it) }.map { type ->
-                            when (type) {
-                                "active" -> text.getString(R.string.health_metric_activecalories)
-                                "total" -> text.getString(R.string.health_metric_totalcalories)
-                                else -> local("Edzésenergia; aktív/teljes bontás nélkül", "Session energy; active/total split unavailable", "Trainingsenergie; Aktiv-/Gesamtaufteilung fehlt", "Energie sesiune; fără separare activă/totală")
-                            }
-                        }.distinct()
-                        Text(names.joinToString().ifBlank { local("Energiatípus nem ismert", "Energy type unknown", "Energieart unbekannt", "Tip energie necunoscut") }, color = colors.muted)
-                    }
-                    if (data.optBoolean("workoutEnergyProrated")) Text(text.getString(R.string.journal_health_prorated), color = colors.muted)
-                    val sources = data.optJSONArray("sources")
-                    val labels = data.optJSONObject("sourceLabels")
-                    val names = (0 until (sources?.length() ?: 0)).map { sources!!.optString(it) }
-                        .filter { it.isNotBlank() }.map { labels?.optString(it)?.takeIf(String::isNotBlank) ?: it }.distinct()
-                    if (names.isNotEmpty()) Text("${text.getString(R.string.journal_health_sources)}: ${names.joinToString(", ")}", color = colors.muted)
-                    Text("${text.getString(R.string.journal_health_synced)}: ${time(data.optString("syncedAt"))}", color = colors.muted)
-                }
-                TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() },
-                    enabled = enabled && !refreshing && (source != HealthJournalStore.SAMSUNG || samsungEnabled),
-                    modifier = Modifier.fillMaxWidth().testTag("journal_${tag}_health_refresh")) {
-                    Text(if (refreshing && selected) text.getString(R.string.journal_health_refreshing)
-                        else "${NativeWorkoutHealthSource.label(source)} • ${text.getString(R.string.journal_health_read)}")
-                }
-                health?.optJSONObject("errors")?.let { errors ->
-                    val codes = errors.keys().asSequence().map { errors.optString(it) }.filter(String::isNotBlank).distinct().toList()
-                    if (codes.isNotEmpty()) Text("${NativeWorkoutHealthSource.label(source)}: ${codes.joinToString()}", color = colors.dangerText)
-                }
-                if (selected) {
-                    status?.let { Text(it, color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_result")) }
-                    error?.let { Text(text.getString(it), color = colors.dangerText, modifier = Modifier.testTag("journal_${tag}_health_error")) }
-                    if (source != HealthJournalStore.SAMSUNG || samsungEnabled) permissions?.invoke(source)
-                }
-            }
-        }
+        if (NativeWorkoutHealthSummary.journalValues(summary).isEmpty()) Text(
+            local("Nincs óramérés ehhez az edzéshez.", "No watch measurement for this workout.",
+                "Keine Uhrmessung für dieses Training.", "Nu există măsurători de pe ceas pentru acest antrenament."),
+            color = colors.muted, modifier = Modifier.testTag("journal_wear_source_missing"))
+        Text(local("A tárolt egészségadat megmarad, de itt nem jelenik meg. Külső (importált) edzésnél a saját forrása látszik.",
+            "Stored health data is retained but not shown here. Imported workouts show their own source.",
+            "Gespeicherte Gesundheitsdaten bleiben erhalten, werden hier aber nicht angezeigt. Importierte Trainings zeigen ihre eigene Quelle.",
+            "Datele de sănătate stocate sunt păstrate, dar nu apar aici. Antrenamentele importate afișează sursa proprie."),
+            style = MaterialTheme.typography.labelSmall, color = colors.muted)
     }
 }
 
 @Composable
-private fun JournalHealthSourceEvidence(summary: NativeWorkoutHealthSummary.Result, source: String, language: String) {
-    val colors = LocalTrainPilotColors.current
-    fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
-        "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
-    }
-        for (relation in summary.relationships.filter { it.first == source || it.second == source }) {
-            val other = NativeWorkoutHealthSummary.label(if (relation.first == source) relation.second else relation.first)
-            Text(if (relation.confirmedMirror) local("Azonos rekordkapcsolat", "Shared record identity", "Gemeinsame Datensatzidentität", "Identitate comună înregistrare") + ": $other"
-                else local("Átfedő mérés; lehetséges tükrözés", "Overlapping measurement; possible mirror", "Überlappende Messung; mögliche Spiegelung", "Măsurare suprapusă; posibilă copie") + ": $other", color = colors.muted)
-        }
-    }
-
-@Composable
-private fun JournalHealthSourceContent(source: String, title: String, expanded: Boolean,
-    content: @Composable ColumnScope.() -> Unit) {
-    if (!expanded) return
-    val colors = LocalTrainPilotColors.current
-    Column(Modifier.fillMaxWidth().testTag("journal_health_$source")) {
-        HorizontalDivider(color = colors.line.copy(alpha = 0.6f))
-        Column(Modifier.fillMaxWidth().padding(12.dp).testTag("journal_${source}_content"),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.text)
-            content()
-        }
-    }
-}
-
-private fun parseHealth(raw: String?): JSONObject? = raw?.let { runCatching { JSONObject(it) }.getOrNull() }
-
-@Composable
-internal fun JournalHealthMetrics(metrics: Map<String, Double>, source: String, text: android.content.res.Resources, number: NumberFormat) {
+internal fun JournalHealthMetrics(metrics: Map<String, Double>, source: String, text: android.content.res.Resources, number: NumberFormat, compact: Boolean = false) {
     val colors = LocalTrainPilotColors.current
     for ((key, rawValue) in metrics) {
         val label = when (key) {
@@ -264,7 +90,12 @@ internal fun JournalHealthMetrics(metrics: Map<String, Double>, source: String, 
         }
         val value = if (key in setOf("averageSpeedMps", "maxSpeedMps")) rawValue * 3.6 else rawValue
         if (!value.isFinite()) continue
-        Column(Modifier.fillMaxWidth().testTag("journal_${source}_$key")) {
+        if (compact) Row(Modifier.fillMaxWidth().testTag("journal_${source}_$key"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text.getString(label), color = colors.text, modifier = Modifier.weight(1f))
+            Text("${number.format(value)} $unit".trim(), color = colors.text,
+                style = MaterialTheme.typography.labelLarge, modifier = Modifier.testTag("journal_${source}_${key}_value"))
+        } else Column(Modifier.fillMaxWidth().testTag("journal_${source}_$key")) {
             Text(text.getString(label), style = MaterialTheme.typography.labelMedium, color = colors.muted)
             Text("${number.format(value)} $unit".trim(), modifier = Modifier.testTag("journal_${source}_${key}_value"))
         }

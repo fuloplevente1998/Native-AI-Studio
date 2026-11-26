@@ -24,6 +24,18 @@ internal object NativeWorkoutHealthSummary {
     fun read(workout: WorkoutHistoryEntity, samsungEnabled: Boolean = true): Result =
         project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json), samsungEnabled)
 
+    /** TrainPilot history displays only the saved, session-validated Wear measurement.
+     * The generic/provider projections remain available to the daily health journal. */
+    fun readJournal(workout: WorkoutHistoryEntity): Result =
+        projectJournal(savedFrame(workout), NativeSavedWearHealth.read(workout))
+
+    internal fun projectJournal(workout: JSONObject, wear: JSONObject?): Result =
+        project(workout, wear, null)
+
+    fun journalValues(result: Result): Map<String, Double> =
+        result.heart.values.filterKeys { it == "averageHeartRate" || it == "maxHeartRate" } +
+            result.activeEnergy.values + result.workoutTotal.values
+
     /** Provider-specific daily workout row and the combined detail share the same validated windows. */
     fun readProvider(workout: WorkoutHistoryEntity, provider: String): Result {
         val snapshot = NativeWorkoutHealthSource.snapshot(parse(workout.health240Json), provider)
