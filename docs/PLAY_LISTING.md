@@ -75,7 +75,7 @@ TrainPilot helps you plan workouts, log your sets and track progress. Use the ph
 
 A telefonos változások a Play Console 280600-as buildjéhez (1.5.0) viszonyítva. A kiadási jegyzetek nyelvenként legfeljebb 500 karakteresek.
 
-### Telefon (281200)
+### Telefon (281300)
 
 ```text
 <hu-HU>
@@ -108,7 +108,7 @@ A telefonos változások a Play Console 280600-as buildjéhez (1.5.0) viszonyít
 </ro>
 ```
 
-### Wear OS (281202)
+### Wear OS (281302)
 
 ```text
 <hu-HU>
