@@ -1,7 +1,7 @@
-# TrainPilot Native – 2811 átadó
+# TrainPilot Native – Health Connect-központú átállás
 
-- Alap: main `32ea75e9`, #401, 1.5.4 (281000/281002). A Play-kiadási jegyzet alapja az 1.5.0 (280600/280602).
-- `fix/workout-health-refresh`: közös tranzakciós védelem kézi és automatikus visszaolvasáshoz. Üres vagy gyengébb válasz esetén megmarad a mentett mérés.
-- A Napló Forrás lapja a szünetekkel tagolt edzés részleges aktív/teljes energiáját a mentett összesítő projekcióból veszi. A HC nyers rekordlefedettség az aggregátum eredetétől külön marad.
-- Célzott Room, Compose és coverage regressziók. Eszközön a Samsung Health és Health Connect késleltetett adatpublikációja még ellenőrizendő.
-- 1.5.4. Telefon 281100, Wear OS 281102. Négy nyelvű Play szöveg a `docs/PLAY_LISTING.md` fájlban. Kiadás a zöld PR CI és main CI után.
+- Alap: main `5d3b8a09`, 1.5.4 (281100/281102), #402. Aláírt APK/AAB és Play szöveg átadva. A Play-kiadási jegyzet alapja 1.5.0 (280600/280602).
+- #403 a teljes fejlesztési pont. #351 és #359 fennmaradt készülékes esetei ide kerültek. #392 helyett a #397 ment mainre.
+- Első szakasz, `feat/403-health-connect`. Health Connect pulzus mindkét Android-adapterben az aktív időablak mintáiból. Deduplikáció és egységes eredet. Késői pulzus Room-csatolása a korábbi energia megtartásával. Egy forrás mérőszámonként a mentett edzésben, Health Connect elsőbbséggel. Aktív és összes kcal külön.
+- Célzott pulzus-, napló-, lefedettségi és Room-regresszió. A fizikai Health Connect adatátadás ellenőrzése nyitott.
+- Következő szakasz a napi szinkron alapértelmezése, a Samsung Health és Wear OS kiegészítőkapcsolók, majd a kompakt Egészségnapló a #403 szerint. A Wear OS árazása későbbi termékdöntés.

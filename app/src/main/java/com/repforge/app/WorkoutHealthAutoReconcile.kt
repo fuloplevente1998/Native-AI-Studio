@@ -24,13 +24,22 @@ internal object WorkoutHealthAutoPolicy {
         val metrics = NativeWorkoutHealth.metrics(previous, false)
         if (metrics["activeCalories"] == null || previous.optBoolean("partial")) return true
         if (previous.optString("provider") == HealthJournalStore.HC &&
-            listOf("activeCalories","totalCalories").any { WorkoutEnergyCoverage.status(previous,it) != WorkoutEnergyCoverage.Status.FULL_RAW })
+            (missingPulse(previous) ||
+                listOf("activeCalories","totalCalories").any { WorkoutEnergyCoverage.status(previous,it) != WorkoutEnergyCoverage.Status.FULL_RAW }))
             return true
         val synced = runCatching { Instant.parse(previous.getString("syncedAt")).toEpochMilli() }.getOrDefault(0L)
         // Missing total energy may be published later even if active energy already arrived.
         // After the initial settle period it remains retryable within the existing lookback.
         return nowMs >= finishedMs + SETTLE_MS &&
             (synced < finishedMs + SETTLE_MS || metrics["totalCalories"] == null)
+    }
+
+    private fun missingPulse(snapshot: JSONObject): Boolean {
+        val windows = snapshot.optJSONArray("measurementWindows")
+        return NativeWorkoutHealth.metrics(snapshot, false)["averageHeartRate"] == null ||
+            (0 until (windows?.length() ?: 0)).any { windows?.optJSONObject(it)?.optDouble("averageHeartRate")?.let { bpm ->
+                !bpm.isFinite() || bpm <= 0
+            } != false }
     }
 
     private val energyKeys = setOf("activeCalories", "totalCalories", "workoutCalories")
@@ -120,7 +129,7 @@ internal object WorkoutHealthAutoReconcile {
         }
         val reader = NativeWorkoutHealth(context, db)
         var budget = 4
-        for (row in rows) for (provider in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
+        for (row in rows) for (provider in listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)) {
             if (budget == 0) return
             if (provider !in providers) continue
             val feature = if (provider == HealthJournalStore.HC) NativePrivacyControls.HEALTH_CONNECT else NativePrivacyControls.SAMSUNG_HEALTH

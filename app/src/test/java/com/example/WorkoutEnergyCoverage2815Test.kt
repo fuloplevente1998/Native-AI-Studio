@@ -36,21 +36,22 @@ class WorkoutEnergyCoverage2815Test {
             record(40.0,emptyList(),warnings=JSONArray().put("READ_TOTAL_CALORIES_BURNED: failure")),"totalCalories"))
     }
 
-    @Test fun knownPartialRawCoverageLosesToUnverifiedCoverageForTheSameDefinition() {
+    @Test fun healthConnectHasPriorityRegardlessOfRawCoverage() {
         val workout = JSONObject().put("id","w").put("started",start.toString()).put("finished",end.toString())
         fun saved(data: JSONObject) = data.put("windowStart",start.toString()).put("windowEnd",end.toString())
         val partial = saved(record(40.0,listOf(span(0,180))))
         val full = saved(record(260.0,listOf(span(0,3600))))
-        var document = NativeWorkoutHealthSource.attach(null,HealthJournalStore.SAMSUNG,partial)
-        document = NativeWorkoutHealthSource.attach(document,HealthJournalStore.HC,full)
+        var document = NativeWorkoutHealthSource.attach(null,HealthJournalStore.SAMSUNG,full)
+        document = NativeWorkoutHealthSource.attach(document,HealthJournalStore.HC,partial)
         val result = NativeWorkoutHealthSummary.project(workout,null,document)
-        assertEquals(mapOf("totalCalories" to 260.0),result.totalEnergy.values)
+        assertEquals(mapOf("totalCalories" to 40.0),result.totalEnergy.values)
+        assertTrue(result.totalEnergy.incomplete)
         assertEquals(HealthJournalStore.HC,result.totalEnergy.evidence.single().provider)
         assertTrue(result.totalEnergy.overlapExcluded)
         assertTrue(result.activeEnergy.values.isEmpty())
     }
 
-    @Test fun fullRawUnionDoesNotPromoteTheHealthConnectAggregate() {
+    @Test fun fullRawUnionDoesNotCertifyTheHealthConnectAggregate() {
         val workout = JSONObject().put("id", "w").put("started", start.toString()).put("finished", end.toString())
         fun saved(data: JSONObject) = data.put("windowStart", start.toString()).put("windowEnd", end.toString())
         val key = "totalCalories"
@@ -63,9 +64,10 @@ class WorkoutEnergyCoverage2815Test {
 
         assertEquals(WorkoutEnergyCoverage.Status.FULL_RAW, WorkoutEnergyCoverage.status(hc, key))
         assertEquals(WorkoutEnergyCoverage.Status.UNKNOWN, WorkoutEnergyCoverage.aggregateStatus(hc, key))
+        assertEquals(WorkoutEnergyCoverage.rank(samsung, key), WorkoutEnergyCoverage.rank(hc, key))
         for (metric in listOf(result.energy, result.totalEnergy)) {
-            assertEquals(mapOf(key to 270.0), metric.values)
-            assertEquals(HealthJournalStore.SAMSUNG, metric.evidence.single().provider)
+            assertEquals(mapOf(key to 260.0), metric.values)
+            assertEquals(HealthJournalStore.HC, metric.evidence.single().provider)
             assertTrue(metric.hasUnverifiedProviderCoverage)
         }
     }

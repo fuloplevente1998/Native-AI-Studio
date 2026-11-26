@@ -49,16 +49,9 @@ internal object NativeWorkoutActiveWindows {
             val values = rows.mapNotNull { value(it, key) }
             if (rows.isNotEmpty() && values.size == rows.size) out.put(key, values.sum())
         }
-        for (key in listOf("minHeartRate", "maxHeartRate", "maxSpeedMps")) {
-            val values = rows.mapNotNull { value(it, key) }.filter { it > 0 }
-            if (values.isNotEmpty()) out.put(key, if (key.startsWith("min")) values.min() else values.max())
-        }
-        val pulses = rows.filter { value(it, "heartRateSamples")?.let { n -> n > 0 } == true }
-        if (pulses.isNotEmpty() && pulses.all { value(it, "averageHeartRate")?.let { n -> n > 0 } == true }) {
-            val count = pulses.sumOf { value(it, "heartRateSamples")!! }
-            out.put("heartRateSamples", count).put("averageHeartRate",
-                pulses.sumOf { value(it, "averageHeartRate")!! * value(it, "heartRateSamples")!! } / count)
-        }
+        val maxSpeed = rows.mapNotNull { value(it, "maxSpeedMps") }.filter { it > 0 }.maxOrNull()
+        maxSpeed?.let { out.put("maxSpeedMps", it) }
+        NativeWorkoutHeartRate.summarize(out, rows)
         val speeds = rows.filter { value(it, "speedSamples")?.let { n -> n > 0 } == true }
         if (speeds.isNotEmpty() && speeds.all { value(it, "averageSpeedMps") != null }) {
             val count = speeds.sumOf { value(it, "speedSamples")!! }

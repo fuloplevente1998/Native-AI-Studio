@@ -154,6 +154,35 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(saved.health240Json, unchanged.health240Json)
     }
 
+    @Test fun lateHeartRateSavesToRoomWithoutReplacingPreviouslySavedEnergy() {
+        val native = NativeWorkoutHealth(context, db)
+        val workout = seed().workout
+        val window = JSONObject().put("started", start).put("finished", end).put("activeIntervals", intervals())
+        val energy = runBlocking {
+            NativeWorkoutActiveWindows.health(window) {
+                JSONObject().put("start", it.start.toString()).put("end", it.end.toString())
+                    .put("activeCalories", 60).put("totalCalories", 85)
+            }
+        }
+        val initial = awaitNative { native.prepare(workout) }
+        assertTrue(awaitNative { native.attach(initial, energy) })
+        val saved = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(workout.id)!!.workout }
+        val refresh = awaitNative { native.prepare(saved) }
+        val pulse = runBlocking {
+            NativeWorkoutActiveWindows.health(window) {
+                JSONObject().put("start", it.start.toString()).put("end", it.end.toString())
+                    .put("averageHeartRate", 111).put("heartRateSamples", 2).put("heartRateOrigin", "sample.provider")
+            }
+        }
+        assertTrue(awaitNative { native.attach(refresh, pulse) })
+        val updated = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(workout.id)!!.workout }
+        val result = NativeWorkoutHealthSummary.read(updated)
+        assertEquals(mapOf("activeCalories" to 120.0), result.activeEnergy.values)
+        assertEquals(mapOf("totalCalories" to 170.0), result.totalEnergy.values)
+        assertEquals(mapOf("averageHeartRate" to 111.0, "heartRateSamples" to 4.0), result.heart.values)
+        assertEquals(setOf(HealthJournalStore.HC), result.heart.evidence.map { it.provider }.toSet())
+    }
+
     @Test fun dailyJournalWorkoutEnergyUsesOnlySavedProviderAndExactActiveWindow() {
         val snapshot = response().put("windowStart", start).put("windowEnd", end)
         val row = seed(health = snapshot).workout.copy(originDevice = "phone")
@@ -329,7 +358,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_detail_location").assertTextEquals("Fejlődés · Napló")
         compose.onNodeWithText("Edzés részletei").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_summary_heart_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("130 bpm")
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
         list.performScrollToNode(hasTestTag("journal_summary_energy_activeCalories_value"))
