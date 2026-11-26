@@ -24,6 +24,22 @@ internal object NativeWorkoutHealthSummary {
     fun read(workout: WorkoutHistoryEntity, samsungEnabled: Boolean = true): Result =
         project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json), samsungEnabled)
 
+    /** Journal presentation only: disabled direct integrations stay stored, not displayed. */
+    fun readJournal(workout: WorkoutHistoryEntity, samsungEnabled: Boolean, wearEnabled: Boolean): Result =
+        projectJournal(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json),
+            samsungEnabled, wearEnabled)
+
+    internal fun projectJournal(workout: JSONObject, wear: JSONObject?, document: JSONObject?,
+        samsungEnabled: Boolean, wearEnabled: Boolean): Result {
+        val providers = JSONObject()
+        for (provider in listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)) {
+            if (provider == HealthJournalStore.SAMSUNG && !samsungEnabled) continue
+            NativeWorkoutHealthSource.snapshot(document, provider)?.let { providers.put(provider, it) }
+        }
+        return project(workout, wear.takeIf { wearEnabled }, JSONObject().put("providers", providers),
+            preferHealthConnect = true)
+    }
+
     /** Provider-specific daily workout row and the combined detail share the same validated windows. */
     fun readProvider(workout: WorkoutHistoryEntity, provider: String): Result {
         val snapshot = NativeWorkoutHealthSource.snapshot(parse(workout.health240Json), provider)
@@ -41,7 +57,7 @@ internal object NativeWorkoutHealthSummary {
     }
 
     @Suppress("UNUSED_PARAMETER") // Saved evidence is independent of permission for future reads.
-    internal fun project(workout: JSONObject, wear: JSONObject?, document: JSONObject?, samsungEnabled: Boolean = true): Result {
+    internal fun project(workout: JSONObject, wear: JSONObject?, document: JSONObject?, samsungEnabled: Boolean = true, preferHealthConnect: Boolean = false): Result {
         val active = runCatching { NativeWorkoutActiveWindows.read(workout).filter { it.end.isAfter(it.start) } }.getOrDefault(emptyList())
         val evidence = mutableListOf<Evidence>()
         var rejected = false
@@ -205,7 +221,9 @@ internal object NativeWorkoutHealthSummary {
             val partial = !close || !eachWindowRepresented || overlap || rows.any(::partialTotal)
             Metric(mapOf(totalKey to rows.sumOf { number(it.data, totalKey)!! }), rows, partial, overlap)
         }
-        val completeTotal = totals.firstOrNull { !it.incomplete }
+        val completeTotal = totals.firstOrNull { preferHealthConnect &&
+            it.evidence.firstOrNull()?.provider == HealthJournalStore.HC }
+            ?: totals.firstOrNull { !it.incomplete }
             ?: totals.maxByOrNull { metric -> metric.evidence.sumOf(::availableMillis) }
             ?: Metric(emptyMap(), emptyList(), true, false)
         val relationships = mutableListOf<Relationship>()

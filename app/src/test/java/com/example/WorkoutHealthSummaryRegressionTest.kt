@@ -179,6 +179,28 @@ class WorkoutHealthSummaryRegressionTest {
             NativeWorkoutHealthSummary.labels(result.heart, "averageHeartRate", "hu"))
     }
 
+    @Test fun journalUsesHealthConnectWhenPresentAndHidesDisabledDirectSources() {
+        fun partial(kcal: Double, covered: Long) = row().put("totalCalories", kcal)
+            .put("energyCoverage", JSONObject().put("totalCalories",
+                JSONObject().put("status", "PARTIAL_RAW").put("rawCoveredMs", covered)))
+        val hc = snapshot(partial(48.3, 100_000))
+        val direct = snapshot(partial(6.4, 500_000))
+        val document = providers(direct, hc)
+        val before = document.toString()
+        val wear = row().put("totalCalories", 200)
+        for (enabled in listOf(false, true)) {
+            val result = NativeWorkoutHealthSummary.projectJournal(workout(), wear, document, enabled, enabled)
+            assertEquals(48.3, result.workoutTotal.values.getValue("totalCalories"), 0.001)
+            assertEquals(HealthJournalStore.HC, result.workoutTotal.evidence.single().provider)
+            assertTrue(result.workoutTotal.incomplete)
+            if (!enabled) assertTrue(result.relationships.isEmpty())
+        }
+        val hidden = NativeWorkoutHealthSummary.projectJournal(workout(), wear, providers(direct, null), false, false)
+        assertTrue(hidden.workoutTotal.values.isEmpty())
+        assertTrue(hidden.heart.values.isEmpty())
+        assertEquals(before, document.toString())
+    }
+
     @Test fun largestKnownPartialCoverageWinsWithoutAddingProvidersAndMaxOnlySurvives() {
         fun partial(kcal: Int, covered: Long) = row().apply {
             remove("averageHeartRate"); remove("heartRateSamples")

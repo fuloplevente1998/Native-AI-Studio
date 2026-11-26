@@ -62,16 +62,22 @@ internal fun studioWorkoutHealthContent(
         if (workoutId.isNotBlank() && !state.deleting && state.selectedWorkoutId != workoutId &&
             state.deletedWorkoutId != workoutId) model.openDetails(workoutId)
     }
+    val samsungEnabled = com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
+    val wearEnabled = com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR)
     val detail = state.detail?.takeIf { it.workout.id == workoutId }
-    LaunchedEffect(detail?.workout, resumed, state.healthProvider) {
+    LaunchedEffect(detail?.workout, resumed, state.healthProvider, samsungEnabled, wearEnabled) {
         val workout = detail?.workout ?: return@LaunchedEffect
         val document = workout.health240Json?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        if (!samsungEnabled && state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG) {
+            model.selectWorkoutHealthProvider(com.repforge.app.HealthJournalStore.HC)
+            return@LaunchedEffect
+        }
         val cached = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, state.healthProvider)
         val hasHealthMetrics = cached != null && NativeWorkoutHealth.matchesWindow(cached, workout) &&
             NativeWorkoutHealth.metrics(cached, false).isNotEmpty()
         val wear = com.repforge.app.NativeSavedWearHealth.read(workout)
         val hc = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, com.repforge.app.HealthJournalStore.HC)
-        onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(),
+        onSources(workout.id, wearEnabled && wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(),
             hc != null && NativeWorkoutHealth.matchesWindow(hc, workout) && NativeWorkoutHealth.metrics(hc, false).isNotEmpty())
         // Health Connect can receive watch/Samsung records after the workout was saved.
         // A previous empty response must not suppress future foreground refresh attempts.
@@ -99,7 +105,7 @@ internal fun studioWorkoutHealthContent(
                     } else JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
                         provider = state.healthProvider, status = state.healthStatus ?: state.healthStatusTextId?.let(text::getString),
                         selectProvider = model::selectWorkoutHealthProvider,
-                        expandedState = expandedSource,
+                        expandedState = expandedSource, samsungEnabled = samsungEnabled, wearEnabled = wearEnabled,
                         permissions = { _ ->
                             if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
                                 TrainPilotOutlinedButton(onClick = {

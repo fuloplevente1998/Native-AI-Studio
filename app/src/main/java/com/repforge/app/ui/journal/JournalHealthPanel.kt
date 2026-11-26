@@ -1,5 +1,8 @@
 package com.repforge.app.ui.journal
 import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.GlassMaterialRole
 
 import com.example.ui.components.trainPilotAnimatedExpansion
 
@@ -49,6 +52,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     selectProvider: (String) -> Unit = {}, permissions: (@Composable (String) -> Unit)? = null,
     expandedState: MutableState<String?>? = null,
     samsungEnabled: Boolean = com.repforge.app.NativePrivacyControls.enabled(androidx.compose.ui.platform.LocalContext.current, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH),
+    wearEnabled: Boolean = com.repforge.app.NativePrivacyControls.enabled(androidx.compose.ui.platform.LocalContext.current, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR),
     refresh: () -> Unit) {
     if (detail.workout.originDevice == "external") {
         // The generic health-window refresh aggregates all origins; it is not a valid
@@ -61,7 +65,10 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
     val wear = remember(workout.wearMetricsJson, workout.rawJson) { NativeSavedWearHealth.read(workout) }
     val document = remember(workout.health240Json) { parseHealth(workout.health240Json) }
-    val summary = remember(workout, samsungEnabled) { NativeWorkoutHealthSummary.read(workout, samsungEnabled) }
+    val palette = LocalTrainPilotPalette.current
+    val summary = remember(workout, samsungEnabled, wearEnabled) {
+        NativeWorkoutHealthSummary.readJournal(workout, samsungEnabled, wearEnabled)
+    }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
@@ -73,20 +80,20 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     // Do not restore the previous version's independent Boolean slots as a String state.
     val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
     var expandedSource by (expandedState ?: localExpanded)
-    val wearExpanded = expandedSource == "wear"
-    val savedSamsung = NativeWorkoutHealthSource.snapshot(document, HealthJournalStore.SAMSUNG) != null
-    val showSamsung = samsungEnabled || savedSamsung
+    val wearExpanded = wearEnabled && expandedSource == "wear"
+    val showSamsung = samsungEnabled
     val samsungExpanded = showSamsung && expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
-    Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
+    Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(palette.overlayRoleFill(colors.card, GlassMaterialRole.Panel), MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
-                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { showSamsung || it.first != HealthJournalStore.SAMSUNG }) {
+                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { (showSamsung || it.first != HealthJournalStore.SAMSUNG) && (wearEnabled || it.first != "wear") }) {
                 val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
-                Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
+                Surface(color = palette.overlayRoleFill(if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
+                    if (expanded) GlassMaterialRole.Selection else GlassMaterialRole.Button),
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).heightIn(min = 72.dp)
                         .trainPilotFrame(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
@@ -107,7 +114,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 }
             }
         }
-        JournalHealthSourceContent("wear", "TrainPilot WearOS", wearExpanded) {
+        if (wearEnabled) JournalHealthSourceContent("wear", "TrainPilot WearOS", wearExpanded) {
             Text("Health Services", color = colors.muted)
             JournalHealthSourceEvidence(summary, "wear", language)
             if (wear != null && raw?.optBoolean("nativeHealthWindowStale") == true) {
@@ -133,7 +140,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 Text("${text.getString(R.string.journal_health_window)}: ${time(health?.let { it.optString("windowStart", it.optString("start")) } ?: workout.started)} – ${time(health?.let { it.optString("windowEnd", it.optString("end")) } ?: workout.finished)}")
                 health?.optJSONArray("measurementWindows")?.let { windows ->
                     for (index in 0 until windows.length()) windows.optJSONObject(index)?.let { window ->
-                        Text("${window.optString("start")} – ${window.optString("end")}", color = colors.muted)
+                        Text("${time(window.optString("start"))} – ${time(window.optString("end"))}", color = colors.muted)
                     }
                 }
                 if (!current) Text(text.getString(if (health == null) R.string.journal_no_data else R.string.journal_health_stale),

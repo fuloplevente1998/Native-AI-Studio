@@ -17,6 +17,15 @@ internal fun LoggedWorkoutEntry.localWorkoutDate(zone: ZoneId = ZoneId.systemDef
     return parseFlexibleWorkoutDate(dateLabelHu)
 }
 
+/** Format the canonical instant in device-local time; legacy rows retain their label. */
+internal fun LoggedWorkoutEntry.localWorkoutDateTimeLabel(zone: ZoneId = ZoneId.systemDefault()): String {
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    return runCatching { Instant.parse(savedStartIso).atZone(zone).format(formatter) }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(savedStartIso).atZoneSameInstant(zone).format(formatter) }.getOrNull()
+        ?: runCatching { LocalDateTime.parse(savedStartIso.replace(' ', 'T')).format(formatter) }.getOrNull()
+        ?: dateLabelHu
+}
+
 private fun parseFlexibleWorkoutDate(raw: String): LocalDate? {
     val text = raw.trim()
     if (text.isEmpty()) return null

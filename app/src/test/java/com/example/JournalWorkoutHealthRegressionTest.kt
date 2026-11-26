@@ -236,7 +236,7 @@ class JournalWorkoutHealthRegressionTest {
                 androidx.compose.foundation.lazy.LazyColumn(Modifier.testTag("provider_list")) {
                     item {
                         JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
-                            provider = provider, selectProvider = { provider = it }, samsungEnabled = true) { reads.add(provider) }
+                            provider = provider, selectProvider = { provider = it }, samsungEnabled = true, wearEnabled = true) { reads.add(provider) }
                     }
                 }
             }
@@ -274,6 +274,18 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_health_source_group").assertExists()
 
+    }
+
+    @Test fun disabledDirectSourcesAreHiddenEvenWithSavedWearEvidence() {
+        val saved = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        compose.setContent { TrainPilotTheme {
+            JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
+                samsungEnabled = false, wearEnabled = false) { }
+        } }
+        compose.onNodeWithTag("journal_provider_wear").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_samsung_health").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("100 kcal")
     }
 
     @Test fun anotherProviderCanBeExpandedWhileAReadingIsRunning() {
@@ -330,6 +342,7 @@ class JournalWorkoutHealthRegressionTest {
     }
 
     @Test fun studioJournalShowsActualSavedHealthAndWearValuesInWorkoutDetails() {
+        com.repforge.app.NativePrivacyControls.set(context, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR, true)
         val data = response().put("windowStart", start).put("windowEnd", end).put("syncedAt", end)
         val detail = seed(health = data)
         val entry = LoggedWorkoutEntry("fresh", "2026.11.01", "Edzés", 45, "45:00", "—", 1, 150, "Futás", isOutdoorRun = true)

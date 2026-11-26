@@ -135,7 +135,7 @@ class LegacyRestoreEvidenceRegressionTest {
         val previousImport = detail.copy(workout = detail.workout.copy(wearMetricsJson = null))
         assertEquals(404, NativeSavedWearHealth.read(previousImport.workout)!!.getInt("totalCalories"))
         compose.setContent { TrainPilotTheme {
-            JournalHealthPanel(previousImport, nativeResources(context, "hu"), "hu", false, null, true) { }
+            JournalHealthPanel(previousImport, nativeResources(context, "hu"), "hu", false, null, true, wearEnabled = true) { }
         } }
         compose.onNodeWithTag("journal_provider_wear").performClick()
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("404 kcal")
