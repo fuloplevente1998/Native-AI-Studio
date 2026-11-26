@@ -28,20 +28,55 @@ internal object WorkoutHealthAutoPolicy {
         return nowMs >= finishedMs + SETTLE_MS && synced < finishedMs + SETTLE_MS
     }
 
-    fun accept(previous: JSONObject?, next: JSONObject): Boolean {
-        val measured = NativeWorkoutHealth.metrics(next, false)
-            .filterKeys { it != "exerciseMinutes" && it != "exerciseSessionCount" }
-        if (measured.isEmpty()) return false
-        val prior = previous?.let { NativeWorkoutHealth.metrics(it, false) }.orEmpty()
-            .filterKeys { it != "exerciseMinutes" && it != "exerciseSessionCount" }
-        // An empty/partial provider response must not erase a previously measured field.
-        // Do not splice different read windows or manufacture aggregates.
-        if (!measured.keys.containsAll(prior.keys)) return false
-        val failed = next.optJSONArray("failedFields")
-        if (failed != null && (0 until failed.length()).any { failed.optString(it) in prior.keys }) return false
-        if (prior.isNotEmpty() && previous?.optBoolean("partial") != true && next.optBoolean("partial")) return false
-        return true
+    private val energyKeys = setOf("activeCalories", "totalCalories", "workoutCalories")
+    private fun measured(data: JSONObject) = NativeWorkoutHealth.metrics(data, false)
+        .filterKeys { it != "exerciseMinutes" && it != "exerciseSessionCount" }
+
+    private fun failed(data: JSONObject, keys: Set<String>): Boolean {
+        val fields = data.optJSONArray("failedFields")
+        return (0 until (fields?.length() ?: 0)).any { fields?.optString(it) in keys } ||
+            keys.any { data.optJSONObject("errors")?.optString(it).orEmpty().isNotBlank() }
     }
+
+    private fun windows(data: JSONObject?): Map<Pair<Instant, Instant>, JSONObject>? {
+        val rows = data?.optJSONArray("measurementWindows") ?: return null
+        val result = linkedMapOf<Pair<Instant, Instant>, JSONObject>()
+        for (i in 0 until rows.length()) {
+            val row = rows.getJSONObject(i)
+            val window = Instant.parse(row.getString("start")) to Instant.parse(row.getString("end"))
+            require(window.second > window.first && result.put(window, row) == null)
+        }
+        return result
+    }
+
+    fun accept(previous: JSONObject?, next: JSONObject): Boolean = runCatching {
+        val current = measured(next)
+        val prior = previous?.let(::measured).orEmpty()
+        val oldWindows = windows(previous)
+        val newWindows = windows(next)
+        if (current.isEmpty() && newWindows.orEmpty().values.none { measured(it).isNotEmpty() }) return false
+        // A refresh must keep every existing measured field, including measurements that
+        // exist in only one active interval and therefore have no full-workout aggregate.
+        if (!current.keys.containsAll(prior.keys) || failed(next, prior.keys)) return false
+        var gainsEnergy = (current.keys - prior.keys).any { it in energyKeys }
+        for ((window, oldRow) in oldWindows.orEmpty()) {
+            val oldFields = measured(oldRow).keys
+            if (oldFields.isEmpty()) continue
+            val newRow = newWindows?.get(window) ?: return false
+            val newFields = measured(newRow).keys
+            if (!newFields.containsAll(oldFields) || failed(newRow, oldFields)) return false
+            gainsEnergy = gainsEnergy || (newFields - oldFields).any { it in energyKeys }
+        }
+        if (newWindows != null) for ((window, row) in newWindows) {
+            if (oldWindows?.containsKey(window) != true && measured(row).keys.any { it in energyKeys }) gainsEnergy = true
+        }
+        // A partial result may add energy to an earlier complete pulse-only read, but
+        // only when it retains all earlier evidence. Never splice different snapshots.
+        val hadEvidence = prior.isNotEmpty() || oldWindows.orEmpty().values.any { measured(it).isNotEmpty() }
+        if (hadEvidence && previous?.optBoolean("partial") != true && next.optBoolean("partial") && !gainsEnergy)
+            return false
+        true
+    }.getOrDefault(false)
 }
 
 /** Called only inside the existing foreground HealthDashboard provider job (serialized).
@@ -82,6 +117,7 @@ internal object WorkoutHealthAutoReconcile {
             if (latest.started != row.started || latest.finished != row.finished ||
                 latest.activeIntervalsJson != row.activeIntervalsJson || latest.originDevice !in setOf("phone", "watch")) continue
             val snapshot = NativeWorkoutHealthSource.snapshot(latest.health240Json?.let { JSONObject(it) }, provider)
+                ?.takeIf { NativeWorkoutHealth.matchesWindow(it, latest) }
             if (!WorkoutHealthAutoPolicy.due(snapshot, latest.finishedEpochMs, now)) continue
             val permitted = withContext(Dispatchers.IO) {
                 batchGuard()

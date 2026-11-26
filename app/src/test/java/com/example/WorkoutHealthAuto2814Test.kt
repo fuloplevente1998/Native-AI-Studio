@@ -27,6 +27,24 @@ class WorkoutHealthAuto2814Test {
         assertTrue(WorkoutHealthAutoPolicy.due(JSONObject(), end, end + settle))
     }
 
+    @Test fun latePartialEnergyCanBeAddedWithoutLosingExistingWindowEvidence() {
+        fun row(a: String, b: String) = JSONObject().put("start", a).put("end", b)
+        fun snapshot(vararg rows: JSONObject) = JSONObject().put("measurementWindows", org.json.JSONArray(rows.toList()))
+        val a = "2026-11-26T08:00:00Z"; val b = "2026-11-26T08:10:00Z"; val c = "2026-11-26T08:20:00Z"; val d = "2026-11-26T08:30:00Z"
+        val saved = snapshot(row(a,b).put("averageHeartRate", 130), row(c,d).put("steps", 42))
+        val improved = snapshot(row(a,b).put("averageHeartRate", 130).put("activeCalories", 25),
+            row(c,d).put("steps", 42)).put("partial", true)
+        assertTrue(WorkoutHealthAutoPolicy.accept(saved, improved))
+        val lost = snapshot(row(a,b).put("activeCalories", 25), row(c,d).put("steps", 42)).put("partial", true)
+        assertFalse(WorkoutHealthAutoPolicy.accept(saved, lost))
+        val changed = snapshot(row(a,c).put("averageHeartRate", 130).put("activeCalories", 25), row(c,d).put("steps", 42))
+        assertFalse(WorkoutHealthAutoPolicy.accept(saved, changed))
+        val failed = snapshot(row(a,b).put("averageHeartRate", 130).put("activeCalories", 25)
+            .put("errors", JSONObject().put("averageHeartRate", "READ_FAILED")), row(c,d).put("steps", 42))
+        assertFalse(WorkoutHealthAutoPolicy.accept(saved, failed))
+        assertTrue(WorkoutHealthAutoPolicy.accept(null, snapshot(row(a,b).put("activeCalories", 25))))
+    }
+
     @Test fun emptyPartialAndMissingMetricResponsesCannotEraseSavedEnergy() {
         val saved = energy(125.0).put("averageHeartRate", 140)
         assertFalse(WorkoutHealthAutoPolicy.accept(saved, JSONObject()))

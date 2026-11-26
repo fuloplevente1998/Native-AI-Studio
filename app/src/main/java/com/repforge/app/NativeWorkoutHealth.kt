@@ -30,7 +30,8 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
         NativeJournalEditor.requireNotActive(context, aliases(expected))
         db.withTransaction {
             val latest = db.workoutHistoryDao().getWorkoutWithDetailsById(expected.id)?.workout ?: error("Workout deleted")
-            check(latest.started == expected.started && latest.finished == expected.finished) { "Workout window changed" }
+            check(latest.started == expected.started && latest.finished == expected.finished &&
+                latest.activeIntervalsJson == expected.activeIntervalsJson) { "Workout window changed" }
             for (id in aliases(latest)) check(!db.workoutHistoryDao().isTombstoned(id, JSONObject.quote(id))) { "Workout deleted" }
             val duration = Duration.between(Instant.parse(latest.started), Instant.parse(latest.finished))
             require(!duration.isZero && !duration.isNegative && duration <= Duration.ofHours(24))
@@ -110,6 +111,7 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             guard()
             if (automatic) {
                 val prior = NativeWorkoutHealthSource.snapshot(request.expected.health240Json?.let { JSONObject(it) }, provider)
+                    ?.takeIf { matchesWindow(it, request.expected) }
                 if (!WorkoutHealthAutoPolicy.accept(prior, response)) return@withContext Result.success(Unit)
                 com.repforge.app.ui.health.NativeHealthForegroundAdmission.requireMainAdmission(context)
             }

@@ -17,3 +17,5 @@
 - #794 R8 zöld, két JVM hiba: régi total UI tag és MainActivity line cap; fix a meglévő test/cap megőrzésével. `StudioHealthRootEffects.kt`, `HealthWorkoutEnergyDay.kt`: mentett provider/ablak energia külön naplórész, nem raw rekord, nem napi összeg. Új CI ellenőrizendő.
 
 - Napló energia projection regresszió: tényleges Room fixture, HC 100 kcal, másik provider, megváltozott aktív ablak és külső edzés kizárva; meglévő UI tesztben mindkét energia assertion.
+
+- #796 head 973de52f zöld, 1296/0/0/0, R8. Utolsó célzott javítás: késői részleges energia befogadása csak meglévő top-level és per-window mezők megőrzésével; stale ablak újraolvasás, prepare interval guard, pontos HC hiány üzenet. Új CI ellenőrizendő; nincs merge/build.

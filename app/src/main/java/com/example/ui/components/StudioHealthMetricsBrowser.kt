@@ -225,10 +225,10 @@ internal fun StudioHealthMetricsBrowser(
                         }
                         // 2780: say why a Health Connect day has fewer tiles instead of leaving a silent gap.
                         if (healthConnectLacksActiveCalories(provider, available.map { it.key }.toSet()))
-                            Text(label("A Health Connect nem kap aktív kalóriát és Energiapontot – Samsung Health forrással láthatók.",
-                                "Health Connect receives no active calories or Energy score – shown with the Samsung Health source.",
-                                "Health Connect erhält keine aktiven Kalorien und keinen Energiewert – mit Samsung Health als Quelle sichtbar.",
-                                "Health Connect nu primește calorii active și scor de energie – vizibile cu sursa Samsung Health."),
+                            Text(label("Erre a napra nincs elérhető aktív kalória a Health Connectben. Ellenőrizd az engedélyeket, a szinkront és a Samsung Health forrást.",
+                                "No active calories are available in Health Connect for this day. Check permissions, sync and the Samsung Health source.",
+                                "Für diesen Tag sind in Health Connect keine aktiven Kalorien verfügbar. Berechtigungen, Synchronisierung und Samsung Health prüfen.",
+                                "Pentru această zi nu sunt disponibile calorii active în Health Connect. Verifică permisiunile, sincronizarea și sursa Samsung Health."),
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.testTag("journal_hc_missing_hint_$date"))
                         val headerShape = RoundedCornerShape(10.dp)
@@ -323,6 +323,6 @@ internal fun StudioHealthMetricsBrowser(
     }
 }
 
-/** 2780: Health Connect day without active calories (Samsung Health does not hand them over to HC). */
+/** Selected Health Connect day lacks an admitted active-energy value; the reason is not inferred. */
 internal fun healthConnectLacksActiveCalories(provider: String, availableKeys: Set<String>): Boolean =
     provider == com.repforge.app.HealthJournalStore.HC && "activeCalories" !in availableKeys && availableKeys.isNotEmpty()
