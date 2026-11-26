@@ -14,3 +14,5 @@
 - Ág `fix/sheet-transition-405`, alap `fc7a4001`. A Mai állapot részletlapjai tartalomhoz igazodnak a korábbi felső magasságkorláttal.
 - A közös üveglap azonos helyi koordinátarendszerben rajzolja a hátteret és a Kyant-lencsét. A mögöttes háttér animációja a legutolsó lap bezárásakor folytatódik. A magasságrögzítés feloldása csak megváltozott magasságnál kér új mérést.
 - A regressziótesztek a dinamikus méretet, a rögzítés feloldását és az egymásra nyitott lapokat fedik. A készülékes képkocka-idő és az első nyitás ellenőrzése nyitott.
+
+- Coach regresszió (#403) ugyanebben a PR-ben. A korábban Samsungra mentett forrásbeállítás mellett a Coach és az edzés közbeni ajánlás is Health Connect alapú. A Coach frissítése a Health Connect mai méréseit kéri.
