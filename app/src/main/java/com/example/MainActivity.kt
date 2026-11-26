@@ -1240,7 +1240,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onWeightPhotosUpdated = viewModel::refreshPrivatePhotoCount,
                                     onTogglePrimaryHealthSource = { requestPlatformPermission(if (uiState.permissionSamsungHealthEnabled) "samsung_off" else "samsung_on") },
                                     onTriggerHealthSync = { nativeHealth.syncAllHealth(activity) },
-                                    onReadHealthSource = { source -> nativeHealth.syncProviderHealth(activity, source) },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },

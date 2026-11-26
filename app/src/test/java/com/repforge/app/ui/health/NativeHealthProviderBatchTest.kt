@@ -48,14 +48,14 @@ class NativeHealthProviderBatchTest {
             visited += source
             kotlinx.coroutines.yield()
             inFlight = false
-            if (source == HealthJournalStore.SAMSUNG) Result.failure(java.io.IOException("offline"))
+            if (source == HealthJournalStore.HC) Result.failure(java.io.IOException("offline"))
             else Result.success(JSONObject())
         }
         assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), visited)
         assertTrue(report.partial)
         assertFalse(report.failed)
         assertTrue(report.retryable)
-        assertEquals(listOf(Batch.Status.SUCCESS, Batch.Status.FAILED), report.outcomes.map { it.status })
+        assertEquals(listOf(Batch.Status.FAILED, Batch.Status.SUCCESS), report.outcomes.map { it.status })
     }
 
     @Test fun unavailableAndPartialSourcesAreReportedWithoutInventingSuccess() = runBlocking {

@@ -83,23 +83,23 @@ class UnifiedHealthJournalUiRegressionTest {
     private fun awaitReloadDisabled() = awaitUi {
         compose.onAllNodes(hasTestTag("journal_reload") and isNotEnabled()).fetchSemanticsNodes().size == 1
     }
-    private fun journal() {
+    private fun journal(samsungSupplement: Boolean = false) {
         compose.setContent { TrainPilotTheme {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                StudioHealthMetricsBrowser(hc, "en", "fixture")
+                StudioHealthMetricsBrowser("en", "fixture", samsungSupplement = samsungSupplement)
             }
         } }
     }
 
-    @Test fun dayExpansionShowsProviderProjectionAndAllOriginsWithoutAnotherSelector() {
+    @Test fun dayExpansionKeepsHcTotalsAndOnlyOffersSupplementInRecordDetails() {
         store.healthDay(day.toString(), JSONObject().put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "watch").put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "phone").put("steps", 10), store.generation())
-        store.samsungDay(day.toString(), JSONObject().put("steps", 321), JSONArray(), store.generation())
+        store.samsungDay(day.toString(), JSONObject().put("steps", 321).put("activeCalories", 27), JSONArray(), store.generation())
         store.importRecords(JSONArray().put(record("hcwatch")).put(record("hcphone", "phone"))
             .put(record("samsung", provider = samsung)), store.generation())
         val snapshot = store.exportSnapshot().toString()
-        journal()
+        journal(samsungSupplement = true)
         val summary = "journal_summary_${day}_steps"
         awaitTag(summary)
         compose.onNodeWithTag(summary).assertTextEquals("0")
@@ -111,19 +111,12 @@ class UnifiedHealthJournalUiRegressionTest {
         awaitTag("health_record_hcwatch")
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
         compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_$samsung").performScrollTo().performClick()
-        awaitTag(summary)
-        compose.onNodeWithTag(summary).assertTextEquals("321")
+        compose.onNodeWithTag("journal_provider_${day}_$samsung").performScrollTo().performClick()
+        awaitTag("health_record_samsung")
         compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_$hc").performScrollTo().performClick()
-        awaitTag(summary)
-        // #151: provider aggregate remains authoritative; origin-specific values are never added.
-        compose.onNodeWithTag(summary).assertTextEquals("0")
-        compose.onNodeWithTag("journal_origins").assertDoesNotExist()
-        compose.onNodeWithTag("journal_origin_all").assertDoesNotExist()
-        compose.onNodeWithTag("journal_origin_phone").assertDoesNotExist()
-        compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_records_toggle_$day").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_metric_${day}_steps").assertTextContains("0")
+        compose.onNodeWithTag("journal_metric_${day}_activeCalories").assertTextContains("27 kcal")
+        compose.onNodeWithTag("journal_provider_${day}_$hc").performScrollTo().performClick()
         awaitTag("health_record_hcphone")
         compose.onNodeWithTag("health_record_hcwatch").assertExists()
         compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()
@@ -145,16 +138,16 @@ class UnifiedHealthJournalUiRegressionTest {
         }
     }
 
-    @Test fun refreshReadsSelectedProviderAndWaitsForNativeRevisionWhileBusyBlocksRepeat() {
+    @Test fun refreshWaitsForNativeRevisionWhileBusyBlocksRepeat() {
         store.healthDay(day.toString(), JSONObject().put("steps", 1), store.generation())
-        val requests = mutableListOf<String>()
+        var requests = 0
         var revision by mutableLongStateOf(0)
         var busy by mutableStateOf(false)
         var error by mutableStateOf<String?>(null)
         compose.setContent { TrainPilotTheme {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                StudioHealthMetricsBrowser(hc, "en", revision.toString(),
-                    onRefreshProvider = { requests.add(it); busy = true }, refreshBusy = busy, refreshError = error)
+                StudioHealthMetricsBrowser("en", revision.toString(),
+                    onRefresh = { requests++; busy = true }, refreshBusy = busy, refreshError = error)
             }
         } }
         val summary = "journal_summary_${day}_steps"
@@ -163,13 +156,13 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
-        assertEquals(listOf(hc), requests)
+        assertEquals(1, requests)
         awaitReloadDisabled()
         compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
         // A real second tap while the provider is busy must not enqueue another request.
         compose.onNodeWithTag("journal_reload").performTouchInput { click() }
         compose.mainClock.advanceTimeByFrame()
-        compose.runOnIdle { assertEquals(listOf(hc), requests) }
+        compose.runOnIdle { assertEquals(1, requests) }
         compose.runOnIdle {
             store.healthDay(day.toString(), JSONObject().put("steps", 7), store.generation())
             busy = false
@@ -183,19 +176,17 @@ class UnifiedHealthJournalUiRegressionTest {
         }
         compose.onNodeWithTag(summary).assertTextEquals("7")
         compose.mainClock.autoAdvance = true
-        compose.onNodeWithTag("journal_provider_$samsung").performScrollTo().performClick()
-        awaitTag(summary)
         compose.onNodeWithTag("journal_reload").performScrollTo()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
-        assertEquals(listOf(hc, samsung), requests)
+        assertEquals(2, requests)
         awaitReloadDisabled()
         compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
         compose.onNodeWithTag("journal_reload").performTouchInput { click() }
         compose.mainClock.advanceTimeByFrame()
         compose.runOnIdle {
-            assertEquals(listOf(hc, samsung), requests)
+            assertEquals(2, requests)
             busy = false; error = "Samsung Health: PERMISSION_DENIED"; revision++
         }
         awaitTag("journal_refresh_error")

@@ -44,12 +44,33 @@ class Collector2780RegressionTest {
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextEquals("nincs szinkronizálva")
     }
 
-    @Test fun healthConnectDayExplainsMissingActiveCaloriesOnlyWhenTheyAreMissing() {
+    @Test fun dailyFallbackKeepsHcZeroAndFillsOnlyMissingEnergyPulseAndSleep() {
         val hc = com.repforge.app.HealthJournalStore.HC
-        org.junit.Assert.assertTrue(com.example.ui.components.healthConnectLacksActiveCalories(hc, setOf("steps", "totalCalories")))
-        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(hc, setOf("steps", "activeCalories")))
-        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(hc, emptySet())) // empty day: no claim
-        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(
-            com.repforge.app.HealthJournalStore.SAMSUNG, setOf("steps")))
+        val samsung = com.repforge.app.HealthJournalStore.SAMSUNG
+        val zone = java.time.ZoneOffset.UTC
+        val day = LocalDate.of(2026, 11, 25)
+        val now = day.atTime(20, 0).toInstant(zone)
+        fun row(provider: String, whenDay: LocalDate = day) =
+            org.json.JSONObject().put("channel", provider).put("day", whenDay.toString())
+        val primary = row(hc).put("activeCalories", 0)
+            .put("restingHeartRate", 56)
+            .put("failedFields", org.json.JSONArray().put("totalCalories"))
+            .put("totalCalories", 500)
+        val supplement = row(samsung).put("activeCalories", 120).put("totalCalories", 620)
+            .put("averageHeartRate", 73).put("sleepMinutes", 400)
+        val sources = com.repforge.app.ui.health.HealthDaySources(day, primary, supplement, now, zone)
+
+        org.junit.Assert.assertEquals(com.repforge.app.ui.health.HealthDaySources.Value(0.0, hc), sources.metric("activeCalories"))
+        org.junit.Assert.assertEquals(com.repforge.app.ui.health.HealthDaySources.Value(620.0, samsung), sources.metric("totalCalories"))
+        org.junit.Assert.assertEquals(com.repforge.app.ui.health.HealthDaySources.Value(400.0, samsung), sources.sleep())
+        org.junit.Assert.assertEquals(samsung, sources.pulse().provider)
+        org.junit.Assert.assertEquals(73.0, sources.pulse().averageBpm!!, 0.0)
+        org.junit.Assert.assertNull(sources.pulse().restingBpm)
+
+        val wrongDay = row(samsung, day.minusDays(1)).put("totalCalories", 620)
+        val primaryOnly = com.repforge.app.ui.health.HealthDaySources(day, primary, wrongDay, now, zone)
+        org.junit.Assert.assertNull(primaryOnly.metric("totalCalories"))
+        org.junit.Assert.assertNull(primaryOnly.sleep())
+        org.junit.Assert.assertEquals(56.0, primaryOnly.pulse().restingBpm!!, 0.0)
     }
 }

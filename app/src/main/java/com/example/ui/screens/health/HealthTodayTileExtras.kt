@@ -82,7 +82,7 @@ internal fun todayTileWeekLabel(key: String, date: java.time.LocalDate, value: D
  * 2788: one calorie day as text. Total = resting + active (measured by the provider); the two are never
  * added together. "nincs adat" for what was not measured; no estimate.
  */
-internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int?, lang: String): String {
+internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int?, lang: String, sameSource: Boolean = true): String {
     val l = lang.take(2)
     val day = com.example.ui.components.chartDateLabel(date, l)
     val nf = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag(l))
@@ -91,7 +91,7 @@ internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int
     val activeWord = when (l) { "en" -> "active"; "de" -> "aktiv"; "ro" -> "activ"; else -> "aktív" }
     val ofWhich = when (l) { "en" -> "of which active"; "de" -> "davon aktiv"; "ro" -> "din care activ"; else -> "ebből aktív" }
     return when {
-        total != null && active != null -> "$day · $totalWord ${nf.format(total)} kcal · $ofWhich ${nf.format(active)}"
+        total != null && active != null -> "$day · $totalWord ${nf.format(total)} kcal · ${if (sameSource) ofWhich else activeWord} ${nf.format(active)}"
         total != null -> "$day · $totalWord ${nf.format(total)} kcal · $activeWord: $noData"
         active != null -> "$day · $activeWord ${nf.format(active)} kcal · $totalWord: $noData"
         else -> "$day · $noData"
@@ -134,6 +134,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
     } else if (key == "calories") {
         val totals = days.map { d -> weekly[d]?.totalCaloriesKcal }
         val actives = days.map { d -> weekly[d]?.activeCaloriesMeasured }
+        val sameSources = days.map { d -> weekly[d]?.let { it.activeCaloriesProvider == it.totalCaloriesProvider } ?: true }
         if (totals.any { it != null } || actives.any { it != null }) {
             Text(tr(lang, "Napi kalóriaégetés · 7 nap", "Daily calories burned · 7 days", "Täglicher Kalorienverbrauch · 7 Tage", "Calorii arse zilnic · 7 zile"),
                 style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
@@ -154,7 +155,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                     val total = totals[i]
                     val active = actives[i]
                     val color = trainPilotChartMarkColor(selected, palette.primary, palette.textSecondary)
-                    val label = calorieDayLabel(java.time.LocalDate.parse(days[i]), total, active, langCode)
+                    val label = calorieDayLabel(java.time.LocalDate.parse(days[i]), total, active, langCode, sameSources[i])
                     Box(
                         Modifier.weight(1f).fillMaxHeight()
                             .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
@@ -162,7 +163,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                             .testTag("health_today_tile_week_calories_$i"),
                         contentAlignment = Alignment.BottomCenter
                     ) {
-                        if (total != null && active != null && total > 0 && active in 0..total) {
+                        if (sameSources[i] && total != null && active != null && total > 0 && active in 0..total) {
                             Column(Modifier.fillMaxWidth().fillMaxHeight((total / max).coerceIn(0.05f, 1f)).clip(shape)) {
                                 val activeShare = active.toFloat() / total
                                 if (activeShare < 1f) Box(
@@ -187,7 +188,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                 CalorieChartLegend(resting, tr(lang, "nyugalmi", "resting", "Ruhe", "repaus"))
                 if (days.indices.any { i ->
                         val total = totals[i]
-                        total != null && (total <= 0 || actives[i]?.let { it in 0..total } != true)
+                        total != null && (!sameSources[i] || total <= 0 || actives[i]?.let { it in 0..total } != true)
                     }) {
                     CalorieChartLegend(unsplit, tr(lang, "teljes (bontás nélkül)", "total (no breakdown)",
                         "gesamt (ohne Aufteilung)", "total (fără defalcare)"))
@@ -201,7 +202,7 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
                 border = TrainPilotFrames.control(palette.primary, selected = true)
             ) {
                 Text(
-                    text = calorieDayLabel(java.time.LocalDate.parse(days[sel]), totals[sel], actives[sel], langCode),
+                    text = calorieDayLabel(java.time.LocalDate.parse(days[sel]), totals[sel], actives[sel], langCode, sameSources[sel]),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).testTag("health_today_tile_week_info_calories"),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -220,9 +221,14 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
     }
     if (key != "sleep" && key != "calories") return
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
-    val provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC
-    var energyType by remember(today, provider) { androidx.compose.runtime.mutableStateOf("ActiveCaloriesBurnedRecord") }
+    var energyType by remember(today) { androidx.compose.runtime.mutableStateOf("ActiveCaloriesBurnedRecord") }
     val type = if (key == "sleep") "SleepSessionRecord" else energyType
+    val todayReadings = weekly[today.toString()]
+    val provider = when (type) {
+        "SleepSessionRecord" -> todayReadings?.sleepProvider
+        "TotalCaloriesBurnedRecord" -> todayReadings?.totalCaloriesProvider
+        else -> todayReadings?.activeCaloriesProvider
+    } ?: com.repforge.app.HealthJournalStore.HC
     val snapshot by androidx.compose.runtime.produceState<org.json.JSONObject?>(null, today, provider, uiState.healthRefreshRevision) {
         value = null
         try {

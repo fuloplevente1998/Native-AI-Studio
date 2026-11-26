@@ -97,7 +97,7 @@ class Collector2788RegressionTest {
         compose.onNodeWithTag("health_today_tile_sheet").assertExists()
     }
 
-    @Test fun todayTileHandsOffToTheJournalAndItsProviderSelectionSurvivesReopening() {
+    @Test fun todayTileHandsOffToTheJournalAndOpensTheMatchingMetricOnReopening() {
         var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = false))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, hu,
@@ -107,27 +107,29 @@ class Collector2788RegressionTest {
         val tile = compose.onNodeWithTag("health_today_sleep")
         val tileSheet = compose.onNodeWithTag("health_today_tile_sheet")
         val journalSheet = compose.onNodeWithTag("health_journal_sheet")
-        val provider = compose.onNodeWithTag("journal_provider_samsung_health")
-        tile.performClick()
-        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
-        tileSheet.assertDoesNotExist()
-        journalSheet.assertExists()
-        provider.assertIsNotSelected().performClick().assertIsSelected()
-        val healthConnect = compose.onNodeWithTag("journal_provider_health_connect")
-        val fixedHeader = compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot()
         repeat(2) {
-            healthConnect.performClick().assertIsSelected()
-            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
-            provider.performClick().assertIsSelected()
-            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
+            tile.performClick()
+            compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+            tileSheet.assertDoesNotExist()
+            journalSheet.assertExists()
+            val day = java.time.LocalDate.now()
+            val filter = "journal_records_filter_${day}_SleepSessionRecord"
+            compose.mainClock.autoAdvance = false
+            try {
+                compose.waitUntil(30_000) {
+                    androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+                    org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                    compose.mainClock.advanceTimeByFrame()
+                    compose.onAllNodesWithTag(filter).fetchSemanticsNodes().isNotEmpty()
+                }
+            } finally {
+                compose.mainClock.autoAdvance = true
+            }
+            compose.onNodeWithTag(filter).assertIsSelected()
+            compose.onNodeWithTag("journal_provider_${day}_samsung_health").assertDoesNotExist()
+            compose.onNodeWithTag("health_journal_close").performClick()
+            journalSheet.assertDoesNotExist()
         }
-
-        compose.onNodeWithTag("health_journal_close").performClick()
-        journalSheet.assertDoesNotExist()
-        tileSheet.assertDoesNotExist()
-        tile.performClick()
-        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
-        provider.assertIsSelected()
     }
 
     @Test fun measurementSummaryHidesTheTechnicalOriginButKeepsEnergyAndSteps() {
