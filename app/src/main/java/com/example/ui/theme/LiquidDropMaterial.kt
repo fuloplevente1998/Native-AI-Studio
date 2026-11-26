@@ -41,11 +41,7 @@ internal fun Modifier.liquidDropMaterial(palette: TrainPilotPalette, shape: Shap
         allowMeasurement, live, role)
     if (optical) {
         val scene = LocalKyantScene.current.forThisWindow()
-        if (scene != null) {
-            val lens = kyantGlass(scene, palette, shape, role)
-            return if (accent == null) lens else lens.background(
-                GlassContrast.limit(accent, GLASS_TILE_LUMA).copy(alpha = .20f), shape)
-        }
+        if (scene != null) return kyantGlass(scene, palette, shape, role, accent)
     }
     return background(Brush.verticalGradient(liquidDropPaints(palette, role, accent)), shape)
         .trainPilotGlassRim(palette, shape, role)

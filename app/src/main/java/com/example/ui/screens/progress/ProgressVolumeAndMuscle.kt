@@ -2,6 +2,9 @@ package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutHorizontalRow
@@ -230,6 +233,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         rangeLabels.forEachIndexed { index, label ->
                                             val selected = uiState.selectedProgressRangeIndex == index
                                             val shape = RoundedCornerShape(10.dp)
+                                            val role = if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button
+                                            val fill = palette.glassControlFill(
+                                                if (selected) palette.primary else palette.surfaceElevated, role
+                                            )
                                             Box(
                                                 modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                                                     .testTag("progress_range_$index")
@@ -239,8 +246,9 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             ) {
                                                 Surface(
                                                     shape = shape,
-                                                    color = if (selected) palette.primary else palette.surfaceElevated,
+                                                    color = fill,
                                                     modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)
+                                                        .trainPilotGlassRim(palette, shape, role)
                                                         .trainPilotBorder(1.dp, if (selected) palette.primary else palette.cardBorder, shape)
                                                         .testTag("progress_range_visual_$index")
                                                 ) {
@@ -249,7 +257,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                             text = label,
                                                             style = MaterialTheme.typography.labelSmall,
                                                             fontWeight = FontWeight.Bold,
-                                                            color = if (selected) palette.onPrimary else palette.textPrimary
+                                                            color = if (selected && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary
                                                         )
                                                     }
                                                 }

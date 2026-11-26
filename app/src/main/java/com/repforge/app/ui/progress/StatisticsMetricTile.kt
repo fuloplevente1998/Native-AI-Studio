@@ -1,6 +1,9 @@
 package com.repforge.app.ui.progress
 
 import androidx.compose.foundation.layout.*
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,8 +19,11 @@ import com.repforge.app.ui.theme.trainPilotBorder
 internal fun StatisticsMetricTile(label: String, value: String, modifier: Modifier = Modifier,
     valueTag: String = "") {
     val colors = LocalTrainPilotColors.current
-    Surface(shape = MaterialTheme.shapes.large, color = colors.card2,
-        modifier = modifier.trainPilotBorder(1.dp, colors.line, MaterialTheme.shapes.large)) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = MaterialTheme.shapes.large
+    Surface(shape = shape, color = palette.glassTile(colors.card2, elevated = true),
+        modifier = modifier.trainPilotGlassRim(palette, shape)
+            .trainPilotBorder(1.dp, colors.line, shape)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(label, color = colors.muted, style = MaterialTheme.typography.bodySmall)

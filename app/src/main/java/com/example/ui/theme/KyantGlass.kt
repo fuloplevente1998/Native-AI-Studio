@@ -101,7 +101,10 @@ internal fun KyantSceneBackground(backdrop: LayerBackdrop, modifier: Modifier = 
 
 /** Render a single role using the shared source; tiles stay on the inexpensive paint/rim path. */
 @Composable
-internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier {
+internal fun Modifier.kyantGlass(
+    scene: KyantScene, palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
+    accent: Color? = null
+): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
     if (!spec.usesBackdrop) return this
@@ -138,7 +141,14 @@ internal fun Modifier.kyantGlass(scene: KyantScene, palette: TrainPilotPalette, 
             provider
         }
     }
-    val surface: DrawScope.() -> Unit = remember(tint) { { drawRect(tint) } }
+    val surface: DrawScope.() -> Unit = remember(tint, accent) {
+        val coat = accent?.let { GlassContrast.limit(it, GLASS_TILE_LUMA).copy(alpha = .20f) }
+        val drawSurface: DrawScope.() -> Unit = {
+            drawRect(tint)
+            if (coat != null) drawRect(coat)
+        }
+        drawSurface
+    }
     val shapeProvider = remember(shape) { { shape } }
     return drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
         highlight = highlight, shadow = shadow, onDrawSurface = surface)

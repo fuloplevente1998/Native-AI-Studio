@@ -6,4 +6,5 @@
 - Egy kompakt Egészségnapló van, napi összesítővel, megnyitható mentett edzésekkel és lenyitható mérési rekordokkal. A mért érték forrása a részletekben érhető el.
 - Új órás kapcsolatjelzés és átadás csak a bekapcsolt integrációnál és igazolt kapcsolatnál jelenik meg. A futó órás edzés vezérlése visszavehető. Az órás alkalmazáskód változatlan. [Beállítási mockup](https://drive.google.com/file/d/1aKeFCvQjnEV8kZDedUroSbeXE20QiI1A/view)
 - A telefonon az edzés közbeni visszajelzés és a befejezés után megjelenő lap közös szerkesztőt használ.
-- A #351 és #359 készülékes esetei a #403-ban követhetők. A teljes PR-CI és a készülékes próba két külön ellenőrzés. Liquid Glass #405 külön követhető.
+- A #351 és #359 készülékes esetei a #403-ban követhetők. A Health Connect-csomag `24951d4d` CI-je 1319 teszten ment át, ebből 276 órás. A készülékes próba nyitott. [CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45873078732)
+- A #405 és a #403 közös buildbe kerül. A #378 a Kyant-referencia a mostani üvegfelületeken. Az érintésfény az aktuális felületre rajzol, a Mai állapot rövid lapja közvetlenül festi a fagyasztott hátteret. Áttetsző Fejlődés, Kardió és Lépések vezérlők és kártyák. Az első nyitás teljesítményét és a látványt készüléken kell ellenőrizni.
