@@ -21,3 +21,5 @@
 - #796 head 973de52f zöld, 1296/0/0/0, R8. Utolsó célzott javítás: késői részleges energia befogadása csak meglévő top-level és per-window mezők megőrzésével; stale ablak újraolvasás, prepare interval guard, pontos HC hiány üzenet. Új CI ellenőrizendő; nincs merge/build.
 
 - #797 zöld (nyers XML ellenőrizendő). Régi 1.5.3 képernyős reprodukció: Samsung napi energia megvan, nyers rekord hiány. Grouped SDK activity summary active/total napi JSON, külön órás naplómegjelenítés, új `SamsungHourlyEnergy2814Test`; új CI és valós SDK/bucket/latency ellenőrzés szükséges.
+
+- #798 zöld 1299/0/0/0, R8. Célzott edzésablak visszaolvasás előre a napi batchben, független hibakezelés és cancellation, missing total retry a settle után. Új regresszió, új CI szükséges; fizikai SDK/óra/UI teszt nyitott.

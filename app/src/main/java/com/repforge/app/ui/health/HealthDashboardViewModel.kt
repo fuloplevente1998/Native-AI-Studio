@@ -600,6 +600,13 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     }
                     Unit
                 }
+                // The saved workout is already durable. Prioritize its exact-window read even
+                // if the unrelated daily/change-feed read is slow or fails.
+                com.repforge.app.WorkoutHealthAutoReconcile.attemptBeforeDaily(
+                    sceneCurrent() && day == LocalDate.now() && _uiState.value.autoOnOpen) {
+                    com.repforge.app.WorkoutHealthAutoReconcile.recent(context, activity,
+                        providerAvailability.filterValues { it }.keys, guard)
+                }
                 // The history query is never replaced by sync output. Manual historical reads remain callable.
                 val result = if (allProviders) {
                     val report = NativeHealthProviderBatch.run(
@@ -626,17 +633,6 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                             refreshRevision = it.refreshRevision + if (value.publishedDay == LocalDate.now()) 1L else 0L) }
                     }, onPermissionFinished = { manualSamsungPermissionVisible = false }, requireScreenGuard = guard,
                     providerOverride = requestedProvider)
-                // Reuse this single foreground SDK flight, after daily publication. An edzés
-                // is already durable; reconciliation failure cannot undo it or fail daily sync.
-                if (result.isSuccess && sceneCurrent() && day == LocalDate.now() &&
-                    _uiState.value.autoOnOpen) {
-                    try {
-                        com.repforge.app.WorkoutHealthAutoReconcile.recent(context, activity,
-                            providerAvailability.filterValues { it }.keys,
-                            guard)
-                    } catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { /* Next visible sync may retry; no health values fabricated. */ }
-                }
                 val failed = result.isFailure || result.getOrNull()?.optBoolean("failed") == true
                 val partial = !failed && result.getOrNull()?.optBoolean("partial") == true
                 val failure = result.exceptionOrNull()

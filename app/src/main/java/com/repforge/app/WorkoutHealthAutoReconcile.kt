@@ -21,11 +21,13 @@ internal object WorkoutHealthAutoPolicy {
     fun due(previous: JSONObject?, finishedMs: Long, nowMs: Long): Boolean {
         if (finishedMs <= 0 || nowMs < finishedMs || nowMs - finishedMs > LOOKBACK_MS) return false
         if (previous == null) return true
-        val active = NativeWorkoutHealth.metrics(previous, false)["activeCalories"]
-        if (active == null || previous.optBoolean("partial")) return true
+        val metrics = NativeWorkoutHealth.metrics(previous, false)
+        if (metrics["activeCalories"] == null || previous.optBoolean("partial")) return true
         val synced = runCatching { Instant.parse(previous.getString("syncedAt")).toEpochMilli() }.getOrDefault(0L)
-        // A successful immediate read gets one later read for delayed provider publication.
-        return nowMs >= finishedMs + SETTLE_MS && synced < finishedMs + SETTLE_MS
+        // Missing total energy may be published later even if active energy already arrived.
+        // After the initial settle period it remains retryable within the existing lookback.
+        return nowMs >= finishedMs + SETTLE_MS &&
+            (synced < finishedMs + SETTLE_MS || metrics["totalCalories"] == null)
     }
 
     private val energyKeys = setOf("activeCalories", "totalCalories", "workoutCalories")
@@ -89,6 +91,15 @@ internal object WorkoutHealthAutoReconcile {
         attempts[key] = elapsed
         while (attempts.size > 128) attempts.remove(attempts.keys.first())
         return true
+    }
+
+    /** Run the bounded workout read before daily sync. Its independent failure must not
+     * suppress daily publication; cancellation must still stop the original SDK flight. */
+    suspend fun attemptBeforeDaily(enabled: Boolean, reconcile: suspend () -> Unit) {
+        if (!enabled) return
+        try { reconcile() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { /* The next eligible foreground sync can retry. */ }
     }
 
     suspend fun recent(context: Context, activity: Activity, providers: Set<String>, batchGuard: () -> Unit) {

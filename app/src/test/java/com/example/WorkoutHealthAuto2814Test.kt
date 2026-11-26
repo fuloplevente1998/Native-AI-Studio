@@ -23,8 +23,27 @@ class WorkoutHealthAuto2814Test {
         assertFalse(WorkoutHealthAutoPolicy.due(null, end, end + WorkoutHealthAutoPolicy.LOOKBACK_MS + 1))
         assertFalse(WorkoutHealthAutoPolicy.due(energy(0.0), end, end + 1000))
         assertTrue(WorkoutHealthAutoPolicy.due(energy(0.0), end, end + settle))
-        assertFalse(WorkoutHealthAutoPolicy.due(energy(0.0, end + settle), end, end + settle + 1))
+        assertFalse(WorkoutHealthAutoPolicy.due(energy(0.0, end + settle).put("totalCalories", 0), end, end + settle + 1))
+        assertTrue(WorkoutHealthAutoPolicy.due(energy(0.0, end + settle), end, end + settle + 1))
         assertTrue(WorkoutHealthAutoPolicy.due(JSONObject(), end, end + settle))
+    }
+
+    @Test fun workoutReadRunsBeforeDailyAndDoesNotSuppressItOnIndependentFailure() = kotlinx.coroutines.runBlocking {
+        val order = mutableListOf<String>()
+        com.repforge.app.WorkoutHealthAutoReconcile.attemptBeforeDaily(true) {
+            order += "workout"
+            throw java.io.IOException("Provider not ready")
+        }
+        order += "daily"
+        assertEquals(listOf("workout", "daily"), order)
+        com.repforge.app.WorkoutHealthAutoReconcile.attemptBeforeDaily(false) { fail("Disabled read") }
+        var cancelled = false
+        try {
+            com.repforge.app.WorkoutHealthAutoReconcile.attemptBeforeDaily(true) {
+                throw kotlinx.coroutines.CancellationException("Foreground ended")
+            }
+        } catch (_: kotlinx.coroutines.CancellationException) { cancelled = true }
+        assertTrue(cancelled)
     }
 
     @Test fun latePartialEnergyCanBeAddedWithoutLosingExistingWindowEvidence() {
