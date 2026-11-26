@@ -196,7 +196,22 @@ class JournalWorkoutHealthRegressionTest {
         assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(originDevice = "external"), HealthJournalStore.HC))
     }
 
-    @Test fun dailyJournalSummaryAndSourceCardShowTheSamePartialProviderEnergy() {
+    @Test fun dailyHealthProviderProjectionIsIndependentOfWearOnlyJournal() {
+        val saved = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val row = saved.workout.copy(originDevice = "phone")
+        val before = row.health240Json
+        val wear = NativeWorkoutHealthSummary.readJournal(row)
+        assertEquals(200.0, wear.workoutTotal.values.getValue("totalCalories"), 0.001)
+        assertTrue(wear.activeEnergy.values.isEmpty())
+        val hc = com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.HC)!!
+        assertEquals(100.0, hc.active!!, 0.001)
+        assertNull(hc.total)
+        assertTrue(hc.activeEvidence.evidence.all { it.provider == HealthJournalStore.HC })
+        assertNull(com.repforge.app.ui.health.workoutDayEnergy(row, HealthJournalStore.SAMSUNG))
+        assertEquals(before, row.health240Json)
+    }
+
+    @Test fun dailyJournalKeepsPartialProviderEnergyWhileWorkoutSourceIsWearOnly() {
         val data = response().put("windowStart",start).put("windowEnd",end)
         data.getJSONArray("measurementWindows").getJSONObject(1).remove("activeCalories")
         data.remove("activeCalories")
@@ -214,12 +229,13 @@ class JournalWorkoutHealthRegressionTest {
                 JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true) { }
             }
         }
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("50 kcal")
-        compose.onNodeWithTag("journal_hc_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
+        compose.onNodeWithTag("journal_provider_health_connect").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
+        assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("partial")!!.workout.health240Json })
     }
 
-    @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
+    @Test fun savedProviderEvidenceRemainsIntactButOnlyWearSourceIsShown() {
         val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val native = NativeWorkoutHealth(context, db)
         val request = awaitNative { native.prepare(before.workout) }
@@ -230,77 +246,108 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(155.0, NativeWorkoutHealthSource.snapshot(health, HealthJournalStore.SAMSUNG)!!.getDouble("averageHeartRate"), .01)
         assertEquals(before.workout.wearMetricsJson, saved.workout.wearMetricsJson)
         val reads = mutableListOf<String>()
-        compose.setContent {
-            var provider by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(HealthJournalStore.HC) }
-            TrainPilotTheme {
-                androidx.compose.foundation.lazy.LazyColumn(Modifier.testTag("provider_list")) {
-                    item {
-                        JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
-                            provider = provider, selectProvider = { provider = it }, samsungEnabled = true) { reads.add(provider) }
-                    }
-                }
-            }
-        }
-        val list = compose.onNodeWithTag("provider_list")
-        val sourceBounds = listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect")
-            .map { compose.onNodeWithTag(it).getUnclippedBoundsInRoot() }
-        assertTrue(sourceBounds.all { it.top == sourceBounds.first().top })
-        assertTrue(sourceBounds[0].right <= sourceBounds[1].left && sourceBounds[1].right <= sourceBounds[2].left)
-        for (tag in listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect"))
-            compose.onNodeWithTag(tag).assertHasClickAction()
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        list.performScrollToNode(hasTestTag("journal_hc_health_refresh"))
-        compose.onNodeWithTag("journal_hc_health_refresh").performClick()
-        list.performScrollToNode(hasTestTag("journal_provider_samsung_health"))
-        compose.onNodeWithTag("journal_provider_samsung_health").performClick()
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
-        list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
-        list.performScrollToNode(hasTestTag("journal_samsung_health_refresh"))
-        compose.onNodeWithTag("journal_samsung_health_refresh").performClick()
-        assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), reads)
-        list.performScrollToNode(hasTestTag("journal_provider_wear"))
-        compose.onNodeWithTag("journal_provider_wear").performClick()
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertExists()
-        list.performScrollToNode(hasTestTag("journal_provider_wear"))
-        compose.onNodeWithTag("journal_provider_wear").performClick()
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_health_source_group").assertExists()
-
-    }
-
-    @Test fun anotherProviderCanBeExpandedWhileAReadingIsRunning() {
-        val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
-        val selectedProviders = mutableListOf<String>()
         compose.setContent { TrainPilotTheme {
-            JournalHealthPanel(detail, nativeResources(context, "hu"), "hu", true, null, true,
-                provider = HealthJournalStore.HC, selectProvider = { selectedProviders += it }, samsungEnabled = true) { }
+            JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
+                selectProvider = { reads.add(it) }, samsungEnabled = true) { reads.add("refresh") }
         } }
-        compose.onNodeWithTag("journal_provider_samsung_health").assertIsEnabled().performClick()
-        compose.onNodeWithTag("journal_samsung_health_status").assertExists()
-        compose.onNodeWithTag("journal_samsung_health_refresh").assertIsNotEnabled()
-        compose.runOnIdle { assertTrue(selectedProviders.isEmpty()) }
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
+        compose.onNodeWithTag("journal_provider_health_connect").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_samsung_health").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertDoesNotExist()
+        compose.runOnIdle { assertTrue(reads.isEmpty()) }
+        assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
     }
 
-    @Test fun sourceCardExpansionSurvivesRestorationWithoutOpeningOtherSources() {
+    @Test fun missingWearShowsTipEvenWithHealthConnectAndLaterIsPerWorkout() {
+        val saved = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val row = saved.workout.copy(wearMetricsJson = null, rawJson = JSONObject(saved.workout.rawJson).apply {
+            remove("wear"); remove("healthSummary"); remove("healthWear129")
+        }.toString())
+        var selected by androidx.compose.runtime.mutableStateOf(saved.copy(workout = row))
+        compose.setContent { TrainPilotTheme {
+            com.repforge.app.ui.journal.JournalWorkoutHealthSummary(selected, nativeResources(context, "hu"), "hu")
+        } }
+        compose.onNodeWithTag("journal_wear_measurement_missing").assertTextEquals("Nincs óramérés ehhez az edzéshez.")
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_install").assertHasClickAction()
+        compose.onNodeWithTag("journal_wear_tip_later").performClick()
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_measurement_missing").assertExists()
+        compose.runOnIdle { selected = saved.copy(workout = row.copy(id = "another-workout")) }
+        compose.onNodeWithTag("journal_wear_install_tip").assertExists()
+        compose.runOnIdle { selected = saved.copy(workout = row) }
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        compose.runOnIdle { selected = saved }
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        val imported = saved.copy(workout = row.copy(id = "import", originDevice = "external",
+            rawJson = JSONObject(row.rawJson).put("externalWorkout359", JSONObject()
+                .put("provider", HealthJournalStore.HC).put("source", "com.sec.android.app.shealth")
+                .put("start", start).put("end", end).put("metrics", JSONObject().put("values",
+                    JSONObject().put("maxHeartRate", 161).put("totalCalories", 312)))).toString()))
+        compose.runOnIdle { selected = imported }
+        compose.onNodeWithTag("journal_external_metrics").assertExists()
+        compose.onNodeWithTag("journal_external_maxHeartRate_value").assertTextEquals("161 bpm")
+        compose.onNodeWithTag("journal_external_totalCalories_value").assertTextEquals("312 kcal")
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        assertEquals("market://details?id=com.TrainPilot.com", com.repforge.app.ui.journal.wearInstallIntent().data.toString())
+        assertEquals("https://play.google.com/store/apps/details?id=com.TrainPilot.com",
+            com.repforge.app.ui.journal.wearInstallIntent(web = true).data.toString())
+        assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
+    }
+
+    @Test fun workoutStatisticsShowOnlyWearTotalAndNeverSubstituteActiveEnergy() {
+        val saved = seed()
+        val full = JSONObject().put("averageHeartRate", 128).put("maxHeartRate", 161)
+            .put("activeCalories", 47.8).put("totalCalories", 312)
+        var selected by androidx.compose.runtime.mutableStateOf(saved.copy(workout =
+            saved.workout.copy(wearMetricsJson = full.toString())))
+        compose.setContent { TrainPilotTheme {
+            com.repforge.app.ui.journal.JournalWorkoutHealthSummary(selected, nativeResources(context, "hu"), "hu")
+        } }
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("128 bpm")
+        compose.onNodeWithTag("journal_summary_heart_maxHeartRate_value").assertTextEquals("161 bpm")
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("312 kcal")
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        val activeOnly = JSONObject().put("activeCalories", 47.8)
+        compose.runOnIdle { selected = saved.copy(workout = saved.workout.copy(wearMetricsJson = activeOnly.toString())) }
+        compose.onNodeWithTag("journal_summary_total_missing").assertExists()
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
+        val projection = NativeWorkoutHealthSummary.readJournal(saved.workout.copy(wearMetricsJson = full.toString()))
+        assertEquals(47.8, projection.activeEnergy.values.getValue("activeCalories"), 0.001)
+        assertEquals(312.0, projection.workoutTotal.values.getValue("totalCalories"), 0.001)
+    }
+
+    @Test fun importedSourceKeepsSamsungViaHealthConnectAndOwnMetrics() {
+        val saved = seed()
+        val imported = saved.copy(workout = saved.workout.copy(originDevice = "external",
+            rawJson = JSONObject(saved.workout.rawJson).put("externalWorkout359", JSONObject()
+                .put("provider", HealthJournalStore.HC).put("source", "com.sec.android.app.shealth")
+                .put("start", start).put("end", end).put("metrics", JSONObject().put("values",
+                    JSONObject().put("totalCalories", 312)))).toString()))
+        compose.setContent { TrainPilotTheme {
+            JournalHealthPanel(imported, nativeResources(context, "hu"), "hu", false, null, true) { }
+        } }
+        compose.onNodeWithTag("journal_external_source_label").assertTextEquals("Samsung Health – Health Connecten át")
+        compose.onNodeWithTag("journal_external_totalCalories_value").assertTextEquals("312 kcal")
+        compose.onNodeWithTag("journal_wear_source").assertDoesNotExist()
+    }
+
+    @Test fun sourceCardRestorationKeepsWearOnly() {
         val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val restoration = StateRestorationTester(compose)
         restoration.setContent { TrainPilotTheme {
             JournalHealthPanel(detail, nativeResources(context, "hu"), "hu", false, null, true) { }
         } }
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_samsung_content").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
+        compose.onNodeWithTag("journal_provider_health_connect").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_samsung_health").assertDoesNotExist()
     }
 
     @Test fun sameOuterDatesDoNotValidateHealthThatIncludesThePause() {
@@ -329,7 +376,7 @@ class JournalWorkoutHealthRegressionTest {
         assertNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(row.id) })
     }
 
-    @Test fun studioJournalShowsActualSavedHealthAndWearValuesInWorkoutDetails() {
+    @Test fun studioJournalShowsActualWearOnlyInWorkoutDetails() {
         val data = response().put("windowStart", start).put("windowEnd", end).put("syncedAt", end)
         val detail = seed(health = data)
         val entry = LoggedWorkoutEntry("fresh", "2026.11.01", "Edzés", 45, "45:00", "—", 1, 150, "Futás", isOutdoorRun = true)
@@ -340,7 +387,7 @@ class JournalWorkoutHealthRegressionTest {
         compose.setContent {
             TrainPilotTheme {
                 val health = com.example.ui.components.studioWorkoutHealthContent("fresh", "hu", {},
-                    { id, wear, hc -> canonicalSources = id == "fresh" && wear && hc }, model)
+                    { id, wear, hc -> canonicalSources = id == "fresh" && wear && !hc }, model)
                 LogWorkoutDetailScreen(TrainPilotUiState(loggedWorkouts = listOf(entry), selectedLogWorkoutId = entry.id,
                     logDetailTabIndex = tab), TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, { tab = it }, {}, {}, {}, {}, {},
                     workoutHealth = health)
@@ -358,24 +405,19 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_detail_location").assertTextEquals("Fejlődés · Napló")
         compose.onNodeWithText("Edzés részletei").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_summary_heart_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("120 bpm")
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("130 bpm")
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
-        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertTextEquals("100 kcal")
+        compose.onNodeWithTag("journal_summary_energy_activeCalories_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
         compose.onNodeWithTag("log_detail_open_watch_sync").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_2"))
         compose.onNodeWithTag("log_detail_tab_2").performClick()
         compose.onNodeWithTag("journal_workout_health_summary").assertDoesNotExist()
-        list.performScrollToNode(hasTestTag("journal_provider_health_connect"))
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("100 kcal")
-        list.performScrollToNode(hasTestTag("journal_provider_wear"))
-        compose.onNodeWithTag("journal_provider_wear").performClick()
-        list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
+        list.performScrollToNode(hasTestTag("journal_wear_source"))
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
+        compose.onNodeWithTag("journal_provider_health_connect").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_samsung_health").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_1"))
         compose.onNodeWithTag("log_detail_tab_1").performClick()
         list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
@@ -383,12 +425,12 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("log_detail_tab_2"))
         compose.onNodeWithTag("log_detail_tab_2").performClick()
-        list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
+        list.performScrollToNode(hasTestTag("journal_wear_source"))
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
         assertFalse(model.uiState.value.healthRefreshing)
         assertNull(model.uiState.value.healthError)
     }
-    @Test fun emptyCachedResponseRetriesOnOpenAndNeverAdvertisesMissingMeasurements() {
+    @Test fun emptyCachedProviderIsNotReadOnOpenAndNeverAdvertised() {
         // The foreground-only refresh contract needs an explicitly resumed host and
         // denied grants; neither state is an implicit Robolectric fixture guarantee.
         compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
@@ -410,15 +452,12 @@ class JournalWorkoutHealthRegressionTest {
                 content()
             }
         }
-        // Robolectric has no granted provider permissions. A read must be attempted,
-        // fail truthfully, and retain the cached row instead of inventing a pulse/zero.
-        try {
-            compose.waitUntil(10_000) {
+        compose.waitUntil(10_000) {
             shadowOf(Looper.getMainLooper()).idle()
-            model.uiState.value.healthError != null }
-        } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw AssertionError("Empty-cache foreground read did not report an error: ${model.uiState.value}; host=${compose.activity.lifecycle.currentState}", timeout)
+            model.uiState.value.detail != null && !healthAvailable
         }
+        assertNull(model.uiState.value.healthError)
+        assertFalse(model.uiState.value.healthRefreshing)
         assertFalse(healthAvailable)
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()

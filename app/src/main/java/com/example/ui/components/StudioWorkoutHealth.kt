@@ -1,26 +1,18 @@
 package com.example.ui.components
 
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton
-
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.repforge.app.NativeWorkoutHealth
 import com.repforge.app.R
 import com.repforge.app.ui.journal.JournalHealthPanel
 import com.repforge.app.ui.journal.JournalViewModel
@@ -31,7 +23,8 @@ import com.repforge.app.ui.theme.TrainPilotExtendedColors
 internal enum class WorkoutHealthView { Sources, Summary }
 internal val LocalWorkoutHealthView = staticCompositionLocalOf { WorkoutHealthView.Sources }
 
-/** Reuse the native Room observer and guarded Health reader behind the Studio journal. */
+/** Reuse the native Room observer; this history view no longer reads provider windows. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun studioWorkoutHealthContent(
     workoutId: String,
@@ -41,19 +34,9 @@ internal fun studioWorkoutHealthContent(
     model: JournalViewModel = viewModel(key = "studio-workout-health")
 ): @Composable () -> Unit {
     val context = LocalContext.current
-    val activity = remember(context) { context.healthActivity() }
-    val owner = LocalLifecycleOwner.current
     val state by model.uiState.collectAsStateWithLifecycle()
     val palette = LocalTrainPilotPalette.current
     val text = remember(context, language) { nativeResources(context, language) }
-    var resumed by remember(owner) { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
-    val expandedSource = rememberSaveable(workoutId) { mutableStateOf<String?>(null) }
-    var attemptedProviders by rememberSaveable(workoutId) { mutableStateOf(listOf<String>()) }
-    DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, _ -> resumed = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
-    }
     DisposableEffect(workoutId, model) {
         if (workoutId.isNotBlank()) model.openDetails(workoutId)
         onDispose { model.closeDetails() }
@@ -63,23 +46,16 @@ internal fun studioWorkoutHealthContent(
             state.deletedWorkoutId != workoutId) model.openDetails(workoutId)
     }
     val detail = state.detail?.takeIf { it.workout.id == workoutId }
-    LaunchedEffect(detail?.workout, resumed, state.healthProvider) {
+    LaunchedEffect(detail?.workout) {
         val workout = detail?.workout ?: return@LaunchedEffect
-        val document = workout.health240Json?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
-        val cached = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, state.healthProvider)
-        val hasHealthMetrics = cached != null && NativeWorkoutHealth.matchesWindow(cached, workout) &&
-            NativeWorkoutHealth.metrics(cached, false).isNotEmpty()
-        val wear = com.repforge.app.NativeSavedWearHealth.read(workout)
-        val hc = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, com.repforge.app.HealthJournalStore.HC)
-        onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(),
-            hc != null && NativeWorkoutHealth.matchesWindow(hc, workout) && NativeWorkoutHealth.metrics(hc, false).isNotEmpty())
-        // Health Connect can receive watch/Samsung records after the workout was saved.
-        // A previous empty response must not suppress future foreground refresh attempts.
-        if (resumed && state.healthProvider !in attemptedProviders && !hasHealthMetrics) {
-            attemptedProviders = attemptedProviders + state.healthProvider
-            // Foreground only; the native adapter checks actual OS grants, active windows,
-            // deletion/restore generations and lifecycle again before attaching the response.
-            model.refreshWorkoutHealth(activity)
+        // Details are read-only; imported sessions keep their own stored source evidence.
+        if (workout.originDevice == "external") {
+            val provider = runCatching { org.json.JSONObject(workout.rawJson).optJSONObject("externalWorkout359")
+                ?.optString("provider") }.getOrNull()
+            onSources(workout.id, false, provider == com.repforge.app.HealthJournalStore.HC)
+        } else {
+            val wear = com.repforge.app.NativeWorkoutHealthSummary.readJournal(workout)
+            onSources(workout.id, com.repforge.app.NativeWorkoutHealthSummary.journalValues(wear).isNotEmpty(), false)
         }
     }
     val nativeColors = remember(palette) {
@@ -94,27 +70,7 @@ internal fun studioWorkoutHealthContent(
                 Column(Modifier.fillMaxWidth().testTag("studio_workout_health")) {
                     if (LocalWorkoutHealthView.current == WorkoutHealthView.Summary) {
                         com.repforge.app.ui.journal.JournalWorkoutHealthSummary(detail, text, language)
-                        state.healthError?.let { Text(text.getString(it), color = palette.danger,
-                            modifier = Modifier.testTag("journal_summary_refresh_error")) }
-                    } else JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
-                        provider = state.healthProvider, status = state.healthStatus ?: state.healthStatusTextId?.let(text::getString),
-                        selectProvider = model::selectWorkoutHealthProvider,
-                        expandedState = expandedSource,
-                        permissions = { _ ->
-                            if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
-                                TrainPilotOutlinedButton(onClick = {
-                                    attemptedProviders = attemptedProviders - state.healthProvider
-                                    if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
-                                        model.requestSamsungWorkoutPermission(activity)
-                                    else requestPermissions()
-                                }, modifier = Modifier.fillMaxWidth().testTag("journal_health_permissions")) {
-                                    Text(if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG)
-                                        "Samsung Health • ${text.getString(R.string.journal_health_permissions)}"
-                                        else text.getString(R.string.journal_health_permissions))
-                                }
-                            }
-                        }) { model.refreshWorkoutHealth(activity) }
-
+                    } else JournalHealthPanel(detail, text, language, false, null, !state.deleting) { }
                 }
             } else {
                 Text(text.getString(if (state.detailLoading) R.string.journal_health_refreshing else R.string.journal_no_data),

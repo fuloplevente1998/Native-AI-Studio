@@ -2,6 +2,7 @@ package com.example
 
 import com.example.model.LoggedWorkoutEntry
 import com.example.model.localWorkoutDate
+import com.example.model.localWorkoutDateTimeLabel
 import com.example.model.workoutsInWeekEnding
 import org.junit.Assert.*
 import org.junit.Test
@@ -14,6 +15,12 @@ class StudioWorkoutDatesTest {
     private fun workout(id: String, started: String, km: Float = 1f) = LoggedWorkoutEntry(
         id, "", "Run", 20, "20:00", "0:00", 0, 100, "",
         distanceKm = km, savedStartIso = started)
+
+    @Test fun journalHeaderUsesLocalWinterSummerAndMidnightTime() {
+        assertEquals("2026-11-25 22:57", workout("winter", "2026-11-25T21:57:36Z").localWorkoutDateTimeLabel(zone))
+        assertEquals("2026-07-26 00:57", workout("summer", "2026-07-25T22:57:36Z").localWorkoutDateTimeLabel(zone))
+        assertEquals("2026-11-25 22:57", workout("offset", "2026-11-25T22:57:36+01:00").localWorkoutDateTimeLabel(zone))
+    }
 
     @Test fun weeklyDistanceIncludesSevenLocalDaysAndExcludesOlderFutureAndUndatedRows() {
         val rows = listOf(

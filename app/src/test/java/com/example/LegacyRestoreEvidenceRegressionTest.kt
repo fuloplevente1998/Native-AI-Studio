@@ -137,13 +137,14 @@ class LegacyRestoreEvidenceRegressionTest {
         compose.setContent { TrainPilotTheme {
             JournalHealthPanel(previousImport, nativeResources(context, "hu"), "hu", false, null, true) { }
         } }
-        compose.onNodeWithTag("journal_provider_wear").performClick()
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("404 kcal")
+        compose.onNodeWithTag("journal_wear_source").assertTextEquals("TrainPilot WearOS")
+        compose.onNodeWithTag("journal_provider_health_connect").assertDoesNotExist()
         compose.onNodeWithTag("journal_hc_totalCalories_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
-        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
-        compose.onNodeWithTag("journal_hc_totalCalories_value").assertTextEquals("72,2 kcal")
-        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("8 kcal")
+        val wearOnly = com.repforge.app.NativeWorkoutHealthSummary.readJournal(previousImport.workout)
+        assertEquals(404.0, wearOnly.workoutTotal.values.getValue("totalCalories"), 0.001)
+        val provider = com.repforge.app.NativeWorkoutHealthSummary.readProvider(previousImport.workout, com.repforge.app.HealthJournalStore.HC)
+        assertEquals(72.2, provider.workoutTotal.values.getValue("totalCalories"), 0.001)
+        assertEquals(8.0, provider.activeEnergy.values.getValue("activeCalories"), 0.001)
     }
     @Test fun samsungHealthConnectAndWearRespectBackupConsentInBothJsonAndZipWithoutDeletingLocalData() {
         restore()

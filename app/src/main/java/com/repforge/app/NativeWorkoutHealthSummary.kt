@@ -24,6 +24,21 @@ internal object NativeWorkoutHealthSummary {
     fun read(workout: WorkoutHistoryEntity, samsungEnabled: Boolean = true): Result =
         project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json), samsungEnabled)
 
+    /** TrainPilot history displays only the saved, session-validated Wear measurement.
+     * The generic/provider projections remain available to the daily health journal. */
+    fun readJournal(workout: WorkoutHistoryEntity): Result =
+        projectJournal(savedFrame(workout), NativeSavedWearHealth.read(workout))
+
+    internal fun projectJournal(workout: JSONObject, wear: JSONObject?): Result =
+        project(workout, wear, null)
+
+    fun journalValues(result: Result): Map<String, Double> {
+        val headlineHeart = result.heart.values.filterKeys { it == "averageHeartRate" || it == "maxHeartRate" }
+        // A minimum-only saved observation is still real evidence, not an absent measurement.
+        return headlineHeart.ifEmpty { result.heart.values.filterKeys { it == "minHeartRate" } } +
+            result.activeEnergy.values + result.workoutTotal.values
+    }
+
     /** Provider-specific daily workout row and the combined detail share the same validated windows. */
     fun readProvider(workout: WorkoutHistoryEntity, provider: String): Result {
         val snapshot = NativeWorkoutHealthSource.snapshot(parse(workout.health240Json), provider)
@@ -234,17 +249,21 @@ internal object NativeWorkoutHealthSummary {
 
     /** Provider and record origin are independent; never relabel an HC row as direct SDK. */
     fun labels(metric: Metric, key: String, language: String): String = metric.evidence.map { row ->
-        val samsung = "com.sec.android.app.shealth"
         val origin = if (key.endsWith("HeartRate")) row.data.optString("heartRateOrigin")
             .takeIf(String::isNotBlank)?.let(::setOf)
         else row.data.optJSONObject("energyCoverage")?.optJSONObject(key)?.optJSONObject("origins")
             ?.keys()?.asSequence()?.toSet()?.takeIf { it.isNotEmpty() }
         val origins = origin ?: strings(row.data, "sources")
-        if (row.provider == HealthJournalStore.HC && origins == setOf(samsung)) when (language.substringBefore('-')) {
-            "hu" -> "Samsung Health – Health Connecten át"
-            "de" -> "Samsung Health – über Health Connect"
-            "ro" -> "Samsung Health – prin Health Connect"
-            else -> "Samsung Health – via Health Connect"
-        } else label(row.provider)
+        originLabel(row.provider, origins, language)
     }.distinct().joinToString(", ")
+
+    fun originLabel(provider: String, origins: Set<String>, language: String): String =
+        if (provider == HealthJournalStore.HC && origins == setOf("com.sec.android.app.shealth"))
+            when (language.substringBefore('-')) {
+                "hu" -> "Samsung Health – Health Connecten át"
+                "de" -> "Samsung Health – über Health Connect"
+                "ro" -> "Samsung Health – prin Health Connect"
+                else -> "Samsung Health – via Health Connect"
+            }
+        else label(provider)
 }

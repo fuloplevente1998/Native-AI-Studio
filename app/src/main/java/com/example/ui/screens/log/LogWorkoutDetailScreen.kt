@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.model.localWorkoutDateTimeLabel
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -152,7 +155,7 @@ fun LogWorkoutDetailScreen(
                             Text(workout.localizedTitle(uiState.language, uiState.programs, uiState.exercises), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold, color = palette.textPrimary,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
+                            Text(workout.localWorkoutDateTimeLabel(), style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "subscreen_back_button")
@@ -199,7 +202,8 @@ fun LogWorkoutDetailScreen(
                     val selected = uiState.logDetailTabIndex == idx
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (selected) palette.primary else palette.surfaceCard,
+                        color = palette.overlayRoleFill(if (selected) palette.primary else palette.surfaceCard,
+                            if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button),
                         modifier = Modifier
                             .weight(1f)
                             .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDetailTab(idx) }
@@ -209,7 +213,7 @@ fun LogWorkoutDetailScreen(
                             text = label,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (selected) palette.onPrimary else palette.textSecondary,
+                            color = if (selected && !(palette.isLiquidGlass && com.example.ui.theme.LocalGlassOverlay.current)) palette.onPrimary else if (selected) palette.textPrimary else palette.textSecondary,
                             modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp)
                         )
                     }
@@ -363,7 +367,11 @@ fun LogWorkoutDetailScreen(
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
                         // #359: an imported workout's source lives here, not in its name or description.
                         if (workout.originDevice == "external") Text("• ${trL(uiState.language, "Forrás", "Source", "Quelle", "Sursă")}: " +
-                            com.example.model.externalSourceLabel(workout.externalProvider, workout.externalSource).ifBlank {
+                            (if (workout.externalProvider == com.repforge.app.HealthJournalStore.HC &&
+                                workout.externalSource == "com.sec.android.app.shealth")
+                                com.repforge.app.NativeWorkoutHealthSummary.originLabel(com.repforge.app.HealthJournalStore.HC,
+                                    setOf("com.sec.android.app.shealth"), uiState.language.name.lowercase())
+                            else com.example.model.externalSourceLabel(workout.externalProvider, workout.externalSource)).ifBlank {
                                 trL(uiState.language, "Forrásadat nem elérhető", "Source unavailable", "Quelle nicht verfügbar", "Sursă indisponibilă")
                             }, color = palette.textPrimary, modifier = Modifier.testTag("log_detail_external_source"))
                     }
@@ -415,80 +423,5 @@ fun LogWorkoutDetailScreen(
             }
         }
 
-        // Egészségügyi forrás: TrainPilot óra & Health Connect (Mockup 3/4 #2 custom icons)
-        if (uiState.logDetailTabIndex == 2) item {
-            Text(
-                text = trL(uiState.language, "Egészségügyi forrás", "Health source", "Gesundheitsquelle", "Sursă de sănătate"),
-                style = MaterialTheme.typography.labelMedium,
-                color = palette.textSecondary
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenWatchSync() }
-                        .testTag("log_detail_open_watch_sync")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MockupWatchGraphicBadge(modifier = Modifier.size(34.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "TrainPilot WearOS",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = if (workout.sourceWatch) trL(uiState.language, "Órás edzésadat rögzítve", "Watch workout data recorded", "Uhr-Trainingsdaten erfasst", "Date antrenament ceas înregistrate") else trL(uiState.language, "Nincs órás mérés", "No watch measurement", "Keine Uhrmessung", "Fără măsurătoare pe ceas"),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.success
-                            )
-                        }
-                    }
-                }
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp))
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenHealthTab() }
-                        .testTag("log_detail_open_health_connect")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MockupHealthConnectBadge(modifier = Modifier.size(34.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = trL(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = trL(uiState.language, "Források, óra és szinkron", "Sources, watch & sync",
-                                    "Quellen, Uhr & Sync", "Surse, ceas și sincronizare"),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.secondary
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }

@@ -179,6 +179,30 @@ class WorkoutHealthSummaryRegressionTest {
             NativeWorkoutHealthSummary.labels(result.heart, "averageHeartRate", "hu"))
     }
 
+    @Test fun journalWearOnlyKeepsMeasuredPartialAndNeverFallsBackToProvider() {
+        val wear = row().put("totalCalories", 312).put("maxHeartRate", 161).put("partial", true)
+        val frame = workout()
+        val before = wear.toString()
+        val result = NativeWorkoutHealthSummary.projectJournal(frame, wear)
+        assertEquals(mapOf("averageHeartRate" to 120.0, "maxHeartRate" to 161.0,
+            "activeCalories" to 80.0, "totalCalories" to 312.0), NativeWorkoutHealthSummary.journalValues(result))
+        assertTrue(result.heart.incomplete)
+        assertTrue(result.workoutTotal.incomplete)
+        assertEquals(NativeWorkoutHealthSummary.WEAR, result.workoutTotal.evidence.single().provider)
+        assertTrue(NativeWorkoutHealthSummary.journalValues(NativeWorkoutHealthSummary.projectJournal(frame, null)).isEmpty())
+        assertTrue(NativeWorkoutHealthSummary.journalValues(NativeWorkoutHealthSummary.projectJournal(frame,
+            row().put("workoutId", "other"))).isEmpty())
+        assertEquals(before, wear.toString())
+        val minOnly = JSONObject().put("minHeartRate", 89).put("partial", true)
+        val minResult = NativeWorkoutHealthSummary.projectJournal(frame, minOnly)
+        assertEquals(mapOf("minHeartRate" to 89.0), NativeWorkoutHealthSummary.journalValues(minResult))
+        assertTrue(minResult.heart.incomplete)
+        assertEquals("Samsung Health – Health Connecten át", NativeWorkoutHealthSummary.originLabel(
+            HealthJournalStore.HC, setOf("com.sec.android.app.shealth"), "hu"))
+        assertEquals("Samsung Health", NativeWorkoutHealthSummary.originLabel(
+            HealthJournalStore.SAMSUNG, setOf("com.sec.android.app.shealth"), "hu"))
+    }
+
     @Test fun largestKnownPartialCoverageWinsWithoutAddingProvidersAndMaxOnlySurvives() {
         fun partial(kcal: Int, covered: Long) = row().apply {
             remove("averageHeartRate"); remove("heartRateSamples")
