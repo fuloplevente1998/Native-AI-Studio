@@ -26,13 +26,13 @@ A TrainPilottal megtervezheted az edzéseidet, naplózhatod a sorozatokat és k�
 
 **Fejlődés és egészség**
 • Napló kereséssel és időszak-szűrővel, rekordok, statisztikák, izomcsoport-terhelés
-• A Health Connect engedéllyel beolvassa a kompatibilis alkalmazásokkal megosztott lépés-, alvás-, pulzus- és energiaadatokat. A Samsung Health külön bekapcsolható kiegészítő adatforrás.
-• Az Egészségnaplóban a napi aktív és a napi teljes kalória külön összesítve jelenik meg. Ha elérhető a mérés, az edzéshez a teljes energiafelhasználás (aktív és nyugalmi energia) tartozik, az explicit szünetek nélkül.
-• Az Egészségnapló tömör napi összesítőt ad. A mérések forrása és az edzések részletei megnyithatók.
-• Coach: napi felkészültség és edzésjavaslat a saját adataid alapján
+• A Health Connect az elsődleges egészségadat-forrás. Engedéllyel beolvassa a kompatibilis alkalmazások által megosztott lépés-, alvás-, pulzus-, HRV- és energiaadatokat, ha rendelkezésre állnak. A közvetlen Samsung Health-integráció opcionális.
+• Kompakt Egészségnapló napi aktív és teljes kalória-összesítéssel, valamint edzésenkénti teljes energiafelhasználással (aktív és nyugalmi energia), ha elérhető a mérés. A szüneteltetett időszakok nem számítanak bele az edzés kalóriáiba, hosszabb megszakítás esetén sem.
+• A mérések forrása és a mentett edzések részletei megnyithatók. A Kapcsolt eszközök felületén látható az egészségadatok szinkronizálásának állapota.
+• TrainPilot Coach: napi felkészültségi pontszám és edzésjavaslat az elérhető alvás- és HRV-adatok, a közelmúlt edzésterhelése és visszajelzései alapján. Samsung Health nélkül egyetlen Végső Coach-pontszám jelenik meg. A bekapcsolt Samsung-integráció friss Energy Score-ja kiegészítheti a saját számítást, a részpontszámok ilyenkor külön láthatók. Hiányzó adat esetén nincs kitalált pontszám.
 
 **Megjelenés**
-• Világos, sötét és egyedi témák. A Liquid Glass témák áttetsző kártyákat, állítható üveghatást és érintésre reagáló gombokat kínálnak.
+• Világos, sötét és egyedi témák. A Liquid Glass témák áttetsző kártyákat, állítható üveghatást és érintésre reagáló gombokat kínálnak. A tartalomhoz igazodó felcsúszó lapok és optimalizált üveghatás átláthatóbb kezelőfelületet adnak.
 • Magyar, angol, német és román nyelv.
 
 **Adataid nálad**
@@ -58,13 +58,13 @@ TrainPilot helps you plan workouts, log your sets and track progress. Use the ph
 
 **Progress and health**
 • Log with search and period filter, records, statistics, muscle-group load
-• With your permission, Health Connect reads steps, sleep, heart rate and energy data shared by compatible apps. Samsung Health is available as an optional supplementary source.
-• The health journal shows daily active and daily total calories separately. When readings are available, workouts show total energy (active and resting) during workout intervals, excluding explicit pauses.
-• The health journal gives you a compact daily overview. Open measurement details to see the source or review a saved workout.
-• Coach: daily readiness and a workout suggestion based on your own data
+• Health Connect is the primary health data source. With your permission, it reads available steps, sleep, heart rate, HRV and energy data shared by compatible apps. Direct Samsung Health integration is optional.
+• A compact health journal shows daily active and total calorie summaries, plus total workout energy (active and resting) when readings are available. Paused intervals are excluded from workout calories, even after long breaks.
+• Open measurement sources and saved workout details. Connected devices shows the health data sync status.
+• TrainPilot Coach: a daily readiness score and workout suggestions based on available sleep and HRV data, recent training load and workout feedback. With Samsung Health integration disabled, only the final Coach score is shown. When enabled, a fresh Samsung Energy Score can supplement the TrainPilot estimate, with the component scores shown separately. Missing data is never replaced with an invented score.
 
 **Appearance**
-• Light, dark and custom themes. Liquid Glass adds translucent cards, adjustable clarity and touch-responsive buttons.
+• Light, dark and custom themes. Liquid Glass adds translucent cards, adjustable clarity and touch-responsive buttons. Content-sized bottom sheets and optimized glass effects refine the interface.
 • Hungarian, English, German and Romanian.
 
 **Your data stays yours**
@@ -79,28 +79,32 @@ A telefonos változások a Play Console 280600-as buildjéhez (1.5.0) viszonyít
 
 ```text
 <hu-HU>
-• Napi aktív és teljes kalória, edzésenként teljes kcal az explicit szünetek nélkül.
-• Health Connect és Coach javítások. A Samsung Health opcionális, bekapcsolva jelenik meg.
-• Kapcsolt eszközök: látható szinkronállapot.
-• Optimalizált Liquid Glass és tartalomhoz igazodó felcsúszó ablakok.
+• Health Connect az elsődleges forrás, Samsung Health opcionális.
+• Napi aktív és teljes kalória, edzésenként teljes kcal a szüneteltetett időszakok nélkül.
+• Egyszerűbb Coach: Samsung nélkül csak a végső pontszám, bekapcsolva részpontszámok is.
+• Kompakt Egészségnapló és látható szinkronállapot.
+• Egyedi témák, optimalizált Liquid Glass és tartalomhoz igazodó felcsúszó lapok.
 </hu-HU>
 <de-DE>
-• Aktive und gesamte Tageskalorien; gesamte Trainingskalorien ohne explizite Pausen.
-• Verbesserungen für Health Connect und Coach. Samsung Health erscheint nur bei aktivierter Integration.
-• Sichtbarer Synchronisierungsstatus für verbundene Geräte.
-• Optimiertes Liquid Glass und inhaltsabhängige Dialoghöhe.
+• Health Connect als Hauptquelle, Samsung Health optional.
+• Aktive und gesamte Tageskalorien; gesamte Trainingskalorien ohne pausierte Zeiträume.
+• Coach: ohne Samsung nur der finale Wert, mit Samsung auch Teilwerte.
+• Kompaktes Gesundheitstagebuch und sichtbarer Synchronisierungsstatus.
+• Eigene Designs, optimiertes Liquid Glass und inhaltsabhängige Dialoghöhe.
 </de-DE>
 <en-US>
-• Daily active and total calories; workout total calories exclude explicit pauses.
-• Health Connect and Coach fixes. Optional Samsung Health appears when enabled.
-• Visible sync status for connected devices.
-• Optimized Liquid Glass and content-sized bottom sheets.
+• Health Connect is the primary source; Samsung Health is optional.
+• Daily active and total calories; workout total calories exclude paused intervals.
+• Coach: one final score without Samsung; component scores when enabled.
+• Compact health journal and visible sync status.
+• Custom themes, optimized Liquid Glass and content-sized bottom sheets.
 </en-US>
 <ro>
-• Calorii zilnice active și totale; calorii totale pe antrenament, fără pauzele explicite.
-• Corecții Health Connect și Coach. Samsung Health apare când integrarea opțională este activată.
-• Starea sincronizării pentru dispozitivele conectate.
-• Liquid Glass optimizat și panouri adaptate conținutului.
+• Health Connect este sursa principală; Samsung Health este opțional.
+• Calorii zilnice active și totale; calorii totale pe antrenament, fără intervalele de pauză.
+• Coach: doar scorul final fără Samsung; scoruri componente când integrarea este activă.
+• Jurnal de sănătate compact și stare de sincronizare vizibilă.
+• Teme personalizate, Liquid Glass optimizat și panouri adaptate conținutului.
 </ro>
 ```
 
