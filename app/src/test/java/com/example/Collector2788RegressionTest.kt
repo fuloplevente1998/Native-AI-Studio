@@ -102,7 +102,7 @@ class Collector2788RegressionTest {
         compose.onNodeWithTag("health_today_tile_sheet").assertExists()
     }
 
-    @Test fun todayTileHandsOffToTheJournalAndOpensTheMatchingMetricOnReopening() {
+    @Test fun todayTileHandsOffToTheJournalAndExpandsTheMatchingDayOnReopening() {
         var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = false))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, hu,
@@ -118,19 +118,22 @@ class Collector2788RegressionTest {
             tileSheet.assertDoesNotExist()
             journalSheet.assertExists()
             val day = java.time.LocalDate.now()
-            val filter = "journal_records_filter_${day}_SleepSessionRecord"
+            val dayTag = "journal_day_$day"
             compose.mainClock.autoAdvance = false
             try {
                 compose.waitUntil(30_000) {
                     androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
                     org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
                     compose.mainClock.advanceTimeByFrame()
-                    compose.onAllNodesWithTag(filter).fetchSemanticsNodes().isNotEmpty()
+                    compose.onAllNodesWithTag(dayTag).fetchSemanticsNodes().isNotEmpty() &&
+                        compose.onAllNodesWithTag("journal_day_line_$day").fetchSemanticsNodes().isEmpty()
                 }
             } finally {
                 compose.mainClock.autoAdvance = true
             }
-            compose.onNodeWithTag(filter).assertIsSelected()
+            compose.onNodeWithTag(dayTag).assertExists()
+            compose.onNodeWithTag("journal_day_line_$day").assertDoesNotExist()
+            compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
             compose.onNodeWithTag("journal_provider_${day}_samsung_health").assertDoesNotExist()
             compose.onNodeWithTag("health_journal_close").performClick()
             journalSheet.assertDoesNotExist()

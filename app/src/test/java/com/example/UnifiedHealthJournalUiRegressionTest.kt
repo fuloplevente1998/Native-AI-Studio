@@ -91,7 +91,7 @@ class UnifiedHealthJournalUiRegressionTest {
         } }
     }
 
-    @Test fun dayExpansionKeepsHcTotalsAndOnlyOffersSupplementInRecordDetails() {
+    @Test fun dayExpansionKeepsHcTotalsAndSupplementWithoutRecordList() {
         store.healthDay(day.toString(), JSONObject().put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "watch").put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "phone").put("steps", 10), store.generation())
@@ -105,22 +105,32 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag(summary).assertTextEquals("0")
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
-        // 2778: detailed records start folded and open on their header.
-        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_records_toggle_$day").performScrollTo().performClick()
-        awaitTag("health_record_hcwatch")
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
-        compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_${day}_$samsung").performScrollTo().performClick()
-        awaitTag("health_record_samsung")
-        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_metric_${day}_steps").assertTextContains("0")
         compose.onNodeWithTag("journal_metric_${day}_activeCalories").assertTextContains("27 kcal")
-        compose.onNodeWithTag("journal_provider_${day}_$hc").performScrollTo().performClick()
-        awaitTag("health_record_hcphone")
-        compose.onNodeWithTag("health_record_hcwatch").assertExists()
         compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()
+        compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_${day}_$samsung").assertDoesNotExist()
+        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
+        compose.onNodeWithTag("health_record_hcphone").assertDoesNotExist()
+        compose.onNodeWithTag("health_record_samsung").assertDoesNotExist()
+        compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
         compose.runOnIdle { assertEquals(snapshot, store.exportSnapshot().toString()) }
+    }
+
+    @Test fun todaySleepTileStillShowsItsStoredRecords() {
+        val sleep = record("today-sleep").put("type", "SleepSessionRecord")
+            .put("data", JSONObject().put("durationMinutes", 1.0))
+        store.importRecords(JSONArray().put(sleep), store.generation())
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.HealthTabScreen(
+                com.example.ui.viewmodel.TrainPilotUiState(primaryHealthSourceSamsung = false),
+                com.example.localization.TrainPilotStrings.forLanguage(com.example.model.AppLanguage.HU),
+                {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_sleep").performClick()
+        awaitTag("health_record_today-sleep")
+        compose.onNodeWithTag("health_record_today-sleep").assertExists()
+        compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
     }
 
     @Test fun availableZeroRemainsVisibleWhileDeniedErroredAndMissingRowsAreHidden() {
