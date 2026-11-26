@@ -367,7 +367,11 @@ fun LogWorkoutDetailScreen(
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
                         // #359: an imported workout's source lives here, not in its name or description.
                         if (workout.originDevice == "external") Text("• ${trL(uiState.language, "Forrás", "Source", "Quelle", "Sursă")}: " +
-                            com.example.model.externalSourceLabel(workout.externalProvider, workout.externalSource).ifBlank {
+                            (if (workout.externalProvider == com.repforge.app.HealthJournalStore.HC &&
+                                workout.externalSource == "com.sec.android.app.shealth")
+                                com.repforge.app.NativeWorkoutHealthSummary.originLabel(com.repforge.app.HealthJournalStore.HC,
+                                    setOf("com.sec.android.app.shealth"), uiState.language.name.lowercase())
+                            else com.example.model.externalSourceLabel(workout.externalProvider, workout.externalSource)).ifBlank {
                                 trL(uiState.language, "Forrásadat nem elérhető", "Source unavailable", "Quelle nicht verfügbar", "Sursă indisponibilă")
                             }, color = palette.textPrimary, modifier = Modifier.testTag("log_detail_external_source"))
                     }

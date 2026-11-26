@@ -282,13 +282,35 @@ class JournalWorkoutHealthRegressionTest {
         compose.runOnIdle { selected = saved }
         compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
         compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
-        compose.runOnIdle { selected = saved.copy(workout = row.copy(id = "import", originDevice = "external")) }
+        val imported = saved.copy(workout = row.copy(id = "import", originDevice = "external",
+            rawJson = JSONObject(row.rawJson).put("externalWorkout359", JSONObject()
+                .put("provider", HealthJournalStore.HC).put("source", "com.sec.android.app.shealth")
+                .put("start", start).put("end", end).put("metrics", JSONObject().put("values",
+                    JSONObject().put("maxHeartRate", 161).put("totalCalories", 312)))).toString()))
+        compose.runOnIdle { selected = imported }
         compose.onNodeWithTag("journal_external_metrics").assertExists()
+        compose.onNodeWithTag("journal_external_maxHeartRate_value").assertTextEquals("161 bpm")
+        compose.onNodeWithTag("journal_external_totalCalories_value").assertTextEquals("312 kcal")
         compose.onNodeWithTag("journal_wear_install_tip").assertDoesNotExist()
         assertEquals("market://details?id=com.TrainPilot.com", com.repforge.app.ui.journal.wearInstallIntent().data.toString())
         assertEquals("https://play.google.com/store/apps/details?id=com.TrainPilot.com",
             com.repforge.app.ui.journal.wearInstallIntent(web = true).data.toString())
         assertEquals(saved.workout.health240Json, awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
+    }
+
+    @Test fun importedSourceKeepsSamsungViaHealthConnectAndOwnMetrics() {
+        val saved = seed()
+        val imported = saved.copy(workout = saved.workout.copy(originDevice = "external",
+            rawJson = JSONObject(saved.workout.rawJson).put("externalWorkout359", JSONObject()
+                .put("provider", HealthJournalStore.HC).put("source", "com.sec.android.app.shealth")
+                .put("start", start).put("end", end).put("metrics", JSONObject().put("values",
+                    JSONObject().put("totalCalories", 312)))).toString()))
+        compose.setContent { TrainPilotTheme {
+            JournalHealthPanel(imported, nativeResources(context, "hu"), "hu", false, null, true) { }
+        } }
+        compose.onNodeWithTag("journal_external_source_label").assertTextEquals("Samsung Health – Health Connecten át")
+        compose.onNodeWithTag("journal_external_totalCalories_value").assertTextEquals("312 kcal")
+        compose.onNodeWithTag("journal_wear_source").assertDoesNotExist()
     }
 
     @Test fun sourceCardRestorationKeepsWearOnly() {

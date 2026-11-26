@@ -53,10 +53,10 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             local("Nincs óramérés ehhez az edzéshez.", "No watch measurement for this workout.",
                 "Keine Uhrmessung für dieses Training.", "Nu există măsurători de pe ceas pentru acest antrenament."),
             color = colors.muted, modifier = Modifier.testTag("journal_wear_source_missing"))
-        Text(local("A tárolt egészségadat megmarad, de itt nem jelenik meg. Külső (importált) edzésnél a saját forrása látszik.",
-            "Stored health data is retained but not shown here. Imported workouts show their own source.",
-            "Gespeicherte Gesundheitsdaten bleiben erhalten, werden hier aber nicht angezeigt. Importierte Trainings zeigen ihre eigene Quelle.",
-            "Datele de sănătate stocate sunt păstrate, dar nu apar aici. Antrenamentele importate afișează sursa proprie."),
+        Text(local("A tárolt Health Connect / Samsung adat megmarad, de itt nem jelenik meg. Külső (importált) edzésnél a saját forrása látszik.",
+            "Stored Health Connect / Samsung data is retained but not shown here. Imported workouts show their own source.",
+            "Gespeicherte Health-Connect-/Samsung-Daten bleiben erhalten, werden hier aber nicht angezeigt. Importierte Trainings zeigen ihre eigene Quelle.",
+            "Datele Health Connect / Samsung stocate sunt păstrate, dar nu apar aici. Antrenamentele importate afișează sursa proprie."),
             style = MaterialTheme.typography.labelSmall, color = colors.muted)
     }
 }

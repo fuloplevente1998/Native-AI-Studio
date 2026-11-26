@@ -1,26 +1,18 @@
 package com.example.ui.components
 
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton
-
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.repforge.app.NativeWorkoutHealth
 import com.repforge.app.R
 import com.repforge.app.ui.journal.JournalHealthPanel
 import com.repforge.app.ui.journal.JournalViewModel
@@ -56,11 +48,15 @@ internal fun studioWorkoutHealthContent(
     val detail = state.detail?.takeIf { it.workout.id == workoutId }
     LaunchedEffect(detail?.workout) {
         val workout = detail?.workout ?: return@LaunchedEffect
-        val wear = com.repforge.app.NativeWorkoutHealthSummary.readJournal(workout)
-        // The details are read-only; do not query HC/Samsung when opening a TrainPilot session.
-        // Imported sessions keep their own stored source evidence.
-        onSources(workout.id, com.repforge.app.NativeWorkoutHealthSummary.journalValues(wear).isNotEmpty(),
-            workout.originDevice == "external" && workout.health240Json?.isNotBlank() == true)
+        // Details are read-only; imported sessions keep their own stored source evidence.
+        if (workout.originDevice == "external") {
+            val provider = runCatching { org.json.JSONObject(workout.rawJson).optJSONObject("externalWorkout359")
+                ?.optString("provider") }.getOrNull()
+            onSources(workout.id, false, provider == com.repforge.app.HealthJournalStore.HC)
+        } else {
+            val wear = com.repforge.app.NativeWorkoutHealthSummary.readJournal(workout)
+            onSources(workout.id, com.repforge.app.NativeWorkoutHealthSummary.journalValues(wear).isNotEmpty(), false)
+        }
     }
     val nativeColors = remember(palette) {
         TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,

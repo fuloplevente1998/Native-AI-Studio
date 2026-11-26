@@ -193,6 +193,14 @@ class WorkoutHealthSummaryRegressionTest {
         assertTrue(NativeWorkoutHealthSummary.journalValues(NativeWorkoutHealthSummary.projectJournal(frame,
             row().put("workoutId", "other"))).isEmpty())
         assertEquals(before, wear.toString())
+        val minOnly = JSONObject().put("minHeartRate", 89).put("partial", true)
+        val minResult = NativeWorkoutHealthSummary.projectJournal(frame, minOnly)
+        assertEquals(mapOf("minHeartRate" to 89.0), NativeWorkoutHealthSummary.journalValues(minResult))
+        assertTrue(minResult.heart.incomplete)
+        assertEquals("Samsung Health – Health Connecten át", NativeWorkoutHealthSummary.originLabel(
+            HealthJournalStore.HC, setOf("com.sec.android.app.shealth"), "hu"))
+        assertEquals("Samsung Health", NativeWorkoutHealthSummary.originLabel(
+            HealthJournalStore.SAMSUNG, setOf("com.sec.android.app.shealth"), "hu"))
     }
 
     @Test fun largestKnownPartialCoverageWinsWithoutAddingProvidersAndMaxOnlySurvives() {

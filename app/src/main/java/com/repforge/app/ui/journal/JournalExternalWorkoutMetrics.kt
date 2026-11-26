@@ -46,7 +46,14 @@ internal fun JournalExternalWorkoutMetrics(detail: WorkoutHistoryWithDetails, te
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(local("Külső edzés mérései", "External workout measurements", "Externe Trainingsmessungen", "Măsurători antrenament extern"),
             style = MaterialTheme.typography.titleMedium, color = colors.text)
-        if (showSource) source?.optString("source")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.muted) }
+        if (showSource) source?.optString("source")?.takeIf { it.isNotBlank() }?.let { origin ->
+            val provider = source.optString("provider")
+            val label = if (provider == com.repforge.app.HealthJournalStore.HC &&
+                origin == "com.sec.android.app.shealth")
+                com.repforge.app.NativeWorkoutHealthSummary.originLabel(provider, setOf(origin), language)
+            else origin
+            Text(label, color = colors.muted, modifier = Modifier.testTag("journal_external_source_label"))
+        }
         if (showSource) source?.optString("title")?.takeIf { it.isNotBlank() }?.let { Text(it, color = colors.text) }
         if (showSource) source?.optJSONObject("device")?.let { device ->
             val name = listOf("manufacturer", "model").mapNotNull { key ->
