@@ -68,6 +68,9 @@ import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
+/** 2816: csak az aszinkron töltődő részletlapok foglalnak előre fix magasságot (nincs nyitás közbeni ugrás). */
+internal fun todayDetailReservesHeight(key: String): Boolean = key == "steps" || key == "sleep"
+
 @Composable
 internal fun StudioTodayStatusDetailSheet(
     uiState: TrainPilotUiState,
@@ -102,7 +105,11 @@ internal fun StudioTodayStatusDetailSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                .heightIn(max = maxDetailHeight)
+                // 2816: a lépés/alvás tartalma (óránkénti lépésdiagram, mai rekordok) a nyitás után
+                // aszinkron töltődik; az első méréstől lefoglalt, stabil magasság miatt a lap egy
+                // lépésben nyílik. A többi négy csempe tartalma szinkron (uiState), azok tartalomhoz igazodnak.
+                .then(if (todayDetailReservesHeight(activeKey)) Modifier.height(maxDetailHeight)
+                    else Modifier.heightIn(max = maxDetailHeight))
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                 .testTag("health_today_tile_expanded_card")
         ) {

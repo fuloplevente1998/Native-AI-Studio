@@ -82,18 +82,27 @@ class Collector2788RegressionTest {
         info.assertTextContains("teljes: nincs adat", substring = true)
     }
 
-    @Test fun todaySheetsFitShortContentsAndTheirCloseButtonsAllowReopening() {
+    @Test fun todaySheetsReserveStableHeightForAsyncTilesAndTheirCloseButtonsAllowReopening() {
+        var screenHeight = 0
         compose.setContent { TrainPilotTheme {
+            screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
             HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
+        // 2816: only the async steps/sleep details reserve the height; the other four stay content-sized.
+        assertEquals(listOf("sleep", "steps"), listOf("sleep", "calories", "pulse", "steps", "workout", "recovery")
+            .filter { com.example.ui.screens.todayDetailReservesHeight(it) })
         listOf("sleep", "calories", "pulse", "steps", "workout", "recovery").forEach { key ->
             val tile = compose.onNodeWithTag("health_today_$key")
             tile.performClick()
             val sheet = compose.onNodeWithTag("health_today_tile_sheet")
             sheet.assertExists()
+            val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
+            val reserved = (screenHeight * 0.66f).dp
             if (key == "steps" || key == "sleep") {
-                val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
-                assertTrue("$key should wrap when there is little data", card.bottom - card.top < 500.dp)
+                // Pre-reserved from the first measure, even with empty data: the sheet opens in one step.
+                assertEquals("$key must open at its reserved height", reserved.value, (card.bottom - card.top).value, 1f)
+            } else {
+                assertTrue("$key should wrap its synchronous content", card.bottom - card.top <= reserved)
             }
             compose.onNodeWithTag("health_today_tile_close").performClick()
             sheet.assertDoesNotExist()
