@@ -1,5 +1,7 @@
 # TrainPilot Native – Health Connect-központú átállás
 
+- Main hotfix (felhasználói engedély): Samsung kiegészítő kikapcsolva csak a Végső Coach készenléti fő kijelzés marad, a pontszámok bontása nem foglal helyet. Coach és Mai állapot/regeneráció, natív Coach alternatív felület; kapcsoló változására újraolvasás. Számítás változatlan. UI teszt mindkét állapotra. A #821 1324/1324 tesztje a korábbi közös PR-ra vonatkozott; új main CI és signing szükséges.
+
 - #820 CI: 1045 telefonos tesztből 1 hibás, R8 sikeres. A régi Home-regresszió még feltétlen Samsung Energy csempét várt. A teszt most kikapcsolt, bekapcsolt és ismét kikapcsolt állapotot ellenőriz, a hat csempe és Coach navigációs ellenőrzése változatlan.
 
 - Közös #407 + #408 kiadás: a sheet tag ütközés javítva; a teljes integrált CI után merge és main signing.

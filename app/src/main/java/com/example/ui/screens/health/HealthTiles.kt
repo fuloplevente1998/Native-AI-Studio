@@ -288,8 +288,8 @@ internal fun CompactRecoveryReadiness(state: TrainPilotUiState) {
             }
         }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (state.permissionSamsungHealthEnabled) SummarySmallPill("Samsung Energy", reading?.samsungEnergy?.let { "${it.roundToInt()} / 100" } ?: "—", Modifier.weight(1f))
+    if (state.permissionSamsungHealthEnabled) Row(Modifier.fillMaxWidth().testTag("recovery_score_breakdown"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SummarySmallPill("Samsung Energy", reading?.samsungEnergy?.let { "${it.roundToInt()} / 100" } ?: "—", Modifier.weight(1f))
         SummarySmallPill("TrainPilot", reading?.trainPilotEstimate?.let { "$it / 100" } ?: "—", Modifier.weight(1f))
     }
 }

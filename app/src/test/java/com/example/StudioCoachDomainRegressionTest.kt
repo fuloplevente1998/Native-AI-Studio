@@ -28,6 +28,35 @@ import java.time.ZoneOffset
 class StudioCoachDomainRegressionTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun coachShowsOnlyFinalReadinessWhenSamsungSupplementIsOff() {
+        val ui = mutableStateOf(com.example.ui.viewmodel.TrainPilotUiState())
+        val result = NativeCoachReadiness.Result(74.0, 74, null, null, null, 420.0, null,
+            null, null, 1, false)
+        val readiness = mutableStateOf(result)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.StudioCoachReadinessCard(ui.value, readiness.value)
+        } }
+        compose.onNodeWithTag("studio_coach_final_readiness").assertExists()
+        compose.onNodeWithText("74").assertExists()
+        compose.onNodeWithTag("studio_coach_score_breakdown").assertDoesNotExist()
+        compose.onNodeWithText("TrainPilot", substring = false).assertDoesNotExist()
+        compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
+        compose.runOnIdle {
+            ui.value = ui.value.copy(permissionAccess = ui.value.permissionAccess.copy(samsungHealthEnabled = true))
+            readiness.value = result.copy(score = 76.0, samsungScore = 84.0)
+        }
+        compose.onNodeWithTag("studio_coach_final_readiness").assertExists()
+        compose.onNodeWithTag("studio_coach_score_breakdown").assertExists()
+        compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.onNodeWithText("TrainPilot", substring = false).assertExists()
+        compose.runOnIdle {
+            ui.value = ui.value.copy(permissionAccess = ui.value.permissionAccess.copy(samsungHealthEnabled = false))
+            readiness.value = result
+        }
+        compose.onNodeWithTag("studio_coach_final_readiness").assertExists()
+        compose.onNodeWithTag("studio_coach_score_breakdown").assertDoesNotExist()
+    }
+
     @Test fun onlyPersistableRecommendationsCanOpenTheActiveProgramPreview() {
         val stable = NativeCoachExerciseAdvice.Advice("increase", "stable", 22.5, 20.0,
             false, 3, NativeCoachExerciseAdvice.Target("reps", text = "8–12"))

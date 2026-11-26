@@ -76,10 +76,11 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
                 }
             }
         }
+        val samsungEnabled = com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
         val signals = listOf(words[7] to readiness?.samsungScore, words[8] to readiness?.trainpilotScore,
             words[9] to readiness?.sleepMinutes, "HRV (ms)" to readiness?.hrvMs,
             words[10] to readiness?.baselineMs, words[11] to readiness?.load).filter { (label, _) ->
-            label != words[7] || com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
+            samsungEnabled || (label != words[7] && label != words[8])
         }
         for (pair in signals.chunked(2)) item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -91,7 +92,7 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
                 }
             }
         }
-        item { Text(words[12], color = colors.muted) }
+        if (samsungEnabled) item { Text(words[12], color = colors.muted) }
         if ((readiness?.externalCount ?: 0) > 0) item {
             val missing = readiness?.externalWithoutEffort ?: 0
             val label = when (state.language.lowercase(Locale.ROOT).take(2)) {

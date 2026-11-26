@@ -135,15 +135,19 @@ class Post2757PresentationRegressionTest {
             assertEquals(java.time.LocalDate.now().toString() to "SleepSessionRecord", journalFocus)
         }
         compose.onNodeWithTag("home_today_recovery").performScrollTo().performClick()
+        compose.onNodeWithText("Végső Coach készenlét").assertExists()
+        compose.onNodeWithTag("recovery_score_breakdown").assertDoesNotExist()
         compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
         compose.runOnIdle {
             state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = true))
         }
         compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.onNodeWithTag("recovery_score_breakdown").assertExists()
         compose.runOnIdle {
             state = state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = false))
         }
         compose.onNodeWithText("Samsung Energy").assertDoesNotExist()
+        compose.onNodeWithTag("recovery_score_breakdown").assertDoesNotExist()
         compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(openedCoach) }
     }
