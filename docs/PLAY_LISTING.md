@@ -1,4 +1,4 @@
-# Play Console – áruházi adatlap (tervezet, 2789 · 1.4.1 alapján)
+# Play Console – áruházi adatlap (tervezet, 1.5.4)
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
@@ -60,52 +60,56 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok – Play kibocsátási megjegyzések (278800/278802 óta → belső kód 278900/278902, versionName 1.4.1)
+## Újdonságok – 1.5.4
 
-Szabály: mindig **4 nyelv** Play-címkékkel (`<hu-HU>`, `<de-DE>`, `<en-US>`, `<ro>`), nyelvenként ≤500 karakter,
-**külön telefonos és órás** szöveg; a chatben egy másolható kódblokkban küldjük. Az összegzés mindig a Playen lévő
-utolsó kiadás (278800/278802) óta készült, javított funkciókat írja le tömören.
+A Playen lévő 1.5.0 (280600/280602) óta készült változások. A szövegek nyelvenként legfeljebb 500 karakteresek.
 
-### Telefon (278900)
-```
+### Telefon (281100)
+
+```text
 <hu-HU>
-• Testsúlynapló: pontos mérés-szerkesztés és -törlés.
-• Közös privát galéria edzés-, testsúly- és egyéb fotóknak.
-• Fotók Drive-hozzáféréssel szinkronizálódnak, az egészségadat-mentési kapcsolótól függetlenül.
-• A Progress galériabelépő kis kijelzőn is elfér.
+• Egyedi témák és Liquid Glass megjelenés. Finomított navigáció, Napló és naptár.
+• Külső edzések importja a Health Connectből és a Samsung Healthből.
+• Aktív és teljes edzéskalória külön, forrással és lefedettségi jelzéssel. A kézi visszaolvasás megőrzi a korábbi méréseket, ha kevesebb adat érkezik.
 </hu-HU>
 <de-DE>
-• Gewichtsprotokoll: einzelne Messungen gezielt bearbeiten und löschen.
-• Gemeinsame private Galerie für Trainings-, Gewichts- und weitere Fotos.
-• Fotos synchronisieren mit Drive-Zugriff, unabhängig von der Gesundheitssicherung.
-• Der Galerie-Einstieg bleibt auf kleinen Bildschirmen sichtbar.
+• Eigene Designs und Liquid Glass. Verbesserte Navigation, Trainingsprotokoll und Kalender.
+• Externe Trainings aus Health Connect und Samsung Health importieren.
+• Aktive und gesamte Trainingskalorien getrennt, mit Quelle und Datenabdeckung. Eine unvollständige manuelle Aktualisierung erhält vorhandene Messwerte.
 </de-DE>
 <en-US>
-• Edit and delete individual weight entries reliably.
-• One private gallery for workout, weight and other photos.
-• Photos sync with Drive access, independently of the health-backup setting.
-• Compact Progress gallery entry fits small screens.
+• Custom themes and Liquid Glass. Refined navigation, workout log and calendar.
+• Import external workouts from Health Connect and Samsung Health.
+• Active and total workout calories are shown separately, with source and coverage. Manual refresh preserves saved measurements when less data is returned.
 </en-US>
 <ro>
-• Jurnal greutate: editarea și ștergerea precisă a măsurătorilor.
-• Galerie privată comună pentru fotografii de antrenament, greutate și altele.
-• Fotografiile se sincronizează cu acces Drive, independent de backupul datelor de sănătate.
-• Accesul la galerie încape și pe ecrane mici.
+• Teme personalizate și Liquid Glass. Navigare, jurnal de antrenamente și calendar îmbunătățite.
+• Importă antrenamente externe din Health Connect și Samsung Health.
+• Caloriile active și totale apar separat, cu sursa și acoperirea datelor. Actualizarea manuală păstrează măsurătorile salvate când primește mai puține date.
 </ro>
 ```
 
-### Óra (278902)
-```
+### Wear OS (281102)
+
+```text
 <hu-HU>
-• Ebben a frissítésben nincs új, óraspecifikus funkció; a javítások a telefonos testsúlynaplót és fotógalériát érintik.
+• Lapozható főképernyők, egyszerűbb menü és világos óratémák.
+• Átláthatóbb edzésvezérlés, rögzített pulzussor és érintészár.
+• A telefonról indított edzés órás mérésének automatikus indítása támogatott kapcsolattal és engedélyekkel.
 </hu-HU>
 <de-DE>
-• Dieses Update enthält keine neuen Uhrfunktionen; die Korrekturen betreffen das Gewichtsprotokoll und die Fotogalerie auf dem Smartphone.
+• Hauptansichten zum Wischen, einfacheres Menü und helle Uhrendesigns.
+• Klarere Trainingssteuerung, feste Herzfrequenzanzeige und Berührungssperre.
+• Automatische Messung auf der Uhr bei Trainingsstart am Smartphone mit unterstützter Verbindung und den nötigen Berechtigungen.
 </de-DE>
 <en-US>
-• No watch-specific features in this update; fixes apply to the phone weight log and photo gallery.
+• Swipeable home screens, a simpler menu and light watch themes.
+• Clearer workout controls, a pinned heart-rate row and touch lock.
+• Automatic watch recording for workouts started on your phone with a supported connection and the required permissions.
 </en-US>
 <ro>
-• Această actualizare nu adaugă funcții specifice ceasului; remedierile vizează jurnalul de greutate și galeria foto de pe telefon.
+• Ecrane principale glisabile, meniu simplificat și teme luminoase pentru ceas.
+• Comenzi de antrenament mai clare, puls afișat la poziție fixă și blocarea atingerilor.
+• Măsurare automată pe ceas la pornirea antrenamentului de pe telefon, cu o conexiune compatibilă și permisiunile necesare.
 </ro>
 ```

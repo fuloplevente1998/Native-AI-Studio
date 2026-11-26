@@ -97,7 +97,8 @@ internal fun studioWorkoutHealthContent(
                         state.healthError?.let { Text(text.getString(it), color = palette.danger,
                             modifier = Modifier.testTag("journal_summary_refresh_error")) }
                     } else JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
-                        provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider,
+                        provider = state.healthProvider, status = state.healthStatus ?: state.healthStatusTextId?.let(text::getString),
+                        selectProvider = model::selectWorkoutHealthProvider,
                         expandedState = expandedSource,
                         permissions = { _ ->
                             if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {

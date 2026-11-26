@@ -137,24 +137,25 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_status"))
                 else {
                     val data = health!!
-                    val metrics = NativeWorkoutHealth.metrics(data, false)
+                    val projection = remember(workout, source) { NativeWorkoutHealthSummary.readProvider(workout, source) }
+                    val active = projection.activeEnergy
+                    val total = projection.totalEnergy
+                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories") +
+                        active.values + total.values
                     JournalHealthMetrics(metrics, tag, text, number)
-                    for (energyKey in listOf("activeCalories","totalCalories")) {
-                        val coverage = com.repforge.app.WorkoutEnergyCoverage.status(data,energyKey)
+                    for ((energyKey, metric) in listOf("activeCalories" to active, "totalCalories" to total)) {
                         val reason = when {
-                            coverage == com.repforge.app.WorkoutEnergyCoverage.Status.FULL_RAW -> null
-                            coverage == com.repforge.app.WorkoutEnergyCoverage.Status.PARTIAL_RAW ->
-                                local("Hiányos rekordlefedettség","Incomplete record coverage","Lückenhafte Datensätze","Acoperire parțială")
-                            energyKey in metrics ->
+                            energyKey !in metrics ->
+                                local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")
+                            metric.incomplete ->
+                                local("Részleges mérés","Partial measurement","Teilweise Messung","Măsurare parțială")
+                            else ->
                                 local("Lefedettség nem igazolt","Coverage unverified","Abdeckung ungeprüft","Acoperire neverificată")
-                            else -> local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")
                         }
-                        if (reason != null) {
-                            val label = if (energyKey == "activeCalories") text.getString(R.string.health_metric_activecalories)
-                                else text.getString(R.string.health_metric_totalcalories)
-                            Text("$label: $reason", color = colors.muted, style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.testTag("journal_${tag}_coverage_$energyKey"))
-                        }
+                        val label = if (energyKey == "activeCalories") text.getString(R.string.health_metric_activecalories)
+                            else text.getString(R.string.health_metric_totalcalories)
+                        Text("$label: $reason", color = colors.muted, style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.testTag("journal_${tag}_coverage_$energyKey"))
                     }
                     if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
                     if (data.optBoolean("partial") || (data.optJSONArray("warnings")?.length() ?: 0) > 0)

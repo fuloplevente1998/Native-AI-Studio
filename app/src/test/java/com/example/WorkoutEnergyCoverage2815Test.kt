@@ -36,7 +36,7 @@ class WorkoutEnergyCoverage2815Test {
             record(40.0,emptyList(),warnings=JSONArray().put("READ_TOTAL_CALORIES_BURNED: failure")),"totalCalories"))
     }
 
-    @Test fun betterRawCoverageWinsOverPartialForSameDefinitionWithoutSumming() {
+    @Test fun knownPartialRawCoverageLosesToUnverifiedCoverageForTheSameDefinition() {
         val workout = JSONObject().put("id","w").put("started",start.toString()).put("finished",end.toString())
         fun saved(data: JSONObject) = data.put("windowStart",start.toString()).put("windowEnd",end.toString())
         val partial = saved(record(40.0,listOf(span(0,180))))
@@ -48,6 +48,26 @@ class WorkoutEnergyCoverage2815Test {
         assertEquals(HealthJournalStore.HC,result.totalEnergy.evidence.single().provider)
         assertTrue(result.totalEnergy.overlapExcluded)
         assertTrue(result.activeEnergy.values.isEmpty())
+    }
+
+    @Test fun fullRawUnionDoesNotPromoteTheHealthConnectAggregate() {
+        val workout = JSONObject().put("id", "w").put("started", start.toString()).put("finished", end.toString())
+        fun saved(data: JSONObject) = data.put("windowStart", start.toString()).put("windowEnd", end.toString())
+        val key = "totalCalories"
+        val hc = saved(record(260.0, listOf(span(0, 1800, "phone"), span(1800, 3600, "watch"))))
+        val samsung = saved(JSONObject().put(key, 270.0))
+        WorkoutEnergyCoverage.recordDirectAggregate(samsung, key, start, end, permitted = true)
+        val document = NativeWorkoutHealthSource.attach(
+            NativeWorkoutHealthSource.attach(null, HealthJournalStore.SAMSUNG, samsung), HealthJournalStore.HC, hc)
+        val result = NativeWorkoutHealthSummary.project(workout, null, document)
+
+        assertEquals(WorkoutEnergyCoverage.Status.FULL_RAW, WorkoutEnergyCoverage.status(hc, key))
+        assertEquals(WorkoutEnergyCoverage.Status.UNKNOWN, WorkoutEnergyCoverage.aggregateStatus(hc, key))
+        for (metric in listOf(result.energy, result.totalEnergy)) {
+            assertEquals(mapOf(key to 270.0), metric.values)
+            assertEquals(HealthJournalStore.SAMSUNG, metric.evidence.single().provider)
+            assertTrue(metric.hasUnverifiedProviderCoverage)
+        }
     }
 
     @Test fun samsungDirectAggregateDistinguishesZeroEmptyDeniedAndFailureWithoutInventingCoverage() {

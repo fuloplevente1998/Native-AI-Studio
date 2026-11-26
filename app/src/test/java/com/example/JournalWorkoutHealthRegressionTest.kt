@@ -130,6 +130,30 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(data.toString(), JSONObject(restored.workout.health240Json!!).toString())
     }
 
+    @Test fun manualAttachmentKeepsStoredMeasurementsWhenTheProviderReturnsLess() {
+        val native = NativeWorkoutHealth(context, db)
+        val workout = seed().workout
+        val initial = awaitNative { native.prepare(workout) }
+        assertTrue(awaitNative { native.attach(initial, response()) })
+        val saved = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(workout.id)!!.workout }
+        val refresh = awaitNative { native.prepare(saved) }
+        val empty = runBlocking {
+            NativeWorkoutActiveWindows.health(JSONObject().put("started", start).put("finished", end)
+                .put("activeIntervals", intervals())) { window ->
+                JSONObject().put("start", window.start.toString()).put("end", window.end.toString())
+            }
+        }
+        assertFalse(awaitNative { native.attach(refresh, empty) })
+        val pulseOnly = response().apply {
+            remove("activeCalories")
+            val windows = getJSONArray("measurementWindows")
+            for (index in 0 until windows.length()) windows.getJSONObject(index).remove("activeCalories")
+        }
+        assertFalse(awaitNative { native.attach(refresh, pulseOnly) })
+        val unchanged = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(workout.id)!!.workout }
+        assertEquals(saved.health240Json, unchanged.health240Json)
+    }
+
     @Test fun dailyJournalWorkoutEnergyUsesOnlySavedProviderAndExactActiveWindow() {
         val snapshot = response().put("windowStart", start).put("windowEnd", end)
         val row = seed(health = snapshot).workout.copy(originDevice = "phone")
@@ -143,18 +167,27 @@ class JournalWorkoutHealthRegressionTest {
         assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(originDevice = "external"), HealthJournalStore.HC))
     }
 
-    @Test fun dailyJournalAndSavedDetailShowTheSamePartialProviderEnergy() {
+    @Test fun dailyJournalSummaryAndSourceCardShowTheSamePartialProviderEnergy() {
         val data = response().put("windowStart",start).put("windowEnd",end)
         data.getJSONArray("measurementWindows").getJSONObject(1).remove("activeCalories")
         data.remove("activeCalories")
-        val row = seed(id = "partial",health = data).workout.copy(originDevice = "phone")
-        val detail = com.repforge.app.NativeWorkoutHealthSummary.readProvider(row,HealthJournalStore.HC)
+        val saved = seed(id = "partial", health = data)
+        val row = saved.workout.copy(originDevice = "phone")
+        val detail = NativeWorkoutHealthSummary.read(row)
         val daily = com.repforge.app.ui.health.workoutDayEnergy(row,HealthJournalStore.HC)!!
         assertEquals(50.0,daily.active!!,0.001)
         assertEquals(detail.activeEnergy.values.getValue("activeCalories"),daily.active!!,0.001)
         assertTrue(daily.partial)
         assertTrue(detail.activeEnergy.incomplete)
         assertNull(daily.total)
+        compose.setContent {
+            TrainPilotTheme {
+                JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true) { }
+            }
+        }
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("50 kcal")
+        compose.onNodeWithTag("journal_hc_coverage_activeCalories").assertTextContains("Részleges mérés", substring = true)
     }
 
     @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
