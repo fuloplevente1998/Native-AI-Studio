@@ -143,6 +143,20 @@ class JournalWorkoutHealthRegressionTest {
         assertNull(com.repforge.app.ui.health.workoutDayEnergy(row.copy(originDevice = "external"), HealthJournalStore.HC))
     }
 
+    @Test fun dailyJournalAndSavedDetailShowTheSamePartialProviderEnergy() {
+        val data = response().put("windowStart",start).put("windowEnd",end)
+        data.getJSONArray("measurementWindows").getJSONObject(1).remove("activeCalories")
+        data.remove("activeCalories")
+        val row = seed(id = "partial",health = data).workout.copy(originDevice = "phone")
+        val detail = com.repforge.app.NativeWorkoutHealthSummary.readProvider(row,HealthJournalStore.HC)
+        val daily = com.repforge.app.ui.health.workoutDayEnergy(row,HealthJournalStore.HC)!!
+        assertEquals(50.0,daily.active!!,0.001)
+        assertEquals(detail.activeEnergy.values.getValue("activeCalories"),daily.active!!,0.001)
+        assertTrue(daily.partial)
+        assertTrue(detail.activeEnergy.incomplete)
+        assertNull(daily.total)
+    }
+
     @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
         val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val native = NativeWorkoutHealth(context, db)

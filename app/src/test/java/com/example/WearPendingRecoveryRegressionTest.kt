@@ -116,6 +116,21 @@ class WearPendingRecoveryRegressionTest {
         assertEquals(0, count())
     }
 
+    @Test fun healthSummaryReceivedBeforeSaveSurvivesCanonicalPhoneProjectionAndOlderDelivery() {
+        fun health(id: String, revision: Long, energy: Double) = command("healthSummary",id)
+            .put("healthSummary",JSONObject().put("schema",1).put("workoutId","recovery-workout")
+                .put("watchId","fixture-watch").put("revision",revision).put("updatedAt",1000L + revision)
+                .put("totalCalories",energy))
+        editIngress(health("health-new",4,125.0))
+        completed("health-new")
+        assertEquals(125.0,ActiveWorkoutStore.current(context)!!.getJSONObject("wear").getDouble("totalCalories"),0.0)
+        val projected = NativeWorkoutEditing.project(context)
+        assertEquals(125.0,projected.getJSONObject("wear").getDouble("totalCalories"),0.0)
+        editIngress(health("health-old",3,25.0))
+        completed("health-old")
+        assertEquals(125.0,ActiveWorkoutStore.current(context)!!.getJSONObject("wear").getDouble("totalCalories"),0.0)
+    }
+
     @Test fun normalDeliveryAndWatchResendApplyOneDurableRecordingAndClearPending() {
         val command = command()
         hold(command)

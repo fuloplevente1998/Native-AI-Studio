@@ -188,7 +188,14 @@ object SamsungHealthRepository {
         )) if (permission !in granted) for (field in fields) {
             failures.put(field)
             errors.put(field, "PERMISSION_DENIED")
+            // ActivitySummary may be granted as a group. Do not retain an individual
+            // metric that is not admitted by the repository's per-field grant check.
+            result.put(field, JSONObject.NULL)
         }
+        WorkoutEnergyCoverage.recordDirectAggregate(result, "activeCalories", range[0], range[1],
+            "READ_ACTIVE_CALORIES_BURNED" in granted)
+        WorkoutEnergyCoverage.recordDirectAggregate(result, "totalCalories", range[0], range[1],
+            "READ_TOTAL_CALORIES_BURNED" in granted)
         result.put("partial", failures.length() > 0)
     }
 

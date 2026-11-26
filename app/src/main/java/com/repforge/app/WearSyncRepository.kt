@@ -389,9 +389,7 @@ object WearSyncRepository {
 
                             // Attach watch Health Services summary if present
                             val healthSummary = command.optJSONObject("healthSummary")
-                            if (healthSummary != null) {
-                                historyObj.put("wear", healthSummary)
-                            }
+                            WearWorkoutEnergyEvidence.attach(historyObj,healthSummary,setOf(workoutId))
 
                             val feedback = command.optJSONObject("feedback")
                             if (feedback != null) historyObj.put("feedback", JSONObject(feedback.toString()).put("updatedAt", System.currentTimeMillis()))
@@ -495,9 +493,30 @@ object WearSyncRepository {
                         if (workoutId.isNotBlank() && summary != null) {
                             val existing = db.workoutHistoryDao().getWorkoutWithDetails(workoutId)
                             if (existing != null) {
-                                val raw = JSONObject(existing.workout.rawJson)
-                                raw.put("wear", summary)
-                                migrator.saveWorkoutJsonToRoom(raw)
+                                val saved = existing.workout
+                                val raw = LegacyWebViewMigrator.workoutJson(existing)
+                                val aliases = setOf(saved.id,saved.syncId,saved.workoutKey,workoutId).filter(String::isNotBlank).toSet()
+                                if (!raw.optBoolean("nativeHealthWindowStale") &&
+                                    WearWorkoutEnergyEvidence.accept(NativeSavedWearHealth.read(saved),summary,aliases)) {
+                                    raw.put("wear",JSONObject(summary.toString()))
+                                    migrator.saveWorkoutJsonToRoom(raw)
+                                }
+                            } else {
+                                // A summary received before phone save must not be acknowledged and
+                                // discarded. The exact active draft owns this measured metadata.
+                                withContext(Dispatchers.Main.immediate) {
+                                    val current = ActiveWorkoutStore.current(appContext)
+                                    if (current != null && current.optBoolean("active") &&
+                                        current.optString("workoutId") == workoutId &&
+                                        !current.optBoolean("finalizationPending") &&
+                                        !current.optBoolean("discardPending") &&
+                                        !current.optBoolean("nativeHealthWindowStale") &&
+                                        !com.repforge.shared.WorkoutOwnership193.pending(current)) {
+                                        val next = JSONObject(current.toString())
+                                        if (WearWorkoutEnergyEvidence.attach(next,summary,setOf(workoutId)))
+                                            ActiveWorkoutStore.saveOwned(appContext,next)
+                                    }
+                                }
                             }
                         }
                         withContext(Dispatchers.Main) {

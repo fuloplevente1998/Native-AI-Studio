@@ -103,7 +103,12 @@ internal object StudioWorkoutSummaryPresentation {
 
     /** Preserve the journal's Wear priority, then use only the selected provider. */
     fun energy(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
-        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Metric? {
+        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Metric? =
+        projection(frame, live, now, provider, health)?.energy
+
+    /** Same typed projection as saved workout detail, scoped to the chosen provider and Wear. */
+    fun projection(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
+        health: HealthSnapshot? = null, expectedNode: String? = null): NativeWorkoutHealthSummary.Result? {
         frame ?: return null
         NativeWorkoutHealthSource.requireProvider(provider)
         val id = frame.optString("workoutId").takeIf { it.isNotBlank() } ?: return null
@@ -117,29 +122,24 @@ internal object StudioWorkoutSummaryPresentation {
             val projection = fresh?.let { JSONObject(it.workoutJson) } ?: JSONObject(frame.toString())
                 .put("id", frame.optString("id").ifBlank { id }).put("syncId", id)
             if (projection.optString("finished").isBlank()) projection.put("finished", now.toString())
-            val liveWear = live?.takeIf {
-                WearLiveHealthStore.valid(it) && it.optString("workoutId") == id &&
-                    it.optLong("updatedAt") >= Instant.parse(frame.getString("started")).toEpochMilli() &&
-                    it.optLong("updatedAt") <= now.toEpochMilli()
-            }?.let { packet ->
-                // The current Wear DataItem wraps measured data in summary. Legacy flat
-                // receipts remain readable, but a nested mismatched workout is rejected.
-                val measured = packet.optJSONObject("summary") ?: packet
-                measured.takeIf { it.optString("workoutId", id) == id }
-            }
+            val liveWear = WearWorkoutEnergyEvidence.live(frame,live,expectedNode,now)
             val savedWear = NativeSavedWearHealth.fromRaw(frame)?.takeIf {
                 it.optString("workoutId").let { wearId -> wearId.isBlank() || wearId == id ||
                     wearId in listOf(frame.optString("id"), frame.optString("syncId"), frame.optString("workoutKey")) }
             }
             // A pulse-only or rejected live packet must not hide a saved measured energy value.
-            val wear = listOfNotNull(liveWear, savedWear).firstOrNull {
+            val admittedLive = liveWear?.takeIf {
+                !it.optBoolean("livePreview2815") ||
+                    WearWorkoutEnergyEvidence.accept(savedWear,it,setOf(id,frame.optString("id"),frame.optString("syncId"),frame.optString("workoutKey")).filter(String::isNotBlank).toSet())
+            }
+            val wear = listOfNotNull(admittedLive, savedWear).firstOrNull {
                 NativeWorkoutHealthSummary.project(projection, it, null).energy.values.isNotEmpty()
             }
             val document = fresh?.let { JSONObject(it.documentJson) } ?: frame.optJSONObject("health240")
             val selected = NativeWorkoutHealthSource.snapshot(document, provider)?.let {
                 JSONObject().put("providers", JSONObject().put(provider, it))
             }
-            NativeWorkoutHealthSummary.project(projection, wear, selected).energy
+            NativeWorkoutHealthSummary.project(projection, wear, selected)
         }.getOrNull()
     }
 }

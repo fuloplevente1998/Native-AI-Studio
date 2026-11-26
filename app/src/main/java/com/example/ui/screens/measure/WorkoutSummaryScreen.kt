@@ -193,6 +193,7 @@ fun WorkoutSummaryScreen(
     remember(context) { ActiveWorkoutStore.current(context); com.repforge.app.WearLiveHealthStore.current(context) }
     val summaryFrame by ActiveWorkoutStore.snapshotFlow.collectAsState()
     val summaryLiveHealth by com.repforge.app.WearLiveHealthStore.liveHealthFlow.collectAsState()
+    val summaryExpectedNode by com.repforge.app.WearLiveHealthStore.expectedNode351.collectAsState()
     val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
         summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
     val summaryNow = java.time.Instant.now()
@@ -299,9 +300,17 @@ fun WorkoutSummaryScreen(
             }
         }
 
-        val calories = com.repforge.app.StudioWorkoutSummaryPresentation.calories(
-            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth)
-        val caloriesLabel = calories?.let { "${it.toInt()} kcal" } ?: "— kcal"
+        val energyProjection = com.repforge.app.StudioWorkoutSummaryPresentation.projection(
+            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth, summaryExpectedNode)
+        val activeEnergy = energyProjection?.activeEnergy
+        val totalEnergy = energyProjection?.totalEnergy
+        val sessionEnergy = energyProjection?.energy?.takeIf { it.values.containsKey("workoutCalories") }
+        val energyRows = listOfNotNull(
+            activeEnergy?.takeIf { it.values.isNotEmpty() }?.let { tr(lang,"Aktív kcal","Active kcal","Aktiv kcal","Kcal active") to it },
+            totalEnergy?.takeIf { it.values.isNotEmpty() }?.let { tr(lang,"Teljes kcal","Total kcal","Gesamt kcal","Kcal totale") to it }
+        ).ifEmpty { listOfNotNull(sessionEnergy?.let { tr(lang,"Edzésenergia","Session energy","Trainingsenergie","Energie antrenament") to it }) }
+        val primaryEnergy = energyRows.firstOrNull()
+        val caloriesLabel = primaryEnergy?.second?.values?.values?.singleOrNull()?.let { "${it.toInt()} kcal" } ?: "— kcal"
 
         item {
             Row(
@@ -334,7 +343,25 @@ fun WorkoutSummaryScreen(
             ) {
                 SummaryStatTile(tr(lang, "Időtartam", "Duration", "Dauer", "Durată"), durationLabel, Modifier.weight(1f))
                 SummaryStatTile(volumeOrDistHeader, volumeOrDistLabel, Modifier.weight(1f))
-                SummaryStatTile(tr(lang, "Kalória", "Calories", "Kalorien", "Calorii"), caloriesLabel, Modifier.weight(1f))
+                SummaryStatTile(primaryEnergy?.first ?: tr(lang, "Kalória", "Calories", "Kalorien", "Calorii"), caloriesLabel, Modifier.weight(1f))
+            }
+        }
+        if (energyRows.isNotEmpty()) item(key = "summary_energy_sources") {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                energyRows.forEachIndexed { index, (label, metric) ->
+                    val providers = metric.evidence.map { com.repforge.app.NativeWorkoutHealthSummary.label(it.provider) }.distinct().joinToString(", ")
+                    val uncertain = metric.incomplete || metric.evidence.any { row ->
+                        row.provider != com.repforge.app.NativeWorkoutHealthSummary.WEAR && metric.values.keys.any { key ->
+                            com.repforge.app.WorkoutEnergyCoverage.status(row.data,key) != com.repforge.app.WorkoutEnergyCoverage.Status.FULL_RAW
+                        }
+                    }
+                    val value = metric.values.values.single()
+                    Text("$label${if (index > 0) ": ${value.toInt()} kcal" else ""} · $providers" +
+                        if (uncertain) tr(lang," · lefedettség hiányos vagy nem igazolt"," · incomplete or unverified coverage",
+                            " · Abdeckung lückenhaft oder ungeprüft"," · acoperire incompletă sau neverificată") else "",
+                        color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.testTag("workout_summary_energy_source_$index"))
+                }
             }
         }
 

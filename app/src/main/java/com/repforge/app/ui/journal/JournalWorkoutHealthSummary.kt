@@ -49,6 +49,18 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
             // but are technical provenance, not a headline workout measurement.
             val visibleValues = metric.values.filterKeys { it != "heartRateSamples" }
             JournalHealthMetrics(visibleValues, tag, text, number)
+            if (tag == "summary_energy" && visibleValues.isNotEmpty()) {
+                val sources = metric.evidence.map { NativeWorkoutHealthSummary.label(it.provider) }.distinct().joinToString(", ")
+                val uncertain = metric.evidence.any { row ->
+                    row.provider != NativeWorkoutHealthSummary.WEAR && visibleValues.keys.any { key ->
+                        com.repforge.app.WorkoutEnergyCoverage.status(row.data,key) != com.repforge.app.WorkoutEnergyCoverage.Status.FULL_RAW
+                    }
+                }
+                Text(listOfNotNull(sources.takeIf { it.isNotBlank() }, if (uncertain)
+                    local("Rekordlefedettség nem teljes vagy nem igazolt", "Record coverage incomplete or unverified",
+                        "Datensatzabdeckung lückenhaft oder ungeprüft", "Acoperire incompletă sau neverificată") else null).joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall, color = colors.muted)
+            }
             if (visibleValues.isEmpty()) Text(text.getString(R.string.journal_no_data), color = colors.muted,
                 modifier = Modifier.testTag("journal_${tag}_missing"))
         }
