@@ -196,7 +196,7 @@ internal fun CoachDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Surface(
+                        if (uiState.permissionSamsungHealthEnabled) Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceElevated,
                             modifier = Modifier
@@ -255,7 +255,7 @@ internal fun CoachDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
                                 )
-                                if (hasScore && readiness?.samsungScore != null) {
+                                if (uiState.permissionSamsungHealthEnabled && hasScore && readiness?.samsungScore != null) {
                                     Text("80% TrainPilot · 20% Samsung",
                                         style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                 }

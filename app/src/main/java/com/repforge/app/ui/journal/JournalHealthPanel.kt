@@ -48,6 +48,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     provider: String = HealthJournalStore.HC, status: String? = null,
     selectProvider: (String) -> Unit = {}, permissions: (@Composable (String) -> Unit)? = null,
     expandedState: MutableState<String?>? = null,
+    samsungEnabled: Boolean = com.repforge.app.NativePrivacyControls.enabled(androidx.compose.ui.platform.LocalContext.current, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH),
     refresh: () -> Unit) {
     if (detail.workout.originDevice == "external") {
         // The generic health-window refresh aggregates all origins; it is not a valid
@@ -60,7 +61,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
     val wear = remember(workout.wearMetricsJson, workout.rawJson) { NativeSavedWearHealth.read(workout) }
     val document = remember(workout.health240Json) { parseHealth(workout.health240Json) }
-    val summary = remember(workout) { NativeWorkoutHealthSummary.read(workout) }
+    val summary = remember(workout, samsungEnabled) { NativeWorkoutHealthSummary.read(workout, samsungEnabled) }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
@@ -73,7 +74,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
     var expandedSource by (expandedState ?: localExpanded)
     val wearExpanded = expandedSource == "wear"
-    val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
+    val samsungExpanded = samsungEnabled && expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
@@ -81,7 +82,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
-                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect")) {
+                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { samsungEnabled || it.first != HealthJournalStore.SAMSUNG }) {
                 val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
                 Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
                     shape = MaterialTheme.shapes.medium,
@@ -119,7 +120,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             if (wear?.optBoolean("partial") == true) Text(text.getString(R.string.journal_health_partial), color = colors.muted)
             Text(text.getString(R.string.journal_health_separate_energy), color = colors.muted)
         }
-        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) key(source) {
+        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { samsungEnabled || it != HealthJournalStore.SAMSUNG }) key(source) {
             val tag = if (source == HealthJournalStore.HC) "hc" else "samsung"
             val health = NativeWorkoutHealthSource.snapshot(document, source)
             val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
@@ -138,12 +139,10 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 else {
                     val data = health!!
                     val projection = remember(workout, source) { NativeWorkoutHealthSummary.readProvider(workout, source) }
-                    val active = projection.activeEnergy
-                    val total = projection.totalEnergy
-                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories") +
-                        active.values + total.values
+                    val total = projection.workoutTotal
+                    val metrics = NativeWorkoutHealth.metrics(data, false) - setOf("activeCalories", "totalCalories", "workoutCalories") + total.values
                     JournalHealthMetrics(metrics, tag, text, number)
-                    for ((energyKey, metric) in listOf("activeCalories" to active, "totalCalories" to total)) {
+                    for ((energyKey, metric) in listOf("totalCalories" to total)) {
                         val reason = when {
                             energyKey !in metrics ->
                                 local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")

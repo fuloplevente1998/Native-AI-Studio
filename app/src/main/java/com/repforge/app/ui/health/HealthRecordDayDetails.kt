@@ -28,6 +28,7 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
     /** 2788: nothing at all (no "no records" text, no pager) when the first page is empty. */
     hideWhenEmpty: Boolean = false,
     dailySummary: org.json.JSONObject? = null) {
+    if (type in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord")) return
     val context = LocalContext.current
     val text = nativeResources(context, language)
     var cursors by rememberSaveable(day, provider, source, type, generation, refreshKey) { mutableStateOf(listOf("")) }
@@ -53,14 +54,7 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
         catch (_: Exception) { error = true }
     }
     if (!visible) return
-    // Keep saved workout aggregates separate from raw provider sensor records and their pager.
-    if (cursors.size == 1 && source.isBlank() && type in setOf("", "ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord")) {
-        HealthWorkoutEnergyDay(day, provider, type, language, generation, refreshKey)
-    }
-    val groupedEnergy = remember(dailySummary, day, provider, source, type, refreshKey) {
-        samsungHourlyEnergy(dailySummary, day, provider, source, type)
-    }
-    if (cursors.size == 1 && groupedEnergy.isNotEmpty()) SamsungHourlyEnergyRows(groupedEnergy, language)
+    // Energy is presented only as daily aggregates and one workout total.
     val emptyFirstPage = cached?.rows?.isEmpty() == true && cursors.size == 1
     if (hideWhenEmpty && (emptyFirstPage || (cached == null && !error))) return
     if (title != null) Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -69,11 +63,11 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
     else {
         val page = cached!!
         // At most 25 record cards, with the existing 20-item sample/stage pagination.
-        if (page.rows.isEmpty() && groupedEnergy.isEmpty()) Text(text.getString(R.string.health_records_empty))
+        if (page.rows.isEmpty()) Text(text.getString(R.string.health_records_empty))
         // 2788: an empty first page has nothing to page through.
         if (emptyFirstPage) return
         // 2776/2778: one compact line per time window (different record types merged); no detail cards.
-        groupHealthRecordRows(page.rows).forEach { group -> key(group.first().channel, group.first().id) {
+        groupHealthRecordRows(page.rows.filterNot { it.type in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord") }).forEach { group -> key(group.first().channel, group.first().id) {
             HealthRecordCompactRow(group, language)
         } }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

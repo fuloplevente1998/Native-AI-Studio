@@ -1,5 +1,7 @@
 # TrainPilot Native – Health Connect-központú átállás
 
+- #408 folytatás: napi aktív/napi teljes energia összesítés; edzésben kizárólag teljes kcal az aktív intervallumok uniójára (2/10 órás pause nem része). Egy teljes forrás, részleges időablak nem teljes érték. Samsung közvetlen opcionális UI, megőrzött rekordok, HC elsődleges. CI és készülékes ellenőrzés szükséges.
+
 - Kapcsolt eszközök javítása, `fix/connected-devices-health-sync`: témakövető háttér a közös üveglap felett, HC szinkron a meglévő `hc` akcióval, látható folyamat/eredmény/hiba és kettős indítás tiltása. Samsung csempe csak bekapcsolt kiegészítőnél, engedély és kapcsoló külön. Wear útvonal változatlan. UI regresszió hozzáadva; CI és készülékes ellenőrzés nyitott.
 
 - #403, #404, `feat/403-health-connect`. Alap: main `5d3b8a09`, 1.5.4 (281100/281102), #402. A korábbi Play-jegyzet alapja 1.5.0 (280600/280602).

@@ -197,7 +197,7 @@ fun WorkoutSummaryScreen(
     val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
         summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
     val summaryNow = java.time.Instant.now()
-    val summaryProvider = com.repforge.app.StudioWorkoutSummaryPresentation.selectedProvider(context)
+    val summaryProvider = com.repforge.app.HealthJournalStore.HC
     val summaryWindowKey = activeSnapshotForSummary?.optJSONArray("activeIntervals")?.toString().orEmpty()
     val summaryPauseRevision = activeSnapshotForSummary?.optLong("pauseRevision") ?: 0L
     val summaryStarted = activeSnapshotForSummary?.optString("started").orEmpty()
@@ -302,13 +302,9 @@ fun WorkoutSummaryScreen(
 
         val energyProjection = com.repforge.app.StudioWorkoutSummaryPresentation.projection(
             activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth, summaryExpectedNode)
-        val activeEnergy = energyProjection?.activeEnergy
-        val totalEnergy = energyProjection?.totalEnergy
-        val sessionEnergy = energyProjection?.energy?.takeIf { it.values.containsKey("workoutCalories") }
-        val energyRows = listOfNotNull(
-            activeEnergy?.takeIf { it.values.isNotEmpty() }?.let { tr(lang,"Aktív kcal","Active kcal","Aktiv kcal","Kcal active") to it },
-            totalEnergy?.takeIf { it.values.isNotEmpty() }?.let { tr(lang,"Teljes kcal","Total kcal","Gesamt kcal","Kcal totale") to it }
-        ).ifEmpty { listOfNotNull(sessionEnergy?.let { tr(lang,"Edzésenergia","Session energy","Trainingsenergie","Energie antrenament") to it }) }
+        val energyRows = listOfNotNull(energyProjection?.workoutTotal?.takeIf { it.values.isNotEmpty() }?.let {
+            tr(lang,"Edzés összes kcal","Workout total kcal","Training gesamt kcal","Total kcal antrenament") to it
+        })
         val primaryEnergy = energyRows.firstOrNull()
         val caloriesLabel = primaryEnergy?.second?.values?.values?.singleOrNull()?.let { "${it.toInt()} kcal" } ?: "— kcal"
 
@@ -343,7 +339,7 @@ fun WorkoutSummaryScreen(
             ) {
                 SummaryStatTile(tr(lang, "Időtartam", "Duration", "Dauer", "Durată"), durationLabel, Modifier.weight(1f))
                 SummaryStatTile(volumeOrDistHeader, volumeOrDistLabel, Modifier.weight(1f))
-                SummaryStatTile(primaryEnergy?.first ?: tr(lang, "Kalória", "Calories", "Kalorien", "Calorii"), caloriesLabel, Modifier.weight(1f))
+                SummaryStatTile(primaryEnergy?.first ?: tr(lang, "Edzés összes kcal", "Workout total kcal", "Training gesamt kcal", "Total kcal antrenament"), caloriesLabel, Modifier.weight(1f))
             }
         }
         if (energyRows.isNotEmpty()) item(key = "summary_energy_sources") {

@@ -31,6 +31,33 @@ class WorkoutHealthSummaryRegressionTest {
         hc?.let { out = NativeWorkoutHealthSource.attach(out, HealthJournalStore.HC, it) }
         return out
     }
+    @Test fun totalCaloriesUseOnly45ActiveMinutesAcrossTwoOrTenHourPauses() = runBlocking {
+        for (pauseHours in listOf(2L, 10L)) {
+            val first = java.time.Instant.parse(start)
+            val pauseStart = first.plusSeconds(25 * 60L)
+            val resumed = pauseStart.plusSeconds(pauseHours * 3600)
+            val finish = resumed.plusSeconds(20 * 60L)
+            val frame = JSONObject().put("id", "long-pause").put("started", first.toString())
+                .put("finished", finish.toString()).put("activeIntervals", JSONArray()
+                    .put(JSONObject().put("start", first.toString()).put("end", pauseStart.toString()))
+                    .put(JSONObject().put("start", resumed.toString()).put("end", finish.toString())))
+            val queries = mutableListOf<NativeWorkoutActiveWindows.Window>()
+            val response = NativeWorkoutHealthSource.read(frame, HealthJournalStore.HC, healthConnect = { w ->
+                queries.add(w)
+                JSONObject().put("start", w.start.toString()).put("end", w.end.toString())
+                    .put("activeCalories", 24).put("totalCalories", 90)
+            }, samsung = { error("Disabled") })
+            val doc = NativeWorkoutHealthSource.attach(null, HealthJournalStore.HC, response)
+            val result = NativeWorkoutHealthSummary.project(frame, null, doc, samsungEnabled = false)
+            assertEquals(2, queries.size)
+            assertEquals(45 * 60L, queries.sumOf { java.time.Duration.between(it.start, it.end).seconds })
+            assertEquals(mapOf("totalCalories" to 180.0), result.workoutTotal.values)
+            response.getJSONArray("measurementWindows").getJSONObject(1).remove("totalCalories")
+            val partial = NativeWorkoutHealthSource.attach(null, HealthJournalStore.HC, response)
+            assertTrue(NativeWorkoutHealthSummary.project(frame, null, partial).workoutTotal.values.isEmpty())
+        }
+    }
+
     @Test fun mirroredWearSamsungAndHealthConnectCountOnlyOnceAndKeepInputs() {
         val wear = row().put("workoutId", "saved").put("totalCalories", 200)
         val samsung = snapshot(row().put("workoutEnergyRecordIds", JSONArray().put("origin|id")))

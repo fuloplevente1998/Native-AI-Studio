@@ -179,9 +179,9 @@ internal fun StudioHealthMetricsBrowser(
             LaunchedEffect(focus, focusKey) {
                 if (focus != null && focus.first == date.toString()) {
                     expanded = true
-                    type = focus.second
+                    type = focus.second.takeUnless { it in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord") }.orEmpty()
                     recordProviderOverride = null
-                    recordsOpen = true
+                    recordsOpen = focus.second !in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord")
                 }
             }
             val sleepText = sleep?.let { value ->
@@ -234,8 +234,10 @@ internal fun StudioHealthMetricsBrowser(
                                         modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
                                             .trainPilotClickable(tileShape) {
                                                 recordProviderOverride = null
-                                                type = recordType
-                                                recordsOpen = true
+                                                if (metricKey !in setOf("activeCalories", "totalCalories")) {
+                                                    type = recordType
+                                                    recordsOpen = true
+                                                }
                                             }
                                             .testTag("journal_metric_${date}_$metricKey")) {
                                         Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
@@ -267,8 +269,6 @@ internal fun StudioHealthMetricsBrowser(
                             val filters = listOf(
                                 "" to label("Mind", "All", "Alle", "Toate"),
                                 "StepsRecord" to label("Lépés", "Steps", "Schritte", "Pași"),
-                                "ActiveCaloriesBurnedRecord" to label("Aktív kcal", "Active kcal", "Aktiv kcal", "Kcal active"),
-                                "TotalCaloriesBurnedRecord" to label("Teljes kcal", "Total kcal", "Gesamt kcal", "Kcal totale"),
                                 "DistanceRecord" to label("Táv", "Distance", "Distanz", "Distanță"),
                                 "HeartRateRecord" to label("Pulzus", "Heart rate", "Puls", "Puls"),
                                 "SleepSessionRecord" to label("Alvás", "Sleep", "Schlaf", "Somn"))

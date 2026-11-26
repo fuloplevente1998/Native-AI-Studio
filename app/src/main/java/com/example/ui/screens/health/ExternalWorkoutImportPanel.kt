@@ -27,7 +27,8 @@ import java.time.format.DateTimeFormatter
 
 /** Reads only candidates already published by the existing health sync. No separate provider worker. */
 @Composable
-internal fun ExternalWorkoutImportPanel(language: AppLanguage, enabled: Boolean) {
+internal fun ExternalWorkoutImportPanel(language: AppLanguage, enabled: Boolean,
+    samsungEnabled: Boolean = NativePrivacyControls.enabled(LocalContext.current, NativePrivacyControls.SAMSUNG_HEALTH)) {
     val context = LocalContext.current.applicationContext
     var open by remember { mutableStateOf(false) }
     var auto by remember { mutableStateOf(ExternalWorkoutAutoImport.enabled(context)) }
@@ -51,11 +52,11 @@ internal fun ExternalWorkoutImportPanel(language: AppLanguage, enabled: Boolean)
         modifier = Modifier.fillMaxWidth().testTag("external_workout_import")) {
         Text(tr(language, "Külső edzések importálása", "Import external workouts", "Externe Trainings importieren", "Importă antrenamente externe"))
     }
-    if (open) ExternalWorkoutImportDialog(language, context) { open = false }
+    if (open) key(samsungEnabled) { ExternalWorkoutImportDialog(language, context, samsungEnabled) { open = false } }
 }
 
 @Composable
-private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.content.Context, close: () -> Unit) {
+private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.content.Context, samsungEnabled: Boolean, close: () -> Unit) {
     val scope = rememberCoroutineScope()
     var provider by remember { mutableStateOf(HealthJournalStore.HC) }
     var days by remember { mutableStateOf(7L) }
@@ -102,7 +103,7 @@ private fun ExternalWorkoutImportDialog(language: AppLanguage, context: android.
                     TextButton(enabled = !busy && provider != HealthJournalStore.HC, onClick = {
                         provider = HealthJournalStore.HC; before = 0; beforeTime = 0
                     }) { Text("Health Connect") }
-                    TextButton(enabled = !busy && provider != HealthJournalStore.SAMSUNG, onClick = {
+                    if (samsungEnabled) TextButton(enabled = !busy && provider != HealthJournalStore.SAMSUNG, onClick = {
                         provider = HealthJournalStore.SAMSUNG; before = 0; beforeTime = 0
                     }) { Text("Samsung Health") }
                 }
