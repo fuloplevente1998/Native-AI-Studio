@@ -86,7 +86,7 @@ fun LogWorkoutDetailScreen(
     if (workout == null) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .then(com.example.ui.components.sheetAwareFillMaxSize())
                 .trainPilotScreenBackdrop(palette)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)

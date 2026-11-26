@@ -52,7 +52,7 @@ class Post2757PresentationRegressionTest {
                 timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
         fun assertBodyReachesSheetBottom() {
-            val sheet = compose.onNodeWithTag("quick_workout_sheet_full").getUnclippedBoundsInRoot()
+            val sheet = compose.onNodeWithTag("quick_workout_sheet_content").getUnclippedBoundsInRoot()
             val body = compose.onNodeWithTag("quick_workout_body").getUnclippedBoundsInRoot()
             assertEquals("Scrollable body must use the entire space below the tabs", sheet.bottom, body.bottom)
         }
@@ -78,6 +78,24 @@ class Post2757PresentationRegressionTest {
         compose.runOnIdle { assertEquals("Kerékpározás", outdoor) }
         compose.onNodeWithTag("quick_workout_close").performClick()
         compose.runOnIdle { assertEquals(1, dismissed); assertEquals(last, started) }
+    }
+
+    @Test fun quickSheetGrowsForLongerContentWithoutForcingShortTabsToFullHeight() {
+        var tab by mutableIntStateOf(0)
+        compose.setContent { TrainPilotTheme {
+            QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, {}, {},
+                strengthContent = { androidx.compose.material3.Text("Short content") },
+                timedContent = {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxHeight())
+                })
+        } }
+        val content = compose.onNodeWithTag("quick_workout_sheet_content")
+        val short = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        compose.onNodeWithTag("quick_tab_1").performClick()
+        val tall = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        assertTrue("Short content must not reserve the full viewport", tall > short)
+        compose.onNodeWithTag("quick_tab_0").performClick()
+        assertEquals(short, content.getUnclippedBoundsInRoot().let { it.bottom - it.top })
     }
 
     @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {
