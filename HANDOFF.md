@@ -1,5 +1,7 @@
 # TrainPilot Native – Health Connect-központú átállás
 
+- Kiadási versionCode emelés felhasználói kérésre: 281200 telefon / 281202 Wear, versionName 1.5.4 változatlan. A korábbi 281100/281102 már a Playen van. A #409 Play listing dokumentáció egyesítve, új kódokkal; a korábbi #823 forrás nem kiadandó. Új teljes main CI és aláírt páros szükséges; nincs automatikus Play-publikálás.
+
 - Main hotfix (felhasználói engedély): Samsung kiegészítő kikapcsolva csak a Végső Coach készenléti fő kijelzés marad, a pontszámok bontása nem foglal helyet. Coach és Mai állapot/regeneráció, natív Coach alternatív felület; kapcsoló változására újraolvasás. Számítás változatlan. UI teszt mindkét állapotra. A #821 1324/1324 tesztje a korábbi közös PR-ra vonatkozott; új main CI és signing szükséges.
 
 - #820 CI: 1045 telefonos tesztből 1 hibás, R8 sikeres. A régi Home-regresszió még feltétlen Samsung Energy csempét várt. A teszt most kikapcsolt, bekapcsolt és ismét kikapcsolt állapotot ellenőriz, a hat csempe és Coach navigációs ellenőrzése változatlan.
