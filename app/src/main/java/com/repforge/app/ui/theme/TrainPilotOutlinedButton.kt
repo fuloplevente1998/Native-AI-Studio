@@ -40,13 +40,13 @@ fun TrainPilotOutlinedButton(
     // Only the ordinary translucent default can be swapped; semantic/custom fills keep their paint.
     val glass = enabled && palette.isLiquidGlass &&
         colors.containerColor == MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f)
-    val surface = when {
-        glass -> modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Button)
-        enabled -> modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
-        else -> modifier
-    }
     val paint = if (glass) colors.copy(containerColor = Color.Transparent, contentColor = palette.textPrimary) else colors
     TrainPilotPressFeedback(paint, enabled, interactionSource) { feedbackColors, source ->
+        val surface = when {
+            glass -> modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Button, pressSource = source)
+            enabled -> modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
+            else -> modifier
+        }
         OutlinedButton(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)
     }
 }

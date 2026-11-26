@@ -3,6 +3,10 @@ package com.example.ui.theme
 import android.graphics.ColorMatrixColorFilter
 import android.os.Build
 import android.view.View
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -14,6 +18,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -103,7 +108,8 @@ internal fun KyantSceneBackground(backdrop: LayerBackdrop, modifier: Modifier = 
 @Composable
 internal fun Modifier.kyantGlass(
     scene: KyantScene, palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
-    accent: Color? = null
+    accent: Color? = null,
+    pressSource: MutableInteractionSource? = null
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
@@ -150,8 +156,27 @@ internal fun Modifier.kyantGlass(
         drawSurface
     }
     val shapeProvider = remember(shape) { { shape } }
+    val pressLayer = if (pressSource != null && rememberGlassMotionEnabled()) {
+        val isPressed = pressSource.collectIsPressedAsState()
+        val press = animateFloatAsState(
+            if (isPressed.value) 1f else 0f,
+            spring(dampingRatio = .58f, stiffness = 520f),
+            label = "Kyant control press"
+        )
+        remember(press) {
+            val animateLayer: GraphicsLayerScope.() -> Unit = {
+                // As in the Kyant reference, animate the rendered lens with the control.
+                // The public backdrop effect and its shader stay stable through the spring.
+                val scale = 1f + (3.dp.toPx() / size.height.coerceAtLeast(1f)).coerceAtMost(.08f) *
+                    press.value.coerceIn(-.2f, 1.1f)
+                scaleX = scale
+                scaleY = scale
+            }
+            animateLayer
+        }
+    } else null
     return drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
-        highlight = highlight, shadow = shadow, onDrawSurface = surface)
+        highlight = highlight, shadow = shadow, layerBlock = pressLayer, onDrawSurface = surface)
 }
 
 /** Shared entry: only the matching window may sample a recorded backdrop. */
