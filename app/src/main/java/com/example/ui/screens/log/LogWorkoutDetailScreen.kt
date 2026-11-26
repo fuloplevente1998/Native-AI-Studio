@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.model.localWorkoutDateTimeLabel
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -152,7 +155,7 @@ fun LogWorkoutDetailScreen(
                             Text(workout.localizedTitle(uiState.language, uiState.programs, uiState.exercises), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold, color = palette.textPrimary,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
+                            Text(workout.localWorkoutDateTimeLabel(), style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "subscreen_back_button")
@@ -199,7 +202,8 @@ fun LogWorkoutDetailScreen(
                     val selected = uiState.logDetailTabIndex == idx
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (selected) palette.primary else palette.surfaceCard,
+                        color = palette.overlayRoleFill(if (selected) palette.primary else palette.surfaceCard,
+                            if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button),
                         modifier = Modifier
                             .weight(1f)
                             .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDetailTab(idx) }
@@ -209,7 +213,7 @@ fun LogWorkoutDetailScreen(
                             text = label,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (selected) palette.onPrimary else palette.textSecondary,
+                            color = if (selected && !(palette.isLiquidGlass && com.example.ui.theme.LocalGlassOverlay.current)) palette.onPrimary else if (selected) palette.textPrimary else palette.textSecondary,
                             modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp)
                         )
                     }

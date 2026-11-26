@@ -15,6 +15,9 @@ import com.repforge.app.data.db.WorkoutHistoryWithDetails
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalTrainPilotPalette
 import java.text.NumberFormat
 
 /** TrainPilot history has one measurement source; imported workouts keep their own evidence. */
@@ -36,7 +39,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
-    Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
+    Column(Modifier.fillMaxWidth().background(LocalTrainPilotPalette.current.overlayRoleFill(colors.card, GlassMaterialRole.Panel), MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Forrás", "Source", "Quelle", "Sursă"), style = MaterialTheme.typography.titleMedium, color = colors.text)

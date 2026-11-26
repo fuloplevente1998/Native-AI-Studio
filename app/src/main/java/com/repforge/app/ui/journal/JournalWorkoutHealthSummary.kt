@@ -1,5 +1,8 @@
 package com.repforge.app.ui.journal
 import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.overlayRoleFill
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalTrainPilotPalette
 
 import android.content.res.Resources
 import android.content.Context
@@ -46,7 +49,7 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
-    Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
+    Column(Modifier.fillMaxWidth().background(LocalTrainPilotPalette.current.overlayRoleFill(colors.card, GlassMaterialRole.Panel), MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(local("Edzés pulzus és energia", "Workout heart rate and energy", "Trainingspuls und Energie", "Puls și energie antrenament"),
@@ -85,7 +88,7 @@ private fun JournalWearInstallTip(workoutId: String, text: Resources) {
     var dismissed by remember(workoutId, prefs) { mutableStateOf(prefs.getBoolean(workoutId, false)) }
     if (dismissed) return
     Column(Modifier.fillMaxWidth()
-        .background(colors.card2.copy(alpha = .35f), MaterialTheme.shapes.medium)
+        .background(LocalTrainPilotPalette.current.overlayRoleFill(colors.card2.copy(alpha = .35f), GlassMaterialRole.Panel), MaterialTheme.shapes.medium)
         .trainPilotFrame(TrainPilotFrames.control(colors.line), MaterialTheme.shapes.medium)
         .padding(12.dp).testTag("journal_wear_install_tip"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text.getString(R.string.journal_wear_install_tip), color = colors.text)
