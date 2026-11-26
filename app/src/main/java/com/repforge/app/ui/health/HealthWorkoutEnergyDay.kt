@@ -25,7 +25,8 @@ import java.util.Locale
 
 internal data class WorkoutDayEnergy(val id: String, val name: String, val start: Instant, val end: Instant,
     val active: Double?, val total: Double?, val partial: Boolean,
-    val activeCoverage: WorkoutEnergyCoverage.Status, val totalCoverage: WorkoutEnergyCoverage.Status)
+    val activeCoverage: WorkoutEnergyCoverage.Status, val totalCoverage: WorkoutEnergyCoverage.Status,
+    val activeEvidence: NativeWorkoutHealthSummary.Metric, val totalEvidence: NativeWorkoutHealthSummary.Metric)
 
 /** Exact provider snapshots only; no daily aggregate, synthetic sensor records or cross-source sum. */
 internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): WorkoutDayEnergy? {
@@ -36,12 +37,15 @@ internal fun workoutDayEnergy(row: WorkoutHistoryEntity, provider: String): Work
         if (!NativeWorkoutHealth.matchesWindow(data, row)) return null
         val result = NativeWorkoutHealthSummary.readProvider(row,provider)
         val active = result.activeEnergy.values["activeCalories"]
-        val total = result.totalEnergy.values["totalCalories"]
+        val total = result.workoutTotal.values["totalCalories"]
         if (active == null && total == null) return null
         WorkoutDayEnergy(row.id, row.programName, Instant.parse(row.started), Instant.parse(row.finished),
             active, total, data.optBoolean("partial") || result.rejectedEvidence ||
-                (active != null && result.activeEnergy.incomplete) || (total != null && result.totalEnergy.incomplete),
-            WorkoutEnergyCoverage.aggregateStatus(data,"activeCalories"), WorkoutEnergyCoverage.aggregateStatus(data,"totalCalories"))
+                (active != null && result.activeEnergy.incomplete) || (total != null && result.workoutTotal.incomplete),
+            WorkoutEnergyCoverage.aggregateStatus(data,"activeCalories"),
+            if (total != null && result.workoutTotal.incomplete) WorkoutEnergyCoverage.Status.PARTIAL_RAW
+                else WorkoutEnergyCoverage.aggregateStatus(data,"totalCalories"),
+            result.activeEnergy, result.workoutTotal)
     }.getOrNull()
 }
 
@@ -61,7 +65,7 @@ internal fun HealthWorkoutEnergyDay(day: LocalDate, provider: String, type: Stri
                 day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()).collectLatest { saved ->
                 val measured = withContext(Dispatchers.IO) {
                     ticket.requireCurrent(context)
-                    if (!NativePrivacyControls.enabled(context, feature) ||
+                    if ((provider != HealthJournalStore.SAMSUNG && !NativePrivacyControls.enabled(context, feature)) ||
                         HealthJournalStore.get(context).generation() != generation) emptyList()
                     else saved.mapNotNull { workoutDayEnergy(it, provider) }
                         .filter { when (type) {
@@ -98,10 +102,10 @@ internal fun HealthWorkoutEnergyDay(day: LocalDate, provider: String, type: Stri
                 Text("${time.format(row.start)} – ${time.format(row.end)} · ${NativeWorkoutHealthSource.label(provider)}",
                     style = MaterialTheme.typography.labelSmall)
                 if (type != "TotalCaloriesBurnedRecord") row.active?.let {
-                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal${coverageLabel(row.activeCoverage)}")
+                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal${coverageLabel(row.activeCoverage)} · ${NativeWorkoutHealthSummary.labels(row.activeEvidence, "activeCalories", language)}")
                 }
                 if (type != "ActiveCaloriesBurnedRecord") row.total?.let {
-                    Text("${word("Teljes", "Total", "Gesamt", "Total")}: ${number.format(it)} kcal${coverageLabel(row.totalCoverage)}")
+                    Text("${word("Teljes", "Total", "Gesamt", "Total")}: ${number.format(it)} kcal${coverageLabel(row.totalCoverage)} · ${NativeWorkoutHealthSummary.labels(row.totalEvidence, "totalCalories", language)}")
                 }
                 if (row.partial) Text(word("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială"),
                     style = MaterialTheme.typography.labelSmall)

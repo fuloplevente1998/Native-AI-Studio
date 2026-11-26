@@ -82,19 +82,21 @@ class Collector2788RegressionTest {
         info.assertTextContains("teljes: nincs adat", substring = true)
     }
 
-    @Test fun todaySheetsFitShortContentsAndTheirCloseButtonsAllowReopening() {
+    @Test fun todaySheetsReserveOneViewportAndTheirCloseButtonsAllowReopening() {
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
+        var firstHeight: androidx.compose.ui.unit.Dp? = null
         listOf("sleep", "calories", "pulse", "steps", "workout", "recovery").forEach { key ->
             val tile = compose.onNodeWithTag("health_today_$key")
             tile.performClick()
             val sheet = compose.onNodeWithTag("health_today_tile_sheet")
             sheet.assertExists()
-            if (key == "steps" || key == "sleep") {
-                val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
-                assertTrue("$key should wrap when there is little data", card.bottom - card.top < 500.dp)
-            }
+            val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
+            val height = card.bottom - card.top
+            assertTrue("$key should reserve a viewport even without data", height > 450.dp)
+            firstHeight?.let { assertTrue("$key must use the same height", kotlin.math.abs((height - it).value) <= 1f) }
+            firstHeight = height
             compose.onNodeWithTag("health_today_tile_close").performClick()
             sheet.assertDoesNotExist()
         }
@@ -102,7 +104,22 @@ class Collector2788RegressionTest {
         compose.onNodeWithTag("health_today_tile_sheet").assertExists()
     }
 
-    @Test fun todayTileHandsOffToTheJournalAndOpensTheMatchingMetricOnReopening() {
+    @Test fun todayCaloriesLoadingDoesNotChangeTheSheetViewport() {
+        var state by mutableStateOf(TrainPilotUiState())
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_calories").performClick()
+        val card = compose.onNodeWithTag("health_today_tile_expanded_card")
+        val before = card.getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true).assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(weeklyHealthDays = listOf(kcalDay(0, 177, 2180))) }
+        compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true).assertTextContains("ebből aktív 177", substring = true)
+        val after = card.getUnclippedBoundsInRoot()
+        assertTrue(kotlin.math.abs(((after.bottom - after.top) - (before.bottom - before.top)).value) <= 1f)
+    }
+
+    @Test fun todayTileHandsOffToTheJournalAndExpandsTheMatchingDayOnReopening() {
         var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = false))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, hu,
@@ -118,19 +135,22 @@ class Collector2788RegressionTest {
             tileSheet.assertDoesNotExist()
             journalSheet.assertExists()
             val day = java.time.LocalDate.now()
-            val filter = "journal_records_filter_${day}_SleepSessionRecord"
+            val dayTag = "journal_day_$day"
             compose.mainClock.autoAdvance = false
             try {
                 compose.waitUntil(30_000) {
                     androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
                     org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
                     compose.mainClock.advanceTimeByFrame()
-                    compose.onAllNodesWithTag(filter).fetchSemanticsNodes().isNotEmpty()
+                    compose.onAllNodesWithTag(dayTag).fetchSemanticsNodes().isNotEmpty() &&
+                        compose.onAllNodesWithTag("journal_day_line_$day").fetchSemanticsNodes().isEmpty()
                 }
             } finally {
                 compose.mainClock.autoAdvance = true
             }
-            compose.onNodeWithTag(filter).assertIsSelected()
+            compose.onNodeWithTag(dayTag).assertExists()
+            compose.onNodeWithTag("journal_day_line_$day").assertDoesNotExist()
+            compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
             compose.onNodeWithTag("journal_provider_${day}_samsung_health").assertDoesNotExist()
             compose.onNodeWithTag("health_journal_close").performClick()
             journalSheet.assertDoesNotExist()

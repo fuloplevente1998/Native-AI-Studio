@@ -54,7 +54,9 @@ class WorkoutHealthSummaryRegressionTest {
             assertEquals(mapOf("totalCalories" to 180.0), result.workoutTotal.values)
             response.getJSONArray("measurementWindows").getJSONObject(1).remove("totalCalories")
             val partial = NativeWorkoutHealthSource.attach(null, HealthJournalStore.HC, response)
-            assertTrue(NativeWorkoutHealthSummary.project(frame, null, partial).workoutTotal.values.isEmpty())
+            val partialTotal = NativeWorkoutHealthSummary.project(frame, null, partial).workoutTotal
+            assertEquals(mapOf("totalCalories" to 90.0), partialTotal.values)
+            assertTrue(partialTotal.incomplete)
         }
     }
 
@@ -105,7 +107,9 @@ class WorkoutHealthSummaryRegressionTest {
         val a = row(start, middle).apply { remove("heartRateSamples"); remove("activeCalories"); put("totalCalories", 50) }
         val b = row(middle, end).put("activeCalories", 999)
         val result = NativeWorkoutHealthSummary.project(workout(), null, providers(null, snapshot(a, b)))
-        assertTrue(result.heart.values.isEmpty())
+        assertEquals(120.0, result.heart.values.getValue("averageHeartRate"), 0.0)
+        assertEquals(1, result.heart.evidence.size)
+        assertTrue(result.heart.incomplete)
         assertEquals(mapOf("activeCalories" to 999.0), result.activeEnergy.values)
         assertEquals(mapOf("totalCalories" to 50.0), result.totalEnergy.values)
         assertTrue(result.energy.incomplete)
@@ -145,6 +149,54 @@ class WorkoutHealthSummaryRegressionTest {
         assertEquals(30.0, result.energy.values.getValue("workoutCalories"), 0.0)
         assertTrue(result.energy.incomplete)
     }
+    @Test fun legacyAndMillisecondShortRowsRemainMeasuredWithoutInventingCoverage() {
+        val legacy = row().put("windowStart", start).put("windowEnd", end).put("totalCalories", 150)
+        val old = NativeWorkoutHealthSummary.project(workout(), null, providers(null, legacy)).workoutTotal
+        assertEquals(mapOf("totalCalories" to 150.0), old.values)
+        assertTrue(old.hasUnverifiedProviderCoverage)
+        val short = snapshot(row(b = "2026-11-01T10:19:59.999Z").put("totalCalories", 149))
+        val measured = NativeWorkoutHealthSummary.project(workout(), null, providers(null, short)).workoutTotal
+        assertEquals(mapOf("totalCalories" to 149.0), measured.values)
+        assertFalse(measured.incomplete)
+        assertTrue(measured.hasUnverifiedProviderCoverage)
+    }
+
+    @Test fun savedSamsungAndSamsungOriginHealthConnectSurviveDisabledDirectSdk() {
+        val direct = snapshot(row().put("totalCalories", 180))
+        val saved = NativeWorkoutHealthSummary.project(workout(), null, providers(direct, null), samsungEnabled = false)
+        assertEquals(mapOf("totalCalories" to 180.0), saved.workoutTotal.values)
+        assertEquals(120.0, saved.heart.values.getValue("averageHeartRate"), 0.0)
+        val origin = "com.sec.android.app.shealth"
+        val hc = snapshot(row().put("totalCalories", 160).put("maxHeartRate", 145)
+            .put("heartRateOrigin", origin).put("sources", JSONArray().put(origin)))
+        val result = NativeWorkoutHealthSummary.project(workout(), null, providers(direct, hc), samsungEnabled = false)
+        assertEquals(mapOf("totalCalories" to 160.0), result.workoutTotal.values)
+        assertEquals(145.0, result.heart.values.getValue("maxHeartRate"), 0.0)
+        assertEquals(HealthJournalStore.HC, result.heart.evidence.single().provider)
+        assertEquals("Samsung Health – Health Connecten át",
+            NativeWorkoutHealthSummary.labels(result.workoutTotal, "totalCalories", "hu"))
+        assertEquals("Samsung Health – Health Connecten át",
+            NativeWorkoutHealthSummary.labels(result.heart, "averageHeartRate", "hu"))
+    }
+
+    @Test fun largestKnownPartialCoverageWinsWithoutAddingProvidersAndMaxOnlySurvives() {
+        fun partial(kcal: Int, covered: Long) = row().apply {
+            remove("averageHeartRate"); remove("heartRateSamples")
+            put("maxHeartRate", 150).put("totalCalories", kcal)
+            put("energyCoverage", JSONObject().put("totalCalories",
+                JSONObject().put("status", "PARTIAL_RAW").put("rawCoveredMs", covered)))
+        }
+        val result = NativeWorkoutHealthSummary.project(workout(), null,
+            providers(snapshot(partial(90, 500_000)), snapshot(partial(40, 100_000))))
+        assertEquals(mapOf("totalCalories" to 90.0), result.workoutTotal.values)
+        assertTrue(result.workoutTotal.incomplete)
+        assertEquals(HealthJournalStore.SAMSUNG, result.workoutTotal.evidence.single().provider)
+        assertEquals(mapOf("maxHeartRate" to 150.0), result.heart.values)
+        val missing = NativeWorkoutHealthSummary.project(workout(), null, null)
+        assertTrue(missing.heart.values.isEmpty())
+        assertTrue(missing.workoutTotal.values.isEmpty())
+    }
+
     @Test fun activeWindowReadKeepsActualPerWindowEvidenceAndProviderErrors() = runBlocking {
         val paused = workout().put("activeIntervals", JSONArray().put(JSONObject().put("start", start).put("end", middle)))
         var reads = 0
