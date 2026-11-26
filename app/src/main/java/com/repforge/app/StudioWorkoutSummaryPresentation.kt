@@ -103,7 +103,12 @@ internal object StudioWorkoutSummaryPresentation {
 
     /** Preserve the journal's Wear priority, then use only the selected provider. */
     fun energy(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
-        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Metric? {
+        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Metric? =
+        projection(frame, live, now, provider, health)?.energy
+
+    /** Same typed projection as saved workout detail, scoped to the chosen provider and Wear. */
+    fun projection(frame: JSONObject?, live: JSONObject?, now: Instant, provider: String = HealthJournalStore.HC,
+        health: HealthSnapshot? = null): NativeWorkoutHealthSummary.Result? {
         frame ?: return null
         NativeWorkoutHealthSource.requireProvider(provider)
         val id = frame.optString("workoutId").takeIf { it.isNotBlank() } ?: return null
@@ -139,7 +144,7 @@ internal object StudioWorkoutSummaryPresentation {
             val selected = NativeWorkoutHealthSource.snapshot(document, provider)?.let {
                 JSONObject().put("providers", JSONObject().put(provider, it))
             }
-            NativeWorkoutHealthSummary.project(projection, wear, selected).energy
+            NativeWorkoutHealthSummary.project(projection, wear, selected)
         }.getOrNull()
     }
 }

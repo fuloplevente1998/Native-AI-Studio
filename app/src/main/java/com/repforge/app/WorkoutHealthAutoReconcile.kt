@@ -74,6 +74,7 @@ internal object WorkoutHealthAutoPolicy {
                 val oldMs = WorkoutEnergyCoverage.knownMillis(oldRow,key)
                 val newMs = WorkoutEnergyCoverage.knownMillis(newRow,key)
                 if (oldMs != null && (newMs == null || newMs < oldMs)) return false
+                if (newMs != null && (oldMs == null || newMs > oldMs)) gainsEnergy = true
             }
             gainsEnergy = gainsEnergy || (newFields - oldFields).any { it in energyKeys }
         }

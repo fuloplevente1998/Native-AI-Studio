@@ -255,8 +255,10 @@ object HealthConnectRepository {
         endIso: String,
         requireForegroundGuard: () -> Unit = {}
     ): JSONObject = withContext(Dispatchers.IO) {
-        val epoch = HealthJournalStore.get(context).generation()
-        val access = Access(context, epoch, Runnable { requireForegroundGuard() })
+        // A workout preview/window is not an authoritative daily record reconciliation.
+        // Match the pre-34 bridge: keep the SDK read read-only. Daily sync/change-feed
+        // owns raw journal upserts and deletions; workout attachment has its own CAS.
+        val access = Access(context, null, Runnable { requireForegroundGuard() })
         val params = JSONObject().put("start", startIso).put("end", endIso)
         Api34.readTrainingWindow(access, params)
     }

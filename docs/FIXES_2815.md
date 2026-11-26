@@ -31,3 +31,9 @@ Készülékes reprodukció: az előző napi edzés mentett, időablakos Health C
 - Mentett részletek: új explicit partial/unknown megjelölés, azonos definíciójú, teljes raw coverage előnyben a separateEnergy projekcióban; legacy single-energy változatlan. Automatikus retry HC hiányos/unknown coverage mellett a meglévő 48h keretben; ismert per-window coverage nem csökkenhet automatikusan.
 - Mai állapot és Egészségnapló: aktív/teljes külön chip, forrás címke, ugyanaz a persisted daily snapshot a Samsung hourly aggregátumhoz. Mai lap ugyanazon record queryn, nincs új SDK olvasás.
 - Új 3 policy regressziós teszt. Samsung SDK közvetlen válasz és az edzéskor megszűnő rekordok oka továbbra is eszközös ellenőrzés; Samsung coverage unknown, nem állítjuk, hogy a 300 kcal visszanyerhető. CI ellenőrizendő. Main érintetlen.
+
+## Második passz – köztes CI nélkül
+- #801 (e408132e) nyers XML 1303/0/0/0, R8 sikeres, feltételes DEX skipped. Ez nem igazolja az új head-et.
+- Samsung direct aggregate: per-field permission fence (tiltott érték null), empty/failed/denied/unknown coverage külön meta, nincs mesterséges raw idő. A HC API34 workout olvasás immár read-only, mint a legacy: nem futtathat szűk workout window alapján nyers naplórekord-törlő reconcile-t; a napi/change-feed sync marad a raw napló tulajdonosa. A mentett edzés CAS csatolása megmarad.
+- Mentés előtti összegző is typed projection, aktív és teljes külön, forrás és coverage címke. A kiválasztott provider + Wear szabály megmarad, mentett edzés automatikusan mindkét providerre kérdez. Legacy egyértékű projection azonos definícióján belül coverage-rangsor. Forráskártya metric coverage. Retry a jobb coverage-et akkor is befogadja, ha a kulcs már létezett. Új Samsung policy teszt.
+- [skip ci] köztes commit. További audit: Wear receipt frissesség/ownership, raw napló és Today paritás regresszió, egészségszinkron újraolvasás időablak/forrás egyezése. Készülékes Samsung/HC valódi adatok továbbra sem igazoltak.

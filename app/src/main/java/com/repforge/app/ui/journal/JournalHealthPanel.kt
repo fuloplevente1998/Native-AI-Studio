@@ -139,6 +139,23 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     val data = health!!
                     val metrics = NativeWorkoutHealth.metrics(data, false)
                     JournalHealthMetrics(metrics, tag, text, number)
+                    for (energyKey in listOf("activeCalories","totalCalories")) {
+                        val coverage = com.repforge.app.WorkoutEnergyCoverage.status(data,energyKey)
+                        val reason = when {
+                            coverage == com.repforge.app.WorkoutEnergyCoverage.Status.FULL_RAW -> null
+                            coverage == com.repforge.app.WorkoutEnergyCoverage.Status.PARTIAL_RAW ->
+                                local("Hiányos rekordlefedettség","Incomplete record coverage","Lückenhafte Datensätze","Acoperire parțială")
+                            energyKey in metrics ->
+                                local("Lefedettség nem igazolt","Coverage unverified","Abdeckung ungeprüft","Acoperire neverificată")
+                            else -> local("Nincs elérhető mérés","No available measurement","Keine verfügbare Messung","Fără măsurare disponibilă")
+                        }
+                        if (reason != null) {
+                            val label = if (energyKey == "activeCalories") text.getString(R.string.health_metric_activecalories)
+                                else text.getString(R.string.health_metric_totalcalories)
+                            Text("$label: $reason", color = colors.muted, style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.testTag("journal_${tag}_coverage_$energyKey"))
+                        }
+                    }
                     if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
                     if (data.optBoolean("partial") || (data.optJSONArray("warnings")?.length() ?: 0) > 0)
                         Text(text.getString(R.string.journal_health_partial), color = colors.muted)

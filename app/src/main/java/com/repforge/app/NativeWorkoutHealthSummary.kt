@@ -120,11 +120,13 @@ internal object NativeWorkoutHealthSummary {
                 ?: "unknown:${row.provider}:${row.windows}" else energyKey.orEmpty()
         val energyCandidates = evidence.filter { energyKey != null && energyNumber(it.data, energyKey) != null }
         val kind = energyCandidates.firstOrNull()?.let(::energyKind)
-        val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind })
+        val (energyRows, energyOverlap) = select(energyCandidates.filter { energyKind(it) == kind }
+            .sortedByDescending { if (energyKey in setOf("activeCalories","totalCalories"))
+                WorkoutEnergyCoverage.rank(it.data, requireNotNull(energyKey)) else 0 })
         val energyValues = if (energyRows.isEmpty() || energyKey == null) emptyMap() else
             mapOf(energyKey to energyRows.sumOf { number(it.data, energyKey)!! })
-        // Separate definitions for the detail screen. Keep the historical single-energy
-        // projection (Coach, legacy summary) unchanged; never add active to total.
+        // Separate definitions for the detail and finish screens. Preserve the legacy
+        // definition selection, but apply the same coverage ordering within each kind.
         fun separateEnergy(key: String): Metric {
             val candidates = evidence.filter { number(it.data, key) != null }
             val (rows, overlap) = select(candidates.sortedByDescending { WorkoutEnergyCoverage.rank(it.data, key) })
@@ -142,7 +144,9 @@ internal object NativeWorkoutHealthSummary {
             relationships.add(Relationship(a.provider, b.provider, idsA.intersect(idsB).isNotEmpty()))
         }
         return Result(Metric(heartValues, heartRows, incomplete(heartRows) || heartValues.isEmpty(), heartOverlap),
-            Metric(energyValues, energyRows, incomplete(energyRows), energyOverlap), rejected, relationships.distinct(),
+            Metric(energyValues, energyRows, incomplete(energyRows) || energyRows.any {
+                energyKey != null && WorkoutEnergyCoverage.status(it.data,energyKey) == WorkoutEnergyCoverage.Status.PARTIAL_RAW
+            }, energyOverlap), rejected, relationships.distinct(),
             separateEnergy("activeCalories"), separateEnergy("totalCalories"))
     }
 

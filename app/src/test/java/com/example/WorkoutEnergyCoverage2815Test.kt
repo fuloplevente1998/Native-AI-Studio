@@ -50,6 +50,22 @@ class WorkoutEnergyCoverage2815Test {
         assertTrue(result.activeEnergy.values.isEmpty())
     }
 
+    @Test fun samsungDirectAggregateDistinguishesZeroEmptyDeniedAndFailureWithoutInventingCoverage() {
+        fun direct(value: Double?, permitted: Boolean = true, failed: Boolean = false): JSONObject {
+            val out = JSONObject().put("activeCalories",value ?: JSONObject.NULL)
+            if (failed) out.put("errors",JSONObject().put("activeCalories","FAILED"))
+            WorkoutEnergyCoverage.recordDirectAggregate(out,"activeCalories",start,end,permitted)
+            return out
+        }
+        val zero = direct(0.0)
+        assertEquals(0.0,zero.getDouble("activeCalories"),0.0)
+        assertEquals(WorkoutEnergyCoverage.Status.UNKNOWN,WorkoutEnergyCoverage.status(zero,"activeCalories"))
+        assertNull(WorkoutEnergyCoverage.knownMillis(zero,"activeCalories"))
+        assertEquals(WorkoutEnergyCoverage.Status.MISSING,WorkoutEnergyCoverage.status(direct(null),"activeCalories"))
+        assertEquals(WorkoutEnergyCoverage.Status.UNKNOWN,WorkoutEnergyCoverage.status(direct(null,false),"activeCalories"))
+        assertEquals(WorkoutEnergyCoverage.Status.UNKNOWN,WorkoutEnergyCoverage.status(direct(null,failed = true),"activeCalories"))
+    }
+
     @Test fun pausedWindowsKeepSeparateCoverageAndLateDataCannotShrinkKnownCoverage() {
         fun row(seconds: Long) = record(40.0,listOf(span(0,seconds))).put("start",start.toString()).put("end",end.toString())
         fun snapshot(row: JSONObject) = JSONObject().put("measurementWindows",JSONArray().put(row))

@@ -57,6 +57,26 @@ internal object WorkoutEnergyCoverage {
         fields.put(key,coverage)
     }
 
+    /** Samsung ActivitySummary is a direct interval aggregate, not raw samples.
+     * Its numeric value is authoritative for that query, but raw coverage is unknown. */
+    fun recordDirectAggregate(out: JSONObject, key: String, start: Instant, end: Instant, permitted: Boolean) {
+        val fields = out.optJSONObject("energyCoverage") ?: JSONObject().also { out.put("energyCoverage",it) }
+        val errors = out.optJSONObject("errors")
+        val failed = out.optJSONArray("failedFields")
+        val failure = errors?.optString(key).orEmpty().isNotBlank() ||
+            (0 until (failed?.length() ?: 0)).any { failed?.optString(it) == key }
+        val available = NativeWorkoutHealth.metrics(out,false).containsKey(key)
+        val reason = when {
+            !permitted -> "PERMISSION_DENIED"
+            failure -> "READ_FAILED"
+            !available -> "EMPTY_RESPONSE"
+            else -> "DIRECT_AGGREGATE_NO_RAW_COVERAGE"
+        }
+        fields.put(key,JSONObject().put("requestedMs",millis(start,end))
+            .put("status",if (permitted && !failure && !available) Status.MISSING.name else Status.UNKNOWN.name)
+            .put("reason",reason))
+    }
+
     fun status(data: JSONObject, key: String): Status {
         val rows = data.optJSONArray("measurementWindows")
         if (rows != null && rows.length() > 0) {
