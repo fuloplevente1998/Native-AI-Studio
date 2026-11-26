@@ -2,12 +2,13 @@
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
-## Rövid leírás (≤80 karakter)
-- HU: `Edzésnapló, fotógaléria, programok, Wear OS óra és GPS-futás egy helyen.`
-- EN: `Workout log, photo gallery, programs, Wear OS watch and GPS runs in one place.`
+## Rövid leírás
+
+- HU · `Edzésnapló, edzéstervezés, Health Connect és Liquid Glass témák.`
+- EN · `Workout log, workout planning, Health Connect and Liquid Glass themes.`
 
 ## Teljes leírás – HU
-TrainPilot: edzéstervező és edzésnapló telefonra és Wear OS órára.
+A TrainPilottal megtervezheted az edzéseidet, naplózhatod a sorozatokat és követheted a fejlődésedet. Telefonon önállóan is használható, a Wear OS társalkalmazás külön bekapcsolható.
 
 **Edzés**
 • Erő-, időzített és kétoldali gyakorlatok: súly, ismétlés, RIR, pihenőidő-számláló
@@ -21,20 +22,25 @@ TrainPilot: edzéstervező és edzésnapló telefonra és Wear OS órára.
 • Kezdőlap: a következő edzés egy érintéssel indítható
 
 **Óra (Wear OS)**
-• Az edzés átadható az órának és vissza; egy edzés, egy időzítő – nincs dupla rögzítés
+• Az edzés vezérlése átadható az órának, majd visszavehető a telefonon.
 
 **Fejlődés és egészség**
 • Napló kereséssel és időszak-szűrővel, rekordok, statisztikák, izomcsoport-terhelés
-• Health Connect és Samsung Health adatok (engedéllyel): lépés, alvás, pulzus, kalória – a hiányzó mérés nem számít nullának
+• A Health Connect engedéllyel beolvassa a kompatibilis alkalmazásokkal megosztott lépés-, alvás-, pulzus- és energiaadatokat. A Samsung Health külön bekapcsolható kiegészítő adatforrás.
+• Ha az adatok rendelkezésre állnak, a TrainPilot az edzés aktív időszakaihoz társítja a pulzust és az energiafelhasználást. Az aktív és az összes kalória külön jelenik meg.
+• Az Egészségnapló tömör napi összesítőt ad. A mérések forrása és az edzések részletei megnyithatók.
 • Coach: napi felkészültség és edzésjavaslat a saját adataid alapján
 
+**Megjelenés**
+• Világos, sötét és egyedi témák. A Liquid Glass témák áttetsző kártyákat, állítható üveghatást és érintésre reagáló gombokat kínálnak.
+• Magyar, angol, német és román nyelv.
+
 **Adataid nálad**
-• Mentés és visszaállítás JSON/ZIP fájlba vagy Google Drive-ra
-• GPS-útvonalak és fotók privát tárban; egészségadat csak kifejezett beleegyezéssel kerül mentésbe
-• Több témaszín (világos és sötét), magyar, angol, német és román nyelv
+• Mentés és visszaállítás JSON/ZIP fájlba vagy Google Drive-ra.
+• A GPS-útvonalak és fotók privát tárban vannak. Egészségadat kifejezett beleegyezéssel kerül a biztonsági mentésbe.
 
 ## Full description – EN
-TrainPilot: workout planner and training log for your phone and Wear OS watch.
+TrainPilot helps you plan workouts, log your sets and track progress. Use the phone app on its own or pair it with the optional Wear OS companion.
 
 **Training**
 • Strength, timed and bilateral exercises: weight, reps, RIR, rest timer
@@ -48,44 +54,49 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • Home: start your next workout with one tap
 
 **Watch (Wear OS)**
-• Hand the workout over to the watch and back; one workout, one timer – no double logging
+• Hand workout controls over to your watch and take them back on your phone.
 
 **Progress and health**
 • Log with search and period filter, records, statistics, muscle-group load
-• Health Connect and Samsung Health data (with permission): steps, sleep, heart rate, calories – missing readings never count as zero
+• With your permission, Health Connect reads steps, sleep, heart rate and energy data shared by compatible apps. Samsung Health is available as an optional supplementary source.
+• When readings are available, TrainPilot associates heart rate and energy with your active workout intervals. Active and total calories appear separately.
+• The health journal gives you a compact daily overview. Open measurement details to see the source or review a saved workout.
 • Coach: daily readiness and a workout suggestion based on your own data
 
+**Appearance**
+• Light, dark and custom themes. Liquid Glass adds translucent cards, adjustable clarity and touch-responsive buttons.
+• Hungarian, English, German and Romanian.
+
 **Your data stays yours**
-• Backup and restore to JSON/ZIP files or Google Drive
-• GPS routes and photos in private storage; health data is only included in backups with explicit consent
-• Multiple light and dark themes; Hungarian, English, German and Romanian
+• Back up and restore with JSON/ZIP files or Google Drive.
+• GPS routes and photos stay in private storage. Health data is included in backups with your explicit consent.
 
 ## Újdonságok – 1.5.4
 
-A Playen lévő 1.5.0 (280600/280602) óta készült változások. A szövegek nyelvenként legfeljebb 500 karakteresek.
+A telefonos változások a Play Console 280600-as buildjéhez (1.5.0) viszonyítva. A kiadási jegyzetek nyelvenként legfeljebb 500 karakteresek.
 
 ### Telefon (281100)
 
 ```text
 <hu-HU>
-• Egyedi témák és Liquid Glass megjelenés. Finomított navigáció, Napló és naptár.
-• Külső edzések importja a Health Connectből és a Samsung Healthből.
-• Aktív és teljes edzéskalória külön, forrással és lefedettségi jelzéssel. A kézi visszaolvasás megőrzi a korábbi méréseket, ha kevesebb adat érkezik.
+• Pontosabb Health Connect-visszaolvasás. A pulzus az edzés aktív időszakaihoz társítható, az aktív és az összes kalória külön látszik. Samsung Health opcionális.
+• Kompakt Egészségnapló és egységes edzés-visszajelzés.
+• Egyedi témák és továbbfejlesztett Liquid Glass. Áttetsző kártyák, vízcseppszerű érintési hatás és rugózó gombanimáció.
 </hu-HU>
 <de-DE>
-• Eigene Designs und Liquid Glass. Verbesserte Navigation, Trainingsprotokoll und Kalender.
-• Externe Trainings aus Health Connect und Samsung Health importieren.
-• Aktive und gesamte Trainingskalorien getrennt, mit Quelle und Datenabdeckung. Eine unvollständige manuelle Aktualisierung erhält vorhandene Messwerte.
+• Verbesserter Health-Connect-Abgleich. Pulswerte können aktiven Trainingsphasen zugeordnet werden. Aktive und gesamte Kalorien werden getrennt angezeigt. Samsung Health ist optional.
+• Kompaktes Gesundheitstagebuch und einheitliches Trainingsfeedback.
+• Eigene Designs und verbessertes Liquid Glass mit transparenten Karten und animierten Tasten.
 </de-DE>
 <en-US>
-• Custom themes and Liquid Glass. Refined navigation, workout log and calendar.
-• Import external workouts from Health Connect and Samsung Health.
-• Active and total workout calories are shown separately, with source and coverage. Manual refresh preserves saved measurements when less data is returned.
+• Improved Health Connect syncing. Heart rate can be linked to active workout intervals, with active and total calories shown separately. Samsung Health is optional.
+• A compact health journal and a consistent workout feedback layout.
+• Custom themes and refined Liquid Glass with translucent cards, droplet-like touch feedback and spring animations.
 </en-US>
 <ro>
-• Teme personalizate și Liquid Glass. Navigare, jurnal de antrenamente și calendar îmbunătățite.
-• Importă antrenamente externe din Health Connect și Samsung Health.
-• Caloriile active și totale apar separat, cu sursa și acoperirea datelor. Actualizarea manuală păstrează măsurătorile salvate când primește mai puține date.
+• Sincronizare îmbunătățită cu Health Connect. Pulsul poate fi asociat intervalelor active ale antrenamentului, iar caloriile active și totale apar separat. Samsung Health este opțional.
+• Jurnal de sănătate compact și aspect unitar pentru feedbackul de antrenament.
+• Teme personalizate și Liquid Glass rafinat, cu carduri translucide și animații la atingere.
 </ro>
 ```
 
