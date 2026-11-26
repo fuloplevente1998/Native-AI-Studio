@@ -82,24 +82,41 @@ class Collector2788RegressionTest {
         info.assertTextContains("teljes: nincs adat", substring = true)
     }
 
-    @Test fun todaySheetsFitShortContentsAndTheirCloseButtonsAllowReopening() {
+    @Test fun todaySheetsReserveOneViewportAndTheirCloseButtonsAllowReopening() {
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
+        var firstHeight: androidx.compose.ui.unit.Dp? = null
         listOf("sleep", "calories", "pulse", "steps", "workout", "recovery").forEach { key ->
             val tile = compose.onNodeWithTag("health_today_$key")
             tile.performClick()
             val sheet = compose.onNodeWithTag("health_today_tile_sheet")
             sheet.assertExists()
-            if (key == "steps" || key == "sleep") {
-                val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
-                assertTrue("$key should wrap when there is little data", card.bottom - card.top < 500.dp)
-            }
+            val card = compose.onNodeWithTag("health_today_tile_expanded_card").getUnclippedBoundsInRoot()
+            val height = card.bottom - card.top
+            assertTrue("$key should reserve a viewport even without data", height > 450.dp)
+            firstHeight?.let { assertTrue("$key must use the same height", kotlin.math.abs((height - it).value) <= 1f) }
+            firstHeight = height
             compose.onNodeWithTag("health_today_tile_close").performClick()
             sheet.assertDoesNotExist()
         }
         compose.onNodeWithTag("health_today_sleep").performClick()
         compose.onNodeWithTag("health_today_tile_sheet").assertExists()
+    }
+
+    @Test fun todayCaloriesLoadingDoesNotChangeTheSheetViewport() {
+        var state by mutableStateOf(TrainPilotUiState())
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_calories").performClick()
+        val card = compose.onNodeWithTag("health_today_tile_expanded_card")
+        val before = card.getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true).assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(weeklyHealthDays = listOf(kcalDay(0, 177, 2180))) }
+        compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true).assertTextContains("ebből aktív 177", substring = true)
+        val after = card.getUnclippedBoundsInRoot()
+        assertTrue(kotlin.math.abs(((after.bottom - after.top) - (before.bottom - before.top)).value) <= 1f)
     }
 
     @Test fun todayTileHandsOffToTheJournalAndExpandsTheMatchingDayOnReopening() {

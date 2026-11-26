@@ -102,7 +102,8 @@ internal fun StudioTodayStatusDetailSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                .heightIn(max = maxDetailHeight)
+                // Reserve the same bounded viewport before any of the six tiles load their data.
+                .height(maxDetailHeight)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                 .testTag("health_today_tile_expanded_card")
         ) {
