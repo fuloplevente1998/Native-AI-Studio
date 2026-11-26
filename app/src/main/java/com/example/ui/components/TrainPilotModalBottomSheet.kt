@@ -68,13 +68,19 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import com.repforge.app.ui.theme.TrainPilotFrames
 
-/** Pin the last measured body height during a pointer gesture or Material's settling animation.
- * Real window constraint changes (rotation, IME) still clamp the pinned value. */
+/** Pin the last measured body height during a pointer gesture and its settling animation.
+ * Real window constraint changes (rotation, IME) still clamp the pinned value.
+ * 2816: the opening animation alone never pins. Pinning the first (still empty) measure while
+ * Material opened the sheet, then releasing it after the animation, made every sheet open in
+ * two steps on every theme. Without a drag, Material's own content-height anchors apply. */
 internal class SheetHeightLock {
     private var lastHeight: Int? = null
     private var pinnedHeight: Int? = null
     var pointerHeld = false
     val hasPin: Boolean get() = pinnedHeight != null
+
+    /** Held only by a finger, or by the settle that follows a pin made under the finger. */
+    fun holds(moving: Boolean): Boolean = pointerHeld || (hasPin && moving)
 
     fun heightFor(held: Boolean, min: Int, max: Int): Int? {
         if (!held) {
@@ -191,7 +197,7 @@ internal fun TrainPilotModalBottomSheet(
                         // itself invalidate measurement and restart Material's anchored gesture.
                         releaseGeneration
                         val moving = Snapshot.withoutReadObservation { sheetState.isAnimationRunning }
-                        val pinned = heightLock.heightFor(heightLock.pointerHeld || moving,
+                        val pinned = heightLock.heightFor(heightLock.holds(moving),
                             constraints.minHeight, constraints.maxHeight)
                         val measured = measurable.measure(constraints)
                         heightLock.measured(measured.height)

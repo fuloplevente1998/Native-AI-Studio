@@ -35,6 +35,26 @@ class LiquidGlassOverlay2812Test {
         assertFalse(lock.hasPin)
     }
 
+    @Test fun openingAnimationNeverPinsTheFirstMeasureOnlyADragDoes() {
+        // 2816: Material's opening animation alone must not freeze the (still empty) first height;
+        // otherwise every sheet opens to that height and grows in a second step after release.
+        val lock = com.example.ui.components.SheetHeightLock()
+        lock.measured(120)
+        assertFalse(lock.holds(moving = true))
+        assertNull(lock.heightFor(lock.holds(moving = true), 0, 800))
+        lock.measured(560)
+        assertNull("content height follows Material while opening", lock.heightFor(lock.holds(true), 0, 800))
+        // A finger pins the current height; the settle that follows keeps it until it stops.
+        lock.pointerHeld = true
+        assertEquals(560, lock.heightFor(lock.holds(moving = false), 0, 800))
+        lock.measured(600)
+        lock.pointerHeld = false
+        assertTrue(lock.holds(moving = true))
+        assertEquals(560, lock.heightFor(lock.holds(moving = true), 0, 800))
+        assertFalse(lock.holds(moving = false).also { held -> lock.heightFor(held, 0, 800) })
+        assertFalse(lock.hasPin)
+    }
+
     @Test fun rootBackdropRemainsPausedUntilTheLastSheetCloses() {
         val root = GlassSceneState()
         assertFalse(root.coveredBySheet)
