@@ -30,13 +30,17 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
         return
     }
     val colors = LocalTrainPilotColors.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val samsungEnabled = com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
-    val result = remember(detail.workout, samsungEnabled) { NativeWorkoutHealthSummary.read(detail.workout, samsungEnabled) }
+    // 2816: a mentett adat a Samsung-kapcsolótól függetlenül látszik (az csak az új közvetlen lekérdezést szabályozza).
+    val result = remember(detail.workout) { NativeWorkoutHealthSummary.read(detail.workout) }
     val number = remember(language) { NumberFormat.getNumberInstance(Locale.forLanguageTag(language)).apply { maximumFractionDigits = 1 } }
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
+    fun sources(metric: NativeWorkoutHealthSummary.Metric) = metric.evidence.map {
+        if (NativeWorkoutHealthSummary.samsungOriginViaHealthConnect(it)) local("Samsung Health – Health Connecten át",
+            "Samsung Health – via Health Connect", "Samsung Health – über Health Connect", "Samsung Health – prin Health Connect")
+        else NativeWorkoutHealthSummary.label(it.provider)
+    }.distinct()
     Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_workout_health_summary"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -51,18 +55,25 @@ internal fun JournalWorkoutHealthSummary(detail: WorkoutHistoryWithDetails, text
             val visibleValues = metric.values.filterKeys { it != "heartRateSamples" }
             JournalHealthMetrics(visibleValues, tag, text, number)
             if (tag == "summary_energy" && visibleValues.isNotEmpty()) {
-                val sources = metric.evidence.map { NativeWorkoutHealthSummary.label(it.provider) }.distinct().joinToString(", ")
-                val uncertain = metric.hasUnverifiedProviderCoverage
-                Text(listOfNotNull(sources.takeIf { it.isNotBlank() }, if (uncertain)
-                    local("Rekordlefedettség nem teljes vagy nem igazolt", "Record coverage incomplete or unverified",
-                        "Datensatzabdeckung lückenhaft oder ungeprüft", "Acoperire incompletă sau neverificată") else null).joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall, color = colors.muted)
+                // Ismert hiányos lefedettség: az érték marad, „részleges" jelzéssel; ismeretlen: „nem igazolt".
+                val note = when {
+                    metric.incomplete -> local("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială")
+                    metric.hasUnverifiedProviderCoverage -> local("Lefedettség nem igazolt", "Coverage unverified",
+                        "Abdeckung ungeprüft", "Acoperire neverificată")
+                    else -> null
+                }
+                Text(listOfNotNull(sources(metric).joinToString(", ").takeIf { it.isNotBlank() }, note).joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall, color = colors.muted,
+                    modifier = Modifier.testTag("journal_summary_energy_note"))
             }
             if (visibleValues.isEmpty()) Text(text.getString(R.string.journal_no_data), color = colors.muted,
                 modifier = Modifier.testTag("journal_${tag}_missing"))
+            // Az aktív kcal külön sorban marad; a fő energia mindig a teljes kcal, a kettő nem adódik össze.
+            if (tag == "summary_energy") result.activeEnergy.values.takeIf { it.isNotEmpty() }?.let {
+                JournalHealthMetrics(it, "summary_active", text, number)
+            }
         }
-        val providers = displayed.flatMap { it.second.evidence }
-            .map { NativeWorkoutHealthSummary.label(it.provider) }.distinct()
+        val providers = displayed.flatMap { sources(it.second) }.distinct()
         val status = if (displayed.any { it.second.incomplete } || result.rejectedEvidence)
             local("Részleges / hiányzó mérés", "Partial / missing measurement",
                 "Teilweise / fehlende Messung", "Măsurare parțială / lipsă") else null

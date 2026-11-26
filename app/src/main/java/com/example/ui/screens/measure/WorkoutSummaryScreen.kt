@@ -302,7 +302,8 @@ fun WorkoutSummaryScreen(
 
         val energyProjection = com.repforge.app.StudioWorkoutSummaryPresentation.projection(
             activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth, summaryExpectedNode)
-        val energyRows = listOfNotNull(energyProjection?.workoutTotal?.takeIf { it.values.isNotEmpty() }?.let {
+        // Az élő összegzés továbbra is csak igazolt teljes kcal-t mutat; a „részleges" a mentett naplóé (2816).
+        val energyRows = listOfNotNull(energyProjection?.workoutTotal?.takeIf { it.values.isNotEmpty() && !it.incomplete }?.let {
             tr(lang,"Edzés összes kcal","Workout total kcal","Training gesamt kcal","Total kcal antrenament") to it
         })
         val primaryEnergy = energyRows.firstOrNull()

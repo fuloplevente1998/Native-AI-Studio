@@ -61,7 +61,9 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
     val wear = remember(workout.wearMetricsJson, workout.rawJson) { NativeSavedWearHealth.read(workout) }
     val document = remember(workout.health240Json) { parseHealth(workout.health240Json) }
-    val summary = remember(workout, samsungEnabled) { NativeWorkoutHealthSummary.read(workout, samsungEnabled) }
+    val summary = remember(workout) { NativeWorkoutHealthSummary.read(workout) }
+    // 2816: a mentett Samsung-bizonyíték kapcsolótól függetlenül látszik; a kapcsoló csak az új lekérdezést szabályozza.
+    val samsungVisible = samsungEnabled || NativeWorkoutHealthSource.snapshot(document, HealthJournalStore.SAMSUNG) != null
     fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
         "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
     }
@@ -74,7 +76,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
     var expandedSource by (expandedState ?: localExpanded)
     val wearExpanded = expandedSource == "wear"
-    val samsungExpanded = samsungEnabled && expandedSource == HealthJournalStore.SAMSUNG
+    val samsungExpanded = samsungVisible && expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
     Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
@@ -82,7 +84,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         JournalLinkedExternalSources(workout.rawJson, text, language)
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
-                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { samsungEnabled || it.first != HealthJournalStore.SAMSUNG }) {
+                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect").filter { samsungVisible || it.first != HealthJournalStore.SAMSUNG }) {
                 val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
                 Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
                     shape = MaterialTheme.shapes.medium,
@@ -120,7 +122,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             if (wear?.optBoolean("partial") == true) Text(text.getString(R.string.journal_health_partial), color = colors.muted)
             Text(text.getString(R.string.journal_health_separate_energy), color = colors.muted)
         }
-        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { samsungEnabled || it != HealthJournalStore.SAMSUNG }) key(source) {
+        for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { samsungVisible || it != HealthJournalStore.SAMSUNG }) key(source) {
             val tag = if (source == HealthJournalStore.HC) "hc" else "samsung"
             val health = NativeWorkoutHealthSource.snapshot(document, source)
             val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
@@ -178,7 +180,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     if (names.isNotEmpty()) Text("${text.getString(R.string.journal_health_sources)}: ${names.joinToString(", ")}", color = colors.muted)
                     Text("${text.getString(R.string.journal_health_synced)}: ${time(data.optString("syncedAt"))}", color = colors.muted)
                 }
-                TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() }, enabled = enabled && !refreshing,
+                if (source != HealthJournalStore.SAMSUNG || samsungEnabled) TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() }, enabled = enabled && !refreshing,
                     modifier = Modifier.fillMaxWidth().testTag("journal_${tag}_health_refresh")) {
                     Text(if (refreshing && selected) text.getString(R.string.journal_health_refreshing)
                         else "${NativeWorkoutHealthSource.label(source)} • ${text.getString(R.string.journal_health_read)}")

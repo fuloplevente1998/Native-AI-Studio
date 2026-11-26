@@ -48,13 +48,16 @@ class WorkoutHealthSummaryRegressionTest {
                     .put("activeCalories", 24).put("totalCalories", 90)
             }, samsung = { error("Disabled") })
             val doc = NativeWorkoutHealthSource.attach(null, HealthJournalStore.HC, response)
-            val result = NativeWorkoutHealthSummary.project(frame, null, doc, samsungEnabled = false)
+            val result = NativeWorkoutHealthSummary.project(frame, null, doc)
             assertEquals(2, queries.size)
             assertEquals(45 * 60L, queries.sumOf { java.time.Duration.between(it.start, it.end).seconds })
             assertEquals(mapOf("totalCalories" to 180.0), result.workoutTotal.values)
             response.getJSONArray("measurementWindows").getJSONObject(1).remove("totalCalories")
             val partial = NativeWorkoutHealthSource.attach(null, HealthJournalStore.HC, response)
-            assertTrue(NativeWorkoutHealthSummary.project(frame, null, partial).workoutTotal.values.isEmpty())
+            // 2816: az ismert hiány nem rejti el a mért értéket, de soha nem teljesként mutatja.
+            val shown = NativeWorkoutHealthSummary.project(frame, null, partial).workoutTotal
+            assertEquals(mapOf("totalCalories" to 90.0), shown.values)
+            assertTrue(shown.incomplete)
         }
     }
 

@@ -276,6 +276,23 @@ class JournalWorkoutHealthRegressionTest {
 
     }
 
+    @Test fun savedSamsungEvidenceStaysVisibleWithSwitchOffButCannotBeRequeried() {
+        // 2816: a kapcsoló csak az új közvetlen Samsung SDK-lekérdezést tiltja, a mentett adatot nem.
+        val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val native = NativeWorkoutHealth(context, db)
+        val request = awaitNative { native.prepare(before.workout) }
+        awaitNative { native.attach(request, response().put("averageHeartRate", 155), HealthJournalStore.SAMSUNG) }
+        val saved = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!! }
+        compose.setContent { TrainPilotTheme {
+            JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true, samsungEnabled = false) { }
+        } }
+        compose.onNodeWithTag("journal_provider_samsung_health").performClick()
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
+        compose.onNodeWithTag("journal_samsung_health_refresh").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
+        compose.onNodeWithTag("journal_hc_health_refresh").assertExists()
+    }
+
     @Test fun anotherProviderCanBeExpandedWhileAReadingIsRunning() {
         val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val selectedProviders = mutableListOf<String>()

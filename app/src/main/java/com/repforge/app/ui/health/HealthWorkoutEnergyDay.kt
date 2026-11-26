@@ -97,11 +97,12 @@ internal fun HealthWorkoutEnergyDay(day: LocalDate, provider: String, type: Stri
                 Text(row.name.ifBlank { word("Edzés", "Workout", "Training", "Antrenament") })
                 Text("${time.format(row.start)} – ${time.format(row.end)} · ${NativeWorkoutHealthSource.label(provider)}",
                     style = MaterialTheme.typography.labelSmall)
-                if (type != "TotalCaloriesBurnedRecord") row.active?.let {
-                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal${coverageLabel(row.activeCoverage)}")
-                }
+                // 2816: a fő érték a teljes kcal; az aktív külön sorban, a kettő nem adódik össze.
                 if (type != "ActiveCaloriesBurnedRecord") row.total?.let {
                     Text("${word("Teljes", "Total", "Gesamt", "Total")}: ${number.format(it)} kcal${coverageLabel(row.totalCoverage)}")
+                }
+                if (type != "TotalCaloriesBurnedRecord") row.active?.let {
+                    Text("${word("Aktív", "Active", "Aktiv", "Activ")}: ${number.format(it)} kcal${coverageLabel(row.activeCoverage)}")
                 }
                 if (row.partial) Text(word("Részleges mérés", "Partial measurement", "Teilweise Messung", "Măsurare parțială"),
                     style = MaterialTheme.typography.labelSmall)

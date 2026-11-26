@@ -9,6 +9,7 @@ import java.time.Instant
 /** Read-only projection of saved evidence. Never split an aggregate or add competing observations. */
 internal object NativeWorkoutHealthSummary {
     const val WEAR = "wear"
+    private const val SAMSUNG_ORIGIN = "com.sec.android.app.shealth"
     data class Evidence(val provider: String, val data: JSONObject,
         val windows: List<NativeWorkoutActiveWindows.Window>, val legacyWindow: Boolean = false) {
         val milliseconds: Long get() = windows.sumOf { Duration.between(it.start, it.end).toMillis() }
@@ -21,8 +22,9 @@ internal object NativeWorkoutHealthSummary {
         val relationships: List<Relationship>, val activeEnergy: Metric, val totalEnergy: Metric, val workoutTotal: Metric)
     data class Relationship(val first: String, val second: String, val confirmedMirror: Boolean)
 
-    fun read(workout: WorkoutHistoryEntity, samsungEnabled: Boolean = true): Result =
-        project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json), samsungEnabled)
+    /** 2816: a mentett bizonyíték a Samsung-kapcsolótól független; az csak az új közvetlen SDK-lekérdezést szabályozza. */
+    fun read(workout: WorkoutHistoryEntity): Result =
+        project(savedFrame(workout), NativeSavedWearHealth.read(workout), parse(workout.health240Json))
 
     /** Provider-specific daily workout row and the combined detail share the same validated windows. */
     fun readProvider(workout: WorkoutHistoryEntity, provider: String): Result {
@@ -40,7 +42,7 @@ internal object NativeWorkoutHealthSummary {
         return saved
     }
 
-    internal fun project(workout: JSONObject, wear: JSONObject?, document: JSONObject?, samsungEnabled: Boolean = true): Result {
+    internal fun project(workout: JSONObject, wear: JSONObject?, document: JSONObject?): Result {
         val active = runCatching { NativeWorkoutActiveWindows.read(workout).filter { it.end.isAfter(it.start) } }.getOrDefault(emptyList())
         val evidence = mutableListOf<Evidence>()
         var rejected = false
@@ -55,7 +57,7 @@ internal object NativeWorkoutHealthSummary {
                 evidence.add(Evidence(WEAR, wear, active, explicitStart.isBlank()))
             else rejected = true
         }
-        for (provider in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).filter { samsungEnabled || it != HealthJournalStore.SAMSUNG }) {
+        for (provider in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
             val snapshot = NativeWorkoutHealthSource.snapshot(document, provider) ?: continue
             val measured = JSONObject().put("started", snapshot.optString("windowStart", snapshot.optString("start")))
                 .put("finished", snapshot.optString("windowEnd", snapshot.optString("end")))
@@ -133,6 +135,12 @@ internal object NativeWorkoutHealthSummary {
                 val values = heartRows.mapNotNull { number(it.data, key) }
                 if (values.size == heartRows.size) heartValues[key] = if (key.startsWith("min")) values.min() else values.max()
             }
+        } else if (heartRows.isNotEmpty()) {
+            // 2816: súly nélkül nincs átlagok átlaga, de ugyanazon forrás szélső értékei érvényesek.
+            for (key in listOf("minHeartRate", "maxHeartRate")) {
+                val values = heartRows.mapNotNull { number(it.data, key) }
+                if (values.size == heartRows.size) heartValues[key] = if (key.startsWith("min")) values.min() else values.max()
+            }
         }
         // The canonical session-energy matcher can report mixed active/total intervals.
         // Such an old combined value cannot be separated safely for this projection.
@@ -166,24 +174,26 @@ internal object NativeWorkoutHealthSummary {
         // Only one source can supply the user-facing workout total. Every active
         // interval must be covered; an explicitly paused gap is never queried or added.
         // Unknown raw coverage is not proof of missing data, but known gaps are.
+        fun totalUsable(row: Evidence) = number(row.data, "totalCalories") != null &&
+            row.data.optJSONObject("errors")?.optString("totalCalories").orEmpty().isBlank() &&
+            (0 until (row.data.optJSONArray("failedFields")?.length() ?: 0)).none {
+                row.data.optJSONArray("failedFields")?.optString(it) == "totalCalories"
+            }
         val totalCandidates = evidence.filter { row ->
-            number(row.data, "totalCalories") != null &&
+            totalUsable(row) &&
                 WorkoutEnergyCoverage.status(row.data, "totalCalories") != WorkoutEnergyCoverage.Status.PARTIAL_RAW &&
                 WorkoutEnergyCoverage.status(row.data, "totalCalories") != WorkoutEnergyCoverage.Status.MISSING &&
-                row.data.optJSONObject("errors")?.optString("totalCalories").orEmpty().isBlank() &&
-                (0 until (row.data.optJSONArray("failedFields")?.length() ?: 0)).none {
-                    row.data.optJSONArray("failedFields")?.optString(it) == "totalCalories"
-                } &&
                 (row.provider != WEAR || (!row.data.optBoolean("partial") &&
                     !WearWorkoutEnergyEvidence.incompleteDuration(row.data, expectedMs)))
         }
-        val completeTotal = listOf(HealthJournalStore.HC, WEAR, HealthJournalStore.SAMSUNG).firstNotNullOfOrNull { provider ->
+        val totalProviders = listOf(HealthJournalStore.HC, WEAR, HealthJournalStore.SAMSUNG)
+        val completeTotal = totalProviders.firstNotNullOfOrNull { provider ->
             val candidates = totalCandidates.filter { it.provider == provider }
             val (rows, overlap) = select(candidates)
-            if (rows.isEmpty() || rows.sumOf { it.milliseconds } != expectedMs || overlap) null
+            if (rows.isEmpty() || !coversActive(rows.sumOf { it.milliseconds }, expectedMs) || overlap) null
             else Metric(mapOf("totalCalories" to rows.sumOf { number(it.data, "totalCalories")!! }),
                 rows, false, false)
-        } ?: Metric(emptyMap(), emptyList(), true, false)
+        } ?: partialTotal(evidence.filter { totalUsable(it) }, totalProviders) { number(it.data, "totalCalories")!! }
         val relationships = mutableListOf<Relationship>()
         for (i in evidence.indices) for (j in i + 1 until evidence.size) {
             val a = evidence[i]; val b = evidence[j]
@@ -192,11 +202,36 @@ internal object NativeWorkoutHealthSummary {
             val idsB = strings(b.data, "workoutEnergyRecordIds")
             relationships.add(Relationship(a.provider, b.provider, idsA.intersect(idsB).isNotEmpty()))
         }
-        return Result(Metric(heartValues, heartRows, incomplete(heartRows) || heartValues.isEmpty(), heartOverlap),
+        return Result(Metric(heartValues, heartRows, incomplete(heartRows) || !heartValues.containsKey("averageHeartRate"), heartOverlap),
             Metric(energyValues, energyRows, incomplete(energyRows) || energyRows.any {
                 energyKey != null && WorkoutEnergyCoverage.status(it.data,energyKey) == WorkoutEnergyCoverage.Status.PARTIAL_RAW
             }, energyOverlap), rejected, relationships.distinct(),
             separateEnergy("activeCalories"), separateEnergy("totalCalories"), completeTotal)
+    }
+
+    /** 2816: régi mentés ms-eltérése ne rejtse el a teljes kcal-t (≤ 60 s vagy ≤ 2%). */
+    internal fun coversActive(measuredMs: Long, expectedMs: Long): Boolean =
+        expectedMs > 0 && kotlin.math.abs(expectedMs - measuredMs) <= maxOf(60_000L, expectedMs / 50)
+
+    /** Ismert hiányos lefedettségnél se tűnjön el: EGY forrás, a legnagyobb lefedettségű, „részleges" jelzéssel.
+     * Nincs becslés és nincs különböző forrás összeadása. */
+    private fun partialTotal(usable: List<Evidence>, providers: List<String>, value: (Evidence) -> Double): Metric {
+        fun covered(row: Evidence): Long {
+            val known = WorkoutEnergyCoverage.knownMillis(row.data, "totalCalories")
+            val wear = if (row.provider != WEAR) null else (row.data.opt("activeDurationSeconds") as? Number)
+                ?.toDouble()?.takeIf { it.isFinite() && it >= 0 }?.let { (it * 1000).toLong() }
+            return minOf(row.milliseconds, known ?: Long.MAX_VALUE, wear ?: Long.MAX_VALUE)
+        }
+        val best = providers.mapNotNull { provider ->
+            val accepted = mutableListOf<Evidence>()
+            var overlap = false
+            for (row in usable.filter { it.provider == provider }) {
+                if (accepted.any { overlaps(it, row) }) overlap = true else accepted.add(row)
+            }
+            if (accepted.isEmpty()) null else Triple(accepted, overlap, accepted.sumOf(::covered))
+        }.maxByOrNull { it.third } ?: return Metric(emptyMap(), emptyList(), true, false)
+        return Metric(mapOf("totalCalories" to best.first.sumOf(value)), best.first,
+            incomplete = true, overlapExcluded = best.second)
     }
 
     private fun overlaps(a: Evidence, b: Evidence) = a.windows.any { x -> b.windows.any { y -> x.start < y.end && y.start < x.end } }
@@ -206,4 +241,14 @@ internal object NativeWorkoutHealthSummary {
         (0 until array.length()).map { array.optString(it) }.filter(String::isNotBlank).toSet()
     }.orEmpty()
     fun label(provider: String) = if (provider == WEAR) "TrainPilot WearOS" else NativeWorkoutHealthSource.label(provider)
+
+    /** Health Connecten át érkező, Samsung Health eredetű adat: HC-szolgáltatói adat, mindig megjelenik. */
+    fun samsungOriginViaHealthConnect(row: Evidence): Boolean {
+        if (row.provider != HealthJournalStore.HC) return false
+        val origins = strings(row.data, "sources") + listOfNotNull(row.data.optString("heartRateOrigin").takeIf(String::isNotBlank)) +
+            listOf("activeCalories", "totalCalories").flatMap { key ->
+                row.data.optJSONObject("energyCoverage")?.optJSONObject(key)?.optJSONObject("origins")?.keys()?.asSequence()?.toList().orEmpty()
+            }
+        return origins.any { it == SAMSUNG_ORIGIN }
+    }
 }
