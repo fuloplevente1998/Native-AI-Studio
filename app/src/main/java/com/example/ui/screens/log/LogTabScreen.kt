@@ -36,7 +36,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
@@ -311,17 +313,18 @@ fun LogTabScreen(
                 .testTag("log_tab_screen"),
             // The measured header inset scrolls with the list; no extra item or opaque clip.
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
-                end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp)
         ) {
         item(key = "log_search", contentType = "search") {
-            CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
+            Box(Modifier.padding(bottom = TrainPilotCardSpacing.CardGap)) {
+                CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
+            }
         }
 
         // Interactive Month & Date selector row (< | 2026. október v | >)
         item(key = "log_month", contentType = "month") {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -417,7 +420,7 @@ fun LogTabScreen(
         // Quick shortcut banner to Edzés részletei & Óra és szinkron
         item(key = "log_summary", contentType = "summary") {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -516,22 +519,25 @@ fun LogTabScreen(
             }
         }
 
-        items(filteredLogs, key = { "workout_${it.id}" }, contentType = { "workout" }) { logEntry ->
-            LogWorkoutCard(
-                entry = logEntry,
-                onClick = {
-                    if (logEntry.isOutdoorRun) {
-                        onOpenRouteMap(logEntry.id)
-                    } else {
-                        onOpenWorkoutDetail(logEntry.id)
-                    }
-                },
-                onOpenDetailAlways = { onOpenWorkoutDetail(logEntry.id) },
-                onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) },
-                deleteEnabled = !deleteState.deleting,
-                programs = uiState.programs,
-                exercises = uiState.exercises
-            )
+        itemsIndexed(filteredLogs, key = { _, entry -> "workout_${entry.id}" }, contentType = { _, _ -> "workout" }) { index, logEntry ->
+            // Contiguous segments keep the panel scrollable without composing all history at once.
+            val top = if (index == 0) 20.dp else 0.dp
+            val bottom = if (index == filteredLogs.lastIndex) 20.dp else 0.dp
+            val segmentShape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
+            Column(Modifier.fillMaxWidth().background(palette.glassTile(palette.surfaceCard), segmentShape)) {
+                if (index > 0) {
+                    HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
+                }
+                LogWorkoutCard(
+                    entry = logEntry,
+                    onClick = { onOpenRouteMap(logEntry.id) },
+                    onOpenDetailAlways = { onOpenWorkoutDetail(logEntry.id) },
+                    onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) },
+                    deleteEnabled = !deleteState.deleting,
+                    programs = uiState.programs,
+                    exercises = uiState.exercises
+                )
+            }
         }
     }
 }
@@ -606,10 +612,8 @@ internal fun LogWorkoutCard(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         shape = shape,
-        color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().liquidDropMaterial(palette, shape, GlassMaterialRole.Tile, live = false)
-            .trainPilotBorder(1.dp, palette.sectionBorder, shape)
-            .clip(shape)
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
             .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
     ) {
