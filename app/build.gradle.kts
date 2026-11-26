@@ -33,8 +33,8 @@ android {
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
-    versionCode = 281300 // Play scheme: release 2813, mobile suffix 00
-    versionName = "1.5.4"
+    versionCode = 281400 // Play scheme: release 2814, mobile suffix 00
+    versionName = "1.5.5"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "DEVELOPER_NAME", "\"FulTechStudios\"")
