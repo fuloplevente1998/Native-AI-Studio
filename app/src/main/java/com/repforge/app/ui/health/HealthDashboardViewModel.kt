@@ -2,7 +2,6 @@ package com.repforge.app.ui.health
 
 import android.app.Application
 import android.app.Activity
-import android.os.Build
 import android.os.SystemClock
 import java.lang.ref.WeakReference
 import com.repforge.app.NativeDataReplacement
@@ -174,6 +173,10 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
 
     fun refreshSamsungGrants(activity: Activity?) {
         if (activity == null) return
+        if (!com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)) {
+            _uiState.update { it.copy(samsungGrantedCount = 0) }
+            return
+        }
         viewModelScope.launch {
             val keys = runCatching { SamsungHealthRepository.readGrantScope(context) {
                 check((activity as? androidx.lifecycle.LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true)
@@ -530,8 +533,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val prepared = withContext(Dispatchers.IO) {
                     val hcPermitted = com.repforge.app.NativePrivacyControls.enabled(context,
                         com.repforge.app.NativePrivacyControls.HEALTH_CONNECT) &&
-                        Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context) &&
-                        HealthConnectRepository.anyReadAllowed(context)
+                        HealthConnectRepository.isSupported(context) &&
+                        runCatching { HealthConnectRepository.currentlyGrantedReadKeys(context).isNotEmpty() }
+                            .getOrElse { if (it is CancellationException) throw it else false }
                     val samsungPermitted = com.repforge.app.NativePrivacyControls.enabled(context,
                         com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH) &&
                         SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()
@@ -540,7 +544,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                         val prefs = healthStore.preferences()
                         batchContinuation = NativeDataReplacement.continuationForCurrentData(context)
                         batchSelectedProvider = prefs.optString("provider", HealthJournalStore.HC)
-                        val provider = requestedProvider ?: prefs.optString("provider", HealthJournalStore.HC)
+                        val provider = requestedProvider ?: if (allProviders) HealthJournalStore.HC else batchSelectedProvider
                         val permitted = if (allProviders) hcPermitted || samsungPermitted else when (provider) {
                             HealthJournalStore.HC -> hcPermitted
                             HealthJournalStore.SAMSUNG -> samsungPermitted
@@ -610,7 +614,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 // The history query is never replaced by sync output. Manual historical reads remain callable.
                 val result = if (allProviders) {
                     val report = NativeHealthProviderBatch.run(
-                        available = { providerAvailability[it] == true }, guard = guard
+                        available = { providerAvailability[it] == true }, guard = guard,
+                        includeSamsung = com.repforge.app.NativePrivacyControls.enabled(context,
+                            com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
                     ) { source ->
                         _uiState.update { it.copy(syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(source)}: szinkronizálás…") }
                         NativeHealthRefresh.sync(context, activity, fullSync == true,

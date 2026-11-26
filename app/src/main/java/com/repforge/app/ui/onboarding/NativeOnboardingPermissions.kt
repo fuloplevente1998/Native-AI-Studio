@@ -54,11 +54,9 @@ import com.example.ui.viewmodel.TrainPilotViewModel
 import com.example.ui.viewmodel.updatePrivacyChoice
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.NativePrivacyControls
-import com.repforge.app.SamsungHealthRepository
 import com.repforge.app.ui.theme.TrainPilotButton
 import com.repforge.app.ui.theme.TrainPilotTextButton
 import com.repforge.app.ui.theme.trainPilotBorder
-import com.repforge.app.ui.workout.NativeGpsPermissionRecovery
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -89,10 +87,8 @@ internal fun NativeOnboardingPermissions(
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val activity = NativeGpsPermissionRecovery.findActivity(context)
     val scope = rememberCoroutineScope()
     val healthConnect = NativePrivacyControls.HEALTH_CONNECT
-    val samsung = NativePrivacyControls.SAMSUNG_HEALTH
     val notifications = NativePrivacyControls.NOTIFICATIONS
     val readPermissions = remember(context) {
         StudioPlatformAccess.healthPermissions(context)
@@ -101,8 +97,6 @@ internal fun NativeOnboardingPermissions(
     val options = remember(context, language, readPermissions) {
         buildList {
             if (readPermissions.isNotEmpty()) add(FirstRunPermissionOption(healthConnect, "Health Connect"))
-            if (SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable())
-                add(FirstRunPermissionOption(samsung, "Samsung Health"))
             add(FirstRunPermissionOption(notifications, localized(language, "Értesítések",
                 "Notifications", "Benachrichtigungen", "Notificări")))
         }
@@ -137,7 +131,7 @@ internal fun NativeOnboardingPermissions(
         error = false
         scope.launch {
             try {
-                val features = listOf(healthConnect, samsung, notifications)
+                val features = listOf(healthConnect, notifications)
                 withContext(Dispatchers.IO) {
                     features.forEach { feature -> NativePrivacyControls.set(context, feature, feature in selected) }
                 }
@@ -150,7 +144,6 @@ internal fun NativeOnboardingPermissions(
                             request(readPermissions.filter { it.substringAfterLast('.') !in granted },
                                 healthConnect = true)
                         }
-                        samsung -> activity?.let { SamsungHealthRepository.requestReadPermissions(it).getOrThrow() }
                         notifications -> if (Build.VERSION.SDK_INT >= 33 &&
                             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                             request(listOf(Manifest.permission.POST_NOTIFICATIONS))

@@ -66,6 +66,7 @@ internal object StudioPlatformAccess {
             .put("healthConnect", NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT))
             .put("healthReadGranted", HealthConnectRepository.anyReadAllowed(context))
             .put("samsungHealth", NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH))
+            .put("trainPilotWear", NativePrivacyControls.enabled(context, NativePrivacyControls.TRAINPILOT_WEAR))
             .put("healthGranted", health.count(::granted)).put("healthTotal", health.size)
     }
 }
@@ -130,7 +131,8 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName }, companion)
     }
     suspend fun refreshSamsung() {
-        if (!SamsungHealthRepository.isInstalled(context) || !SamsungHealthRepository.isSdkAvailable()) {
+        if (!NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH) ||
+            !SamsungHealthRepository.isInstalled(context) || !SamsungHealthRepository.isSdkAvailable()) {
             model.updateSamsungAccess(false); return
         }
         val granted = runCatching { SamsungHealthRepository.readGrantScope(context) {
@@ -375,12 +377,13 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         try {
             when (key) {
                 "gps_on", "gps_off", "notif_on", "notif_off",
-                "hc_on", "hc_off", "samsung_on", "samsung_off" -> {
+                "hc_on", "hc_off", "samsung_on", "samsung_off", "wear_on", "wear_off" -> {
                     val enabled = key.endsWith("_on")
                     val feature = when {
                         key.startsWith("gps_") -> NativePrivacyControls.GPS
                         key.startsWith("notif_") -> NativePrivacyControls.NOTIFICATIONS
                         key.startsWith("hc_") -> NativePrivacyControls.HEALTH_CONNECT
+                        key.startsWith("wear_") -> NativePrivacyControls.TRAINPILOT_WEAR
                         else -> NativePrivacyControls.SAMSUNG_HEALTH
                     }
                     NativePrivacyControls.set(context, feature, enabled)
@@ -407,6 +410,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         NativePrivacyControls.HEALTH_CONNECT -> requestHealthConnectPermissions()
                         NativePrivacyControls.SAMSUNG_HEALTH ->
                             startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
+                        NativePrivacyControls.TRAINPILOT_WEAR -> Unit
                     }
                 }
                 // Other entry points request access, but never infer or change the app switch.

@@ -44,6 +44,17 @@ class PrivacyControls312RegressionTest {
         }
     }
 
+    @Test fun directIntegrationsRequireOptInAndRetainTheExplicitChoice() {
+        assertTrue(NativePrivacyControls.enabled(app, NativePrivacyControls.HEALTH_CONNECT))
+        for (feature in listOf(NativePrivacyControls.SAMSUNG_HEALTH, NativePrivacyControls.TRAINPILOT_WEAR)) {
+            assertFalse(NativePrivacyControls.enabled(app, feature))
+            NativePrivacyControls.set(app, feature, true)
+            assertTrue(NativePrivacyControls.enabled(ContextWrapper(app), feature))
+            NativePrivacyControls.set(app, feature, false)
+            assertFalse(NativePrivacyControls.enabled(ContextWrapper(app), feature))
+        }
+    }
+
     @Test fun disablingHealthProvidersLeavesTheAlreadyStoredJournalUntouched() {
         val journal = HealthJournalStore.get(app)
         val day = "2026-11-18"

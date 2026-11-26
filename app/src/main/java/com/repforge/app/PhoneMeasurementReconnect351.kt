@@ -30,7 +30,8 @@ internal object PhoneMeasurementReconnect351 {
     }
 
     fun plan(context: Context, now: Long = System.currentTimeMillis()): ReconnectPlan =
-        reconnectPlan(ActiveWorkoutStore.current(context), armedWorkoutId, now)
+        reconnectPlan(ActiveWorkoutStore.current(context),
+            armedWorkoutId.takeIf { NativePrivacyControls.enabled(context, NativePrivacyControls.TRAINPILOT_WEAR) }, now)
 
     fun send(context: Context,node: String) {
         if(plan(context)!=ReconnectPlan.MEASUREMENT)return
@@ -40,7 +41,7 @@ internal object PhoneMeasurementReconnect351 {
                 .addOnSuccessListener capability@{ capability ->
                     if(capability.nodes.none { it.id==node })return@capability
                     val frame=ActiveWorkoutStore.current(context) ?: return@capability
-                    if(reconnectPlan(frame,armedWorkoutId,System.currentTimeMillis())!=ReconnectPlan.MEASUREMENT)return@capability
+                    if(plan(context)!=ReconnectPlan.MEASUREMENT)return@capability
                     val request=WearMeasurementRequest351.fromFrame(frame,System.currentTimeMillis()) ?: return@capability
                     WearLiveHealthStore.expectNode351(node)
                     WearSyncRepository.publishActiveWorkoutSnapshot(context,frame)

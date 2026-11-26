@@ -90,7 +90,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         if (paused) " · " + word("Szünet", "Paused", "Pause", "Pauză") else ""
 
     val enabled = state.isWorkoutSessionActive && !state.watchControlPending && !state.isSavingWorkout &&
-        (!state.phoneControlsWorkout || state.watchAppAvailable)
+        (!state.phoneControlsWorkout || state.showConnectedWatch)
     val status = when {
         state.watchControlPending -> word("Átadás folyamatban", "Transfer in progress", "Übergabe läuft", "Transfer în curs")
         state.phoneControlsWorkout -> word("Vezérlés: telefon", "Control: phone", "Steuerung: Telefon", "Control: telefon")
@@ -112,7 +112,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                             contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                         Column {
                             Text(status, style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (!state.watchAppAvailable && state.phoneControlsWorkout && !state.watchControlPending)
+                            if (!state.showConnectedWatch && !state.phoneControlsWorkout && !state.watchControlPending)
                                 Text(word("Óravezérlés nem elérhető", "Watch control unavailable", "Uhrsteuerung nicht verfügbar", "Control ceas indisponibil"),
                                     color = palette.textSecondary, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
@@ -162,17 +162,17 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                                 Box(Modifier.weight(1f)) { statusContent() }
                                 elapsedContent()
                             }
-                            action()
+                            if (state.showWatchWorkoutControls) action()
                         }
                     } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(Modifier.weight(1f)) { statusContent() }
                         elapsedContent()
-                        Box(Modifier.widthIn(max = actionMaxWidth)) { action() }
+                        if (state.showWatchWorkoutControls) Box(Modifier.widthIn(max = actionMaxWidth)) { action() }
                     }
                 }
             }
-            if (state.isWorkoutSessionActive) measurementStatus?.let {
+            if (state.isWorkoutSessionActive && state.showWatchWorkoutControls) measurementStatus?.let {
                 Text(it, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.testTag("watch_measurement_status"))
             }

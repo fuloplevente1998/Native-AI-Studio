@@ -54,8 +54,8 @@ fun TrainPilotViewModel.reloadHealthJournal() {
             respiratoryRateLabel = "—",
             dailyDistanceKm = 0f
     )
-    val providerAtStart = runCatching { HealthJournalStore.get(ctx).preferences().optString("provider", HealthJournalStore.HC) }.getOrNull()
-    if (providerAtStart == null || providerAtStart != loadedHealthProvider) {
+    val provider = HealthJournalStore.HC
+    if (provider != loadedHealthProvider) {
         loadedHealthProvider = null
         _uiState.update(::clearedHealth)
     }
@@ -64,7 +64,6 @@ fun TrainPilotViewModel.reloadHealthJournal() {
         try {
             val store = HealthJournalStore.get(ctx)
             val prefs = store.preferences()
-            val provider = prefs.optString("provider", HealthJournalStore.HC)
             val hcDailySourceRaw = prefs.optString("hcDailySource", "auto")
             val dailySourceModeHu = when (hcDailySourceRaw) {
                 "auto", "" -> studioModesText("Automatikus (Health Connect prioritás, duplikáció nélkül)", "Automatic (Health Connect priority, no duplicates)", "Automatisch (Health Connect-Priorität, ohne Duplikate)", "Automat (prioritatea Health Connect, fără duplicate)")
@@ -79,20 +78,18 @@ fun TrainPilotViewModel.reloadHealthJournal() {
             val projectedProviderDays = mutableListOf<JSONObject>()
             // The HC journal preserves older observations, including across temporary read
             // failures. Only the currently granted, successfully read fields may be shown.
+            val privacy = com.repforge.app.NativePrivacyControls
+            val primaryEnabled = privacy.enabled(ctx, privacy.HEALTH_CONNECT)
             val hcGranted = com.repforge.app.HealthConnectRepository.READ_PERMS
                 .filter { com.repforge.app.HealthConnectRepository.isAllowed(ctx, it) }.toSet()
             fun admitted(dayRow: JSONObject?, fromProvider: String): JSONObject? =
-                if (fromProvider == HealthJournalStore.HC)
-                    com.repforge.app.HealthConnectVisibleDay.project(dayRow, hcGranted)
-                else dayRow
-            val todayData = admitted(com.repforge.app.NativeHealthProviderData.day(store, provider, today), provider)
-            val alternativeProvider = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
-                else HealthJournalStore.SAMSUNG
-            val privacy = com.repforge.app.NativePrivacyControls
-            val primaryEnabled = privacy.enabled(ctx, if (provider == HealthJournalStore.SAMSUNG)
-                privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
-            val alternativeEnabled = privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
-                privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
+                if (fromProvider != HealthJournalStore.HC) dayRow
+                else if (primaryEnabled) com.repforge.app.HealthConnectVisibleDay.project(dayRow, hcGranted)
+                else null
+            val alternativeProvider = HealthJournalStore.SAMSUNG
+            val alternativeEnabled = privacy.enabled(ctx, privacy.SAMSUNG_HEALTH)
+            val todayData = if (primaryEnabled)
+                admitted(com.repforge.app.NativeHealthProviderData.day(store, provider, today), provider) else null
             val alternateToday = if (alternativeEnabled)
                 admitted(com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, today),
                     alternativeProvider) else null
@@ -259,11 +256,10 @@ fun TrainPilotViewModel.reloadHealthJournal() {
                 com.example.localization.StudioLocale.durationMinutes(avgMin, _uiState.value.language)
             } else "—"
 
-            val primaryProviderHu = if (provider == HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect"
             val sourcesSummaryHu = if (discoveredSources.isNotEmpty()) {
                 discoveredSources.joinToString(" • ")
             } else {
-                "$primaryProviderHu (nincs szinkronizált mérés az elmúlt 7 napban)"
+                "Health Connect (nincs szinkronizált mérés az elmúlt 7 napban)"
             }
 
             // Use the same selected-provider, day-validated projections for Home and Health.
@@ -286,15 +282,14 @@ fun TrainPilotViewModel.reloadHealthJournal() {
             } else null
 
             withContext(Dispatchers.Main) {
-                if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider ||
-                    primaryEnabled != privacy.enabled(ctx, if (provider == HealthJournalStore.SAMSUNG)
-                        privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT) ||
-                    alternativeEnabled != privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
-                        privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)) return@withContext
+                if (store.generation() != generation ||
+                    store.preferences().optString("hcDailySource", "auto") != hcDailySourceRaw ||
+                    primaryEnabled != privacy.enabled(ctx, privacy.HEALTH_CONNECT) ||
+                    alternativeEnabled != privacy.enabled(ctx, privacy.SAMSUNG_HEALTH)) return@withContext
                 loadedHealthProvider = provider
                 _uiState.update { st ->
                     st.copy(
-                        primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
+                        primaryHealthSourceSamsung = false,
                         dailyHealthDate = if (todayData != null || todaysSteps != null) today.toString() else "",
                         dailyHealthAvailableFields = availableFields,
                         dailyHealthSourceLabel = formatProviderLabelHu(provider, todayData?.optString("activityOrigin").orEmpty()),

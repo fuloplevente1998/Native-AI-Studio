@@ -329,11 +329,12 @@ fun SettingsMainScreen(
             SettingsActionRowCard(
                 title = strings.watchAndSyncTitle,
                 subtitle = when {
+                    !uiState.trainPilotWearEnabled -> "TrainPilot Wear OS"
                     uiState.watchAppAvailable -> "${uiState.watchName} • ${tr(uiState.language, "Wear OS adatkapcsolat", "Wear OS data link", "Wear OS-Datenverbindung", "Conexiune date Wear OS")}"
                     uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
                     else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
                 },
-                badgeText = if (uiState.watchAppAvailable) tr(uiState.language, "Adatkapcsolat", "Data link", "Datenlink", "Conexiune") else tr(uiState.language, "Nincs kapcsolat", "Disconnected", "Getrennt", "Deconectat"),
+                badgeText = if (!uiState.trainPilotWearEnabled) "" else if (uiState.watchAppAvailable) tr(uiState.language, "Adatkapcsolat", "Data link", "Datenlink", "Conexiune") else tr(uiState.language, "Nincs kapcsolat", "Disconnected", "Getrennt", "Deconectat"),
                 onClick = { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                 testTag = "settings_open_watch_row"
             )

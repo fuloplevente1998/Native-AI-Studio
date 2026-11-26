@@ -311,7 +311,8 @@ class StudioProgressUiRegressionTest {
 
     @Test fun stickyHandoverUsesRealDirectionAndDisablesPendingCommands() {
         var calls = 0
-        var state by mutableStateOf(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true))
+        var state by mutableStateOf(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true, watchConnected = true,
+            permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true)))
         compose.setContent { TrainPilotTheme { StudioWorkoutHandoverBar(state, TrainPilotStrings.forLanguage(AppLanguage.HU)) { calls++ } } }
         compose.onNodeWithTag("workout_handover_action").performClick()
         assertEquals(1, calls)
@@ -321,8 +322,8 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("workout_handover_action").assertIsEnabled().performClick()
         assertEquals(2, calls)
         compose.runOnIdle { state = state.copy(phoneControlsWorkout = true, watchAppAvailable = false) }
-        compose.onNodeWithTag("workout_handover_action").assertIsNotEnabled()
-        compose.onNodeWithText("Óravezérlés nem elérhető").assertExists()
+        compose.onNodeWithTag("workout_handover_action").assertDoesNotExist()
+        compose.onNodeWithTag("active_workout_elapsed").assertExists()
         compose.runOnIdle { state = state.copy(watchAppAvailable = true, isSavingWorkout = true) }
         compose.onNodeWithTag("workout_handover_action").assertIsNotEnabled()
         compose.runOnIdle { state = state.copy(isWorkoutSessionActive = false, statusBannerMessage = "Mentési hiba") }
@@ -335,7 +336,8 @@ class StudioProgressUiRegressionTest {
         var calls = 0
         compose.setContent { TrainPilotTheme(fontScaleMultiplier = 1.8f) {
             Box(Modifier.width(280.dp)) {
-                StudioWorkoutHandoverBar(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true),
+                StudioWorkoutHandoverBar(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true,
+                    watchConnected = true, permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true)),
                     TrainPilotStrings.forLanguage(AppLanguage.HU)) { calls++ }
             }
         } }

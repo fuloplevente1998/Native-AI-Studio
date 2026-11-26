@@ -110,7 +110,8 @@ fun TrainPilotViewModel.updatePlatformAccess(access: JSONObject, watchNames: Lis
             notificationsGranted = access.optBoolean("notificationsGranted"),
             healthConnectEnabled = access.optBoolean("healthConnect"),
             healthConnectGranted = access.optBoolean("healthReadGranted"),
-            samsungHealthEnabled = access.optBoolean("samsungHealth")),
+            samsungHealthEnabled = access.optBoolean("samsungHealth"),
+            trainPilotWearEnabled = access.optBoolean("trainPilotWear")),
             healthGrantedCount = access.optInt("healthGranted"),
             healthPermissionCount = access.optInt("healthTotal"),
             watchControlPending = pending,
@@ -137,6 +138,8 @@ fun TrainPilotViewModel.updatePrivacyChoice(feature: String, enabled: Boolean) {
             com.repforge.app.NativePrivacyControls.NOTIFICATIONS -> state.copy(permissionAccess = state.permissionAccess.copy(notificationsEnabled = enabled))
             com.repforge.app.NativePrivacyControls.HEALTH_CONNECT -> state.copy(permissionAccess = state.permissionAccess.copy(healthConnectEnabled = enabled))
             com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH -> state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = enabled))
+            com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR -> state.copy(
+                permissionAccess = state.permissionAccess.copy(trainPilotWearEnabled = enabled))
             else -> state
         }
     }

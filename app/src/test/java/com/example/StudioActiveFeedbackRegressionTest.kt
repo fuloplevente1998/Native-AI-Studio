@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.example.model.ExerciseItem
 import com.example.model.SubScreen
+import com.example.ui.components.StudioActiveExerciseFeedback
 import com.example.ui.components.rememberExerciseFeedbackNext
 import com.example.ui.components.StudioActiveWorkoutSessionInfo
 import com.example.ui.components.rememberStudioWorkoutCoachOwner
@@ -164,6 +165,32 @@ class StudioActiveFeedbackRegressionTest {
         compose.runOnIdle { assertEquals(0, cleared); item.value = true }
         compose.runOnIdle { assertSame(first, observed); assertEquals(1, created); screen.value = false }
         compose.runOnIdle { assertEquals(1, cleared) }
+    }
+
+    @Test fun inlineFeedbackUsesThePromptEditorInsideTheWorkoutList() {
+        var state by mutableStateOf(initial())
+        val tag = "active_feedback_session_press"
+        compose.setContent { TrainPilotTheme {
+            androidx.compose.foundation.lazy.LazyColumn {
+                item {
+                    StudioActiveExerciseFeedback(state,
+                        onEffort = { id, index -> state = state.copy(exerciseFeedbackWorkoutId = "session",
+                            exerciseFeedbackChoices = mapOf(id to index)) },
+                        onNote = { id, note -> state = state.copy(exerciseFeedbackWorkoutId = "session",
+                            exerciseFeedbackNotes = mapOf(id to note)) })
+                }
+            }
+        } }
+        compose.onNodeWithText("Milyen volt a gyakorlat?").assertExists()
+        compose.onNodeWithTag("${tag}_hard").performClick().assertIsSelected()
+        compose.onNodeWithTag("${tag}_note").performTextInput("Stabil")
+        compose.runOnIdle {
+            assertEquals(4, state.exerciseFeedbackChoices["press"])
+            assertEquals("Stabil", state.exerciseFeedbackNotes["press"])
+            assertEquals(0, state.activeExerciseIndex)
+        }
+        compose.onNodeWithTag("${tag}_clear").performClick()
+        compose.onNodeWithTag("${tag}_hard").assertIsNotSelected()
     }
 
     @Test fun nextOffersOptionalFeedbackAndSkipDoesNotInventAnAnswer() {

@@ -28,6 +28,8 @@ internal fun watchMeasurementReply(health: JSONObject?, workoutId: String): Stri
         ?.optString("state")?.takeIf { it in setOf("active", "paused", "starting", "disabled", "permissionRequired", "error", "ended", "foregroundRequired") }
 
 internal fun TrainPilotViewModel.queueWatchMeasurementStart(frame: JSONObject) {
+    val ctx = nativeContext ?: return
+    if (!com.repforge.app.NativePrivacyControls.enabled(ctx, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR)) return
     val id = frame.optString("workoutId")
     if (!watchMeasurementEligible(frame, id)) return
     _uiState.update { it.copy(watchMeasurementStatusId = id, watchMeasurementStatus =
@@ -40,7 +42,8 @@ internal fun TrainPilotViewModel.queueWatchMeasurementStart(frame: JSONObject) {
 /** Remote open is not a recording receipt. The existing live-health channel is authoritative. */
 internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity: Activity?, id: String) {
     val ctx = nativeContext ?: return
-    fun eligible() = watchMeasurementEligible(ActiveWorkoutStore.current(ctx), id)
+    fun eligible() = com.repforge.app.NativePrivacyControls.enabled(ctx, com.repforge.app.NativePrivacyControls.TRAINPILOT_WEAR) &&
+        watchMeasurementEligible(ActiveWorkoutStore.current(ctx), id)
     fun status(message: String?) {
         if (eligible() && pendingWatchMeasurementStart.value == id)
             _uiState.update { it.copy(watchMeasurementStatusId = id, watchMeasurementStatus = message) }
@@ -70,7 +73,7 @@ internal suspend fun TrainPilotViewModel.launchPendingWatchMeasurement(activity:
         }
         WearLiveHealthStore.expectNode351(nodes.single().id)
         val frame=ActiveWorkoutStore.current(ctx)
-        if (!watchMeasurementEligible(frame,id)) return
+        if (!eligible() || !watchMeasurementEligible(frame,id)) return
         val request=WearMeasurementRequest351.fromFrame(requireNotNull(frame),System.currentTimeMillis())
         // Target the verified companion; message delivery is not a measurement acknowledgement.
         if(request!=null)try {

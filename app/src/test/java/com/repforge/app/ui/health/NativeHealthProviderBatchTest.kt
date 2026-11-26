@@ -51,11 +51,11 @@ class NativeHealthProviderBatchTest {
             if (source == HealthJournalStore.SAMSUNG) Result.failure(java.io.IOException("offline"))
             else Result.success(JSONObject())
         }
-        assertEquals(listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC), visited)
+        assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), visited)
         assertTrue(report.partial)
         assertFalse(report.failed)
         assertTrue(report.retryable)
-        assertEquals(listOf(Batch.Status.FAILED, Batch.Status.SUCCESS), report.outcomes.map { it.status })
+        assertEquals(listOf(Batch.Status.SUCCESS, Batch.Status.FAILED), report.outcomes.map { it.status })
     }
 
     @Test fun unavailableAndPartialSourcesAreReportedWithoutInventingSuccess() = runBlocking {
@@ -68,8 +68,17 @@ class NativeHealthProviderBatchTest {
         assertTrue(report.partial)
         assertFalse(report.successful)
         assertFalse(report.retryable)
-        assertEquals(listOf(Batch.Status.UNAVAILABLE, Batch.Status.PARTIAL), report.outcomes.map { it.status })
+        assertEquals(listOf(Batch.Status.PARTIAL, Batch.Status.UNAVAILABLE), report.outcomes.map { it.status })
         assertFalse(Batch.run({ false }, {}) { error("unavailable sources must not be read") }.successful)
+    }
+
+    @Test fun disabledSupplementDoesNotReadSamsungOrReportItAsAFailure() = runBlocking {
+        val report = Batch.run({ true }, {}, includeSamsung = false) { source ->
+            assertEquals(HealthJournalStore.HC, source)
+            Result.success(JSONObject())
+        }
+        assertTrue(report.successful)
+        assertEquals(listOf(HealthJournalStore.HC), report.outcomes.map { it.provider })
     }
 
     @Test fun cancellationAndObsoleteGenerationStopBeforeTheNextProvider() = runBlocking {
@@ -81,7 +90,7 @@ class NativeHealthProviderBatchTest {
             }
             fail("Cancellation was swallowed")
         } catch (_: CancellationException) { }
-        assertEquals(listOf(HealthJournalStore.SAMSUNG), visited)
+        assertEquals(listOf(HealthJournalStore.HC), visited)
         visited.clear()
         var current = true
         try {
@@ -92,7 +101,7 @@ class NativeHealthProviderBatchTest {
             }
             fail("Obsolete generation continued")
         } catch (_: IllegalStateException) { }
-        assertEquals(listOf(HealthJournalStore.SAMSUNG), visited)
+        assertEquals(listOf(HealthJournalStore.HC), visited)
     }
 
     @Test fun resumeAndRetriesBypassOnlyTheCooldownAndNeverAdmissionOrTheSingleFlightGate() {

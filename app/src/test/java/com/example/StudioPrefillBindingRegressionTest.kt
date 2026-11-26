@@ -211,11 +211,12 @@ class StudioPrefillBindingRegressionTest {
                 .put("energyScoreSource", "samsung_health").put("energyScoreTime", "2026-11-03T09:00:00Z"), store.generation())
             store.setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
         }
+        val privacy = com.repforge.app.NativePrivacyControls
+        privacy.set(context, privacy.SAMSUNG_HEALTH, true)
         val hc = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
         assertEquals(HealthJournalStore.HC, hc.provider)
         assertEquals(0.0, requireNotNull(hc.readiness.samsungScore), 0.001)
         assertNull(hc.readiness.score)
-        val privacy = com.repforge.app.NativePrivacyControls
         privacy.set(context, privacy.SAMSUNG_HEALTH, false)
         try {
             val disabled = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
@@ -226,6 +227,7 @@ class StudioPrefillBindingRegressionTest {
         }
         native { store.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG)) }
         val samsung = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
+        assertEquals(HealthJournalStore.HC, samsung.provider)
         assertEquals(0.0, requireNotNull(samsung.readiness.samsungScore), 0.001)
         assertNull(samsung.readiness.score)
     }

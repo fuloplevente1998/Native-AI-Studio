@@ -2,11 +2,9 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -26,15 +24,16 @@ import com.repforge.app.ui.theme.TrainPilotButton
 import com.repforge.app.ui.theme.TrainPilotTextButton
 import com.repforge.app.ui.theme.NativeThemeTokens
 
-/** Compact post-exercise prompt only; summary and inline feedback retain their existing layout. */
+/** Shared editor for the active exercise and its completion dialog. The host owns scrolling. */
 @Composable
 internal fun WorkoutFeedbackPopup(
     exerciseName: String, effort: String?, note: String, language: String,
-    enabled: Boolean, onEffort: (String?) -> Unit, onNote: (String) -> Unit, tag: String
+    enabled: Boolean, onEffort: (String?) -> Unit, onNote: (String) -> Unit, tag: String,
+    modifier: Modifier = Modifier
 ) {
     val p = LocalTrainPilotPalette.current
     val selected = if (effort == "good") "right" else effort
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag(tag),
+    Column(modifier.fillMaxWidth().testTag(tag),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(exerciseName, color = p.primary, style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold)

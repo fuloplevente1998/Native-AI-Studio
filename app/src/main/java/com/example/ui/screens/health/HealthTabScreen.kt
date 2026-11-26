@@ -698,11 +698,12 @@ fun HealthTabScreen(
                 HealthSectionLauncher(
                     icon = Icons.Default.Link,
                     title = sourcesTitle,
-                    subtitle = listOf(
-                        "Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—",
-                        "Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—",
-                        tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
-                    ).joinToString(" · "),
+                    subtitle = buildList {
+                        add("Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—")
+                        if (uiState.permissionSamsungHealthEnabled)
+                            add("Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—")
+                        if (uiState.showConnectedWatch) add(tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " ✓")
+                    }.joinToString(" · "),
                     onOpen = { onToggleHealthSection("connect") },
                     customLeadingBadge = { MockupHealthConnectBadge(size = 34.dp) }
                 )
