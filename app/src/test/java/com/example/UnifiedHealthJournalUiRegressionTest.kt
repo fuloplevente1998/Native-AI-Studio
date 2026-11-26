@@ -105,21 +105,18 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag(summary).assertTextEquals("0")
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
-        // 2778: detailed records start folded and open on their header.
-        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_records_toggle_$day").performScrollTo().performClick()
-        awaitTag("health_record_hcwatch")
+        // 2816: the journal keeps HC totals plus the Samsung supplement, but no per-day record list,
+        // no "Records" toggle and no record provider chips. Stored records stay untouched (the
+        // Today status tiles still list them via HealthRecordDayDetails, see the pager test below).
+        awaitTag("journal_metric_${day}_activeCalories")
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
-        compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
-        compose.onNodeWithTag("journal_provider_${day}_$samsung").performScrollTo().performClick()
-        awaitTag("health_record_samsung")
-        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_metric_${day}_steps").assertTextContains("0")
         compose.onNodeWithTag("journal_metric_${day}_activeCalories").assertTextContains("27 kcal")
-        compose.onNodeWithTag("journal_provider_${day}_$hc").performScrollTo().performClick()
-        awaitTag("health_record_hcphone")
-        compose.onNodeWithTag("health_record_hcwatch").assertExists()
         compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()
+        compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_${day}_$samsung").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_${day}_$hc").assertDoesNotExist()
+        compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
+        for (id in listOf("hcwatch", "hcphone", "samsung")) compose.onNodeWithTag("health_record_$id").assertDoesNotExist()
         compose.runOnIdle { assertEquals(snapshot, store.exportSnapshot().toString()) }
     }
 

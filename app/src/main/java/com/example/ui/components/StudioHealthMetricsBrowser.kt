@@ -2,8 +2,6 @@ package com.example.ui.components
 
 import com.example.ui.theme.trainPilotGlassRim
 
-import com.example.ui.theme.selectionColors
-import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.overlayRoleFill
@@ -11,8 +9,6 @@ import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.LocalGlassOverlay
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -36,7 +32,6 @@ import com.example.model.LoggedWorkoutEntry
 import com.example.model.localWorkoutDate
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
-import com.repforge.app.NativeWorkoutHealthSource
 import com.repforge.app.ui.health.*
 import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -171,17 +166,10 @@ internal fun StudioHealthMetricsBrowser(
             val dayWorkouts = workoutsByDay[date].orEmpty()
             var expanded by rememberSaveable(samsungSupplement, date) { mutableStateOf(false) }
             var type by rememberSaveable(samsungSupplement, date) { mutableStateOf("") }
-            var recordsOpen by rememberSaveable(samsungSupplement, date) { mutableStateOf(false) }
-            val defaultProvider = if (type == "SleepSessionRecord") sleep?.provider else chosen.entries
-                .firstOrNull { NativeDetailedHealthMetrics.recordType(it.key) == type }?.value?.provider
-            var recordProviderOverride by rememberSaveable(samsungSupplement, date, type) { mutableStateOf<String?>(null) }
-            val recordProvider = recordProviderOverride ?: defaultProvider ?: primary
             LaunchedEffect(focus, focusKey) {
                 if (focus != null && focus.first == date.toString()) {
                     expanded = true
                     type = focus.second.takeUnless { it in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord") }.orEmpty()
-                    recordProviderOverride = null
-                    recordsOpen = focus.second !in setOf("ActiveCaloriesBurnedRecord", "TotalCaloriesBurnedRecord")
                 }
             }
             val sleepText = sleep?.let { value ->
@@ -220,7 +208,8 @@ internal fun StudioHealthMetricsBrowser(
                     } else {
                         val tiles = buildList {
                             sleepText?.let { add(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), it)) }
-                            available.filter { recordsOpen || it.key in visibleHealthJournalMetrics || type == NativeDetailedHealthMetrics.recordType(it.key) }
+                            // 2816: a napi rekordlista és a „Rekordok” kapcsoló kikerült; minden elérhető napi összeg látszik.
+                            available
                                 .forEach { add(Triple(it.key, it.label, "${it.valueText} ${it.unit}".trim())) }
                         }
                         tiles.chunked(3).forEach { cells ->
@@ -233,11 +222,7 @@ internal fun StudioHealthMetricsBrowser(
                                         if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
                                         modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
                                             .trainPilotClickable(tileShape) {
-                                                recordProviderOverride = null
-                                                if (metricKey !in setOf("activeCalories", "totalCalories")) {
-                                                    type = recordType
-                                                    recordsOpen = true
-                                                }
+                                                if (metricKey !in setOf("activeCalories", "totalCalories")) type = recordType
                                             }
                                             .testTag("journal_metric_${date}_$metricKey")) {
                                         Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
@@ -257,53 +242,6 @@ internal fun StudioHealthMetricsBrowser(
                                 if (workout.durationMinutes > 0) Text("${workout.durationMinutes} min", color = palette.textSecondary)
                             }
                         }
-                        val headerShape = RoundedCornerShape(10.dp)
-                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(headerShape) { recordsOpen = !recordsOpen }
-                            .testTag("journal_records_toggle_$date"), verticalAlignment = Alignment.CenterVertically) {
-                            Text(label("Részletes rekordok", "Detailed records", "Detaillierte Einträge", "Înregistrări detaliate"),
-                                color = palette.primary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            Icon(if (recordsOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = null, tint = palette.primary)
-                        }
-                        if (recordsOpen) {
-                            val filters = listOf(
-                                "" to label("Mind", "All", "Alle", "Toate"),
-                                "StepsRecord" to label("Lépés", "Steps", "Schritte", "Pași"),
-                                "DistanceRecord" to label("Táv", "Distance", "Distanz", "Distanță"),
-                                "HeartRateRecord" to label("Pulzus", "Heart rate", "Puls", "Puls"),
-                                "SleepSessionRecord" to label("Alvás", "Sleep", "Schlaf", "Somn"))
-                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                filters.forEach { (filterType, filterLabel) ->
-                                    com.example.ui.components.TrainPilotFilterChip(selected = type == filterType, onClick = {
-                                        recordProviderOverride = null
-                                        type = filterType
-                                    }, colors = FilterChipDefaults.filterChipColors(containerColor = palette.glassTile(palette.surfaceCard),
-                                            labelColor = palette.textPrimary, selectedContainerColor = palette.glassStateTile(palette.primary, palette.primary, strong = true),
-                                            selectedLabelColor = if (palette.isLiquidGlass) palette.selectionColors().foreground else palette.onPrimary),
-                                        label = { Text(filterLabel) },
-                                        modifier = Modifier.heightIn(min = 48.dp).testTag(
-                                            if (filterType.isEmpty()) "journal_records_all_$date" else "journal_records_filter_${date}_$filterType"))
-                                }
-                            }
-                            if (samsungSupplement) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf(primary, supplement).forEach { provider ->
-                                        TrainPilotFilterChip(selected = recordProvider == provider,
-                                            onClick = { recordProviderOverride = provider },
-                                            label = { Text(NativeWorkoutHealthSource.label(provider)) },
-                                            modifier = Modifier.testTag("journal_provider_${date}_$provider"))
-                                    }
-                                }
-                            } else {
-                                Text(NativeWorkoutHealthSource.label(recordProvider), color = palette.textSecondary,
-                                    style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                    StudioNativeEditorTheme {
-                        val generation = primaryPage.getLong("generation")
-                        HealthRecordDayDetails(date, recordProvider, "", type, language, generation,
-                            "$revision:$generation", expanded && recordsOpen, dailySummary = daySources.row(recordProvider))
                     }
                 }
             }
@@ -363,7 +301,3 @@ internal fun StudioHealthMetricsBrowser(
         )
     }
 }
-
-private val visibleHealthJournalMetrics = setOf(
-    "steps", "activeCalories", "totalCalories", "distanceMeters", "averageHeartRate"
-)
