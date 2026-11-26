@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -40,10 +41,12 @@ class LiquidGlassOverlay2812Test {
     @Test fun sheetHeightChangesWithoutAnIntermediateContentAnimation() {
         val tall = mutableStateOf(false)
         val opened = mutableStateOf(true)
+        val measuredHeights = mutableListOf<Int>()
         compose.setContent {
             TrainPilotTheme {
                 if (opened.value) TrainPilotScreenSheet(onDismiss = { opened.value = false }, testTag = "motion_sheet") {
-                    Box(Modifier.testTag("motion_body").fillMaxWidth().trainPilotAnimatedExpansion()
+                    Box(Modifier.testTag("motion_body").fillMaxWidth()
+                        .onSizeChanged { measuredHeights += it.height }.trainPilotAnimatedExpansion()
                         .height(if (tall.value) 360.dp else 120.dp))
                 }
             }
@@ -51,16 +54,20 @@ class LiquidGlassOverlay2812Test {
         val body = compose.onNodeWithTag("motion_body")
         fun height() = body.getUnclippedBoundsInRoot().let { it.bottom - it.top }
         assertEquals(120.dp, height())
-        compose.mainClock.autoAdvance = false
-        try {
-            compose.runOnIdle { tall.value = true }
-            compose.mainClock.advanceTimeBy(48)
-            assertEquals(360.dp, height())
-            compose.runOnIdle { tall.value = false }
-            compose.mainClock.advanceTimeBy(48)
-            assertEquals(120.dp, height())
-        } finally {
-            compose.mainClock.autoAdvance = true
+        val shortPx = compose.runOnIdle { measuredHeights.last() }
+        compose.runOnIdle { measuredHeights.clear(); tall.value = true }
+        compose.waitForIdle()
+        assertEquals(360.dp, height())
+        val tallPx = compose.runOnIdle {
+            assertEquals("No animated intermediate heights while growing", 1, measuredHeights.distinct().size)
+            measuredHeights.last()
+        }
+        assertEquals(shortPx * 3, tallPx)
+        compose.runOnIdle { measuredHeights.clear(); tall.value = false }
+        compose.waitForIdle()
+        assertEquals(120.dp, height())
+        compose.runOnIdle {
+            assertEquals("No animated intermediate heights while shrinking", listOf(shortPx), measuredHeights.distinct())
         }
         compose.onNodeWithTag("motion_sheet").performTouchInput { swipeDown() }
         compose.waitForIdle()

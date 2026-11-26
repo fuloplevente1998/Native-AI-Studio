@@ -105,8 +105,9 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag(summary).assertTextEquals("0")
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
-        compose.onNodeWithTag("journal_metric_${day}_activeCalories").assertTextContains("27 kcal")
+        compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo()
+        compose.onNode(hasAnyAncestor(hasTestTag("journal_metric_${day}_steps")) and hasText("0"), useUnmergedTree = true).assertExists()
+        compose.onNode(hasAnyAncestor(hasTestTag("journal_metric_${day}_activeCalories")) and hasText("27 kcal"), useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()
         compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
         compose.onNodeWithTag("journal_provider_${day}_$samsung").assertDoesNotExist()
@@ -142,7 +143,8 @@ class UnifiedHealthJournalUiRegressionTest {
         journal()
         awaitTag("journal_day_$day")
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
+        compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo()
+        compose.onNode(hasAnyAncestor(hasTestTag("journal_metric_${day}_steps")) and hasText("0"), useUnmergedTree = true).assertExists()
         listOf("weightKg", "activeCalories", "averageHeartRate", "vo2Max").forEach {
             compose.onNodeWithTag("journal_metric_${day}_$it").assertDoesNotExist()
         }
