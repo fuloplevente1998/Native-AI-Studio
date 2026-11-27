@@ -174,11 +174,12 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                     }
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val availableWidth = maxWidth
                     val controlsWidth = if (state.showWatchWorkoutControls) frameWidth * 2 + 6.dp else frameWidth
-                    if (maxWidth - controlsWidth < 120.dp || fontScale > 1.3f) {
+                    if (availableWidth - controlsWidth < 120.dp || fontScale > 1.3f) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             statusContent()
-                            if (maxWidth < controlsWidth) {
+                            if (availableWidth < controlsWidth) {
                                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End,
                                     verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     elapsedFrame()

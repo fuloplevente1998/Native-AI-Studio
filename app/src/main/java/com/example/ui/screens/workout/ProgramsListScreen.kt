@@ -631,7 +631,7 @@ fun ProgramsListScreen(
                     Text(trW(state.language, "Új program", "New program", "Neues Programm", "Program nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
 
-                TrainPilotOutlinedButton(
+                if (state.programsTabCustomOnly) TrainPilotOutlinedButton(
                     onClick = onOpenAddCustomExercise,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
@@ -645,7 +645,7 @@ fun ProgramsListScreen(
                 }
             }
 
-            TrainPilotOutlinedButton(
+            if (state.programsTabCustomOnly) TrainPilotOutlinedButton(
                 onClick = onOpenExerciseLibrary,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier

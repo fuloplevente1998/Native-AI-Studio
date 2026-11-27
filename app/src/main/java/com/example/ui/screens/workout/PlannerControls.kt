@@ -7,6 +7,7 @@ import com.example.ui.theme.glassTile
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.glassCardFill
+import com.example.ui.theme.programDaySelectionAccent
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import androidx.compose.ui.graphics.Shape
@@ -56,12 +57,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 
-/** Date state is independent of the displayed month selection; only selected days need a lens. */
+internal val calendarDayShape = RoundedCornerShape(10.dp)
+internal val calendarDayColumnGap = 4.dp
+internal val calendarDayRowGap = 2.dp
+
+/** The full calendar can use a lens; range sheets use the same shape and lightweight edge. */
 internal data class CalendarDayAppearance(
     val fill: Color,
     val selectedLens: Boolean,
     val lightRim: Boolean,
     val underlineToday: Boolean,
+    val strongRim: Boolean = false
 )
 
 internal fun calendarDayAppearance(
@@ -69,15 +75,50 @@ internal fun calendarDayAppearance(
     selected: Boolean,
     today: Boolean,
     planned: Boolean,
+    rangePicker: Boolean = false,
+    rangeInterior: Boolean = false
 ): CalendarDayAppearance {
-    val legacy = if (planned) palette.primary.copy(alpha = .12f) else palette.surface
-    if (!palette.isLiquidGlass) return CalendarDayAppearance(legacy, false, false, false)
+    val legacy = when {
+        rangePicker && selected -> palette.primary
+        rangeInterior -> palette.primary.copy(alpha = .28f)
+        planned -> palette.primary.copy(alpha = .12f)
+        else -> palette.surface
+    }
+    if (!palette.isLiquidGlass) return CalendarDayAppearance(legacy, false, false, rangePicker && today)
+    val lens = selected && !rangePicker
     return CalendarDayAppearance(
-        fill = if (selected) Color.Transparent else if (planned) palette.glassStateTile(palette.primary, legacy)
-            else palette.glassTile(legacy, elevated = today),
-        selectedLens = selected,
-        lightRim = !selected,
+        fill = when {
+            lens -> Color.Transparent
+            selected -> palette.glassStateTile(programDaySelectionAccent, legacy, strong = true)
+            rangeInterior -> palette.glassStateTile(programDaySelectionAccent, legacy)
+            planned -> palette.glassStateTile(palette.primary, legacy)
+            else -> palette.glassTile(legacy, elevated = today)
+        },
+        selectedLens = lens,
+        lightRim = !lens,
         underlineToday = today,
+        strongRim = selected
+    )
+}
+
+@Composable
+internal fun Modifier.calendarDayFrame(
+    palette: TrainPilotPalette,
+    appearance: CalendarDayAppearance,
+    selected: Boolean,
+    today: Boolean
+): Modifier {
+    val material = when {
+        appearance.selectedLens -> Modifier.trainPilotGlassMaterial(palette, calendarDayShape, GlassMaterialRole.Selection)
+        appearance.lightRim -> Modifier.trainPilotGlassRim(palette, calendarDayShape,
+            if (appearance.strongRim) GlassMaterialRole.Selection else GlassMaterialRole.Tile)
+        else -> Modifier
+    }
+    val highlightToday = palette.isLiquidGlass && today
+    return then(material).trainPilotBorder(
+        width = if (selected) 1.8.dp else if (highlightToday) 1.4.dp else 1.dp,
+        color = if (selected || highlightToday) palette.primary else palette.cardBorder,
+        shape = calendarDayShape
     )
 }
 

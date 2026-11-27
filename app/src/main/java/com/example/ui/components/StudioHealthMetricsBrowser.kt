@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.CalendarMonth
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotFrame
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
@@ -284,9 +285,13 @@ internal fun StudioHealthMetricsBrowser(
                                         val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
                                         val tileShape = RoundedCornerShape(10.dp)
                                         val role = if (type == recordType) GlassMaterialRole.Selection else GlassMaterialRole.Tile
+                                        val legacyFill = if (type == recordType) palette.primary.copy(alpha = 0.16f)
+                                            else if (palette.isLiquidGlass) palette.surfaceCard else palette.surfaceElevated
                                         Surface(shape = tileShape, color = palette.overlayRoleFill(
-                                            if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
+                                            legacyFill, role),
                                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
+                                                .then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotFrame(
+                                                    0.75.dp, palette.cardBorder, tileShape))
                                                 .testTag("journal_metric_${date}_$metricKey")) {
                                             Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                                                 Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,

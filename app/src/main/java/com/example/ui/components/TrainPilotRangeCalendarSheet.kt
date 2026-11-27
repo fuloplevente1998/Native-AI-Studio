@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,13 +30,22 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.glassStateTile
-import com.example.ui.theme.overlayRoleFill
 import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.programDaySelectionAccent
+import com.example.ui.screens.calendarDayAppearance
+import com.example.ui.screens.calendarDayColumnGap
+import com.example.ui.screens.calendarDayFrame
+import com.example.ui.screens.calendarDayRowGap
+import com.example.ui.screens.calendarDayShape
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import java.time.LocalDate
@@ -126,16 +136,16 @@ fun TrainPilotRangeCalendarSheet(
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(calendarDayColumnGap)) {
                 weekdayHeaders.forEach {
                     Text(it, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.textSecondary,
                         textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 }
             }
             val offset = month.atDay(1).dayOfWeek.value - 1
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(calendarDayRowGap)) {
                 for (row in 0..5) {
-                    Row(Modifier.fillMaxWidth().testTag("${tagPrefix}_calendar_week_$row"), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth().testTag("${tagPrefix}_calendar_week_$row"), horizontalArrangement = Arrangement.spacedBy(calendarDayColumnGap)) {
                         for (col in 0..6) {
                             val dayNum = row * 7 + col - offset + 1
                             if (dayNum !in 1..month.lengthOfMonth()) {
@@ -145,29 +155,37 @@ fun TrainPilotRangeCalendarSheet(
                                 val isEdge = date == start || date == end
                                 val inRange = rangeMin != null && rangeMax != null && date in rangeMin..rangeMax
                                 val isToday = date == today
-                                val shape = RoundedCornerShape(10.dp)
-                                val marker = if (isEdge) primaryActionText else palette.primary
+                                val style = calendarDayAppearance(
+                                    palette, selected = isEdge, today = isToday, planned = false,
+                                    rangePicker = true, rangeInterior = inRange && !isEdge
+                                )
+                                val foreground = if (isEdge) primaryActionText else palette.textPrimary
                                 Surface(
-                                    shape = shape,
-                                    color = when {
-                                        isEdge -> primaryActionFill
-                                        inRange -> palette.glassStateTile(programDaySelectionAccent, palette.primary.copy(alpha = 0.28f))
-                                        else -> palette.overlayRoleFill(palette.surfaceElevated, GlassMaterialRole.Tile)
-                                    },
+                                    shape = calendarDayShape,
+                                    color = style.fill,
                                     modifier = Modifier.weight(1f).height(44.dp)
-                                        .testTag("${tagPrefix}_calendar_day_$dayNum")
-                                        .then(if (isEdge) Modifier.overlayRoleRim(palette, shape, GlassMaterialRole.Selection) else Modifier)
-                                        .trainPilotBorder(if (isToday || isEdge) 1.5.dp else 1.dp,
-                                            if (isToday || isEdge) palette.primary else palette.cardBorder, shape)
-                                        .trainPilotClickable(shape) { onDayClick(date) }
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text("$dayNum", style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = if (isEdge || inRange || isToday) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isEdge) primaryActionText else palette.textPrimary)
-                                            if (hasMark(date)) Box(Modifier.size(4.dp).clip(CircleShape).background(marker))
+                                        .calendarDayFrame(palette, style, isEdge, isToday)
+                                        .semantics {
+                                            selected = isEdge || inRange
+                                            if (isToday) stateDescription = todayLabel
                                         }
+                                        .testTag("${tagPrefix}_calendar_day_$dayNum")
+                                        .trainPilotClickable(calendarDayShape) { onDayClick(date) }
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxSize().padding(horizontal = 6.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TrainPilotFitText("$dayNum", modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                textDecoration = if (style.underlineToday) TextDecoration.Underline else TextDecoration.None
+                                            ),
+                                            minSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = foreground)
+                                        if (hasMark(date)) Box(Modifier.size(4.dp).clip(CircleShape)
+                                            .background(if (isEdge) foreground else palette.primary))
                                     }
                                 }
                             }
