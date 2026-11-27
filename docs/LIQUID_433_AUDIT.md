@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (12/91)
+## Studio közös komponensek – leltár (25/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -72,3 +72,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/HomeCoachAdviceCard.kt` | 131 | 100, 118 | 112 | 91, 93, 121 | — | 95 |
 | `com/example/ui/components/HomePlannedDateLine.kt` | 41 | — | — | — | — | — |
 | `com/example/ui/components/QuickWorkoutHubSheet.kt` | 157 | 152 | — | 78, 80, 86, 136, 138 | 21, 128 | 89, 140 |
+| `com/example/ui/components/RecordedRouteMapPresentation.kt` | 21 | — | — | — | — | — |
+| `com/example/ui/components/RestDockScrollSizing.kt` | 88 | — | — | — | — | — |
+| `com/example/ui/components/StudioActiveWorkoutPresentation.kt` | 138 | 43 | 109 | — | 5, 117 | — |
+| `com/example/ui/components/StudioActiveWorkoutTop.kt` | 176 | — | — | 129 | — | 104, 126 |
+| `com/example/ui/components/StudioCoachDomainPanels.kt` | 526 | 207, 275, 311, 342 | 109, 184, 188, 316, 373, 409, 411, 419, 429 | 129, 199, 201, 206, 266, 268, 412, 413, 476 | 20, 21, 204, 214 | 143, 469 |
+| `com/example/ui/components/StudioCoachReadinessText.kt` | 56 | — | — | — | — | — |
+| `com/example/ui/components/StudioCompactControls.kt` | 164 | — | 113 | 62, 99, 100, 110, 131 | — | 100, 132 |
+| `com/example/ui/components/StudioCompactRestControls.kt` | 106 | — | 99 | 78 | — | 73 |
+| `com/example/ui/components/StudioCustomExerciseActions.kt` | 119 | — | — | — | — | — |
+| `com/example/ui/components/StudioDailyHealthStatus.kt` | 64 | — | 42 | — | — | — |
+| `com/example/ui/components/StudioExerciseSequenceStrip.kt` | 77 | — | — | 62 | 6, 45 | 65 |
+| `com/example/ui/components/StudioHealthMetricsBrowser.kt` | 380 | — | 179, 307, 318 | 156, 162, 164 | 11, 14, 148, 163, 193 | 166, 240 |
+| `com/example/ui/components/StudioHealthPermissionAction.kt` | 19 | — | — | — | — | — |
