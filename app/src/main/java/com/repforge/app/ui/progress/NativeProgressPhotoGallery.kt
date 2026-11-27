@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +34,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -204,7 +209,7 @@ private sealed interface PhotoPreview {
 }
 
 @Composable
-private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifier: Modifier) {
+private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifier: Modifier, roundedDetail: Boolean = false) {
     val context = LocalContext.current
     val colors = LocalTrainPilotColors.current
     val preview by produceState<PhotoPreview>(PhotoPreview.Loading, id, edge) {
@@ -224,9 +229,24 @@ private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifi
             PhotoPreview.Loading -> Text(strings.getString(R.string.native_progress_photo_loading), color = colors.muted)
             PhotoPreview.Error -> Text(strings.getString(R.string.native_progress_photo_unavailable),
                 color = colors.text, modifier = Modifier.testTag("progress_photo_error"))
-            is PhotoPreview.Ready -> Image(result.image,
+            is PhotoPreview.Ready -> if (roundedDetail) {
+                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val ratio = result.image.width.toFloat() / result.image.height.coerceAtLeast(1)
+                    val photoWidth = minOf(maxWidth, maxHeight * ratio)
+                    val photoHeight = photoWidth / ratio
+                    val photoShape = RoundedCornerShape(24.dp)
+                    Image(
+                        result.image,
+                        strings.getString(R.string.native_progress_photo_title),
+                        Modifier.size(photoWidth, photoHeight).clip(photoShape)
+                            .trainPilotBorder(1.dp, colors.line, photoShape)
+                            .testTag("progress_photo_image_$id"),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            } else Image(result.image,
                 strings.getString(R.string.native_progress_photo_title),
-                Modifier.fillMaxSize().testTag("progress_photo_image_$id"), contentScale = ContentScale.Fit)
+                Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).testTag("progress_photo_image_$id"), contentScale = ContentScale.Fit)
         }
     }
 }
@@ -349,18 +369,32 @@ internal fun NativeProgressPhotoGallery(
     val selected = state.progressPhotos.firstOrNull { it.galleryKey == state.selectedPhotoKey }
     if (selected != null) {
         Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            Column(Modifier.fillMaxSize().background(colors.bg).systemBarsPadding().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val palette = LocalTrainPilotPalette.current
+            val frameShape = RoundedCornerShape(28.dp)
+            Column(
+                Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp)
+                    .clip(frameShape).trainPilotScreenBackdrop(palette)
+                    .trainPilotBorder(1.dp, colors.line, frameShape).padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.getString(R.string.native_progress_photo_title),
-                        color = colors.text, modifier = Modifier.weight(1f))
+                        color = colors.text, style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     IconButton(onClick = close, modifier = Modifier.size(48.dp)
+                        .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(24.dp))
                         .testTag("progress_photo_close")) {
                         Icon(Icons.Default.Close,
                             contentDescription = strings.getString(R.string.native_progress_photo_close),
                             tint = colors.text)
                     }
                 }
+                Column(
+                    Modifier.fillMaxWidth().background(colors.card2.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(18.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                 if (selected.kind == "weight") {
                     val heading = when (state.language) {
                         "hu" -> "Testsúlynapló"
@@ -380,9 +414,10 @@ internal fun NativeProgressPhotoGallery(
                 }
                 Text(date.format(Instant.ofEpochMilli(selected.workoutStartedEpochMs)),
                     color = colors.muted)
+                }
                 PrivateProgressPhoto(selected.id, 1600, state.language,
-                    Modifier.fillMaxWidth().weight(1f).testTag("progress_photo_detail"))
-                Spacer(Modifier.height(8.dp))
+                    Modifier.fillMaxWidth().weight(1f).testTag("progress_photo_detail"), roundedDetail = true)
+                Spacer(Modifier.height(4.dp))
             }
         }
     }
