@@ -9,7 +9,6 @@ import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -147,105 +146,87 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
     }
     val lang = state.language
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
-        LazyColumn(Modifier.then(sheetAwareFillMaxSize()).trainPilotScreenBackdrop(palette).testTag("private_photos_screen"),
-            contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { SubScreenTopBar(strings.privatePhotosTitle, back, settings) }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("${photos.size} • ${strings.privatePhotosTitle}", color = palette.textSecondary,
-                        modifier = Modifier.testTag("private_photos_count"))
-                }
-            }
+        Column(Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("private_photos_screen")
+            .padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SubScreenTopBar(strings.privatePhotosTitle, back, settings)
+            NativeProgressPhotoGallery(all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
+                model::openPhoto, model::closePhoto, vertical = true, modifier = Modifier.weight(1f))
 
             if (state.privatePhotoWorkoutId == null) {
-                item {
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.glassTile(palette.surfaceCard),
-                        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                            .testTag("other_photo_attach_card")
-                    ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .testTag("other_photo_attach_card")
+                ) {
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            trL(lang, "Fotó hozzáadása", "Add photo", "Foto hinzufügen", "Adaugă o fotografie"),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+                        if (photoError) {
                             Text(
-                                trL(lang, "Egyéb fotó hozzáadása", "Add an other photo", "Sonstiges Foto hinzufügen", "Adaugă o fotografie"),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                                trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
+                                    "Could not add photo. Please try again.",
+                                    "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+                                    "Fotografia nu a putut fi adăugată. Încearcă din nou."),
+                                color = palette.danger,
+                                modifier = Modifier.testTag("other_photo_error")
                             )
-                            Text(
-                                trL(lang, "Nem edzéshez vagy méréshez kötött fotó • Drive-szinkronnal mentődik",
-                                    "Unattached photo • included when Drive sync runs",
-                                    "Nicht zugeordnetes Foto • wird mit Drive synchronisiert",
-                                    "Fotografie neasociată • inclusă în sincronizarea Drive"),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                            if (photoError) {
-                                Text(
-                                    trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
-                                        "Could not add photo. Please try again.",
-                                        "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
-                                        "Fotografia nu a putut fi adăugată. Încearcă din nou."),
-                                    color = palette.danger,
-                                    modifier = Modifier.testTag("other_photo_error")
-                                )
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.repforge.app.ui.theme.TrainPilotOutlinedButton(
+                                onClick = {
+                                    try {
+                                        pendingLoosePhoto = NativeLoosePhotos.prepare(context)
+                                        photoError = false
+                                        cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
+                                    } catch (_: Exception) {
+                                        pendingLoosePhoto = null
+                                        photoError = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (palette.isLiquidGlass)
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
+                                    contentColor = palette.textPrimary
+                                ),
+                                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                    .testTag("other_camera_button")
+                            ) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"),
+                                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                             }
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
-                                    onClick = {
-                                        try {
-                                            pendingLoosePhoto = NativeLoosePhotos.prepare(context)
-                                            photoError = false
-                                            cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
-                                        } catch (_: Exception) {
-                                            pendingLoosePhoto = null
-                                            photoError = true
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = if (palette.isLiquidGlass)
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
-                                        contentColor = palette.textPrimary
-                                    ),
-                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                                        .testTag("other_camera_button")
-                                ) {
-                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"),
-                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
-                                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
-                                    onClick = {
-                                        try {
-                                            pendingLoosePhoto = NativeLoosePhotos.prepare(context)
-                                            photoError = false
-                                            galleryLauncher.launch(photoRepo.createPickImageIntent())
-                                        } catch (_: Exception) {
-                                            pendingLoosePhoto = null
-                                            photoError = true
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = if (palette.isLiquidGlass)
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
-                                        contentColor = palette.textPrimary
-                                    ),
-                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                                        .testTag("other_gallery_button")
-                                ) {
-                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(trL(lang, "Galéria", "Gallery", "Galerie", "Galerie"),
-                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
+                            com.repforge.app.ui.theme.TrainPilotOutlinedButton(
+                                onClick = {
+                                    try {
+                                        pendingLoosePhoto = NativeLoosePhotos.prepare(context)
+                                        photoError = false
+                                        galleryLauncher.launch(photoRepo.createPickImageIntent())
+                                    } catch (_: Exception) {
+                                        pendingLoosePhoto = null
+                                        photoError = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (palette.isLiquidGlass)
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
+                                    contentColor = palette.textPrimary
+                                ),
+                                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                    .testTag("other_gallery_button")
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(trL(lang, "Galéria", "Gallery", "Galerie", "Galerie"),
+                                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -254,135 +235,130 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
 
             // If viewing photos for a specific workout, provide photo attachment controls
             if (state.privatePhotoWorkoutId != null) {
-                item {
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.glassTile(palette.surfaceCard),
-                        modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
-                            .fillMaxWidth()
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                            .testTag("journal_photo_attach_card")
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
+                        .fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .testTag("journal_photo_attach_card")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        Text(
+                            text = trL(lang, "Fotó hozzáadása az edzéshez", "Add photo to workout", "Foto zum Training hinzufügen", "Adaugă fotografie la antrenament"),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+
+                        if (photoError) {
+                            Text(trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
+                                "Could not add photo. Please try again.",
+                                "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+                                "Fotografia nu a putut fi adăugată. Încearcă din nou."),
+                                color = palette.danger, modifier = Modifier.testTag("journal_photo_error"))
+                        }
+
+                        // Category selection chips: Edzés előtt / Edzés után / Egyéb
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = trL(lang, "Fotó hozzáadása az edzéshez", "Add photo to workout", "Foto zum Training hinzufügen", "Adaugă fotografie la antrenament"),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                            val categories: List<Pair<String, String>> = listOf(
+                                Pair("before", trL(lang, "Edzés előtt", "Before", "Vorher", "Înainte")),
+                                Pair("after", trL(lang, "Edzés után", "After", "Nachher", "După")),
+                                Pair("other", trL(lang, "Egyéb", "Other", "Sonstiges", "Altele"))
                             )
-
-                            if (photoError) {
-                                Text(trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
-                                    "Could not add photo. Please try again.",
-                                    "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
-                                    "Fotografia nu a putut fi adăugată. Încearcă din nou."),
-                                    color = palette.danger, modifier = Modifier.testTag("journal_photo_error"))
-                            }
-
-                            // Category selection chips: Edzés előtt / Edzés után / Egyéb
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                val categories: List<Pair<String, String>> = listOf(
-                                    Pair("before", trL(lang, "Edzés előtt", "Before", "Vorher", "Înainte")),
-                                    Pair("after", trL(lang, "Edzés után", "After", "Nachher", "După")),
-                                    Pair("other", trL(lang, "Egyéb", "Other", "Sonstiges", "Altele"))
-                                )
-                                categories.forEach { (catKey, catLabel) ->
-                                    val isSelected = selectedCategory == catKey
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSelected) palette.primary else palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { selectedCategory = catKey }
-                                            .testTag("photo_cat_chip_$catKey")
+                            categories.forEach { (catKey, catLabel) ->
+                                val isSelected = selectedCategory == catKey
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isSelected) palette.primary else palette.surfaceElevated,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { selectedCategory = catKey }
+                                        .testTag("photo_cat_chip_$catKey")
+                                ) {
+                                    Box(
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Box(
-                                            modifier = Modifier.padding(vertical = 8.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = catLabel,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) palette.onPrimary else palette.textPrimary
-                                            )
-                                        }
+                                        Text(
+                                            text = catLabel,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) palette.onPrimary else palette.textPrimary
+                                        )
                                     }
                                 }
                             }
+                        }
 
-                            // Camera and Gallery buttons
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Camera and Gallery buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    try {
+                                        val workoutId = state.privatePhotoWorkoutId ?: return@Button
+                                        pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
+                                        photoError = false
+                                        cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
+                                    } catch (_: Exception) {
+                                        pendingPhoto = null
+                                        photoError = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.surfaceElevated,
+                                    contentColor = palette.textPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .testTag("journal_camera_button")
                             ) {
-                                Button(
-                                    onClick = {
-                                        try {
-                                            val workoutId = state.privatePhotoWorkoutId ?: return@Button
-                                            pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
-                                            photoError = false
-                                            cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
-                                        } catch (_: Exception) {
-                                            pendingPhoto = null
-                                            photoError = true
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = palette.surfaceElevated,
-                                        contentColor = palette.textPrimary
-                                    ),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(42.dp)
-                                        .testTag("journal_camera_button")
-                                ) {
-                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                            }
 
-                                Button(
-                                    onClick = {
-                                        try {
-                                            val workoutId = state.privatePhotoWorkoutId ?: return@Button
-                                            pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
-                                            photoError = false
-                                            galleryLauncher.launch(photoRepo.createPickImageIntent())
-                                        } catch (_: Exception) {
-                                            pendingPhoto = null
-                                            photoError = true
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = palette.surfaceElevated,
-                                        contentColor = palette.textPrimary
-                                    ),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(42.dp)
-                                        .testTag("journal_gallery_button")
-                                ) {
-                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(trL(lang, "Galéria", "Gallery", "Galerie", "Galerie"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                }
+                            Button(
+                                onClick = {
+                                    try {
+                                        val workoutId = state.privatePhotoWorkoutId ?: return@Button
+                                        pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
+                                        photoError = false
+                                        galleryLauncher.launch(photoRepo.createPickImageIntent())
+                                    } catch (_: Exception) {
+                                        pendingPhoto = null
+                                        photoError = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.surfaceElevated,
+                                    contentColor = palette.textPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .testTag("journal_gallery_button")
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(trL(lang, "Galéria", "Gallery", "Galerie", "Galerie"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
                 }
             }
-
-            item { NativeProgressPhotoGallery(all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
-                model::openPhoto, model::closePhoto, vertical = true) }
         }
     }
 }

@@ -236,7 +236,8 @@ internal fun NativeProgressPhotoGallery(
     state: ProgressUiState,
     open: (String) -> Unit,
     close: () -> Unit,
-    vertical: Boolean = false
+    vertical: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     val colors = LocalTrainPilotColors.current
     val shape = RoundedCornerShape(18.dp)
@@ -248,7 +249,7 @@ internal fun NativeProgressPhotoGallery(
             .withZone(ZoneId.systemDefault())
     }
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .then(if (vertical) Modifier.trainPilotListPanel() else Modifier.trainPilotBorder(1.dp, colors.line, shape))
             .testTag("progress_photo_gallery"),
@@ -268,7 +269,7 @@ internal fun NativeProgressPhotoGallery(
             } else {
                 if (vertical) {
                     LazyColumn(
-                        modifier = Modifier.heightIn(max = 600.dp).testTag("progress_photo_choices")
+                        modifier = Modifier.weight(1f).testTag("progress_photo_choices")
                     ) {
                         val sortedPhotos = state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }
                         items(sortedPhotos, key = { it.galleryKey }) { photo ->

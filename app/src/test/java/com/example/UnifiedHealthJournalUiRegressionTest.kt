@@ -3,6 +3,7 @@ package com.example
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -86,7 +87,7 @@ class UnifiedHealthJournalUiRegressionTest {
     }
     private fun journal(samsungSupplement: Boolean = false) {
         compose.setContent { TrainPilotTheme {
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxSize()) {
                 StudioHealthMetricsBrowser("en", "fixture", samsungSupplement = samsungSupplement)
             }
         } }
@@ -163,14 +164,14 @@ class UnifiedHealthJournalUiRegressionTest {
         var busy by mutableStateOf(false)
         var error by mutableStateOf<String?>(null)
         compose.setContent { TrainPilotTheme {
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxSize()) {
                 StudioHealthMetricsBrowser("en", revision.toString(),
                     onRefresh = { requests++; busy = true }, refreshBusy = busy, refreshError = error)
             }
         } }
         val summary = "journal_summary_${day}_steps"
         awaitTag(summary, useUnmergedTree = true)
-        compose.onNodeWithTag("journal_reload").performScrollTo()
+        compose.onNodeWithTag("journal_reload").assertIsDisplayed()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
@@ -194,7 +195,7 @@ class UnifiedHealthJournalUiRegressionTest {
         }
         compose.onNodeWithTag(summary, useUnmergedTree = true).assertTextEquals("7")
         compose.mainClock.autoAdvance = true
-        compose.onNodeWithTag("journal_reload").performScrollTo()
+        compose.onNodeWithTag("journal_reload").assertIsDisplayed()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("journal_reload").performClick()
         compose.mainClock.advanceTimeByFrame()
@@ -212,11 +213,25 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.mainClock.autoAdvance = true
     }
 
+    @Test fun scrollingLoadsTheNextWeekWithoutMovingTheDateFilter() {
+        val older = day.minusDays(8)
+        store.healthDay(older.toString(), JSONObject().put("steps", 42), store.generation())
+        journal()
+        awaitTag("journal_day_$day")
+        val filter = compose.onNodeWithTag("journal_period_button")
+        val top = filter.getUnclippedBoundsInRoot().top
+        compose.onNodeWithTag("health_journal_sheet_scroll").performScrollToIndex(6)
+        awaitTag("journal_day_$older")
+        assertEquals(top, filter.getUnclippedBoundsInRoot().top)
+        compose.onNodeWithTag("journal_older").assertDoesNotExist()
+        compose.onNodeWithTag("journal_newer").assertDoesNotExist()
+    }
+
     @Test fun periodSheetKeepsRangeOnCloseAndTwoTapsInAnyOrderGiveAValidPeriod() {
         journal()
         awaitTag("journal_day_$day")
         // 2772: one period button opens the shared period sheet (same as the Progress log).
-        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_period_button").performClick()
         compose.onNodeWithTag("journal_calendar_sheet").assertExists()
         compose.onNodeWithTag("journal_jump_today_button").assertExists()
         compose.onNodeWithTag("journal_clear_filter_button").assertExists()
@@ -225,14 +240,14 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("journal_calendar_sheet").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").assertExists()
         // Reverse order (later day first) still yields from <= to; today stays inside the period.
-        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_period_button").performClick()
         compose.onNodeWithTag("journal_calendar_day_${day.dayOfMonth}").performClick()
         compose.onNodeWithTag("journal_calendar_day_1").performClick()
         compose.onNodeWithTag("journal_calendar_done").performClick()
         awaitTag("journal_day_$day")
         if (day.dayOfMonth > 1) compose.onNodeWithTag("journal_day_${day.minusDays(1)}").assertExists()
         // Today = only today; Clear = back to the last 30 days.
-        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_period_button").performClick()
         compose.onNodeWithTag("journal_jump_today_button").performClick()
         compose.onNodeWithTag("journal_calendar_done").performClick()
         awaitTag("journal_day_$day")

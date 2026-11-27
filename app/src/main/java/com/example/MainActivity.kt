@@ -1268,7 +1268,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         // pops further and lands on Home.
                         onDismiss = { viewModel.dismissSheetRoute(sheetRoute, sheetDepth) },
                         testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}",
-                        fillHeight = sheetRoute == SubScreen.LOG_WORKOUT_DETAIL
+                        fillHeight = sheetRoute == SubScreen.LOG_WORKOUT_DETAIL ||
+                            sheetRoute == SubScreen.EXERCISE_LIBRARY || sheetRoute == SubScreen.PRIVATE_PHOTOS
                     ) { renderRoute(uiState) } // retained browsing route content
                 }
             }

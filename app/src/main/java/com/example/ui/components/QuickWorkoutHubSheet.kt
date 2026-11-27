@@ -59,7 +59,7 @@ fun QuickWorkoutHubSheet(
     timedContent: @Composable () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
-    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet") {
+    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet", fillHeight = tab != 2) {
         Column(Modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(qw(language, "Gyors edzés", "Quick workout", "Schnelltraining", "Antrenament rapid"),

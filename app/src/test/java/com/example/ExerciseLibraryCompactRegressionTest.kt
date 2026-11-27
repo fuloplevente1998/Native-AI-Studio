@@ -253,10 +253,10 @@ class ExerciseLibraryCompactRegressionTest {
                 assertEquals("An already removed item is a no-op", after, model.uiState.value)
             }
             val countLabel = when (language) {
-                AppLanguage.HU -> "Edzésre összeállítva (2 gyakorlat)"
-                AppLanguage.EN -> "Queued for workout (2 exercises)"
-                AppLanguage.DE -> "Für Training zusammengestellt (2 Übungen)"
-                AppLanguage.RO -> "Pregătit pentru antrenament (2 exerciții)"
+                AppLanguage.HU -> "2 gyakorlat"
+                AppLanguage.EN -> "2 exercises"
+                AppLanguage.DE -> "2 Übungen"
+                AppLanguage.RO -> "2 exerciții"
             }
             compose.onNodeWithText(countLabel).assertExists()
             button(ids[1]).assertContentDescriptionEquals(when (language) {
