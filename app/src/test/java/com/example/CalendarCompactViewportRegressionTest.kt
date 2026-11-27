@@ -12,8 +12,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
+import com.example.model.CalendarDayEvent
+import com.example.model.CalendarEventStatus
 import com.example.ui.screens.CalendarPlannerScreen
 import com.example.ui.theme.TrainPilotTheme
+import com.example.ui.theme.TrainPilotPalette
+import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.viewmodel.TrainPilotUiState
 import org.junit.Assert.*
 import org.junit.Rule
@@ -24,6 +28,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import java.time.YearMonth
+import java.time.LocalDate
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w400dp-h900dp-mdpi")
@@ -37,6 +42,7 @@ class CalendarCompactViewportRegressionTest {
         planningTime = "18:00", planningDurationMin = 60, planningWeeksCount = 4,
         calendarEvents = emptyList(), calendarUndoStack = listOf(emptyList())
     ))
+    private val starts = mutableListOf<String>()
     private val applies = mutableListOf<String>()
     private var activations = 0
     private var plans = 0
@@ -45,16 +51,18 @@ class CalendarCompactViewportRegressionTest {
     private val updates = mutableListOf<List<Any>>()
     private val months = mutableListOf<String>()
 
-    private fun render(height: Int = 720, fontScale: Float = 1f) {
+    private fun render(height: Int = 720, fontScale: Float = 1f,
+        palette: TrainPilotPalette = TrainPilotPalettes.allPalettes.first()) {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                TrainPilotTheme {
+                TrainPilotTheme(palette) {
                     Box(Modifier.size(400.dp, height.dp).testTag("calendar_test_viewport")) {
                         CalendarPlannerScreen(state,
                             onBack = {}, onOpenSettings = {},
                             onSelectDay = { state = state.copy(selectedCalendarDay = it) },
                             onOpenReplanModal = { state = state.copy(showReplanModal = it) },
+                            onStartPlannedWorkout = { starts += it },
                             onApplyReplan = { _, _, id -> applies += id }, onOpenWorkoutDetail = {},
                             onActivateProgram = { activations++ },
                             onUpdatePlanningParams = { cadence, firstDay, startDate, time, duration, weeks ->
@@ -132,6 +140,40 @@ class CalendarCompactViewportRegressionTest {
         compose.onNodeWithTag("calendar_replan_apply").performScrollTo().performClick()
         assertEquals(listOf("Other"), applies)
         assertEquals(0, activations)
+    }
+
+    @Test fun dateSheetStartsOnlyTheSelectedUpcomingPlan() {
+        val next = LocalDate.now().plusDays(1)
+        val month = YearMonth.from(next)
+        val missedDay = next.minusDays(2)
+        fun event(id: String, date: LocalDate, status: CalendarEventStatus) =
+            CalendarDayEvent(id, date.dayOfMonth, "10:00", id, 2, 60, status,
+                dateIso = date.toString(), programId = "program", dayId = "day_b")
+        state = state.copy(calendarYearMonth = month.toString(), calendarEvents = listOf(
+            event("upcoming", next, CalendarEventStatus.PLANNED),
+            event("missed", next, CalendarEventStatus.MISSED),
+            event("completed", next, CalendarEventStatus.COMPLETED),
+            event("expired", missedDay, CalendarEventStatus.PLANNED)
+        ))
+        render()
+        compose.onNodeWithTag("calendar_day_${next.dayOfMonth}").performClick()
+        compose.onNodeWithTag("calendar_start_planned_missed").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_start_planned_completed").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_start_planned_upcoming").performClick()
+        compose.onNodeWithTag("calendar_day_dialog").assertDoesNotExist()
+        assertEquals(listOf("upcoming"), starts)
+        if (YearMonth.from(missedDay) != month) compose.onNodeWithTag("calendar_prev_month").performClick()
+        compose.onNodeWithTag("calendar_day_${missedDay.dayOfMonth}").performClick()
+        compose.onNodeWithTag("calendar_start_planned_expired").assertDoesNotExist()
+    }
+
+    @Test fun replanOpensAndClosesInTheGoldLiquidTheme() {
+        render(palette = TrainPilotPalettes.selectablePalettes.single { it.id == 40 })
+        compose.onNodeWithTag("calendar_replan_action").performClick()
+        compose.onNodeWithTag("calendar_replan_dialog").assertIsDisplayed()
+        val close = compose.onNodeWithTag("calendar_replan_close")
+        close.assertWidthIsEqualTo(48.dp).performClick()
+        compose.onNodeWithTag("calendar_replan_dialog").assertDoesNotExist()
     }
 
     @Test fun allSixFieldsForwardUpdatedParametersWithoutChangingOtherValues() {

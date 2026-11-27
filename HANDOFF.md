@@ -62,3 +62,5 @@
 - A naptári és személyes tervező, valamint a naplózott edzés visszajelzési menüje lekerekített, beljebb húzott kijelölést használ.
 - A „További programok” cím és a lista közös keretet kapott, a cím alá erősebb elválasztó került. Az alsó műveletsáv külön felület.
 - A 40-es Liquid Glass téma neve Arany. A meglévő témakulcs a mentett választások miatt megmaradt. A háttér fényeinek színárnyalata a TrainPilot sárgájából származik.
+- A naptári Újratervezés a Liquid témák saját üveges ablakanyagát használja. A Bezárás kerete 36 dp, az érintési felület 48 dp.
+- A dátumablakból indítható a még le nem járt tervezett edzés. A gomb az adott alkalom azonosítóját adja át; a normál edzésmotor ellenőrzi a mentett alkalmat és a naplózást ahhoz kapcsolja.
