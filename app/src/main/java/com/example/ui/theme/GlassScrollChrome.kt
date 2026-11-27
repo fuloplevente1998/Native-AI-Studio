@@ -55,7 +55,7 @@ internal fun GlassScrollChrome(
         rootInset = rootInset,
         capture = Modifier.layerBackdrop(layer),
         top = { CompositionLocalProvider(LocalKyantHeader provides chrome, LocalPinnedGlassChrome provides chrome) { top?.invoke() } },
-        bottom = { CompositionLocalProvider(LocalKyantHeader provides chrome) { bottom?.invoke() } },
+        bottom = { CompositionLocalProvider(LocalKyantHeader provides chrome, LocalPinnedGlassChrome provides chrome) { bottom?.invoke() } },
         content = content
     )
 }
