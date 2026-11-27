@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotListDivider
+import com.example.ui.components.trainPilotListPanel
+
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.overlayRoleFill
 import com.example.ui.theme.GlassMaterialRole
@@ -9,7 +12,6 @@ import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
-import androidx.compose.runtime.key
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -33,7 +35,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -227,93 +228,90 @@ fun LogWorkoutDetailScreen(
             if (workout.originDevice == "external" && details.isEmpty()) item {
                 Text(trL(uiState.language, "Nincs igazolt gyakorlat- vagy sorozatadat.", "No verified exercise or set data.", "Keine bestätigten Übungs- oder Satzdaten.", "Nu există date confirmate despre exerciții sau serii."), color = palette.textSecondary)
             }
-            items(details.size) { index ->
-                val exDetail = details[index]
-                val expanded = uiState.expandedLogExerciseIndex == index
-                val shape = RoundedCornerShape(18.dp)
-                val exerciseName = exDetail.localizedName(uiState.language, uiState.exercises)
-                val expansionState = if (expanded) {
-                    trL(uiState.language, "Kinyitva", "Expanded", "Ausgeklappt", "Extins")
-                } else {
-                    trL(uiState.language, "Összecsukva", "Collapsed", "Eingeklappt", "Restrâns")
-                }
-                Surface(
-                    shape = shape,
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.trainPilotGlassRim(palette, shape)
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
-                        .trainPilotAnimatedExpansion()
-                        .trainPilotClickable(shape) { onToggleExpandedExercise(index) }
-                        .semantics { stateDescription = expansionState }
-                        .testTag("log_exercise_card_$index")
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = exerciseName,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = exDetail.localizedSummaryPrescription(uiState.language),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = palette.textSecondary
-                                )
-                            }
-                            SmallExerciseVideoButton(
-                                exerciseName = exerciseName,
-                                exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(exDetail.nameHu, ignoreCase = true) }?.id
-                            )
-                            Icon(
-                                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = null,
-                                tint = palette.textSecondary
-                            )
+            if (details.isNotEmpty()) item(key = "log_exercises") {
+                Column(Modifier.fillMaxWidth().trainPilotListPanel().padding(horizontal = 8.dp)) {
+                    details.forEachIndexed { index, exDetail ->
+                        if (index > 0) TrainPilotListDivider()
+                        val expanded = uiState.expandedLogExerciseIndex == index
+                        val shape = RoundedCornerShape(18.dp)
+                        val exerciseName = exDetail.localizedName(uiState.language, uiState.exercises)
+                        val expansionState = if (expanded) {
+                            trL(uiState.language, "Kinyitva", "Expanded", "Ausgeklappt", "Extins")
+                        } else {
+                            trL(uiState.language, "Összecsukva", "Collapsed", "Eingeklappt", "Restrâns")
                         }
-
-                        if (expanded) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider(color = palette.cardBorder)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            exDetail.sets.forEach { setRow ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                        Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .trainPilotClickable(shape, stretchOnDrag = true) { onToggleExpandedExercise(index) }
+                                    .semantics { stateDescription = expansionState }
+                                    .testTag("log_exercise_card_$index")
+                                    .padding(horizontal = 4.dp, vertical = 3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = if (workout.isOutdoorRun || exDetail.measurementType == "distance") {
-                                            trL(uiState.language, "${setRow.setNumber}. mérés", "Measurement #${setRow.setNumber}", "${setRow.setNumber}. Messung", "Măsurătoarea #${setRow.setNumber}")
-                                        } else {
-                                            trL(uiState.language, "${setRow.setNumber}. sorozat", "Set #${setRow.setNumber}", "${setRow.setNumber}. Satz", "Seria #${setRow.setNumber}")
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Text(
-                                        text = com.example.model.StudioWorkoutJournalDisplay.setLabel(setRow, exDetail.measurementType, exDetail.repUnit, workout.isOutdoorRun, uiState.language),
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text = exerciseName,
+                                        style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
-                                    if (setRow.completed) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = trL(uiState.language, "Teljesített mérés", "Completed measurement", "Abgeschlossene Messung", "Măsurătoare finalizată"),
-                                            tint = palette.success,
-                                            modifier = Modifier.size(18.dp)
+                                    Text(
+                                        text = exDetail.localizedSummaryPrescription(uiState.language),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = palette.textSecondary
+                                    )
+                                }
+                                SmallExerciseVideoButton(
+                                    exerciseName = exerciseName,
+                                    exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(exDetail.nameHu, ignoreCase = true) }?.id
+                                )
+                                Icon(
+                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = palette.textSecondary
+                                )
+                            }
+
+                            if (expanded) Column(Modifier.padding(horizontal = 4.dp, vertical = 3.dp)) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                HorizontalDivider(color = palette.cardBorder)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                exDetail.sets.forEach { setRow ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (workout.isOutdoorRun || exDetail.measurementType == "distance") {
+                                                trL(uiState.language, "${setRow.setNumber}. mérés", "Measurement #${setRow.setNumber}", "${setRow.setNumber}. Messung", "Măsurătoarea #${setRow.setNumber}")
+                                            } else {
+                                                trL(uiState.language, "${setRow.setNumber}. sorozat", "Set #${setRow.setNumber}", "${setRow.setNumber}. Satz", "Seria #${setRow.setNumber}")
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = palette.textSecondary
                                         )
-                                    } else {
-                                        Text(trL(uiState.language, "Nem teljesített", "Not completed", "Nicht abgeschlossen", "Nefinalizat"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        Text(
+                                            text = com.example.model.StudioWorkoutJournalDisplay.setLabel(setRow, exDetail.measurementType, exDetail.repUnit, workout.isOutdoorRun, uiState.language),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.textPrimary
+                                        )
+                                        if (setRow.completed) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = trL(uiState.language, "Teljesített mérés", "Completed measurement", "Abgeschlossene Messung", "Măsurătoare finalizată"),
+                                                tint = palette.success,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        } else {
+                                            Text(trL(uiState.language, "Nem teljesített", "Not completed", "Nicht abgeschlossen", "Nefinalizat"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        }
                                     }
                                 }
                             }

@@ -16,6 +16,7 @@ import com.example.ui.theme.GlassMotion
 import com.example.ui.theme.GlassControlDrag
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.LocalGlassPowerSave
 import com.example.ui.theme.LocalKyantScene
 import com.example.ui.theme.forThisWindow
 import com.example.ui.theme.glassEffectsActive
@@ -137,14 +138,17 @@ internal fun Modifier.glassPressMotion(
     source: MutableInteractionSource,
     enabled: Boolean,
     shape: Shape? = null,
-    stretchOnDrag: Boolean = false
+    stretchOnDrag: Boolean = false,
+    includeTouchBubble: Boolean = true
 ): Modifier {
     val palette = LocalTrainPilotPalette.current
-    if (!palette.glassEffectsActive(LocalGlassOpticsEnabled.current)) return this
+    val optics = palette.glassEffectsActive(LocalGlassOpticsEnabled.current)
+    val canStretch = palette.isLiquidGlass && stretchOnDrag && enabled && !LocalGlassPowerSave.current
+    if (!optics && !canStretch) return this
     val kyant = KyantGlass.active(palette) &&
         (LocalGlassOverlay.current || LocalKyantScene.current.forThisWindow() != null)
     val motion = rememberGlassMotionEnabled()
-    val drag = if (stretchOnDrag && motion && enabled) remember { GlassControlDrag() } else null
+    val drag = if (canStretch && motion) remember { GlassControlDrag() } else null
     val held by source.collectIsPressedAsState()
     val press = animateFloatAsState(
         targetValue = if (enabled && held) 1f else 0f,
@@ -156,9 +160,10 @@ internal fun Modifier.glassPressMotion(
         val progress = press.value
         val factor = if (motion) GlassMotion.pressScale(progress) else 1f
         val travel = drag?.let { glassDragTransform(it.offset, 5.dp.toPx(), progress.coerceIn(0f, 1f)) } ?: Offset.Zero
+        val shortEdge = minOf(size.width, size.height)
         withTransform({
             translate(travel.x, travel.y)
-            scale(factor + glassDragStretch(travel.x, size.width), factor + glassDragStretch(travel.y, size.height))
+            scale(factor + glassDragStretch(travel.x, shortEdge), factor + glassDragStretch(travel.y, shortEdge))
         }) {
             this@drawWithContent.drawContent()
             val glow = progress.coerceIn(0f, 1f) * GlassMotion.PRESS_HIGHLIGHT
@@ -171,7 +176,7 @@ internal fun Modifier.glassPressMotion(
                 }
             }
         }
-    }.glassTouchBubble(source, enabled, shape)
+    }.then(if (includeTouchBubble) Modifier.glassTouchBubble(source, enabled, shape) else Modifier)
 }
 
 /** Paint on the visual child while the accessible parent retains the larger hit area. */

@@ -55,7 +55,7 @@ import com.example.ui.components.ProgramTypeEmblemIcon
 import com.example.ui.components.programEquipmentSummary
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.home.HomeWorkoutTarget
-import com.repforge.app.ui.theme.TrainPilotButton
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import java.time.Instant
@@ -207,7 +207,7 @@ internal fun WorkoutTabDayCards(
                             }
                             // Buttons line up at the bottom of equal-height cards.
                             Spacer(Modifier.weight(1f))
-                            TrainPilotButton(
+                            TrainPilotGlassPrimaryButton(
                                 onClick = { onStartWorkoutDay(index) },
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),

@@ -156,6 +156,15 @@ class Collector2788RegressionTest {
             compose.onNodeWithTag("journal_day_line_$day").assertDoesNotExist()
             compose.onNodeWithTag("journal_records_toggle_$day").assertDoesNotExist()
             compose.onNodeWithTag("journal_provider_${day}_samsung_health").assertDoesNotExist()
+            val dayRow = compose.onNodeWithTag(dayTag)
+            dayRow.performClick()
+            compose.onNodeWithTag("journal_day_line_$day", useUnmergedTree = true).assertExists()
+            val closedTop = dayRow.getUnclippedBoundsInRoot().top
+            val sheetTop = journalSheet.getUnclippedBoundsInRoot().top
+            dayRow.performClick()
+            compose.onNodeWithTag("journal_day_line_$day", useUnmergedTree = true).assertDoesNotExist()
+            assertEquals(closedTop, dayRow.getUnclippedBoundsInRoot().top)
+            assertEquals(sheetTop, journalSheet.getUnclippedBoundsInRoot().top)
             compose.onNodeWithTag("health_journal_close").performClick()
             journalSheet.assertDoesNotExist()
         }

@@ -89,11 +89,11 @@ fun TrainPilotFilterChip(
         },
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, if (selected) selection.border else p.cardBorder)),
         modifier = modifier.heightIn(min = if (p.isLiquidGlass) 48.dp else 40.dp)
+            .semantics { this.selected = selected }
+            .trainPilotClickable(shape, enabled = enabled, stretchOnDrag = true) { onClick() }
             .then(if (glassChip) Modifier.liquidDropMaterial(p, shape, role,
                 accent = if (selected) p.primary else null, live = selected && !overlay)
                 else Modifier)
-            .semantics { this.selected = selected }
-            .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {
         CompositionLocalProvider(
             LocalContentColor provides content,

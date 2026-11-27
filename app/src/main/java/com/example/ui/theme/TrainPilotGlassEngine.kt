@@ -175,10 +175,15 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
             GlassMaterialRole.Performance -> .70f
             else -> 1f
         }).coerceAtMost(.6f)
-        val shine = Brush.verticalGradient(
-            0f to Color.White.copy(alpha = strength),
-            .5f to Color.White.copy(alpha = strength * .40f),
-            1f to Color.White.copy(alpha = strength * .27f))
+        val light = Color.White.copy(alpha = strength)
+        val mid = Color.White.copy(alpha = strength * .40f)
+        val dim = Color.White.copy(alpha = strength * .27f)
+        val shine = if (role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection) {
+            Brush.linearGradient(0f to light, .55f to mid, 1f to dim,
+                end = Offset(size.width * .70f, size.height))
+        } else {
+            Brush.verticalGradient(0f to light, .5f to mid, 1f to dim)
+        }
         // Cache the brushes with the outline, not once per draw during a ticking workout.
         val bevel = Brush.verticalGradient(
             0f to Color.Black.copy(alpha = .02f),

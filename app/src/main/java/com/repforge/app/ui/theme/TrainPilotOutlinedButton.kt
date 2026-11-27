@@ -44,7 +44,8 @@ fun TrainPilotOutlinedButton(
     TrainPilotPressFeedback(paint, enabled, interactionSource) { feedbackColors, source ->
         val surface = when {
             glass -> modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Button, pressSource = source)
-            enabled -> modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
+            enabled -> modifier.glassPressMotion(source, enabled, shape, stretchOnDrag = true, includeTouchBubble = false)
+                .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
             else -> modifier
         }
         OutlinedButton(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape, feedbackColors, elevation, effectiveBorder, contentPadding, source, content)

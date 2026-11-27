@@ -8,7 +8,6 @@ import com.example.ui.theme.overlayRoleFill
 import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.LocalGlassOverlay
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -147,16 +146,10 @@ internal fun StudioHealthMetricsBrowser(
             "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = palette.danger)
         snapshot == null -> LinearProgressIndicator(Modifier.fillMaxWidth())
         else -> {
-            val listShape = RoundedCornerShape(20.dp)
-            Column(
-                Modifier.fillMaxWidth()
-                    .background(palette.overlayRoleFill(palette.glassTile(palette.surfaceElevated, elevated = true), GlassMaterialRole.Tile), listShape)
-                    .overlayRoleRim(palette, listShape, GlassMaterialRole.Tile)
-                    .trainPilotBorder(1.dp, palette.cardBorder, listShape)
-            ) {
+            Column(Modifier.fillMaxWidth().trainPilotListPanel().padding(horizontal = 8.dp)) {
                 range.days.forEachIndexed { index, date -> key(date) {
                     if (index > 0) {
-                        HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
+                        TrainPilotListDivider()
                     }
                     val primaryPage = snapshot.getJSONObject(primary)
                     val daySources = remember(snapshot, date) {
@@ -199,7 +192,7 @@ internal fun StudioHealthMetricsBrowser(
                                     .testTag("journal_day_$date")
                                     .padding(horizontal = 12.dp, vertical = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(date.format(dayFormat), fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -225,7 +218,8 @@ internal fun StudioHealthMetricsBrowser(
                                     }
                                 }
                                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
+                                    contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"),
+                                    tint = palette.primary, modifier = Modifier.align(Alignment.CenterVertically))
                             }
                             if (expanded) Column(
                                 Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp),

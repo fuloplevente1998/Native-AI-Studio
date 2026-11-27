@@ -1,6 +1,8 @@
 package com.example.ui.screens
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.liquidDropMaterial
 import com.example.ui.components.WorkoutModeArt
 import com.example.ui.components.QuickWorkoutMode
 import com.example.ui.components.PageLayoutHorizontalRow
@@ -84,9 +86,9 @@ internal fun WorkoutModeTile(
             .fillMaxHeight()
             .heightIn(min = 124.dp)
             .trainPilotSoftGlow(palette.primary, shape, 4.dp)
-            .trainPilotGlassMaterial(palette, shape)
+            .trainPilotClickable(shape, stretchOnDrag = true) { onClick() }
+            .liquidDropMaterial(palette, shape, GlassMaterialRole.Button, live = false)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
-            .trainPilotClickable(shape) { onClick() }
             .testTag(testTag)
     ) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -183,9 +185,9 @@ fun WorkoutTabScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
-                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                                    .trainPilotClickable(RoundedCornerShape(18.dp), stretchOnDrag = true) { onOpenQuickWorkout() }
+                                    .liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Button, live = false)
                                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
                                     .testTag("workout_tab_quick_card")
                             ) {
                                 // 2779: flatter row (48 dp touch target kept) so the whole tab fits without scrolling.
@@ -265,9 +267,9 @@ fun WorkoutTabScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 56.dp)
-                                    .trainPilotGlassMaterial(palette, RoundedCornerShape(18.dp))
+                                    .trainPilotClickable(RoundedCornerShape(18.dp), stretchOnDrag = true) { onOpenExerciseCatalog() }
+                                    .liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Button, live = false)
                                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
                                     .testTag("workout_tab_exercise_catalog")
                             ) {
                                 Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -392,9 +394,9 @@ fun WorkoutTabScreen(
                                     color = palette.glassCardFill(palette.surface),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
+                                        .trainPilotClickable(RoundedCornerShape(16.dp), stretchOnDrag = true) { onOpenProgressionModal() }
+                                        .liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Button, live = false)
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgressionModal() }
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -458,9 +460,9 @@ internal fun ShortcutSquareCard(
         color = palette.glassCardFill(palette.surface),
         modifier = modifier
             .heightIn(min = 48.dp)
-            .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
+            .trainPilotClickable(RoundedCornerShape(16.dp), stretchOnDrag = true) { onClick() }
+            .liquidDropMaterial(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Button, live = false)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-            .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(14.dp),

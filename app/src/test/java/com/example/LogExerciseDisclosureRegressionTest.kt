@@ -28,6 +28,7 @@ import com.example.model.LoggedWorkoutEntry
 import com.example.model.SubScreen
 import com.example.ui.components.LocalOpenExerciseVideo
 import com.example.ui.screens.LogWorkoutDetailScreen
+import com.example.ui.components.TrainPilotRouteSheet
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotViewModel
 import org.junit.Assert.assertEquals
@@ -70,22 +71,29 @@ class LogExerciseDisclosureRegressionTest {
             TrainPilotTheme {
                 CompositionLocalProvider(LocalOpenExerciseVideo provides { name, id -> video = name to id }) {
                     if (state.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL) {
-                        LogWorkoutDetailScreen(
-                            uiState = state.copy(
-                                language = AppLanguage.HU,
-                                loggedWorkouts = listOf(singleExercise, twoExercises),
-                                exercises = listOf(squat)
-                            ),
-                            strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                            onBack = { model.navigateBack() },
-                            onOpenSettings = {},
-                            onSelectDetailTab = model::selectLogDetailTab,
-                            onToggleExpandedExercise = model::toggleExpandedLogExercise,
-                            onOpenPhotos = {},
-                            onOpenRouteMap = {},
-                            onOpenWatchSync = {},
-                            onOpenHealthTab = {}
-                        )
+                        TrainPilotRouteSheet(
+                            routeKey = state.selectedLogWorkoutId,
+                            onDismiss = model::navigateBack,
+                            testTag = "logged_workout_test_sheet",
+                            fillHeight = true
+                        ) {
+                            LogWorkoutDetailScreen(
+                                uiState = state.copy(
+                                    language = AppLanguage.HU,
+                                    loggedWorkouts = listOf(singleExercise, twoExercises),
+                                    exercises = listOf(squat)
+                                ),
+                                strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                                onBack = { model.navigateBack() },
+                                onOpenSettings = {},
+                                onSelectDetailTab = model::selectLogDetailTab,
+                                onToggleExpandedExercise = model::toggleExpandedLogExercise,
+                                onOpenPhotos = {},
+                                onOpenRouteMap = {},
+                                onOpenWatchSync = {},
+                                onOpenHealthTab = {}
+                            )
+                        }
                     }
                 }
             }
@@ -101,7 +109,7 @@ class LogExerciseDisclosureRegressionTest {
         val firstBounds = firstCard.getUnclippedBoundsInRoot()
         val secondBounds = secondCard.getUnclippedBoundsInRoot()
         assertTrue(firstBounds.bottom - firstBounds.top <= 60.dp)
-        assertEquals(4.dp, secondBounds.top - firstBounds.bottom)
+        assertTrue(secondBounds.top - firstBounds.bottom in 0.dp..2.dp)
         compose.onNodeWithText("1. sorozat", useUnmergedTree = true).assertDoesNotExist()
 
         compose.onNodeWithTag("exercise_video_btn_${squat.nameHu.hashCode()}", useUnmergedTree = true)
@@ -110,7 +118,11 @@ class LogExerciseDisclosureRegressionTest {
         compose.runOnIdle { assertEquals(squat.nameHu to squat.id, video) }
         firstCard.assert(collapsed)
 
+        val sheet = compose.onNodeWithTag("logged_workout_test_sheet")
+        val sheetTop = sheet.getUnclippedBoundsInRoot().top
         firstCard.performClick().assert(expanded)
+        assertEquals(sheetTop, sheet.getUnclippedBoundsInRoot().top)
+        assertEquals(firstBounds.top, firstCard.getUnclippedBoundsInRoot().top)
         compose.onNodeWithContentDescription("Teljesített mérés", useUnmergedTree = true).assertIsDisplayed()
         firstCard.performClick().assert(collapsed)
         firstCard.performClick().assert(expanded)

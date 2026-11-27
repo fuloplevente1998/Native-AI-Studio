@@ -46,7 +46,8 @@ internal fun TrainPilotAlertDialog(
     textContentColor: Color = Color.Unspecified,
     tonalElevation: Dp = 0.dp,
     properties: DialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-    workoutEditor: Boolean = false
+    workoutEditor: Boolean = false,
+    maxHeightFraction: Float = .86f
 ) {
     val p = LocalTrainPilotPalette.current
     val background = containerColor.takeIf { it != Color.Unspecified } ?: p.surfaceCard
@@ -64,7 +65,7 @@ internal fun TrainPilotAlertDialog(
                 Surface(color = fill, shape = shape, tonalElevation = tonalElevation,
                     border = if (workoutEditor) workoutEditorFrame(p) else null,
                     modifier = modifier.widthIn(max = 560.dp).fillMaxWidth(0.96f)
-                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.86f)
+                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * maxHeightFraction)
                         .then(overlay)
                         .then(if (workoutEditor) Modifier.trainPilotSoftGlow(p.primary, shape, 4.dp)
                             else if (glass) Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Overlay)
