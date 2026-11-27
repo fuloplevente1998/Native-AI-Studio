@@ -65,6 +65,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -125,13 +130,25 @@ fun TrainPilotGlobalTopHeaderAndNav(
     val selection = remember(palette) { palette.selectionColors() }
     var showLangMenu by remember { mutableStateOf(false) }
 
+    Box(Modifier.fillMaxWidth()) {
+    if (palette.isLiquidGlass) {
+        // Only the optical background is feathered. The foreground stays sharp and
+        // interactive; the shared dark upper scene is visible at the lower edge.
+        Box(Modifier.matchParentSize()
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(Brush.verticalGradient(0f to Color.Black, .65f to Color.Black,
+                    1f to Color.Transparent), blendMode = BlendMode.DstIn)
+            }
+            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), preserveOriginalMaterial = true)
+            .glassNavigationFade(palette, currentTab, currentSubScreen))
+    }
     Surface(
         color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
-        modifier = Modifier
-            .fillMaxWidth()
-            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), preserveOriginalMaterial = true)
-            .glassNavigationFade(palette, currentTab, currentSubScreen)
-            .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
+        modifier = Modifier.fillMaxWidth()
+            .then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotBorder(
+                width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f)))
     ) {
         Column(
             modifier = Modifier
@@ -338,6 +355,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 }
             } else navRow()
         }
+    }
     }
 }
 
