@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (56/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (70/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -257,3 +257,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/journal/JournalWorkoutHealthSummary.kt` | 119 | 2 | — | — | — | — | — |
 | `com/repforge/app/ui/journal/NativeJournalRepository.kt` | 96 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/journal/NativeJournalText.kt` | 7 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/WorkoutRouteCoordinates.kt` | 66 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/WorkoutRouteMapDialog.kt` | 168 | 3 | 81, 151, 156 | 64 | — | — | — |
+| `com/repforge/app/ui/navigation/NativeMainHeader.kt` | 183 | 3 | — | 54, 74, 80, 86, 159 | — | — | 61 |
+| `com/repforge/app/ui/navigation/NativeMainMenu.kt` | 62 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/navigation/NativePlanningShortcuts.kt` | 38 | 1 | — | — | — | — | 31 |
+| `com/repforge/app/ui/navigation/ProgramGpsStartDialog.kt` | 37 | 1 | — | 30, 34, 35 | — | — | — |
+| `com/repforge/app/ui/onboarding/NativeFirstLaunchGate.kt` | 57 | 2 | — | — | — | — | — |
+| `com/repforge/app/ui/onboarding/NativeOnboardingPermissions.kt` | 233 | 2 | 183, 192, 204, 224, 229 | 208, 215 | — | 25, 185 | — |
+| `com/repforge/app/ui/onboarding/NativeOnboardingPolicy.kt` | 62 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/onboarding/NativeOnboardingScreen.kt` | 115 | 2 | 95 | 86 | — | 15, 66 | — |
+| `com/repforge/app/ui/programs/CustomExerciseDialog.kt` | 199 | 2 | — | 172, 196 | — | 13, 110 | 120, 126, 132 |
+| `com/repforge/app/ui/programs/ExerciseLibraryScreen.kt` | 263 | 1 | 235, 246 | 168, 171, 184, 190, 242 | — | 21, 22, 172, 232 | 220, 225, 226, 237 |
+| `com/repforge/app/ui/programs/ExerciseLibraryViewModel.kt` | 114 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/programs/PersonalProgramPreviewDialog.kt` | 177 | 1 | — | 168, 173 | — | 11, 82 | 86 |
