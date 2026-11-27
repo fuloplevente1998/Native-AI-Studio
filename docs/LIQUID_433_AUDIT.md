@@ -308,7 +308,7 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/workout/NativeGpsPermissionRecovery.kt` | 184 | 1 | 181 | 171, 177 | — | — | — |
 | `com/repforge/app/ui/workout/NativeTrainingModeProposal.kt` | 106 | 0 | — | — | — | — | — |
 
-## Gyökér és Studio állapotkezelés – leltár (13/26)
+## Gyökér és Studio állapotkezelés – teljes fájlleltár (26/26)
 
 | Fájl | Sor | Téma | Navigáció | UI állapot |
 |---|---:|---|---|---|
@@ -325,3 +325,16 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/example/ui/viewmodel/VmFinishWorkout.kt` | 179 | — | 154, 155 | — |
 | `com/example/ui/viewmodel/VmHealthJournal.kt` | 328 | — | — | — |
 | `com/example/ui/viewmodel/VmHealthWeight.kt` | 289 | — | 23, 25, 26, 27, 31 | — |
+| `com/example/ui/viewmodel/VmLog.kt` | 143 | — | 20, 23, 28, 29, 30, 39, 40, 101, 102 | — |
+| `com/example/ui/viewmodel/VmMappers.kt` | 393 | — | — | — |
+| `com/example/ui/viewmodel/VmNavigation.kt` | 174 | — | 20, 23, 25, 26, 28, 31, 37, 46, 58, 60, 62, 63, 70, 77, 78, 86, 88, 89, 92, 126, 127, 143, 146, 148, 154, 155, 157, 158, 162, 165, 166, 168, 169 | — |
+| `com/example/ui/viewmodel/VmProgramEditor.kt` | 238 | — | 14, 125, 126, 229, 230, 231 | — |
+| `com/example/ui/viewmodel/VmPrograms.kt` | 332 | — | 78, 79 | — |
+| `com/example/ui/viewmodel/VmProgress.kt` | 125 | — | — | — |
+| `com/example/ui/viewmodel/VmRestAndIntervals.kt` | 208 | — | 112, 113, 115, 117, 118, 147 | — |
+| `com/example/ui/viewmodel/VmStarterProfile.kt` | 201 | — | — | — |
+| `com/example/ui/viewmodel/VmStudioModes.kt` | 221 | — | — | — |
+| `com/example/ui/viewmodel/VmWatch.kt` | 141 | — | — | — |
+| `com/example/ui/viewmodel/VmWatchMeasurement.kt` | 121 | — | — | — |
+| `com/example/ui/viewmodel/VmWorkoutStart.kt` | 377 | — | 176, 177, 204, 224, 240, 241, 242 | — |
+| `com/repforge/app/MainActivity.kt` | 432 | 42, 59, 67, 116, 117, 119, 129, 130, 131, 168, 169, 170, 171, 173, 174, 190, 212, 321, 328 | — | 11, 116, 130, 195, 206, 218 |
