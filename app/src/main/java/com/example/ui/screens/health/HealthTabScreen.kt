@@ -1,5 +1,8 @@
 package com.example.ui.screens
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotPageBackdrop
 import com.example.ui.theme.LocalGlassTopInset
 import androidx.compose.animation.AnimatedContent
@@ -484,9 +487,10 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.selectionColors().surface,
+                                color = palette.glassControlFill(palette.selectionColors().surface, GlassMaterialRole.Selection),
                                 modifier = Modifier
                                     .size(38.dp)
+                                    .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Selection) else Modifier)
                                     .trainPilotBorder(1.dp, palette.selectionColors().border, RoundedCornerShape(14.dp))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -611,8 +615,9 @@ fun HealthTabScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = palette.selectionColors().surface,
+                                color = palette.glassControlFill(palette.selectionColors().surface, GlassMaterialRole.Selection),
                                 modifier = Modifier.size(40.dp)
+                                    .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Selection) else Modifier)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(

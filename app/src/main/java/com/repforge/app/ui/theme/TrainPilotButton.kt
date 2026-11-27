@@ -119,6 +119,7 @@ fun TrainPilotGlassPrimaryButton(
     contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     preserveSemanticPaint: Boolean = false,
+    liveMaterial: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -131,7 +132,7 @@ fun TrainPilotGlassPrimaryButton(
     val paint = glassPrimaryActionColors(palette, enabled, colors, preserveSemanticPaint)
     TrainPilotPressFeedback(paint, enabled, interactionSource) { feedbackColors, source ->
         val surface = modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Selection,
-            accent = palette.primary, allowMeasurement = true, pressSource = source)
+            accent = palette.primary, live = liveMaterial, allowMeasurement = true, pressSource = source)
         Button(onClick, surface.glassTouchBubble(source, enabled, shape), enabled, shape,
             feedbackColors, null, border, contentPadding, source, content)
     }

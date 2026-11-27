@@ -52,3 +52,8 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 ## L3 native call-site continuation / L6
 - Popup items: library, planner, personal planner, custom exercise, map, health weight, workout strength values, journal set/effort, training mode, GPS. Shared native Material semantics, one local Liquid indication. Standard calls retain Material ripple. Favorite toggle and active icon actions similarly wrapped; special video/close/backup visual children use local indication. No new capture.
 - Removed two definition-only renderer helpers after symbol/negative-test search. Legacy screen reachability is not fully proven; retain those files. L0 full 310-file classification, chart/slider remaining bespoke interaction, and actual render performance remain open.
+
+## L3 targeted device report follow-up
+- ProgressTabScreen: Liquid selection uses the same Selection fill and rounded rim vocabulary as approved ProgramsList; retains 48/42dp and semantics. Scrolling chrome remains guarded; non-underlap Statistics branch uses cheap tile instead of extra material. Standard sizing and selection unchanged.
+- HealthTabScreen Today/Weight icon backgrounds use common translucent selection material and rim; standard branch unchanged. ThemeSelectionColors opaque compatibility fill now uses palette-derived Selection composition and includes lens worst-case in readable foreground bounds for Liquid only.
+- ProgramsList new-program primary button uses cheap material atop the existing pinned glass action bar (no nested live lens). Approved Programs tab selector untouched. Physical comparison pending.

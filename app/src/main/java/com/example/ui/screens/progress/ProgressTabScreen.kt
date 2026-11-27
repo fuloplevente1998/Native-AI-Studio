@@ -1,8 +1,8 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.liquidDropMaterial
 
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.glassTile
 import com.example.ui.theme.glassControlFill
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
@@ -91,6 +91,8 @@ fun ProgressTabScreen(
     val activeSection = if (uiState.progressMainSection == 2) 2 else 0
     val selection = remember(palette) { palette.selectionColors() }
     val exerciseStatistics = activeSection == 2 && uiState.statsSubTab == 0
+    val selectorShape = RoundedCornerShape(if (palette.isLiquidGlass) 24.dp else 14.dp)
+    val tabShape = RoundedCornerShape(if (palette.isLiquidGlass) 20.dp else 10.dp)
 
     val layoutBlocks = remember(uiState.language, strings, statisticsLabel) { listOf(
         PageLayoutBlock("photos", trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto")),
@@ -109,14 +111,18 @@ fun ProgressTabScreen(
         rootInset = LocalGlassTopInset.current,
         top = {
         if (layout.draft == null) Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
+            shape = selectorShape,
+            color = if (palette.isLiquidGlass) {
+                if (exerciseStatistics) palette.glassTile(palette.surface) else Color.Transparent
+            } else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 2.dp)
-                .then(if (exerciseStatistics) Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
-                    else Modifier.glassHeaderMaterial(palette, RoundedCornerShape(14.dp)))
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                .then(if (exerciseStatistics && palette.isLiquidGlass)
+                    Modifier.trainPilotGlassRim(palette, selectorShape, GlassMaterialRole.Panel)
+                    else if (exerciseStatistics) Modifier.trainPilotGlassMaterial(palette, selectorShape)
+                    else Modifier.glassHeaderMaterial(palette, selectorShape))
+                .trainPilotBorder(1.dp, palette.cardBorder, selectorShape)
         ) {
             Row(
                 modifier = Modifier
@@ -131,23 +137,26 @@ fun ProgressTabScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
+                            .trainPilotClickable(tabShape) { onSelectMainSection(idx) }
                             .then(Modifier.trainPilotChartSelection(selected, label))
                             .testTag("progress_section_tab_$idx"),
                         contentAlignment = Alignment.Center
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (selected && !palette.isLiquidGlass) selection.surface else Color.Transparent,
+                            shape = tabShape,
+                            color = if (selected) {
+                                if (palette.isLiquidGlass) palette.glassControlFill(palette.primary, GlassMaterialRole.Selection)
+                                else selection.surface
+                            } else Color.Transparent,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(42.dp)
-                                .then(if (selected) Modifier.liquidDropMaterial(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Selection,
-                                    accent = palette.primary, live = false) else Modifier)
+                                .then(if (selected && palette.isLiquidGlass)
+                                    Modifier.trainPilotGlassRim(palette, tabShape, GlassMaterialRole.Selection) else Modifier)
                                 .trainPilotBorder(
                                     width = if (selected) 1.dp else 0.dp,
                                     color = if (selected) selection.border else Color.Transparent,
-                                    shape = RoundedCornerShape(10.dp)
+                                    shape = tabShape
                                 )
                                 .testTag("progress_section_visual_$idx")
                         ) {

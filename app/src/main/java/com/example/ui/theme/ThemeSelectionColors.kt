@@ -17,8 +17,13 @@ internal data class ThemeSelectionColors(
 
 internal fun TrainPilotPalette.selectionColors(): ThemeSelectionColors {
     val alpha = if (isMatte || isHighContrast) 0.12f else 0.16f
-    val selected = primary.copy(alpha = alpha).compositeOver(surfaceCard)
-    val surfaces = listOf(background, surfaceCard, surfaceElevated, selected)
+    // Native controls that consume an opaque selection surface still receive the same
+    // palette-derived Liquid hue as the transparent selection controls.
+    val selected = if (isLiquidGlass)
+        glassControlFill(primary, GlassMaterialRole.Selection).compositeOver(surfaceCard)
+    else primary.copy(alpha = alpha).compositeOver(surfaceCard)
+    val surfaces = listOf(background, surfaceCard, surfaceElevated, selected) +
+        if (isLiquidGlass) listOf(GlassOptics.lensWorstCase) else emptyList()
     val endpoint = if (isDark) Color.White else Color.Black
     fun readable(minimum: Float): Color {
         for (step in 0..100) {
