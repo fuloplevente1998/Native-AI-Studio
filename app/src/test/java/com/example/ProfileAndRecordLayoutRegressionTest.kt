@@ -128,7 +128,7 @@ class ProfileAndRecordLayoutRegressionTest {
         val search = compose.onNodeWithTag("log_search_input").getUnclippedBoundsInRoot()
         assertTrue(search.bottom - search.top == 48.dp)
         compose.onNodeWithTag("exercise_library_favorite_squat").performScrollTo().performClick().assertIsOn()
-        compose.onNodeWithTag("studio_library_favorites_only").performScrollTo().performClick()
+        compose.onNodeWithTag("studio_library_favorites_only").assertIsDisplayed().performClick()
         compose.onNodeWithTag("exercise_library_favorite_plank").assertDoesNotExist()
         compose.onNodeWithTag("exercise_library_favorite_squat").performScrollTo().performClick()
         compose.onNodeWithTag("exercise_library_favorite_squat").assertDoesNotExist()
