@@ -272,8 +272,11 @@ class UiUx219RegressionTest {
 
         val fixedActions = compose.onNodeWithTag("programs_fixed_actions")
         val actionsTop = fixedActions.getUnclippedBoundsInRoot().top
+        val listHeader = compose.onNodeWithTag("programs_fixed_list_header")
+        val headerTop = listHeader.getUnclippedBoundsInRoot().top
         compose.onNodeWithTag("programs_list_scroll").performTouchInput { swipeUp() }
         assertEquals(actionsTop, fixedActions.getUnclippedBoundsInRoot().top)
+        assertEquals(headerTop, listHeader.getUnclippedBoundsInRoot().top)
         compose.onNodeWithTag("program_header_gym-strength-abc").performScrollTo()
 
         // 6. Reorder controls, 3-dot menu, and long-press continue to work for the exact program ID
