@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (14/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (28/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -215,3 +215,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/coach/NativeCoachSignals.kt` | 85 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/coach/NativeCoachTargets.kt` | 59 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/coach/NativeCoachVariation.kt` | 171 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeSelectedCoachReadings.kt` | 53 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeTrainingModeProgression.kt` | 171 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/WorkoutCoachAdviceViewModel.kt` | 103 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/components/TrainPilotSurfaces.kt` | 162 | 18 | 67, 90, 145, 158 | 156 | — | — | — |
+| `com/repforge/app/ui/health/HealthDashboardScreen.kt` | 869 | 6 | 201, 206, 503, 652, 675, 689, 705, 722, 726, 736, 740, 755, 778, 814, 826, 831, 833 | 188, 323, 324, 326, 331, 343, 360, 449, 473, 477, 480, 490, 506, 541, 666, 673, 715, 752, 760, 795, 829 | — | 51, 306, 329, 334, 388, 641 | 338, 390, 812, 857 |
+| `com/repforge/app/ui/health/HealthDashboardViewModel.kt` | 756 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/HealthDaySources.kt` | 54 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/HealthRecordBrowser.kt` | 839 | 4 | 181, 236, 371, 465, 492, 556, 585, 597, 710 | 209, 291, 335, 397, 419, 488, 737, 744 | — | 21, 22, 302, 362 | 451, 647 |
+| `com/repforge/app/ui/health/HealthRecordCompactRows.kt` | 100 | 1 | 92 | — | — | — | — |
+| `com/repforge/app/ui/health/HealthRecordDayDetails.kt` | 84 | 1 | — | 74, 77 | — | — | — |
+| `com/repforge/app/ui/health/HealthWorkoutEnergyDay.kt` | 116 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeDetailedHealthMetrics.kt` | 124 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthAppRefreshPolicy.kt` | 24 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthAutoRefreshGate.kt` | 97 | 0 | — | — | — | — | — |
