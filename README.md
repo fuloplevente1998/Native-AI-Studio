@@ -17,7 +17,7 @@ signing configuration must remain intact. No fake Health/Wear/GPS data or silent
 user-data reset. The native watch companion is now `:wear`; the unchanged shared
 native contracts live in `:shared`.
 
-CI uses Gradle 9.9.3 / JDK 25 LTS / Android compileSdk 37 and compiles the real phone/Wear sources for the complete JVM regressions:
+CI uses Gradle 9.9.3 / JDK 25 LTS / Android compileSdk 37.1 and compiles the real phone/Wear sources for the complete JVM regressions:
 
 ```
 :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest

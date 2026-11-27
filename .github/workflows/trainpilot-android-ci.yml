@@ -27,6 +27,7 @@ on:
       - 'scripts/verify_android_apk_metadata.py'
       - 'scripts/verify_junit_xml.py'
       - 'scripts/prefetch_robolectric_sdk.py'
+      - 'scripts/install_android_build_sdk.sh'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
     inputs:
@@ -63,16 +64,9 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Install Android API 37 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-37' 'build-tools;37.0.0'
+        run: bash scripts/install_android_build_sdk.sh
 
       - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
         uses: gradle/actions/setup-gradle@v6.4.1
@@ -179,16 +173,9 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Install Android API 37 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-37' 'build-tools;37.0.0'
+        run: bash scripts/install_android_build_sdk.sh
 
       - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
         uses: gradle/actions/setup-gradle@v6.4.1
@@ -231,13 +218,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - name: Install Android SDK
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install 'platforms;android-37' 'build-tools;37.0.0'
+        run: bash scripts/install_android_build_sdk.sh
       - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           gradle-version: '9.9.3'

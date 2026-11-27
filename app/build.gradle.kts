@@ -26,7 +26,7 @@ val mapsApiKey = sequenceOf(
 
 android {
   namespace = "com.repforge.app"
-  compileSdk = 37
+  compileSdk { version = release(37) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.TrainPilot.com"
@@ -113,7 +113,7 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 
 dependencies {
   implementation(project(":shared"))
-  // Kyant 2.0.1 uses Compose 1.12.0+; compileSdk 37, unchanged minSdk/targetSdk.
+  // Compose BOM 2026.11.01 (1.13) requires compileSdk 37.1; unchanged minSdk/targetSdk.
   implementation(platform(libs.androidx.compose.bom.kyant))
   implementation(libs.kyant.backdrop)
   implementation(libs.androidx.activity.compose)
