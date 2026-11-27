@@ -70,6 +70,8 @@ fun PalettePickerBottomSheet(
             ?: palette.subGroup).name)
     }
 
+    var revealThemeId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
+
     TrainPilotModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -207,8 +209,13 @@ fun PalettePickerBottomSheet(
 
             StudioPaletteCategories(currentLanguage, if (palette.id == -1) -1 else selectedPaletteId,
                 PaletteCategory.entries.firstOrNull { it.name == expandedFamily },
-                onExpand = { expandedFamily = it?.name.orEmpty(); onSelectCategory(it) },
-                onSelect = onSelectPalette, choiceTag = "palette_option_")
+                onExpand = { expandedFamily = it?.name.orEmpty(); revealThemeId = null; onSelectCategory(it) },
+                onSelect = { id ->
+                    if (TrainPilotPalettes.getById(id).isLiquidGlass != palette.isLiquidGlass)
+                        revealThemeId = id
+                    onSelectPalette(id)
+                }, choiceTag = "palette_option_", revealSelectedId = revealThemeId,
+                onSelectionRevealed = { revealThemeId = null })
             CustomThemeSection(currentLanguage)
         }
     }
