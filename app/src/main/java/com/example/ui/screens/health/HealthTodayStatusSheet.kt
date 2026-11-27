@@ -264,7 +264,9 @@ internal fun StudioTodayStatusDetailSheet(
                         color = palette.primary,
                         modifier = Modifier.weight(1f).padding(top = 12.dp)
                     )
-                    IconButton(
+                    if (palette.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = onDismiss, testTag = "health_today_tile_close")
+                    } else IconButton(
                         onClick = onDismiss,
                         modifier = Modifier.size(48.dp).testTag("health_today_tile_close")
                     ) {
