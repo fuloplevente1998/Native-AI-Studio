@@ -1,4 +1,11 @@
 # Átadás — 2817 Wear-only napló
+
+## Programok – kompakt fix fejléc (2026-11-27)
+- Ág `fix/programs-compact-pinned-header`, main-alap; kapcsolódó #419. UI commit `a28d5263`.
+- Jelenlegi program cím eltávolítva, a felső kártyán nagyobb Aktív jelölés. A fülek, kártya, lista és műveletsáv közötti térköz kisebb.
+- A További programok / saját tervek címe fix a közös panelen belül, finom elválasztóval. Csak a sorok és lenyitott szerkesztők görögnek; meglévő műveletek és sorrendkezelés változatlan.
+- Forrásszintű ellenőrzés megtörtént; JVM/Android CI, fizikai készülék és nagy betűméret ellenőrzése még szükséges. Nincs main merge, build vagy verzióemelés. A PR draftként készül.
+
 - Ág: fix/2817-wear-only, alap e53a35a6 (281300/281302).
 - A: TrainPilot edzés részletei kizárólag érvényes mentett Wear pulzus/energia; Forrás csak Wear; külső edzés saját importmérése változatlan. HC/Samsung bizonyíték megőrizve, csak a megjelenítésből kizárva. A részletek megnyitása nem indít provider-olvasást.
 - B: négy nyelvű óratelepítési tipp, Play-link/web fallback, Később edzésenként külön UI-preferenciában; nincs adatbázis- vagy health240Json-írás.
