@@ -85,3 +85,8 @@
 - Külön ág: `fix/liquid-nav-fade`, alap main `f72f0988`. A fejléc rajzolási rétegén 240 ms új háttér-fade, közös semleges, enyhén palettaárnyalt festék; nincs régi frame capture, második lencse vagy teljes fejléc-alpha. Az ikonok és szöveg azonnal olvasható, a kijelölő pill és a navigáció változatlan. Gyors váltás megszakítja az előző tween-t. Motion off, energiatakarékos mód vagy zárt optikai kapu esetén csak a közös állandó tónus marad.
 - A `rememberKyantHeaderScene` a naptár párnázott forrásán is ugyanazt a konzervatív színkorrekciót használja, mint a tartalmat mintázó fejléc. Naptár layout/tervezés, underlap lista, nem Liquid témák változatlanok. Az eltérő mögöttes tartalom miatt a pixelazonosság nem cél; készülékes látványteszt szükséges. Kontrasztpróba hozzáadva, még nem futott.
 - A már elindított main CI és signing forrását ez a draft nem módosítja. Main merge csak az új feladat elfogadása után.
+
+## 2817 / 1.5.6 – közös aláírt build (2026-11-27)
+- Felhasználó által jóváhagyva: #427 és #428 a mainen; a DpRect JVM fordításjavítás (`d4eb3f94`) megmarad. A #428 squash `b1b60533`.
+- Belső verzió telefon 281700, Wear 281702, külső 1.5.6; egyszerre emelve. A signer és a teljes main CI → automatikus signed APK/AAB workflow változatlan.
+- Az előző main futást a concurrency megszakítja; a 2817 forrás teljes JVM/R8 eredménye és aláírt csomagjai még ellenőrizendők. A naptári árva teljesítési státusz külön nyitott funkcióhiba.
