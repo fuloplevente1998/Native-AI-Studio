@@ -35,6 +35,7 @@ internal fun LiquidSegmentedTabs(
     weights: List<Float> = List(labels.size) { 1f },
     protectScrollingContent: Boolean = false,
     scrollable: Boolean = false,
+    enabled: Boolean = true,
     label: @Composable RowScope.(Int, String, Boolean) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -52,13 +53,13 @@ internal fun LiquidSegmentedTabs(
             labels.forEachIndexed { index, text ->
                 val selected = index == selectedIndex
                 val source = remember { MutableInteractionSource() }
-                val drag = if (selected && rememberGlassMotionEnabled()) track.drag.observe() else Modifier
-                val color = if (selected) selection.foreground else palette.textPrimary
+                val drag = if (enabled && selected && rememberGlassMotionEnabled()) track.drag.observe() else Modifier
+                val color = if (!enabled) palette.textSecondary.copy(alpha = .5f) else if (selected) selection.foreground else palette.textPrimary
                 val itemWidth = if (scrollable) Modifier.widthIn(min = 76.dp) else Modifier.weight(weights[index])
                 Box(itemWidth.fillMaxHeight().heightIn(min = 48.dp)
                     .glassPillSlot(track, index).clip(shape).then(drag)
                     .trainPilotPressIndication(shape, source)
-                    .selectable(selected, interactionSource = source, indication = null,
+                    .selectable(selected, enabled = enabled, interactionSource = source, indication = null,
                         role = Role.Tab, onClick = { onSelect(index) }).testTag(itemTag(index)),
                     contentAlignment = Alignment.Center) {
                     CompositionLocalProvider(LocalContentColor provides color,
