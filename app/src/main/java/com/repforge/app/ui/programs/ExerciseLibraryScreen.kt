@@ -221,7 +221,12 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
                     label = { Text(labels.favorites) }, modifier = Modifier.testTag("exercise_library_favorites"))
                 Text("${visible.size} / ${state.rows.size}", color = colors.muted)
             }
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                val parts = listOf("") + muscles
+                com.example.ui.components.LiquidSegmentedTabs(parts.map { if (it.isEmpty()) labels.all else muscleName(it, strings) },
+                    parts.indexOf(muscle), { muscle = parts[it] }, "native_exercise_muscle_track", scrollable = true,
+                    itemTag = { "exercise_library_muscle_${parts[it]}" }) { _, label, _ -> Text(label, maxLines = 1) }
+            } else Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 com.example.ui.components.TrainPilotFilterChip(selected = muscle.isEmpty(), onClick = { muscle = "" }, label = { Text(labels.all) })
                 for (part in muscles) com.example.ui.components.TrainPilotFilterChip(selected = muscle == part, onClick = { muscle = part },
                     label = { Text(muscleName(part, strings)) }, modifier = Modifier.testTag("exercise_library_muscle_$part"))
