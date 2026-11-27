@@ -334,7 +334,6 @@ jobs:
         if: always()
         env:
           TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
-        env:
           TRAINPILOT_REQUIRE_NO_SKIPS: 'true'
         run: python3 scripts/verify_junit_xml.py
 
