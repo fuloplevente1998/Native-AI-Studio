@@ -24,6 +24,11 @@ val mapsApiKey = sequenceOf(
     localMapsProperties.getProperty("MAPS_API_KEY")
 ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
+// Optional CI-only exhaustive partition of test classes. Unset means every test.
+val phoneJvmShard = providers.gradleProperty("trainpilotPhoneShard").orNull
+require(phoneJvmShard == null || phoneJvmShard == "a" || phoneJvmShard == "b")
+val phoneJvmShardA = "AGHILPST".map { "**/$it*.class" }
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(37) { minorApiLevel = 1 } }
@@ -92,6 +97,10 @@ android {
         // Two isolated Robolectric JVMs: shorter wall time on 4-vCPU CI runners.
         test.maxParallelForks = 2
         test.maxHeapSize = "3g"
+        when (phoneJvmShard) {
+          "a" -> test.include(phoneJvmShardA)
+          "b" -> test.exclude(phoneJvmShardA)
+        }
       }
     }
   }
