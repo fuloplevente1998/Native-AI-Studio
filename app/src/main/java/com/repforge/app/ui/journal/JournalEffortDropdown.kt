@@ -1,5 +1,6 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.trainPilotMenuSelection
 import com.example.ui.theme.LocalTrainPilotPalette
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
@@ -60,7 +61,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
                     trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accentText) },
                     onClick = { onSelect(key); expanded = false },
                     modifier = Modifier.heightIn(min = 48.dp)
-                        .background(if (chosen) selectedFill else colors.card)
+                        .trainPilotMenuSelection(chosen, selectedFill)
                         .testTag("${optionTagPrefix}_$key"))
             }
         }

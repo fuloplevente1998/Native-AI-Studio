@@ -89,6 +89,7 @@ fun ProgressTabScreen(
     val sections = remember(strings.navProgress, statisticsLabel) { listOf(0 to strings.navProgress, 2 to statisticsLabel) }
     val activeSection = if (uiState.progressMainSection == 2) 2 else 0
     val selection = remember(palette) { palette.selectionColors() }
+    val exerciseStatistics = activeSection == 2 && uiState.statsSubTab == 0
 
     val layoutBlocks = remember(uiState.language, strings, statisticsLabel) { listOf(
         PageLayoutBlock("photos", trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto")),
@@ -103,7 +104,7 @@ fun ProgressTabScreen(
     PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
     GlassScrollChrome(
         modifier = Modifier.fillMaxSize().trainPilotPageBackdrop(palette).testTag("progress_tab_screen"),
-        enabled = layout.draft == null,
+        enabled = layout.draft == null && !exerciseStatistics,
         rootInset = LocalGlassTopInset.current,
         top = {
         if (layout.draft == null) Surface(
@@ -111,7 +112,9 @@ fun ProgressTabScreen(
             color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp).glassHeaderMaterial(palette, RoundedCornerShape(14.dp))
+                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .then(if (exerciseStatistics) Modifier.trainPilotGlassMaterial(palette, RoundedCornerShape(14.dp))
+                    else Modifier.glassHeaderMaterial(palette, RoundedCornerShape(14.dp)))
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(

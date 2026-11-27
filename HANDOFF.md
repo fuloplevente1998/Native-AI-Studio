@@ -58,3 +58,5 @@
 - `fix/photo-journal-contrast`, alap `60ac9631`. A nagykép átlátszatlan hátteret, a bélyegképek kivágott, lekerekített sarkot, a fotóhozzáadó gombok Liquid témában sötétebb hátteret kaptak.
 - A Programok listája a címsáv és az alsó műveletsáv mögött görgethető. A fülek és az aktív kártya a listán kívül maradnak. Az alsó sáv peremét a gomb peremfénye emeli ki.
 - Fizikai készüléken ellenőrizendők a képkivágások és a görgetés közbeni üveghatás.
+- A Fejlődés gyakorlatstatisztikáiban a rekordlista a Gyakorlatok / Kardió / Lépések választósáv mögött görög, a felső navigáció és fő fülek előtt véget ér.
+- A naptári és személyes tervező, valamint a naplózott edzés visszajelzési menüje lekerekített, beljebb húzott kijelölést használ.

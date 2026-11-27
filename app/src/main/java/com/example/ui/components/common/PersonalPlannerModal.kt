@@ -339,10 +339,7 @@ fun PersonalPlannerModalDialog(
                             onSelect(index, optionText)
                             openDropdownKey = null
                         },
-                        modifier = Modifier.background(
-                            if (isSelected) palette.primary.copy(alpha = 0.16f)
-                            else Color.Transparent
-                        )
+                        modifier = Modifier.trainPilotMenuSelection(isSelected, palette.primary.copy(alpha = 0.16f))
                     )
                 }
             }
@@ -623,7 +620,7 @@ fun PersonalPlannerModalDialog(
                                             selectedEquipments = updated
                                         },
                                         modifier = Modifier
-                                            .background(if (isChecked) palette.primary.copy(alpha = 0.14f) else Color.Transparent)
+                                            .trainPilotMenuSelection(isChecked, palette.primary.copy(alpha = 0.14f))
                                             .testTag("profile_equipment_option_$idx")
                                     )
                                 }

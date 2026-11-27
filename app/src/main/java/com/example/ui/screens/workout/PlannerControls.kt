@@ -22,7 +22,7 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
 
-import androidx.compose.foundation.background
+import com.example.ui.components.trainPilotMenuSelection
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -286,10 +286,7 @@ internal fun PlannerFieldTile(
                                 onSelectOption(opt)
                                 expanded = false
                             },
-                            modifier = Modifier.background(
-                                if (isSelected) palette.primary.copy(alpha = 0.16f)
-                                else Color.Transparent
-                            )
+                            modifier = Modifier.trainPilotMenuSelection(isSelected, palette.primary.copy(alpha = 0.16f))
                         )
                     }
                 }
