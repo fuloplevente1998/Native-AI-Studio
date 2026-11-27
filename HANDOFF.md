@@ -138,3 +138,9 @@
 
 - Felhasználói elfogadás: #432 PR CI → sikeres ellenőrzés után main merge → teljes main CI → tartós aláírású telefon és Wear APK + AAB. A korábbi 46×38 dp Liquid X méretet a jóváhagyott 48×28 dp váltotta fel. Kiadási verzióemelésre külön utasítás nincs. A készülékes elfogadás továbbra is nyitott.
 - Felhasználói pontosítás: emelt verziókkal készül a kiadás: 1.5.7, telefon 281800, Wear 281802; a korábbi CI forrása már nem kiadási jelölt. A teljes PR és main CI az új forráson szükséges.
+
+## #433 – Liquid teljes forrásleltár, teljesítmény és referenciaaudit
+
+- Ág `fix/433-liquid-consistency`, alap main `b14dc497` (281800). A felhasználó kérésére előbb audit, utána célzott implementáció. `docs/LIQUID_433_AUDIT.md`: 310/310 telefonos UI/VM/Activity fájl, 66 716 sor sorszámos mintaleltára, 0 olvasási hiba; 8 főfül, 19 külön SubScreen ág és 7 sheet. Nem teljes hívásgráf vagy készülékes elfogadás.
+- Rögzített #378 gördülékeny Kyant referencia `b16bcd902d81d1393fd2268060be52937b080f23`, Kyant 1.0.6 mindkét build. A doc összeveti a fix chrome coat/minimum blur, live=false nav pill, shader→vektor bubble, összetett press és nested capture útvonalakat; elkülöníti a már jó cache és Tile/Performance gate megőrzését. Kézi call-site besorolás, #378/281800/új A/B frame time és jank, teljes vizuális/standard regresszió még nyitott.
+- Régi natív UI és render segédfüggvények csak igazoltan hívás nélküli kód esetén törölhetők; manifest/teszt/keep/alias és R8 ellenőrzés, aktív natív beágyazások, VM, motor, adat és fallback megőrzése. Témaválasztás route/scroll state külön regresszió. #433 bővítve; audit dokumentáció, nem runtime módosítás, nincs CI/merge/build/verzióemelés. A #378 test ág nem merge-elhető.
