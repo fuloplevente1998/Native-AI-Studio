@@ -320,7 +320,7 @@ class StudioProgressUiRegressionTest {
         action.assertContentDescriptionEquals(strings.handoverToWatchAction).assertHeightIsAtLeast(48.dp)
         val time = compose.onNodeWithTag("active_workout_elapsed").getUnclippedBoundsInRoot()
         val frame = compose.onNodeWithTag("workout_handover_frame", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertEquals(time.width, frame.width)
+        assertEquals(time.right - time.left, frame.right - frame.left)
         assertEquals(time.top, frame.top)
         assertEquals(time.bottom, frame.bottom)
         action.performClick()
