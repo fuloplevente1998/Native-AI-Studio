@@ -32,6 +32,10 @@ on:
       - 'scripts/ci_phone_test_shard_b.txt'
       - 'scripts/assemble_jvm_shards.py'
       - 'scripts/test_assemble_jvm_shards.py'
+      - 'scripts/run_jvm_regression_shard.sh'
+      - 'scripts/stage_jvm_regression_shard.sh'
+      - 'scripts/test_jvm_shard_commands.py'
+      - '.github/workflows/trainpilot-persistent-signing.yml'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
     inputs:
@@ -112,48 +116,14 @@ jobs:
           SUITE: ${{ matrix.suite }}
           WEAR_CLOSURE_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.wear_closure_regressions }}
           TARGETED_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.targeted_regressions }}
-        run: |
-          common=(--no-daemon --stacktrace --profile --continue)
-          if [[ "$SUITE" == phone-* ]]; then
-            if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
-              gradle "${common[@]}" :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
-                --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest'
-            elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
-              gradle "${common[@]}" :app:testDebugUnitTest \
-                --tests 'com.example.ActiveWorkoutDockNavigationRegressionTest' \
-                --tests 'com.example.StudioProgress*' \
-                --tests 'com.example.StudioHealthPermissionActionTest' \
-                --tests 'com.example.StudioAppearanceRegressionTest' \
-                --tests 'com.example.StudioCloudRefreshRegressionTest' \
-                --tests 'com.example.JournalWorkoutHealthRegressionTest' \
-                --tests 'com.example.LegacyRestoreEvidenceRegressionTest' \
-                --tests 'com.example.PhoneReturnInstallationRegressionTest' \
-                --tests 'com.example.HealthProviderSelectionRegressionTest' \
-                --tests 'com.example.HealthSyncAdmissionRegressionTest'
-            else
-              gradle "${common[@]}" "-PtrainpilotPhoneTestShard=${SUITE#phone-}" :app:testDebugUnitTest
-            fi
-          elif [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
-            gradle "${common[@]}" :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
-              --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test' :shared:testDebugUnitTest
-          else
-            gradle "${common[@]}" :wear:testDebugUnitTest :shared:testDebugUnitTest
-          fi
+        run: bash scripts/run_jvm_regression_shard.sh
 
       - name: Stage raw JVM outputs with module paths
         if: always()
         shell: bash
         env:
           SUITE: ${{ matrix.suite }}
-        run: |
-          mkdir -p ci-jvm-results/ci-evidence
-          if [[ "$SUITE" == phone-* ]]; then modules=(app); else modules=(wear shared); fi
-          for module in "${modules[@]}"; do
-            for dir in "$module/build/test-results" "$module/build/reports/tests"; do
-              if [[ -d "$dir" ]]; then cp -a --parents "$dir" ci-jvm-results/; fi
-            done
-          done
-          git rev-parse HEAD > "ci-jvm-results/ci-evidence/$SUITE.sha"
+        run: bash scripts/stage_jvm_regression_shard.sh
 
       - name: Upload shard raw JVM reports
         if: always()
@@ -193,8 +163,10 @@ jobs:
           path: ci-shards/
           merge-multiple: false
 
-      - name: Verify shard assembler contract
-        run: python3 scripts/test_assemble_jvm_shards.py
+      - name: Verify shared shard command and assembler contracts
+        run: |
+          python3 scripts/test_jvm_shard_commands.py
+          python3 scripts/test_assemble_jvm_shards.py
 
       - name: Assemble disjoint raw XML from the exact checkout
         env:
@@ -229,6 +201,7 @@ jobs:
         with:
           name: trainpilot-jvm-test-reports
           path: ci-verified-jvm/
+          overwrite: true
           if-no-files-found: error
           retention-days: 7
 
