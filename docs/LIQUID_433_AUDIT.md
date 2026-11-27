@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (70/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (84/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -271,3 +271,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/programs/ExerciseLibraryScreen.kt` | 263 | 1 | 235, 246 | 168, 171, 184, 190, 242 | — | 21, 22, 172, 232 | 220, 225, 226, 237 |
 | `com/repforge/app/ui/programs/ExerciseLibraryViewModel.kt` | 114 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/programs/PersonalProgramPreviewDialog.kt` | 177 | 1 | — | 168, 173 | — | 11, 82 | 86 |
+| `com/repforge/app/ui/programs/ProgramEditorDialog.kt` | 233 | 1 | — | 121, 125, 132, 158, 166, 169, 184, 213 | — | 14, 15, 110, 182 | — |
+| `com/repforge/app/ui/programs/ProgramPrescriptionDialog.kt` | 92 | 1 | 90 | 81, 88 | — | 10, 49 | — |
+| `com/repforge/app/ui/programs/TrainingLandingScreen.kt` | 139 | 1 | 74, 113 | 111 | — | 4, 65 | — |
+| `com/repforge/app/ui/programs/TrainingProgramsViewModel.kt` | 289 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/ExternalProgressSummary.kt` | 66 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeCardioCalendarRefresh.kt` | 32 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeCardioModel.kt` | 619 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeCardioProgressAdapter.kt` | 260 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeCardioProgressPanel.kt` | 214 | 2 | — | 66, 152 | 50, 55, 57 | — | 190 |
+| `com/repforge/app/ui/progress/NativeMuscleLoadVisual.kt` | 128 | 2 | — | 71, 79 | — | — | — |
+| `com/repforge/app/ui/progress/NativeProgressPhotoGallery.kt` | 449 | 4 | 338, 405 | 433 | — | 25, 26, 273, 280, 350 | 298, 357 |
+| `com/repforge/app/ui/progress/NativeProgressQuery.kt` | 127 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeStrengthRange.kt` | 28 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/NativeWeightJournalRepository.kt` | 125 | 0 | — | — | — | — | — |
