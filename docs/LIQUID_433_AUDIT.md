@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (28/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (42/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -229,3 +229,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/health/NativeDetailedHealthMetrics.kt` | 124 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/health/NativeHealthAppRefreshPolicy.kt` | 24 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/health/NativeHealthAutoRefreshGate.kt` | 97 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthBackgroundPolicy.kt` | 79 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthForegroundAdmission.kt` | 137 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthHistory.kt` | 60 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthJournal.kt` | 68 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthMetrics.kt` | 66 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHealthRecords.kt` | 184 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeHourlySteps.kt` | 103 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/NativeSleepRecordPresentation.kt` | 73 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/health/SamsungHourlyEnergy.kt` | 75 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/home/HomeScreen.kt` | 396 | 6 | 162, 188, 222 | 122, 182 | — | 27, 118 | 354 |
+| `com/repforge/app/ui/home/HomeViewModel.kt` | 168 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/home/NativeHomeRecoveryPresentation.kt` | 93 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/home/NativeHomeRepository.kt` | 66 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/home/QuickWorkoutScreen.kt` | 204 | 1 | — | 107, 132, 141, 156, 165, 168 | — | 14, 102 | 92, 154 |
