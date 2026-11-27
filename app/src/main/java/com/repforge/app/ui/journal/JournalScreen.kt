@@ -182,7 +182,12 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                         Text(if (workout.originDevice == "external") externalJournalTitle(language) else workout.dayName,
                             style = MaterialTheme.typography.headlineSmall)
                         val tabs = listOf(R.string.journal_exercises, R.string.journal_statistics, R.string.journal_source)
-                        TabRow(tab) { tabs.forEachIndexed { index, label ->
+                        if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                            com.example.ui.components.LiquidSegmentedTabs(tabs.map { text.getString(it) }, tab, { tab = it },
+                                "journal_tab_track", itemTag = { "journal_tab_$it" }) { _, label, _ ->
+                                com.example.ui.components.TrainPilotFitText(label)
+                            }
+                        } else TabRow(tab) { tabs.forEachIndexed { index, label ->
                             Tab(tab == index, onClick = { tab = index }, modifier = Modifier.testTag("journal_tab_$index"),
                                 text = { Text(text.getString(label)) })
                         } }
