@@ -11,6 +11,7 @@ import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.pageFooterArrangement
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
@@ -171,7 +172,7 @@ fun WorkoutTabScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
                 .padding(top = 8.dp + com.example.ui.theme.LocalGlassTopInset.current, bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+            verticalArrangement = remember(layout.draft == null) { pageFooterArrangement(TrainPilotCardSpacing.CardGap, layout.draft == null) }
         ) {
         layout.order.forEach { id ->
             key(id) {
