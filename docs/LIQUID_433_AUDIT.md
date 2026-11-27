@@ -55,3 +55,20 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/ProgramsListScreen.kt` | 792 | 148, 194, 232, 277, 367, 426, 456, 602, 611, 624, 647, 714 | — | 500, 503, 517, 521, 546, 549, 589, 608, 684, 687, 733 | 47, 582, 669 | 450, 522, 565, 620, 712, 750 |
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
+
+## Studio közös komponensek – leltár (12/91)
+
+| Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
+|---|---:|---|---|---|---|---|
+| `com/example/ui/components/ActiveWorkoutBottomBar.kt` | 181 | 85 | — | — | — | 83 |
+| `com/example/ui/components/ActiveWorkoutLiveBar.kt` | 133 | 96 | — | 81, 83, 104, 105, 117, 118 | — | 85, 107, 119 |
+| `com/example/ui/components/CompactCalendarDialog.kt` | 87 | 43, 69 | — | — | 9, 53, 82 | — |
+| `com/example/ui/components/CompactDatePickerDialog.kt` | 121 | 110 | 61, 65, 70, 75 | — | — | — |
+| `com/example/ui/components/ExerciseFeedbackChips.kt` | 166 | — | 64, 74, 105, 128 | 59, 60, 61, 97, 124 | — | — |
+| `com/example/ui/components/ExerciseFeedbackControl.kt` | 71 | 37, 46 | 40 | — | — | — |
+| `com/example/ui/components/ExerciseKindIcon.kt` | 40 | — | — | — | — | — |
+| `com/example/ui/components/ExerciseVideoDialog.kt` | 204 | 122, 159, 181, 185, 194 | 148, 190 | — | 14, 131 | — |
+| `com/example/ui/components/ExerciseVideoResolver.kt` | 174 | — | — | — | — | — |
+| `com/example/ui/components/HomeCoachAdviceCard.kt` | 131 | 100, 118 | 112 | 91, 93, 121 | — | 95 |
+| `com/example/ui/components/HomePlannedDateLine.kt` | 41 | — | — | — | — | — |
+| `com/example/ui/components/QuickWorkoutHubSheet.kt` | 157 | 152 | — | 78, 80, 86, 136, 138 | 21, 128 | 89, 140 |
