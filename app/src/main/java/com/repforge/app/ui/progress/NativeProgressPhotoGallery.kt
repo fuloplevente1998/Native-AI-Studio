@@ -36,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.Composable
@@ -257,7 +258,9 @@ internal fun NativeProgressPhotoGallery(
     open: (String) -> Unit,
     close: () -> Unit,
     vertical: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pinnedHeader: (@Composable () -> Unit)? = null,
+    pinnedFooter: (@Composable () -> Unit)? = null
 ) {
     val colors = LocalTrainPilotColors.current
     val shape = RoundedCornerShape(18.dp)
@@ -268,29 +271,37 @@ internal fun NativeProgressPhotoGallery(
         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
             .withZone(ZoneId.systemDefault())
     }
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (vertical) Modifier.trainPilotListPanel() else Modifier.trainPilotBorder(1.dp, colors.line, shape))
-            .testTag("progress_photo_gallery"),
-        shape = shape,
-        colors = CardDefaults.cardColors(containerColor = if (vertical) androidx.compose.ui.graphics.Color.Transparent else colors.card)
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(strings.getString(R.string.native_progress_photo_title), color = colors.text)
-            if (state.photosLoading) {
-                Text(strings.getString(R.string.native_progress_photo_loading), color = colors.muted)
-            } else if (state.photosError) {
-                Text(strings.getString(R.string.native_progress_photo_unavailable),
-                    color = colors.danger, modifier = Modifier.testTag("progress_photo_load_error"))
-            } else if (state.progressPhotos.isEmpty()) {
-                Text(strings.getString(R.string.native_progress_photo_empty),
-                    color = colors.muted, modifier = Modifier.testTag("progress_photo_empty"))
-            } else {
-                if (vertical) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).testTag("progress_photo_choices")
-                    ) {
+    if (vertical) {
+        val palette = LocalTrainPilotPalette.current
+        com.example.ui.theme.GlassScrollChrome(
+            modifier = modifier.fillMaxWidth().trainPilotListPanel().testTag("progress_photo_gallery"),
+            rootInset = 0.dp,
+            localWindow = true,
+            top = {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    pinnedHeader?.invoke()
+                    Text(strings.getString(R.string.native_progress_photo_title), color = colors.text,
+                        modifier = Modifier.fillMaxWidth()
+                            .glassHeaderMaterial(palette, shape)
+                            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(colors.card, shape))
+                            .trainPilotBorder(1.dp, colors.line, shape)
+                            .padding(12.dp))
+                }
+            },
+            bottom = pinnedFooter
+        ) { scrollModifier, topInset, bottomInset ->
+            LazyColumn(
+                modifier = scrollModifier.testTag("progress_photo_choices"),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 12.dp, end = 12.dp, top = topInset + 4.dp, bottom = bottomInset + 4.dp)
+            ) {
+                when {
+                    state.photosLoading -> item { Text(strings.getString(R.string.native_progress_photo_loading), color = colors.muted) }
+                    state.photosError -> item { Text(strings.getString(R.string.native_progress_photo_unavailable),
+                        color = colors.danger, modifier = Modifier.testTag("progress_photo_load_error")) }
+                    state.progressPhotos.isEmpty() -> item { Text(strings.getString(R.string.native_progress_photo_empty),
+                        color = colors.muted, modifier = Modifier.testTag("progress_photo_empty")) }
+                    else -> {
                         val sortedPhotos = state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }
                         items(sortedPhotos, key = { it.galleryKey }) { photo ->
                             if (photo.galleryKey != sortedPhotos.first().galleryKey) {
@@ -327,7 +338,29 @@ internal fun NativeProgressPhotoGallery(
                             }
                         }
                     }
-                } else {
+                }
+            }
+        }
+    } else {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .trainPilotBorder(1.dp, colors.line, shape)
+            .testTag("progress_photo_gallery"),
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = colors.card)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(strings.getString(R.string.native_progress_photo_title), color = colors.text)
+            if (state.photosLoading) {
+                Text(strings.getString(R.string.native_progress_photo_loading), color = colors.muted)
+            } else if (state.photosError) {
+                Text(strings.getString(R.string.native_progress_photo_unavailable),
+                    color = colors.danger, modifier = Modifier.testTag("progress_photo_load_error"))
+            } else if (state.progressPhotos.isEmpty()) {
+                Text(strings.getString(R.string.native_progress_photo_empty),
+                    color = colors.muted, modifier = Modifier.testTag("progress_photo_empty"))
+            } else {
                     LazyRow(
                         state = rememberLazyListState(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -362,9 +395,9 @@ internal fun NativeProgressPhotoGallery(
                             }
                         }
                     }
-                }
             }
         }
+    }
     }
     val selected = state.progressPhotos.firstOrNull { it.galleryKey == state.selectedPhotoKey }
     if (selected != null) {
