@@ -27,6 +27,7 @@ on:
       - 'scripts/verify_android_apk_metadata.py'
       - 'scripts/verify_junit_xml.py'
       - 'scripts/prefetch_robolectric_sdk.py'
+      - 'scripts/install_android_build_sdk.sh'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
     inputs:
@@ -47,45 +48,38 @@ permissions:
   contents: read
 
 jobs:
-  android-build:
-    name: Compile and full JVM regressions
+  jvm-shards:
+    name: JVM regressions (${{ matrix.suite }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [phone, wear-shared]
     env:
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
-      # Kyant Backdrop 1.0.6 ships Java 21 class files (major 65). Real root
-      # Robolectric tests must load them; keep the Android compile target at 17.
-      - name: Set up JDK 21 for JVM regressions
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25 LTS
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
-      - name: Install Android API 36 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
-          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+        run: bash scripts/install_android_build_sdk.sh
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: false
 
       - name: Cache Robolectric Android SDK dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
@@ -97,52 +91,123 @@ jobs:
         run: python3 scripts/prefetch_robolectric_sdk.py
 
       - name: Verify complete bundled font glyphs and real weights
+        if: matrix.suite == 'phone'
         run: python3 scripts/verify_font_glyphs.py
 
       - name: Check embedded video user gesture and failure callbacks
+        if: matrix.suite == 'phone'
         run: node --test scripts/test_exercise_video_player.mjs
 
-      # Compile real app/Wear sources and test resources, without dexing or R8-packaging
-      # throwaway APKs. Installers are produced and verified only by persistent-signing.
-      - name: Compile phone and Wear and run JVM tests
+      - name: Compile and run module JVM tests
         shell: bash
         env:
+          SUITE: ${{ matrix.suite }}
           WEAR_CLOSURE_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.wear_closure_regressions }}
           TARGETED_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.targeted_regressions }}
         run: |
-          if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
-              --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest' \
-              :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
-              --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
-          elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest \
-              --tests 'com.example.ActiveWorkoutDockNavigationRegressionTest' \
-              --tests 'com.example.StudioProgress*' \
-              --tests 'com.example.StudioHealthPermissionActionTest' \
-              --tests 'com.example.StudioAppearanceRegressionTest' \
-              --tests 'com.example.StudioCloudRefreshRegressionTest' \
-              --tests 'com.example.JournalWorkoutHealthRegressionTest' \
-              --tests 'com.example.LegacyRestoreEvidenceRegressionTest' \
-              --tests 'com.example.PhoneReturnInstallationRegressionTest' \
-              --tests 'com.example.HealthProviderSelectionRegressionTest' \
-              --tests 'com.example.HealthSyncAdmissionRegressionTest' \
-              :wear:testDebugUnitTest :shared:testDebugUnitTest
+          common=(--no-daemon --stacktrace --profile --continue)
+          if [[ "$SUITE" == "phone" ]]; then
+            if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
+              gradle "${common[@]}" :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
+                --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest'
+            elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
+              gradle "${common[@]}" :app:testDebugUnitTest \
+                --tests 'com.example.ActiveWorkoutDockNavigationRegressionTest' \
+                --tests 'com.example.StudioProgress*' \
+                --tests 'com.example.StudioHealthPermissionActionTest' \
+                --tests 'com.example.StudioAppearanceRegressionTest' \
+                --tests 'com.example.StudioCloudRefreshRegressionTest' \
+                --tests 'com.example.JournalWorkoutHealthRegressionTest' \
+                --tests 'com.example.LegacyRestoreEvidenceRegressionTest' \
+                --tests 'com.example.PhoneReturnInstallationRegressionTest' \
+                --tests 'com.example.HealthProviderSelectionRegressionTest' \
+                --tests 'com.example.HealthSyncAdmissionRegressionTest'
+            else
+              gradle "${common[@]}" :app:testDebugUnitTest
+            fi
+          elif [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
+            gradle "${common[@]}" :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
+              --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test' :shared:testDebugUnitTest
           else
-            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+            gradle "${common[@]}" :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
 
-      - name: Verify raw phone, Wear and shared JUnit XML test results
+      - name: Stage raw JVM outputs with module paths
         if: always()
         shell: bash
         env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          mkdir -p ci-jvm-results/ci-evidence
+          if [[ "$SUITE" == phone ]]; then modules=(app); else modules=(wear shared); fi
+          for module in "${modules[@]}"; do
+            for dir in "$module/build/test-results" "$module/build/reports/tests"; do
+              if [[ -d "$dir" ]]; then cp -a --parents "$dir" ci-jvm-results/; fi
+            done
+          done
+          git rev-parse HEAD > "ci-jvm-results/ci-evidence/$SUITE.sha"
+
+      - name: Upload shard raw JVM reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: trainpilot-jvm-shard-${{ matrix.suite }}
+          path: ci-jvm-results/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: trainpilot-build-profile-${{ matrix.suite }}
+          path: build/reports/profile/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  android-build:
+    # Preserve the single authoritative all-module raw XML gate.
+    name: Compile and full JVM regressions
+    needs: [jvm-shards]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download both JVM shards
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: trainpilot-jvm-shard-*
+          path: .
+          merge-multiple: true
+
+      - name: Verify both shards used the exact checkout
+        shell: bash
+        run: |
+          for suite in phone wear-shared; do
+            test "$(cat "ci-evidence/$suite.sha")" = "$(git rev-parse HEAD)"
+          done
+
+      - name: Verify raw phone, Wear and shared JUnit XML test results
+        if: always()
+        env:
           TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || startsWith(github.head_ref, 'test/kyant-final-') }}
+          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ !( github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions) ) }}
         run: python3 scripts/verify_junit_xml.py
+
+      - name: Require both test shard jobs to succeed
+        if: always()
+        env:
+          SHARD_RESULT: ${{ needs.jvm-shards.result }}
+        run: test "$SHARD_RESULT" = success
 
       - name: Upload unit test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-jvm-test-reports
           path: |
@@ -151,103 +216,87 @@ jobs:
             wear/build/reports/tests/
             wear/build/test-results/
             shared/build/reports/tests/
-            shared/build/test-results/
             app/build/outputs/junit-verification.json
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload Gradle task timing profile
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trainpilot-build-profile
-          path: build/reports/profile/
+            ci-evidence/
           if-no-files-found: ignore
           retention-days: 7
 
   release-r8:
-    # Same release R8/shrink check as before, on its own runner so it no longer
-    # competes for CPU with debug compilation and Robolectric tests.
-    name: Release R8 minification check
+    # Separate phone and Wear optimizers on independent runners.
+    name: Release R8 minification check (${{ matrix.module }})
+    if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [app, wear]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25 LTS
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
 
-      - name: Install Android API 36 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
-          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+        run: bash scripts/install_android_build_sdk.sh
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: false
 
       - name: Run release R8 minification
         shell: bash
-        if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
         env:
-          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || startsWith(github.head_ref, 'test/kyant-final-') }}
-        run: |
-          if [[ "$KYANT_GATE" == "true" ]]; then
-            gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8 :wear:minifyReleaseWithR8
-          else
-            gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8
-          fi
+          MODULE: ${{ matrix.module }}
+        run: gradle --no-daemon --stacktrace --profile ":${MODULE}:minifyReleaseWithR8"
 
       - name: Upload R8 Gradle task timing profile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
-          name: trainpilot-r8-build-profile
+          name: trainpilot-r8-build-profile-${{ matrix.module }}
           path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
 
   kyant-debug-dex:
     # Compatibility gate, not an installable test artifact or production signing job.
-    if: github.event_name == 'pull_request' && (github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency')
+    if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
     name: Kyant debug DEX compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
-      - name: Install Android SDK
+          java-version: '25'
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;36.0.0'
-          "$SDKMANAGER" --install 'platforms;android-36.1' || true
-      - uses: gradle/actions/setup-gradle@v4
+        run: bash scripts/install_android_build_sdk.sh
+      - uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: true
       - name: Verify debug D8 dexing without signing
-        run: gradle --no-daemon --stacktrace :app:dexBuilderDebug :app:mergeExtDexDebug
+        run: gradle --no-daemon --stacktrace --profile :app:dexBuilderDebug :app:mergeExtDexDebug
+
+      - name: Upload DEX Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: trainpilot-dex-build-profile
+          path: build/reports/profile/
+          if-no-files-found: ignore
+          retention-days: 7

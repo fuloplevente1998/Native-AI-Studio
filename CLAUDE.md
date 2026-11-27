@@ -25,7 +25,7 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 ## Build és teszt
 - Helyi Gradle/emulátor telepítés tilos; teljes fordítás/JVM teszt csak GitHub Actionsben.
   Helyben: `rg`, `git diff --check`, statikus ellenőrzés.
-- `trainpilot-android-ci.yml`: PR-en automatikus teljes JVM regresszió (Gradle 9.3.1,
+- `trainpilot-android-ci.yml`: PR-en automatikus teljes JVM regresszió (Gradle 9.9.3,
   JDK 17, nincs gradlew). `workflow_dispatch` célzott regressziós kapcsolókkal.
   `[skip ci]` commit kihagyja; több javítás → egy közös CI-kör (felhasználói kérésre).
 - `trainpilot-persistent-signing.yml`: aláírt telefon release + Wear R8 APK/AAB pár.

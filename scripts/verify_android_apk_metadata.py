@@ -15,7 +15,7 @@ if not phone.is_file():
     raise SystemExit(1 if release else 0)
 sdk = pathlib.Path(os.environ.get("ANDROID_HOME") or os.environ["ANDROID_SDK_ROOT"])
 analyzer = shutil.which("apkanalyzer") or str(next(sdk.glob("cmdline-tools/*/bin/apkanalyzer")))
-signer_tool = sdk / "build-tools/36.0.0/apksigner"
+signer_tool = sdk / "build-tools/37.0.0/apksigner"
 android = "{http://schemas.android.com/apk/res/android}"
 
 

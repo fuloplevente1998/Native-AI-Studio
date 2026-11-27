@@ -26,7 +26,7 @@ class Collector2781RegressionTest {
             "de" to "Drittanbieterlizenzen", "ro" to "Licențe ale terților")
         for ((lang, heading) in headings) {
             val section = PrivacyPolicy.text(lang).substringAfter(heading, "")
-            for (required in listOf("io.github.kyant0:backdrop:1.0.6", "io.github.kyant0:shapes:1.2.0",
+            for (required in listOf("io.github.kyant0:backdrop:2.0.1", "io.github.kyant0:shapes:1.2.1",
                 "© Kyant (Kyant0)", "Apache License 2.0", "https://github.com/Kyant0/AndroidLiquidGlass",
                 "third-party-licenses/kyant-backdrop-NOTICE.txt")) {
                 assertTrue("$lang missing $required", section.contains(required))
