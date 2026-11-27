@@ -74,6 +74,13 @@ class LiquidGlass433RootThemeTest {
                 assertEquals(SubScreen.SETTINGS_MAIN, model.uiState.value.currentSubScreen)
                 assertEquals(origin, model.uiState.value.backStack)
             }
+            // The asynchronous DataStore write can finish before the new viewport's
+            // measured reveal. Wait for the actual selected semantics without scrolling
+            // or reopening anything in the test. The visibility assertion remains.
+            compose.waitUntil(30_000) {
+                compose.onAllNodes(hasTestTag("settings_palette_choice_$id") and isSelected())
+                    .fetchSemanticsNodes().size == 1
+            }
             val tile = compose.onNodeWithTag("settings_palette_choice_$id").assertIsSelected()
             if (requireVisible) tile.assertIsDisplayed()
         }
