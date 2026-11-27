@@ -66,7 +66,9 @@ internal fun subtleGlassWindowOpacity(clarity: Int): Float =
     1f - .05f * (clarity.coerceIn(0, 100) / 100f)
 
 private fun boundedSubtleWindowFill(base: Color, clarity: Int): Color {
-    val opacity = subtleGlassWindowOpacity(clarity)
+    // Compose sRGB Color stores alpha in 8 bits. Round transparency DOWN so
+    // the encoded colour never exceeds the requested 5% maximum (or any slider step).
+    val opacity = (255 - clarity.coerceIn(0, 100) * 255 / 2000) / 255f
     // Convex sRGB mixing: even a white parent cannot lift the composite above the ceiling.
     val cap = (GlassOptics.SURFACE_LUMA_MAX - (1f - opacity)) / opacity
     return GlassContrast.limit(base, cap).copy(alpha = opacity)

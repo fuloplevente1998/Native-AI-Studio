@@ -93,8 +93,13 @@ class StudioAppearanceRegressionTest {
         compose.setContent {
             val palette = TrainPilotPalettes.getById(selected)
             TrainPilotTheme(palette = palette) {
-                CompositionLocalProvider(com.example.ui.theme.LocalGlassTopInset provides
-                    if (palette.isLiquidGlass) 108.dp else 0.dp) {
+                // The JVM fixture exercises actual selection, inset changes and scrolling;
+                // Kyant's Android-only bytecode is covered by the release R8/device gate.
+                CompositionLocalProvider(
+                    com.example.ui.theme.LocalGlassOpticsEnabled provides false,
+                    com.example.ui.theme.LocalGlassTopInset provides
+                        (if (palette.isLiquidGlass) 108.dp else 0.dp)
+                ) {
                     SettingsMainScreen(uiState = TrainPilotUiState(selectedPaletteId = selected),
                         strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
                         onBack = { backCalls++ }, onOpenPalettePicker = {},

@@ -44,8 +44,12 @@ class KyantK2IntegrationTest {
         for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
             val p = seed.withGlassClarity(step)
             val fill = p.photoViewerBackground(Color.Black)
-            assertEquals(1f - .05f * step / 100f, fill.alpha, .001f)
-            assertTrue(fill.alpha >= .949f)
+            val requested = subtleGlassWindowOpacity(step)
+            val expectedAlpha8 = 255 - step * 255 / 2000
+            assertEquals(expectedAlpha8 / 255f, fill.alpha, .0001f)
+            assertTrue(fill.alpha >= requested - .0001f)
+            assertTrue(fill.alpha - requested < 1f / 255f + .0001f)
+            assertTrue(fill.alpha >= .95f)
             val brightest = fill.compositeOver(Color.White)
             assertTrue(brightest.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
             assertTrue(NativeThemeTokens.contrast(p.textPrimary, brightest) >= 4.5f)
