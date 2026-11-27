@@ -1,5 +1,6 @@
 package com.example
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
@@ -25,6 +26,7 @@ class GlassScrollChrome2813Test {
     @get:Rule val compose = createComposeRule()
 
     @Test fun firstAndLastRowsClearBothFixedBarsAndMiddleRowsUnderlap() {
+        var clickedRow: Int? = null
         compose.setContent {
             TrainPilotTheme {
                 MeasuredScrollChrome(rootInset = 60.dp,
@@ -33,7 +35,8 @@ class GlassScrollChrome2813Test {
                     ) { modifier, top, bottom ->
                         LazyColumn(modifier.testTag("chrome_list"), contentPadding = PaddingValues(top = top, bottom = bottom)) {
                             items(40) { index ->
-                                Box(Modifier.fillMaxWidth().height(48.dp).testTag("chrome_row_$index")) { Text("row $index") }
+                                Box(Modifier.fillMaxWidth().height(48.dp).testTag("chrome_row_$index")
+                                    .clickable { clickedRow = index }) { Text("row $index") }
                             }
                         }
                     }
@@ -48,6 +51,16 @@ class GlassScrollChrome2813Test {
         assertEquals(lower, compose.onNodeWithTag("chrome_bottom").getUnclippedBoundsInRoot())
         val row = compose.onNodeWithTag("chrome_row_7").getUnclippedBoundsInRoot()
         assertTrue("The previous row extends behind the upper bar", row.top < upper.bottom && row.bottom > upper.top)
+        // Tap the overlap through the fixed header, not via a semantics click on the hidden row.
+        val overlapTop = maxOf(upper.top, row.top)
+        val overlapBottom = minOf(upper.bottom, row.bottom)
+        compose.onNodeWithTag("chrome_top").performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(centerX,
+                ((overlapTop + overlapBottom) / 2f - upper.top).toPx()))
+        }
+        assertNull("A fixed header must shield the row behind it", clickedRow)
+        compose.onNodeWithTag("chrome_row_8").performClick()
+        assertEquals(8, clickedRow)
         compose.onNodeWithTag("chrome_list").performScrollToIndex(39)
         assertTrue(compose.onNodeWithTag("chrome_row_39").getUnclippedBoundsInRoot().bottom <= lower.top)
     }
