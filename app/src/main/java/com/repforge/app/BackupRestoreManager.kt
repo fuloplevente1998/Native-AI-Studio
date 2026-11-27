@@ -323,6 +323,9 @@ class BackupRestoreManager(context: Context) {
             if (journal.exists()) {
                 val entry = journal.read() // Fail closed if damaged: staged data may need replay.
                 NativeDataReplacement.recover(appContext) {
+                    // Recovery can wait for an admitted writer. Never replay a receipt that
+                    // changed or disappeared before this recovery acquired its exclusive lease.
+                    check(journal.exists() && journal.read() == entry) { "Közben megváltozott a helyreállítási napló." }
                     if (entry.kind == "erase") eraseLocalContents(entry) else completeReplacement(entry)
                 }
             } else {
