@@ -80,6 +80,9 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
     return boundedSubtleWindowFill(glassOverlayFill(legacy), glassClarity)
 }
 
+internal fun TrainPilotPalette.glassBackgroundTint(cap: Float, saturation: Float = .42f): Color =
+    GlassContrast.limit(Color.hsv(GlassScene.hueOf(background), saturation, 1f), cap)
+
 /** A sliding panel uses the active Liquid palette hue, not a second procedural
  * scene or a neutral grey fill. Preserve the existing quantized 0–5% transparency.
  * Only its background is translucent. Centered alerts and popup menus stay opaque.
@@ -87,8 +90,7 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
 internal fun TrainPilotPalette.slidingSheetBackground(legacy: Color): Color {
     if (!isLiquidGlass) return legacy
     // The brightened foreground accent can be nearly white, especially in the Ice palette.
-    val tint = Color.hsv(GlassScene.hueOf(background), saturation = .55f, value = 1f)
-    return boundedSubtleWindowFill(GlassContrast.limit(tint, liquidChromeTint(this).luminance()), glassClarity)
+    return boundedSubtleWindowFill(glassBackgroundTint(liquidChromeTint(this).luminance(), saturation = .55f), glassClarity)
 }
 
 /** A window is the sole optical surface; descendants use paint and vector rims. */

@@ -20,7 +20,8 @@ internal fun liquidDropUsesLens(glass: Boolean, supported: Boolean, powerSave: B
 
 /** Three opaque RGB seeds bounded below the existing glass ceiling; alpha is kept low. */
 internal fun liquidDropPaints(palette: TrainPilotPalette, role: GlassMaterialRole, accent: Color? = null): List<Color> {
-    val base = GlassContrast.limit(accent ?: GLASS_TILE, GLASS_TILE_LUMA)
+    val base = accent?.let { GlassContrast.limit(it, GLASS_TILE_LUMA) }
+        ?: palette.glassBackgroundTint(GLASS_TILE_LUMA)
     val alpha = when (role) {
         GlassMaterialRole.Selection -> (.36f - .12f * palette.glassClarity / 100f)
         GlassMaterialRole.Panel -> .28f - .10f * palette.glassClarity / 100f
