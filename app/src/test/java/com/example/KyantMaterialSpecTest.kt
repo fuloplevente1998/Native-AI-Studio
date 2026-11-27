@@ -48,6 +48,26 @@ class KyantMaterialSpecTest {
         }
     }
 
+    @Test fun navigationFadeCoatIsBoundedAndPreservesContrastThroughoutReveal() {
+        var previous = 1f
+        for (frame in 100 downTo 0) {
+            val alpha = com.example.ui.theme.navigationHeaderCoatAlpha(frame / 100f)
+            assertTrue(alpha <= previous + .0001f)
+            assertTrue(alpha in 0.299f..0.901f)
+            previous = alpha
+            // Both the guarded optical layer and the neutral coat remain within the contrast ceiling.
+            val brightest = GlassOptics.lensWorstCase
+            val coat = GlassContrast.grey(.065f)
+            val composite = GlassContrast.luminance(
+                coat.red * alpha + brightest.red * (1f - alpha),
+                coat.green * alpha + brightest.green * (1f - alpha),
+                coat.blue * alpha + brightest.blue * (1f - alpha))
+            assertTrue(composite <= GlassOptics.SURFACE_LUMA_MAX + .001f)
+        }
+        assertEquals(.3f, com.example.ui.theme.navigationHeaderCoatAlpha(-1f), .001f)
+        assertEquals(.9f, com.example.ui.theme.navigationHeaderCoatAlpha(2f), .001f)
+    }
+
     @Test fun distinctRolesAndConservativeContrastBoundForSceneAndCapturedContent() {
         for (step in 0..100) {
             fun role(role: GlassMaterialRole) = KyantMaterialSpec.forRole(role, step)
