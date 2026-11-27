@@ -388,7 +388,8 @@ class NavigationOriginUiRegressionTest {
                 TrainPilotUiState(programs = listOf(own, builtIn), programsTabCustomOnly = false),
                 {}, {}, {}, {}, {}, {})
         } }
-        compose.onNodeWithTag("program_more_button_${own.id}").performScrollTo().performClick()
+        compose.onNodeWithTag("program_more_button_${own.id}").performClick()
+        compose.onNodeWithTag("program_action_edit").assertIsEnabled()
         compose.onNodeWithTag("program_action_delete").assertIsNotEnabled()
         compose.onNodeWithTag("program_action_delete_unavailable_hint").assertExists()
         compose.onNodeWithTag("program_action_sheet_close").performClick()

@@ -11,6 +11,7 @@ import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 import androidx.compose.runtime.key
+import androidx.compose.runtime.LaunchedEffect
 
 import com.example.ui.components.TrainPilotModalBottomSheet
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -113,6 +114,10 @@ fun ProgramsListScreen(
             state.programs.filter { !it.isCustom && it.id != activeProgram?.id }
         }
     }
+    val activeAlsoInList = state.programsTabCustomOnly && activeProgram?.isCustom == true
+    val activeTagPrefix = if (activeAlsoInList) "active_hero_" else ""
+    val activeHost = if (activeAlsoInList) "${INLINE_EDITOR_HOST_PROGRAMS}_hero" else INLINE_EDITOR_HOST_PROGRAMS
+    val programScroll = rememberScrollState()
     var showCreateCustomProgramDialog by remember { mutableStateOf(false) }
     var actionSheetProgramId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     var actionSheetSnapshot by remember { mutableStateOf<com.example.model.TrainingProgramModel?>(null) }
@@ -269,8 +274,21 @@ fun ProgramsListScreen(
 
                 HorizontalDivider(color = palette.cardBorder)
 
-                // 2773: Activate is always visible on the card and tapping the card opens the editor,
-                // so the ⋮ sheet keeps only rename / copy / delete.
+                if (liveProgram != null && targetId == activeProgram?.id) {
+                    TrainPilotOutlinedButton(
+                        onClick = {
+                            actionSheetProgramId = null
+                            requestInlineEditor(targetId, activeHost, toggle = false)
+                        },
+                        enabled = !state.libraryMutationBusy,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("program_action_edit")
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(trW(state.language, "Szerkesztés", "Edit", "Bearbeiten", "Editează"))
+                    }
+                }
                 TrainPilotOutlinedButton(
                     onClick = {
                         actionSheetProgramId = null
@@ -448,13 +466,17 @@ fun ProgramsListScreen(
         )
     }
 
+    val bottomInset = when {
+        state.isWorkoutSessionActive && state.statusBannerMessage != null -> 140.dp
+        state.isWorkoutSessionActive -> 84.dp
+        state.statusBannerMessage != null -> 68.dp
+        else -> 8.dp
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 6.dp)
-            .trainPilotListPanel()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
+            .padding(bottom = bottomInset)
     ) {
         if (state.currentSubScreen == SubScreen.PROGRAMS_LIST) {
             SubScreenTopBar(
@@ -464,8 +486,7 @@ fun ProgramsListScreen(
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
-            // 2810: in-scroll safe-area spacer, the tab scrolls under the glass header.
-            Spacer(modifier = Modifier.height(8.dp + com.example.ui.theme.LocalGlassTopInset.current))
+            Spacer(modifier = Modifier.height(2.dp + com.example.ui.theme.LocalGlassTopInset.current))
         }
 
         Column(
@@ -516,17 +537,14 @@ fun ProgramsListScreen(
                 }
             }
 
-            if (activeProgram != null && (!state.programsTabCustomOnly || activeProgram.isCustom)) {
+            if (activeProgram != null) {
                 Text(
                     text = strings.currentProgramTitle,
                     style = MaterialTheme.typography.titleMedium,
                     color = palette.textPrimary
                 )
 
-                val activeAlsoInList = state.programsTabCustomOnly && activeProgram.isCustom
-                val activeTagPrefix = if (activeAlsoInList) "active_hero_" else ""
                 val activeName = activeProgram.localizedName(state.language)
-                val activeHost = if (activeAlsoInList) "${INLINE_EDITOR_HOST_PROGRAMS}_hero" else INLINE_EDITOR_HOST_PROGRAMS
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
@@ -557,17 +575,31 @@ fun ProgramsListScreen(
                                 actionSheetProgramId = activeProgram.id
                             },
                             onClick = { requestInlineEditor(activeProgram.id, activeHost) }
-                        ),
-                        expandedContent = { inlineEditor(activeProgram, inlinePending) }
+                        )
                     )
                 }
             }
 
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Column(Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()
+            .verticalScroll(programScroll).testTag("programs_list_scroll")
+            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             Text(
                 text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = palette.textPrimary
             )
+
+            if (activeProgram != null && isInlineOpen(activeProgram.id, activeHost)) {
+                LaunchedEffect(activeProgram.id, activeHost) { programScroll.scrollTo(0) }
+                ProgramCardEditorContent(activeProgram, state.language, activeTagPrefix) {
+                    inlineEditor(activeProgram, inlinePending)
+                }
+            }
 
             if (filteredPrograms.isEmpty() && state.programsTabCustomOnly) {
                 Surface(
@@ -659,7 +691,15 @@ fun ProgramsListScreen(
                                     moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
                                     moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
                                     testTag = "program_drag_handle_${program.id}",
-                                    onMove = onMoveProgramOrder,
+                                    onMove = { from, to ->
+                                        val fromId = filteredPrograms.getOrNull(from)?.id
+                                        val toId = filteredPrograms.getOrNull(to)?.id
+                                        val tabPrograms = state.programs.filter { it.isCustom == state.programsTabCustomOnly }
+                                        onMoveProgramOrder(
+                                            tabPrograms.indexOfFirst { it.id == fromId },
+                                            tabPrograms.indexOfFirst { it.id == toId }
+                                        )
+                                    },
                                     modifier = Modifier.padding(end = 2.dp)
                                 )
                             }
@@ -668,6 +708,12 @@ fun ProgramsListScreen(
                 } }
             }
 
+        }
+
+        Column(Modifier.fillMaxWidth().padding(top = 6.dp).trainPilotListPanel()
+            .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -686,7 +732,7 @@ fun ProgramsListScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(trW(state.language, "Új egyedi program", "New custom program", "Neues eigenes Programm", "Program personalizat nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Új program", "New program", "Neues Programm", "Program nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
 
                 TrainPilotOutlinedButton(
@@ -704,31 +750,12 @@ fun ProgramsListScreen(
             }
 
             TrainPilotOutlinedButton(
-                onClick = { activeProgram?.let { requestInlineEditor(it.id, INLINE_EDITOR_HOST_PROGRAMS, toggle = false) } },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 50.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = null,
-                    tint = palette.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = strings.createOrEditProgramAction,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = palette.primary
-                )
-            }
-
-            TrainPilotOutlinedButton(
                 onClick = onOpenExerciseLibrary,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
+                    .testTag("programs_exercise_picker")
             ) {
                 Text(
                     text = "${strings.exercisePickerTitle} (${state.exercises.size})",

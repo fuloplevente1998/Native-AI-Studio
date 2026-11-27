@@ -303,7 +303,8 @@ class Collector2788RegressionTest {
         compose.onNodeWithTag("other_photo_attach_card").assertExists()
         compose.onNodeWithTag("other_camera_button").assertExists()
         compose.onNodeWithTag("other_gallery_button").assertExists()
-        compose.onNodeWithText("Nem edzéshez vagy méréshez kötött fotó", substring = true).assertExists()
+        compose.onNodeWithText("Fotó hozzáadása").assertExists()
+        compose.onNodeWithText("Nem edzéshez vagy méréshez kötött fotó", substring = true).assertDoesNotExist()
     }
 
     @Test fun todayTileTitlesAreWholeWords() {

@@ -132,15 +132,13 @@ fun ExerciseLibraryScreen(
             (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
     }
 
-    val panelMargin = 6.dp
-    val contentGutter = TrainPilotCardSpacing.ScreenGutter - panelMargin
     Column(
-        modifier = Modifier
-            .then(com.example.ui.components.sheetAwareFillMaxSize())
-            .padding(horizontal = panelMargin)
-            .trainPilotListPanel()
-            .verticalScroll(rememberScrollState())
-            .padding(start = contentGutter, end = contentGutter, top = 4.dp, bottom = 24.dp)
+        modifier = Modifier.fillMaxSize().padding(
+            start = TrainPilotCardSpacing.ScreenGutter,
+            end = TrainPilotCardSpacing.ScreenGutter,
+            top = 4.dp,
+            bottom = 8.dp
+        )
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         if (!embedded) SubScreenTopBar(
@@ -221,57 +219,13 @@ fun ExerciseLibraryScreen(
 
             }
 
-            if (state.quickWorkoutQueue.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.14f)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = trW(state.language, "Edzésre összeállítva (${state.quickWorkoutQueue.size} gyakorlat)", "Queued for workout (${state.quickWorkoutQueue.size} exercises)", "Für Training zusammengestellt (${state.quickWorkoutQueue.size} Übungen)", "Pregătit pentru antrenament (${state.quickWorkoutQueue.size} exerciții)"),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.primary
-                            )
-                            Text(
-                                text = state.quickWorkoutQueue.joinToString(", ") { it.localizedName(state.language) },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = onStartQueuedWorkout,
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = palette.onPrimary
-                            ),
-                            modifier = Modifier
-                                .heightIn(min = 48.dp)
-                                .testTag("exercise_library_start_queued_workout_button")
-                        ) {
-                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
         }
 
-        if (filtered.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Column(
+            Modifier.weight(1f).fillMaxWidth().padding(top = 4.dp)
+                .trainPilotListPanel().verticalScroll(rememberScrollState())
+                .testTag("exercise_library_scroll")
+        ) {
             filtered.forEachIndexed { index, ex -> key(ex.id) {
                 if (index > 0) {
                     TrainPilotListDivider()
@@ -417,6 +371,49 @@ fun ExerciseLibraryScreen(
                     }
                 }
             } }
+        }
+
+        if (state.quickWorkoutQueue.isNotEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = palette.glassStateTile(palette.primary, palette.primary.copy(alpha = 0.14f)),
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                    .testTag("exercise_library_fixed_queue")
+                    .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        val count = state.quickWorkoutQueue.size
+                        Text(
+                            text = trW(state.language, "$count gyakorlat", if (count == 1) "1 exercise" else "$count exercises", if (count == 1) "1 Übung" else "$count Übungen", if (count == 1) "1 exercițiu" else "$count exerciții"),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onStartQueuedWorkout,
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .testTag("exercise_library_start_queued_workout_button")
+                    ) {
+                        Text(trW(state.language, "▶ Edzés indítása", "▶ Start workout", "▶ Training starten", "▶ Începe antrenamentul"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }

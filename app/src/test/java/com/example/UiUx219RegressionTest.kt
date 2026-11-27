@@ -265,6 +265,17 @@ class UiUx219RegressionTest {
         assertEquals(listOf("gym-strength-abc", "home-basic", "home-basic"), toggles)
         assertNull(activatedId)
 
+        compose.onNodeWithTag("program_more_button_home-basic").performClick()
+        compose.onNodeWithTag("program_action_edit").performClick()
+        compose.onNodeWithTag("program_inline_editor_home-basic", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("program_header_home-basic").performClick()
+
+        val fixedActions = compose.onNodeWithTag("programs_fixed_actions")
+        val actionsTop = fixedActions.getUnclippedBoundsInRoot().top
+        compose.onNodeWithTag("programs_list_scroll").performTouchInput { swipeUp() }
+        assertEquals(actionsTop, fixedActions.getUnclippedBoundsInRoot().top)
+        compose.onNodeWithTag("program_header_gym-strength-abc").performScrollTo()
+
         // 6. Reorder controls, 3-dot menu, and long-press continue to work for the exact program ID
         // Reorder: no up/down arrows; a plain tap on the handle does nothing, a long press + drag
         // moves the card and saves once on release.
@@ -278,7 +289,7 @@ class UiUx219RegressionTest {
             moveBy(androidx.compose.ui.geometry.Offset(0f, (cardHeight.toPx() + 12.dp.toPx()) * 1.1f), delayMillis = 50)
             up()
         }
-        assertEquals(0 to 1, movedPair)
+        assertEquals(1 to 2, movedPair)
         assertNull("Dragging the handle must not open the action sheet",
             compose.onAllNodesWithTag("program_action_sheet").fetchSemanticsNodes().firstOrNull())
 

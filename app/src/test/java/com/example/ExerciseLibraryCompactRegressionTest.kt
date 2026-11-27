@@ -158,8 +158,8 @@ class ExerciseLibraryCompactRegressionTest {
         // Capture the actual Compose fixture via the Android Canvas, without PixelCopy.
         for (lang in listOf(AppLanguage.HU, AppLanguage.DE)) {
             compose.runOnIdle { width = 360; scale = 1f; language = lang }
-            val favoriteFilter = compose.onNodeWithTag("studio_library_favorites_only").performScrollTo().getUnclippedBoundsInRoot()
-            val custom = compose.onNodeWithTag("exercise_library_add_custom_button").performScrollTo().getUnclippedBoundsInRoot()
+            val favoriteFilter = compose.onNodeWithTag("studio_library_favorites_only").assertIsDisplayed().getUnclippedBoundsInRoot()
+            val custom = compose.onNodeWithTag("exercise_library_add_custom_button").assertIsDisplayed().getUnclippedBoundsInRoot()
             assertTrue("Header controls should fit on one row", favoriteFilter.bottom > custom.top && custom.bottom > favoriteFilter.top)
             compose.onNodeWithTag("exercise_library_row_long").performScrollTo()
             val shortCard = compose.onNodeWithTag("exercise_library_row_arnold").performScrollTo()
@@ -168,7 +168,7 @@ class ExerciseLibraryCompactRegressionTest {
             val title = compose.onNodeWithTag("exercise_library_name_arnold", useUnmergedTree = true).getUnclippedBoundsInRoot()
             val actions = compose.onNodeWithTag("exercise_library_actions_arnold", useUnmergedTree = true).getUnclippedBoundsInRoot()
             assertTrue("Short title and actions should be inline", title.right <= actions.left && title.bottom > actions.top)
-            compose.onNodeWithTag("studio_library_favorites_only").performScrollTo()
+            compose.onNodeWithTag("studio_library_favorites_only").assertIsDisplayed()
             compose.runOnIdle {
                 val view = compose.activity.findViewById<View>(android.R.id.content)
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -253,10 +253,10 @@ class ExerciseLibraryCompactRegressionTest {
                 assertEquals("An already removed item is a no-op", after, model.uiState.value)
             }
             val countLabel = when (language) {
-                AppLanguage.HU -> "Edzésre összeállítva (2 gyakorlat)"
-                AppLanguage.EN -> "Queued for workout (2 exercises)"
-                AppLanguage.DE -> "Für Training zusammengestellt (2 Übungen)"
-                AppLanguage.RO -> "Pregătit pentru antrenament (2 exerciții)"
+                AppLanguage.HU -> "2 gyakorlat"
+                AppLanguage.EN -> "2 exercises"
+                AppLanguage.DE -> "2 Übungen"
+                AppLanguage.RO -> "2 exerciții"
             }
             compose.onNodeWithText(countLabel).assertExists()
             button(ids[1]).assertContentDescriptionEquals(when (language) {

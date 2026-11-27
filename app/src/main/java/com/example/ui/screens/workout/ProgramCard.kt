@@ -189,29 +189,40 @@ internal fun ProgramCardContent(
         }
 
         if (isExpanded && expandedContent != null) {
-            val equipmentValue = remember(program, language) {
-                programDetailsLocationAndEquipment(program, language).second
-            }
-            val equipmentLabel = trW(language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament")
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, bottom = 10.dp)
-                    .testTag("${tagPrefix}program_inline_editor_${program.id}"),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
-                Text(
-                    text = "$equipmentLabel: $equipmentValue",
-                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
-                    color = palette.textSecondary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("${tagPrefix}program_details_equipment_${program.id}")
-                )
-                expandedContent()
-            }
+            ProgramCardEditorContent(program, language, tagPrefix, expandedContent)
         }
+    }
+}
+
+@Composable
+internal fun ProgramCardEditorContent(
+    program: com.example.model.TrainingProgramModel,
+    language: AppLanguage,
+    tagPrefix: String,
+    expandedContent: @Composable () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    val equipmentValue = remember(program, language) {
+        programDetailsLocationAndEquipment(program, language).second
+    }
+    val equipmentLabel = trW(language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament")
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp, bottom = 10.dp)
+            .testTag("${tagPrefix}program_inline_editor_${program.id}"),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
+        Text(
+            text = "$equipmentLabel: $equipmentValue",
+            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
+            color = palette.textSecondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("${tagPrefix}program_details_equipment_${program.id}")
+        )
+        expandedContent()
     }
 }
 

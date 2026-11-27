@@ -810,33 +810,28 @@ fun HealthTabScreen(
                                 .testTag(if (journal && uiState.healthSyncFailed) "journal_refresh_error" else "health_sync_result")
                         )
                     }
-                    val sectionScroll = rememberScrollState()
-                    LaunchedEffect(journalFocus, journalFocusKey) {
-                        if (journal && journalFocus != null) sectionScroll.scrollTo(0)
-                    }
-                    Column(
-                        Modifier.fillMaxWidth().weight(1f, fill = false)
-                            .verticalScroll(sectionScroll)
-                            .testTag("health_${healthSectionSheet}_sheet_scroll"),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (journal) {
-                            com.example.ui.components.StudioHealthMetricsBrowser(
-                                language = uiState.language.code.lowercase(),
-                                refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
-                                onRefresh = onTriggerHealthSync,
-                                refreshBusy = uiState.healthSyncBusy,
-                                focus = journalFocus,
-                                focusKey = journalFocusKey,
-                                samsungSupplement = uiState.permissionSamsungHealthEnabled,
-                                workouts = uiState.loggedWorkouts,
-                                workoutTitle = { it.localizedTitle(uiState.language, uiState.programs) },
-                                onOpenWorkout = { workoutId ->
-                                    closeSheet()
-                                    onOpenLoggedWorkout(workoutId)
-                                }
-                            )
-                        } else {
+                    if (journal) {
+                        com.example.ui.components.StudioHealthMetricsBrowser(
+                            language = uiState.language.code.lowercase(),
+                            refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
+                            onRefresh = onTriggerHealthSync,
+                            refreshBusy = uiState.healthSyncBusy,
+                            focus = journalFocus,
+                            focusKey = journalFocusKey,
+                            samsungSupplement = uiState.permissionSamsungHealthEnabled,
+                            workouts = uiState.loggedWorkouts,
+                            modifier = Modifier.weight(1f),
+                            workoutTitle = { it.localizedTitle(uiState.language, uiState.programs) },
+                            onOpenWorkout = { workoutId ->
+                                closeSheet()
+                                onOpenLoggedWorkout(workoutId)
+                            }
+                        )
+                    } else {
+                        Column(Modifier.fillMaxWidth().weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState()).testTag("health_sources_sheet_scroll"),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             HealthSourcesContent(
                                 uiState = uiState,
                                 strings = strings,
