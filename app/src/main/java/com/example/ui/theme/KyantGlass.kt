@@ -214,7 +214,9 @@ internal fun rememberKyantHeaderScene(scene: LayerBackdrop, content: LayerBackdr
     val view = LocalView.current
     val combined = if (content == null) scene
         else com.kyant.backdrop.backdrops.rememberCombinedBackdrop(scene, content)
-    return remember(combined, view) { KyantScene(combined, view, samplesContent = content != null) }
+    // The same conservative header correction also applies on padded routes (Calendar).
+    // Only the source geometry differs; the calendar must not get a brighter scene-only tint.
+    return remember(combined, view) { KyantScene(combined, view, samplesContent = true) }
 }
 
 @Composable
