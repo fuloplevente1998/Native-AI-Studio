@@ -82,6 +82,7 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     // icons and touch targets are unchanged. This also covers static/old-device fallback.
     return if (preserveOriginalMaterial) material else material.background(
         liquidChromeTint(palette).copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
+        .trainPilotGlassRim(palette, shape, role)
 }
 
 @Composable
