@@ -32,3 +32,7 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 - StudioStatisticsScreen StatisticsTabs: active shared chip, cheap selection in pinned chrome to avoid nested lens. Other chart/record state colors unchanged.
 - TrainPilotControls disabled field: shared tile paint, legacy pass-through. Other field/input paths remain to verify.
 - ProgramsListScreen fixed action background: existing explicit standard-only background; not removed blindly. Approved selector and active card not edited.
+
+
+## L5 source triage (not a fix)
+- Both MainActivity files, GlassSceneHost, GlassAwareScaffold, TrainPilotRouteContent, SettingsMainScreen, StudioPaletteCategories, PalettePickerSheet, VmAppearance and VmBackupSettings inspected. Active manifest entry is com.repforge.app.MainActivity. No direct navigation in selectPalette/syncNativeSettings. Route keys independent of palette. Settings reveal and DataStore feedback timing require integration reproduction. No causal claim or runtime modification yet.
