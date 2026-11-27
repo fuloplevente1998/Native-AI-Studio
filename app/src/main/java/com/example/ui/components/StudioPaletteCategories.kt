@@ -39,6 +39,7 @@ internal fun paletteCategoryTitleColor(palette: TrainPilotPalette): Color =
 
 private val families = listOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT, PaletteCategory.LIQUID_GLASS)
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun StudioPaletteCategories(
     language: AppLanguage,
@@ -97,7 +98,7 @@ internal fun StudioPaletteCategories(
                             row.forEach { option ->
                                 val active = selectedId == option.id
                                 val requester = remember { BringIntoViewRequester() }
-                                if (active && revealSelectedId == option.id) {
+                                if (active && revealSelectedId == option.id && palette.id == option.id) {
                                     LaunchedEffect(option.id, palette.isLiquidGlass) {
                                         withFrameNanos { }
                                         requester.bringIntoView()
