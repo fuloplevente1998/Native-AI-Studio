@@ -152,7 +152,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/visual/WorkoutRouteMapBox.kt` | 267 | 110, 205, 256 | 260 | — | — | — |
 | `com/example/ui/components/watchinfo/StudioWatchInformationCard.kt` | 186 | 103 | 96 | 69, 71 | — | 67 |
 
-## Témarendszer és natív közös vezérlők – leltár (26/38)
+## Témarendszer és natív közös vezérlők – teljes fájlleltár (38/38)
 
 | Fájl | Sor | Színforrás/semleges token | Vezérlő | Közös üveg | Optikai kapu | Press |
 |---|---:|---|---|---|---|---|
@@ -182,3 +182,15 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/theme/MeasuredScrollChrome.kt` | 56 | — | — | — | — | — |
 | `com/example/ui/theme/Theme.kt` | 98 | 22, 41, 45, 52, 61, 65, 72 | — | — | — | — |
 | `com/example/ui/theme/ThemeSelectionColors.kt` | 52 | 21, 37 | — | — | — | — |
+| `com/example/ui/theme/TrainPilotGlassEngine.kt` | 225 | 35, 108 | — | 32, 37, 42, 172 | 35, 40, 51, 177 | — |
+| `com/example/ui/theme/TrainPilotPalettes.kt` | 741 | 55, 62, 63, 64, 68, 69, 70, 71, 142, 160, 178, 196, 214, 232, 250, 268, 291, 309, 327, 345, 364, 382, 400, 419, 441, 459, 477, 495, 513, 531, 549, 567, 589, 608, 627, 646, 665, 684, 703, 722 | — | — | — | — |
+| `com/example/ui/theme/Type.kt` | 89 | — | — | — | — | — |
+| `com/repforge/app/ui/theme/NativeStudioTypography.kt` | 50 | — | — | — | — | — |
+| `com/repforge/app/ui/theme/NativeThemeTokens.kt` | 62 | — | — | — | — | — |
+| `com/repforge/app/ui/theme/TrainPilotActionButtons.kt` | 104 | — | 58, 72, 85 | 60, 74, 87 | — | 59, 73, 86 |
+| `com/repforge/app/ui/theme/TrainPilotButton.kt` | 158 | — | 71, 135, 155 | 72, 133 | — | 3, 71, 134, 135, 155 |
+| `com/repforge/app/ui/theme/TrainPilotFrames.kt` | 111 | — | — | — | — | — |
+| `com/repforge/app/ui/theme/TrainPilotOutlinedButton.kt` | 54 | 30, 42 | 51 | 46, 48 | — | 3, 46, 47, 51 |
+| `com/repforge/app/ui/theme/TrainPilotPressFeedback.kt` | 209 | — | 102, 119 | — | 18, 19, 22, 29, 145, 146, 149 | 25, 31, 62, 70, 94, 101, 108, 118, 137, 179, 184, 187, 189, 202 |
+| `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
+| `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
