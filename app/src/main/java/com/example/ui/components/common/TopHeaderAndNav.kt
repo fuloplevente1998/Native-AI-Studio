@@ -454,14 +454,15 @@ fun TrainPilotRedCloseButton(
     val pressed by interaction.collectIsPressedAsState()
     val colors = com.repforge.app.ui.theme.TrainPilotActionAppearance
     val shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(11.dp)
-    val width = if (palette.isLiquidGlass) size + 8.dp else size
+    val width = if (palette.isLiquidGlass) size + 10.dp else size
+    val height = if (palette.isLiquidGlass) (size - 10.dp).coerceAtLeast(minOf(size, 24.dp)) else size
     val fill = lerp(colors.negativeBackground, colors.negativeForeground, if (pressed) .10f else 0f)
     // The visual capsule sits inside the same accessible hit target.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
         Surface(shape = shape, color = if (palette.isLiquidGlass) fill.copy(alpha = .78f) else fill,
-            modifier = Modifier.size(width, size).clip(shape)
+            modifier = Modifier.size(width, height).clip(shape)
                 .indication(interaction, ripple())
                 .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
                 .border(1.dp, colors.negativeOutline.copy(alpha = 0.7f), shape)
