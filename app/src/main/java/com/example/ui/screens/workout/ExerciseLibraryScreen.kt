@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.glassHeaderMaterial
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.glassControlFill
+import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.components.TrainPilotListDivider
 import com.example.ui.components.trainPilotListPanel
@@ -172,13 +175,13 @@ fun ExerciseLibraryScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
                     label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
-                    modifier = Modifier.testTag("studio_library_favorites_only"))
+                    modifier = Modifier.testTag("studio_library_favorites_only"), liveGlass = false)
                 com.example.ui.components.TrainPilotFilterChip(selected = false, onClick = onOpenAddCustomExercise,
                     label = { Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou")) },
-                    modifier = Modifier.testTag("exercise_library_add_custom_button"))
+                    modifier = Modifier.testTag("exercise_library_add_custom_button"), liveGlass = false)
                 com.example.ui.components.TrainPilotFilterChip(selected = ownOnly, onClick = { ownOnly = !ownOnly },
                     label = { Text(trW(state.language, "Saját", "Custom", "Eigene", "Proprii")) },
-                    modifier = Modifier.testTag("exercise_library_custom_only"))
+                    modifier = Modifier.testTag("exercise_library_custom_only"), liveGlass = false)
             }
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
@@ -196,13 +199,15 @@ fun ExerciseLibraryScreen(
                         pool.count { it.category == cat }
                     }
                     val shape = RoundedCornerShape(14.dp)
+                    val role = if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button
                     Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(shape) { onSelectCategory(cat) },
                         contentAlignment = Alignment.Center) {
                         Surface(
                             shape = shape,
-                            color = if (selected) palette.primary else palette.surface,
-                            modifier = Modifier.heightIn(min = 40.dp).trainPilotBorder(
-                                1.dp, if (selected) palette.primary else palette.cardBorder, shape)
+                            color = palette.glassControlFill(if (selected) palette.primary else palette.surface, role),
+                            modifier = Modifier.heightIn(min = 40.dp)
+                                .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, shape, role)
+                                    else Modifier.trainPilotBorder(1.dp, if (selected) palette.primary else palette.cardBorder, shape))
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -212,7 +217,7 @@ fun ExerciseLibraryScreen(
                                     text = "${cat.localized(state.language)} ($catCount)",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) palette.onPrimary else palette.textPrimary
+                                    color = if (selected && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary
                                 )
                             }
                         }
@@ -271,8 +276,8 @@ fun ExerciseLibraryScreen(
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
+                            containerColor = palette.glassControlFill(palette.primary, GlassMaterialRole.Selection),
+                            contentColor = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary
                         ),
                         modifier = Modifier
                             .heightIn(min = 48.dp)
@@ -358,14 +363,16 @@ fun ExerciseLibraryScreen(
                                         .testTag("exercise_library_start_now_${ex.id}")
                                 ) {
                                     Row(
-                                        Modifier.clip(RoundedCornerShape(10.dp)).background(palette.primary)
+                                        Modifier.clip(RoundedCornerShape(10.dp))
+                                            .background(palette.glassControlFill(palette.primary, GlassMaterialRole.Selection))
+                                            .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(10.dp), GlassMaterialRole.Selection) else Modifier)
                                             .padding(horizontal = 10.dp, vertical = 7.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(if (state.exerciseSwapMode) Icons.Default.SwapHoriz else Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
+                                        Icon(if (state.exerciseSwapMode) Icons.Default.SwapHoriz else Icons.Default.PlayArrow, contentDescription = null, tint = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(2.dp))
                                         Text(startLabel, style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold, color = palette.onPrimary, maxLines = 1)
+                                            fontWeight = FontWeight.Bold, color = if (palette.isLiquidGlass) palette.textPrimary else palette.onPrimary, maxLines = 1)
                                     }
                                 }
                                 Box {

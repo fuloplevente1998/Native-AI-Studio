@@ -25,3 +25,10 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 - LiquidDropMaterial és KyantGlass: korábbi redundáns teljes kontroll press/drag layer eltávolítva, resting highlight/innerShadow megmarad. A GlassSelectionPill saját selection-state mozgása megmarad.
 - TopNavPillItem: közös press indication, a régi optics-off Material ripple eltávolítva. Külön nav X, videógomb, backup format, Material raw controls, chart és egyedi slider hívók L3-ban nyitottak.
 - Kompakt vizuális gyerek (TrainPilotDeleteIcon, MuscleHeatmapCard): a pointer helyi koordinátájának elsőbbsége, a nagyobb parent hit target változatlan. Készülékes margó/gesztus validáció még szükséges.
+
+
+## L3 first active sites
+- ExerciseLibraryScreen category Surface and row/queued Start: active bypass, now shared bounded control paint, unchanged standard branch. Three top filters: shared chip, explicitly cheap inside chrome. Native favorite IconToggleButton and menu entries remain to classify.
+- StudioStatisticsScreen StatisticsTabs: active shared chip, cheap selection in pinned chrome to avoid nested lens. Other chart/record state colors unchanged.
+- TrainPilotControls disabled field: shared tile paint, legacy pass-through. Other field/input paths remain to verify.
+- ProgramsListScreen fixed action background: existing explicit standard-only background; not removed blindly. Approved selector and active card not edited.

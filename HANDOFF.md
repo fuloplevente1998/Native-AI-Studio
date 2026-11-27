@@ -159,3 +159,9 @@
 - GlassTouchBubble vektoros, egy interaction collector + aktív animációs job, valódi Press.pressPosition vagy helyi pointer, rövid release biztosított, cancel nem gerjeszt új pulzust; old API/active measurement/overlay is, reduced motion/power save statikus 80 ms rövid jelzés, disabled/standard nincs buborék. Nincs új RenderEffect/capture. Fókusz/hover továbbra is látható; eseménykezelés/48dp változatlan.
 - LiquidGlass2808Test kapu és pozíció elvárás aktualizálva, LiquidGlass433PressTest széles kontroll három pontjára rövid press és távoli felület változatlanságának pixeltesztje. Sem JVM/R8, sem fizikai pixel/gesztus mérés nem futott. Forrás-szintű ellenőrzés és branch lease; nincs teljes körű L2 elfogadás.
 - L3 maradék raw press hívók: videógomb, nav bezárás, backup formátum, menü/Material3, saját chart/slider; L0 teljes call-site besorolás, L1 további palette/optikai coat, L3–L8 nyitott. Nincs main merge, build, verzióemelés, signer vagy Play feltöltés.
+
+
+### #433 L3 – first active call-site corrections (2026-11-27)
+- ExerciseLibraryScreen: category chips and row Start/Swap + queued Start now use bounded central selection/control paints and Liquid foreground, cheap vector rims, never a new capture. Existing favorite/custom filter chips opt out of live lenses. Standard color/shape branches and existing tags/actions unchanged.
+- StatisticsTabs opts out of live filter lens inside the pinned header; shared FilterChip liveGlass option defaults to true for other callers. Disabled common field fill also follows the shared tile paint.
+- L3 is partial: remaining screen/profile/active workout/icon/dropdown bypasses and the program editor layer still need classification and fixes. Approved ProgramsList selector remains unchanged. L4–L8 pending, no runtime tests or CI run yet. No version/merge/build.

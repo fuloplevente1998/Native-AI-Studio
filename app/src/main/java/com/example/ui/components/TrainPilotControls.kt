@@ -66,7 +66,8 @@ fun TrainPilotFilterChip(
     @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
     @Suppress("UNUSED_PARAMETER") colors: SelectableChipColors? = null,
     @Suppress("UNUSED_PARAMETER") border: BorderStroke? = null,
-    @Suppress("UNUSED_PARAMETER") interactionSource: MutableInteractionSource? = null
+    @Suppress("UNUSED_PARAMETER") interactionSource: MutableInteractionSource? = null,
+    liveGlass: Boolean = true
 ) {
     val p = LocalTrainPilotPalette.current
     val shape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
@@ -92,7 +93,7 @@ fun TrainPilotFilterChip(
             .semantics { this.selected = selected }
             .trainPilotClickable(shape, enabled = enabled, stretchOnDrag = true) { onClick() }
             .then(if (glassChip) Modifier.liquidDropMaterial(p, shape, role,
-                accent = if (selected) p.primary else null, live = selected && !overlay)
+                accent = if (selected) p.primary else null, live = liveGlass && selected && !overlay)
                 else Modifier)
     ) {
         CompositionLocalProvider(
@@ -119,7 +120,7 @@ fun trainPilotFieldColors(p: TrainPilotPalette = LocalTrainPilotPalette.current)
         focusedTextColor = p.textPrimary, unfocusedTextColor = p.textPrimary,
         disabledTextColor = p.textSecondary, errorTextColor = p.textPrimary,
         focusedContainerColor = p.glassTile(p.surfaceCard, elevated = true), unfocusedContainerColor = p.glassTile(p.surfaceCard),
-        disabledContainerColor = p.surfaceCard, errorContainerColor = p.glassTile(p.surfaceCard),
+        disabledContainerColor = p.glassTile(p.surfaceCard), errorContainerColor = p.glassTile(p.surfaceCard),
         cursorColor = p.primary, errorCursorColor = p.danger,
         // Input boundaries are functional, not decorative: keep a visible quiet outline, focus and error.
         focusedBorderColor = if (p.isLiquidGlass) p.primary else selection.border,
