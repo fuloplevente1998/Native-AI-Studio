@@ -30,3 +30,15 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/log/LogRouteMapScreen.kt` | 144 | 132, 138 | — | 82, 85 | — | — |
 | `com/example/ui/screens/log/LogScreenText.kt` | 9 | — | — | — | — | — |
 | `com/example/ui/screens/log/LogTabScreen.kt` | 701 | 209, 231, 238, 689 | 114, 236, 652 | 321, 344, 364, 368, 407, 451, 547, 669 | 42, 309, 483 | 346, 370, 409, 455, 599, 671 |
+| `com/example/ui/screens/log/LogWorkoutDetailScreen.kt` | 426 | 155, 165, 280 | — | 105, 110, 145, 146, 327, 328, 353, 354 | 37, 133, 217 | 210, 247 |
+| `com/example/ui/screens/measure/ActiveBilateralWorkoutScreen.kt` | 838 | 166, 430, 455, 593, 618, 703, 711 | — | 276, 280, 281, 356, 431, 519, 594, 680, 760 | 10, 47, 260, 313 | 450, 613, 705, 728 |
+| `com/example/ui/screens/measure/ActiveOutdoorGpsScreen.kt` | 583 | — | — | — | — | — |
+| `com/example/ui/screens/measure/ActiveStrengthWorkoutScreen.kt` | 302 | 282 | — | 147, 151, 152 | 4, 32, 134, 193 | 290 |
+| `com/example/ui/screens/measure/ActiveTimedWorkoutScreen.kt` | 558 | 367, 392, 523, 538, 544 | — | 198, 202, 203, 268, 470, 515 | 8, 46, 182, 230 | 387, 490 |
+| `com/example/ui/screens/measure/IntervalSettingsScreen.kt` | 232 | 224 | 141, 149, 155, 208, 218 | 129, 130, 191, 192, 214 | 27, 80 | — |
+| `com/example/ui/screens/measure/MeasurementShared.kt` | 122 | — | — | — | — | 63 |
+| `com/example/ui/screens/measure/WorkoutSummaryScreen.kt` | 750 | 439, 508, 538, 620 | 491, 521 | 398, 399, 433, 586, 740, 741 | 34, 76, 239, 562 | 468, 641 |
+| `com/example/ui/screens/progress/ProgressTabScreen.kt` | 248 | 227 | — | 117, 118, 145, 203 | 9, 11, 42, 106, 107, 184 | 134, 206 |
+| `com/example/ui/screens/progress/ProgressVolumeAndMuscle.kt` | 835 | 420, 453, 470, 493, 510, 529, 546, 565, 621, 686, 732, 779 | — | 133, 137, 237, 251, 286, 387, 392, 437, 486, 522, 558, 598, 601, 761 | 41, 398, 682 | 149, 243, 418, 468, 487, 508, 523, 544, 559, 608, 768 |
+| `com/example/ui/screens/settings/BackupRestoreScreen.kt` | 376 | 200 | 224, 269, 272 | 219, 220, 233, 256, 257, 366 | 37, 40, 181, 191, 371 | — |
+| `com/example/ui/screens/settings/GoogleCloudSyncCard.kt` | 463 | 159, 214, 248, 302, 313, 334, 345, 348, 418 | 291, 330, 430 | 164, 165, 189, 192, 241, 243 | — | 207, 234, 287, 298, 428 |
