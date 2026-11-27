@@ -486,12 +486,12 @@ fun ProgramsListScreen(
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
-            Spacer(modifier = Modifier.height(2.dp + com.example.ui.theme.LocalGlassTopInset.current))
+            Spacer(modifier = Modifier.height(com.example.ui.theme.LocalGlassTopInset.current))
         }
 
         Column(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
@@ -502,7 +502,7 @@ fun ProgramsListScreen(
                     .trainPilotGlassMaterial(palette, RoundedCornerShape(24.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
-                Row(modifier = Modifier.padding(4.dp)) {
+                Row(modifier = Modifier.padding(2.dp)) {
                     val builtinCount = remember(state.programs) { state.programs.count { !it.isCustom } }
                     val customCount = state.programs.size - builtinCount
                     val tabs = remember(state.language, builtinCount, customCount) { listOf(
@@ -523,7 +523,7 @@ fun ProgramsListScreen(
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp)
                             ) {
                                 Text(
                                     text = label,
@@ -538,12 +538,6 @@ fun ProgramsListScreen(
             }
 
             if (activeProgram != null) {
-                Text(
-                    text = strings.currentProgramTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = palette.textPrimary
-                )
-
                 val activeName = activeProgram.localizedName(state.language)
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
@@ -562,6 +556,7 @@ fun ProgramsListScreen(
                         isExpanded = activeExpanded,
                         tagPrefix = activeTagPrefix,
                         emblemSize = 40.dp,
+                        emphasizeActiveBadge = true,
                         onActivateProgram = { onActivateProgram(activeProgram.id) },
                         onOpenMoreActions = {
                             actionSheetSnapshot = activeProgram
@@ -582,135 +577,144 @@ fun ProgramsListScreen(
 
         }
 
-        Spacer(Modifier.height(6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()
-            .verticalScroll(programScroll).testTag("programs_list_scroll")
-            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
+        Spacer(Modifier.height(4.dp))
+        Column(Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()) {
+            // Fixed header: only the program rows and their expanded editors scroll.
             Text(
                 text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
                 style = MaterialTheme.typography.titleMedium,
-                color = palette.textPrimary
+                color = palette.textPrimary,
+                modifier = Modifier.fillMaxWidth()
+                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
+                    .testTag("programs_fixed_list_header")
             )
-
-            if (activeProgram != null && isInlineOpen(activeProgram.id, activeHost)) {
-                LaunchedEffect(activeProgram.id, activeHost) { programScroll.scrollTo(0) }
-                ProgramCardEditorContent(activeProgram, state.language, activeTagPrefix) {
-                    inlineEditor(activeProgram, inlinePending)
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+                color = palette.cardBorder.copy(alpha = 0.65f)
+            )
+            Column(
+                Modifier.weight(1f).fillMaxWidth()
+                    .verticalScroll(programScroll).testTag("programs_list_scroll")
+                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (activeProgram != null && isInlineOpen(activeProgram.id, activeHost)) {
+                    LaunchedEffect(activeProgram.id, activeHost) { programScroll.scrollTo(0) }
+                    ProgramCardEditorContent(activeProgram, state.language, activeTagPrefix) {
+                        inlineEditor(activeProgram, inlinePending)
+                    }
                 }
-            }
 
-            if (filteredPrograms.isEmpty() && state.programsTabCustomOnly) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.glassCardFill(palette.surface),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                if (filteredPrograms.isEmpty() && state.programsTabCustomOnly) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = palette.glassCardFill(palette.surface),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                     ) {
-                        Text(
-                            text = trW(state.language, "Még nincs saját generált programod", "No custom generated programs yet", "Noch keine eigenen Programme", "Nu ai încă programe personalizate"),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary
-                        )
-                        Text(
-                            text = trW(
-                                state.language,
-                                "Készíts személyre szabott edzéstervet a Kezdőprofil (A01) varázslóval vagy hozz létre saját programot!",
-                                "Build a personalized workout plan with the Starter Profile (A01) wizard or create a custom program!",
-                                "Erstelle einen personalisierten Trainingsplan mit dem Startprofil (A01) oder lege ein eigenes Programm an!",
-                                "Creează un plan personalizat cu profilul de bază (A01) sau adaugă un program propriu!"
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        TrainPilotGlassPrimaryButton(
-                            onClick = onOpenPersonalPlanner,
-                            colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
-                            shape = RoundedCornerShape(12.dp)
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(trW(state.language, "Kezdőprofil és egyéni terv (A01)", "Starter profile & custom plan (A01)", "Startprofil & eigener Plan (A01)", "Profil de bază și plan propriu (A01)"), fontWeight = FontWeight.Bold)
+                            Text(
+                                text = trW(state.language, "Még nincs saját generált programod", "No custom generated programs yet", "Noch keine eigenen Programme", "Nu ai încă programe personalizate"),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.textPrimary
+                            )
+                            Text(
+                                text = trW(
+                                    state.language,
+                                    "Készíts személyre szabott edzéstervet a Kezdőprofil (A01) varázslóval vagy hozz létre saját programot!",
+                                    "Build a personalized workout plan with the Starter Profile (A01) wizard or create a custom program!",
+                                    "Erstelle einen personalisierten Trainingsplan mit dem Startprofil (A01) oder lege ein eigenes Programm an!",
+                                    "Creează un plan personalizat cu profilul de bază (A01) sau adaugă un program propriu!"
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            TrainPilotGlassPrimaryButton(
+                                onClick = onOpenPersonalPlanner,
+                                colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(trW(state.language, "Kezdőprofil és egyéni terv (A01)", "Starter profile & custom plan (A01)", "Startprofil & eigener Plan (A01)", "Profil de bază și plan propriu (A01)"), fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
-            }
 
-            // Reorder requires measured neighbours, including offscreen cards. Keep its existing
-            // scroll container and stable composition identity; repeated cards use paint, not a lens.
-            Column(Modifier.fillMaxWidth()) {
-                filteredPrograms.forEachIndexed { index, program -> key(program.id) {
-                    val progName = program.localizedName(state.language)
-                    val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
-                    if (index > 0) TrainPilotListDivider()
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (program.isActive || isExpanded)
-                            palette.glassStateTile(palette.primary, palette.primary.copy(alpha = .09f)) else Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
-                            .trainPilotReorderItem(programReorder, program.id, index, layerWhenIdle = false)
-                            .trainPilotAnimatedExpansion()
-                            .testTag("program_card_${program.id}")
-                    ) {
-                        ProgramCardContent(
-                            program = program,
-                            language = state.language,
-                            isExpanded = isExpanded,
-                            tagPrefix = "",
-                            emblemSize = 36.dp,
-                            onActivateProgram = { onActivateProgram(program.id) },
-                            onOpenMoreActions = {
-                                actionSheetSnapshot = program
-                                actionSheetProgramId = program.id
-                            },
-                            headerModifier = Modifier.trainPilotCombinedClickable(
-                                shape = RoundedCornerShape(14.dp),
-                                onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
-                                onLongClick = {
+                // Reorder requires measured neighbours, including offscreen cards. Keep its existing
+                // scroll container and stable composition identity; repeated cards use paint, not a lens.
+                Column(Modifier.fillMaxWidth()) {
+                    filteredPrograms.forEachIndexed { index, program -> key(program.id) {
+                        val progName = program.localizedName(state.language)
+                        val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
+                        if (index > 0) TrainPilotListDivider()
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (program.isActive || isExpanded)
+                                palette.glassStateTile(palette.primary, palette.primary.copy(alpha = .09f)) else Color.Transparent,
+                            modifier = Modifier.fillMaxWidth()
+                                .trainPilotReorderItem(programReorder, program.id, index, layerWhenIdle = false)
+                                .trainPilotAnimatedExpansion()
+                                .testTag("program_card_${program.id}")
+                        ) {
+                            ProgramCardContent(
+                                program = program,
+                                language = state.language,
+                                isExpanded = isExpanded,
+                                tagPrefix = "",
+                                emblemSize = 36.dp,
+                                onActivateProgram = { onActivateProgram(program.id) },
+                                onOpenMoreActions = {
                                     actionSheetSnapshot = program
                                     actionSheetProgramId = program.id
                                 },
-                                onClick = { requestInlineEditor(program.id, INLINE_EDITOR_HOST_PROGRAMS) }
-                            ),
-                            expandedContent = { inlineEditor(program, inlinePending) },
-                            reorderSlot = {
-                                com.example.ui.components.TrainPilotReorderHandle(
-                                    state = programReorder,
-                                    key = program.id,
-                                    index = index,
-                                    lastIndex = filteredPrograms.lastIndex,
-                                    gap = 1.dp,
-                                    label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
-                                    moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
-                                    moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
-                                    testTag = "program_drag_handle_${program.id}",
-                                    onMove = { from, to ->
-                                        val fromId = filteredPrograms.getOrNull(from)?.id
-                                        val toId = filteredPrograms.getOrNull(to)?.id
-                                        val tabPrograms = state.programs.filter { it.isCustom == state.programsTabCustomOnly }
-                                        onMoveProgramOrder(
-                                            tabPrograms.indexOfFirst { it.id == fromId },
-                                            tabPrograms.indexOfFirst { it.id == toId }
-                                        )
+                                headerModifier = Modifier.trainPilotCombinedClickable(
+                                    shape = RoundedCornerShape(14.dp),
+                                    onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
+                                    onLongClick = {
+                                        actionSheetSnapshot = program
+                                        actionSheetProgramId = program.id
                                     },
-                                    modifier = Modifier.padding(end = 2.dp)
-                                )
-                            }
-                        )
-                    }
-                } }
+                                    onClick = { requestInlineEditor(program.id, INLINE_EDITOR_HOST_PROGRAMS) }
+                                ),
+                                expandedContent = { inlineEditor(program, inlinePending) },
+                                reorderSlot = {
+                                    com.example.ui.components.TrainPilotReorderHandle(
+                                        state = programReorder,
+                                        key = program.id,
+                                        index = index,
+                                        lastIndex = filteredPrograms.lastIndex,
+                                        gap = 1.dp,
+                                        label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
+                                        moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
+                                        moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
+                                        testTag = "program_drag_handle_${program.id}",
+                                        onMove = { from, to ->
+                                            val fromId = filteredPrograms.getOrNull(from)?.id
+                                            val toId = filteredPrograms.getOrNull(to)?.id
+                                            val tabPrograms = state.programs.filter { it.isCustom == state.programsTabCustomOnly }
+                                            onMoveProgramOrder(
+                                                tabPrograms.indexOfFirst { it.id == fromId },
+                                                tabPrograms.indexOfFirst { it.id == toId }
+                                            )
+                                        },
+                                        modifier = Modifier.padding(end = 2.dp)
+                                    )
+                                }
+                            )
+                        }
+                    } }
+                }
             }
-
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 6.dp).trainPilotListPanel()
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp).trainPilotListPanel()
             .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
