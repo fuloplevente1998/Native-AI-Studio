@@ -16,7 +16,7 @@ class LiquidGlassG8Test {
             val p = seed.withGlassClarity(step)
             for (role in roles) {
                 val paint = p.glassControlFill(p.primary, role)
-                assertEquals(glassControlPaint(step, role), paint)
+                assertEquals(glassControlPaint(p, step, role), paint)
                 val surface = paint.compositeOver(base)
                 assertTrue(paint.alpha < 0.4f)
                 assertTrue(surface.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)

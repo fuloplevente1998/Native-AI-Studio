@@ -171,7 +171,7 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                         if (showRim) drawGlassHighlights(path, palette, optics, 0f)
                     } else if (!live) {
                         drawRect(fallback)
-                        drawRect(glassFallbackPaint(palette.glassClarity))
+                        drawRect(glassFallbackPaint(palette, palette.glassClarity))
                         if (showRim) drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
@@ -196,8 +196,8 @@ internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
 }
 
 /** Nested header controls composite over the one header lens, including active workout. */
-internal fun glassHeaderControlPaint(clarity: Int, role: GlassMaterialRole): Color =
-    glassControlPaint(clarity, role)
+internal fun glassHeaderControlPaint(palette: TrainPilotPalette, role: GlassMaterialRole): Color =
+    glassControlPaint(palette, palette.glassClarity, role)
 
 @Composable
 internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =

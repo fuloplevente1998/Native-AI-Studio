@@ -32,7 +32,7 @@ internal fun Modifier.trainPilotGlassScene(palette: TrainPilotPalette): Modifier
 internal fun Modifier.trainPilotGlassMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Panel): Modifier {
     if (!palette.isLiquidGlass) return this
-    if (LocalGlassOverlay.current) return background(glassOverlayRolePaint(palette.glassClarity, role), shape)
+    if (LocalGlassOverlay.current) return background(glassOverlayRolePaint(palette, role), shape)
         .overlayRoleRim(palette, shape, role)
     if (role == GlassMaterialRole.Tile) return trainPilotGlassRim(palette, shape, role)
     // Dense/measurement surfaces keep a bounded paint with a curved vector edge. Actual
@@ -108,7 +108,7 @@ private fun Modifier.glassSceneModifier(palette: TrainPilotPalette, shape: Shape
                         if (paintComposeScene(optics.backdropCap)) drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
                         else {
                             drawRect(fallback)
-                            drawRect(glassFallbackPaint(palette.glassClarity))
+                            drawRect(glassFallbackPaint(palette, palette.glassClarity))
                         }
                         drawGlassHighlights(path, palette, optics, 0f)
                     }

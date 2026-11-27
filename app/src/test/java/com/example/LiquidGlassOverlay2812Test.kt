@@ -141,13 +141,14 @@ class LiquidGlassOverlay2812Test {
     }
 
     @Test fun overlayRolesStayDistinctAndReadable() {
-        for (step in 0..100) {
-            val tile = glassOverlayRolePaint(step, GlassMaterialRole.Tile)
-            val button = glassOverlayRolePaint(step, GlassMaterialRole.Button)
-            val selected = glassOverlayRolePaint(step, GlassMaterialRole.Selection)
+        for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
+            val p = seed.withGlassClarity(step)
+            val tile = glassOverlayRolePaint(p, GlassMaterialRole.Tile)
+            val button = glassOverlayRolePaint(p, GlassMaterialRole.Button)
+            val selected = glassOverlayRolePaint(p, GlassMaterialRole.Selection)
             assertTrue(tile.alpha < button.alpha)
             assertTrue(button.alpha < selected.alpha)
-            assertTrue(selected.blue > selected.red)
+            assertTrue(NativeThemeTokens.contrast(p.textSecondary, selected.compositeOver(GlassOptics.lensWorstCase)) >= 4.5f)
             for (paint in listOf(tile, button, selected)) {
                 val composite = paint.compositeOver(GlassOptics.lensWorstCase)
                 assertTrue(composite.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)

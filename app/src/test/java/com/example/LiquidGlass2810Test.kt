@@ -99,7 +99,7 @@ class LiquidGlass2810Test {
                 assertTrue(NativeThemeTokens.contrast(p.cardBorder, brightest) >= 3f)
                 // Inner tiles over the brightest composite stay under the ceiling (a mix with a darker neutral).
                 for (elevated in listOf(false, true)) {
-                    val tile = glassTilePaint(step, elevated).compositeOver(brightest)
+                    val tile = glassTilePaint(p, step, elevated).compositeOver(brightest)
                     assertTrue(tile.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
                 }
             }
@@ -153,9 +153,11 @@ class LiquidGlass2810Test {
     }
 
     @Test fun previousOpaquePathStaysForOldDevices() {
-        for (step in listOf(0, 37, 100)) {
+        for (p in glass) for (step in listOf(0, 37, 100)) {
             val t = step / 100f
-            assertEquals(GLASS_PAINT.copy(alpha = .82f - .64f * t), glassFallbackPaint(step))
+            val paint = glassFallbackPaint(p, step)
+            assertEquals(.82f - .64f * t, paint.alpha, 1f / 255f)
+            assertTrue(paint.copy(alpha = 1f).luminance() <= .057f)
         }
     }
 
