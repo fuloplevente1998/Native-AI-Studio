@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import com.example.ui.components.TrainPilotListDivider
 import com.example.ui.components.trainPilotListPanel
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.glassStateTile
 import androidx.compose.foundation.background
 import com.example.ui.theme.glassCardFill
@@ -470,7 +471,7 @@ fun ProgramsListScreen(
         state.isWorkoutSessionActive && state.statusBannerMessage != null -> 140.dp
         state.isWorkoutSessionActive -> 84.dp
         state.statusBannerMessage != null -> 68.dp
-        else -> 8.dp
+        else -> 4.dp
     }
     Column(
         modifier = Modifier
@@ -485,10 +486,13 @@ fun ProgramsListScreen(
                 onOpenSettings = onOpenSettings,
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
-        } else {
-            Spacer(modifier = Modifier.height(com.example.ui.theme.LocalGlassTopInset.current))
         }
-
+        com.example.ui.theme.GlassScrollChrome(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            rootInset = if (state.currentSubScreen == SubScreen.PROGRAMS_LIST) 0.dp
+                else com.example.ui.theme.LocalGlassTopInset.current,
+            top = {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -496,10 +500,10 @@ fun ProgramsListScreen(
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = palette.glassCardFill(palette.surface),
+                color = if (palette.isLiquidGlass) Color.Transparent else palette.glassCardFill(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotGlassMaterial(palette, RoundedCornerShape(24.dp))
+                    .glassHeaderMaterial(palette, RoundedCornerShape(24.dp))
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(2.dp)) {
@@ -542,11 +546,10 @@ fun ProgramsListScreen(
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (activeExpanded) palette.glassTile(palette.surface) else palette.glassCardFill(palette.surface),
+                    color = if (palette.isLiquidGlass) Color.Transparent else if (activeExpanded) palette.glassTile(palette.surface) else palette.glassCardFill(palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotGlassMaterial(palette, RoundedCornerShape(16.dp),
-                            if (activeExpanded) GlassMaterialRole.Tile else GlassMaterialRole.Panel)
+                        .glassHeaderMaterial(palette, RoundedCornerShape(16.dp))
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .testTag("programs_active_program_card")
                 ) {
@@ -577,27 +580,94 @@ fun ProgramsListScreen(
 
         }
 
-        Spacer(Modifier.height(4.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()) {
-            // Fixed header: only the program rows and their expanded editors scroll.
-            Text(
-                text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = palette.textPrimary,
-                modifier = Modifier.fillMaxWidth()
-                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
-                    .testTag("programs_fixed_list_header")
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-                color = palette.cardBorder.copy(alpha = 0.65f)
-            )
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
+                    ) {
+                        Text(
+                            text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = palette.textPrimary,
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
+                                .testTag("programs_fixed_list_header")
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+                            color = palette.cardBorder.copy(alpha = 0.65f)
+                        )
+                    }
+                }
+            },
+            bottom = {
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp)
+            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
+            .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TrainPilotGlassPrimaryButton(
+                    onClick = { showCreateCustomProgramDialog = true },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = palette.primary,
+                        contentColor = palette.onPrimary
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 50.dp)
+                        .testTag("programs_create_custom_program_button")
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(trW(state.language, "Új program", "New program", "Neues Programm", "Program nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                }
+
+                TrainPilotOutlinedButton(
+                    onClick = onOpenAddCustomExercise,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 50.dp)
+                        .testTag("programs_create_custom_exercise_button")
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"), style = MaterialTheme.typography.labelLarge, color = palette.primary, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            TrainPilotOutlinedButton(
+                onClick = onOpenExerciseLibrary,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("programs_exercise_picker")
+            ) {
+                Text(
+                    text = "${strings.exercisePickerTitle} (${state.exercises.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = palette.textPrimary
+                )
+            }
+        }
+            }
+        ) { scrollModifier, topInset, bottomBarInset ->
             Column(
-                Modifier.weight(1f).fillMaxWidth()
+                scrollModifier.trainPilotListPanel()
                     .verticalScroll(programScroll).testTag("programs_list_scroll")
-                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 2.dp),
+                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                Spacer(Modifier.height(topInset))
                 if (activeProgram != null && isInlineOpen(activeProgram.id, activeHost)) {
                     LaunchedEffect(activeProgram.id, activeHost) { programScroll.scrollTo(0) }
                     ProgramCardEditorContent(activeProgram, state.language, activeTagPrefix) {
@@ -711,61 +781,7 @@ fun ProgramsListScreen(
                         }
                     } }
                 }
-            }
-        }
-
-        Column(Modifier.fillMaxWidth().padding(top = 4.dp).trainPilotListPanel()
-            .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TrainPilotGlassPrimaryButton(
-                    onClick = { showCreateCustomProgramDialog = true },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 50.dp)
-                        .testTag("programs_create_custom_program_button")
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(trW(state.language, "Új program", "New program", "Neues Programm", "Program nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                }
-
-                TrainPilotOutlinedButton(
-                    onClick = onOpenAddCustomExercise,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 50.dp)
-                        .testTag("programs_create_custom_exercise_button")
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"), style = MaterialTheme.typography.labelLarge, color = palette.primary, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            TrainPilotOutlinedButton(
-                onClick = onOpenExerciseLibrary,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag("programs_exercise_picker")
-            ) {
-                Text(
-                    text = "${strings.exercisePickerTitle} (${state.exercises.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = palette.textPrimary
-                )
+                Spacer(Modifier.height(bottomBarInset))
             }
         }
     }
