@@ -437,6 +437,27 @@ internal fun PageLayoutHorizontalRow(
     }
 }
 
+/** Keep the footer at the viewport bottom only when all content fits. On overflow
+ * the ordinary spacing is preserved and the footer remains the final scroll item.
+ * During layout editing there is no footer, so the normal arrangement is used.
+ */
+internal fun pageFooterArrangement(gap: Dp, footerVisible: Boolean): Arrangement.Vertical {
+    val normal = Arrangement.spacedBy(gap)
+    if (!footerVisible) return normal
+    return object : Arrangement.Vertical {
+        override val spacing: Dp get() = gap
+        override fun androidx.compose.ui.unit.Density.arrange(
+            totalSize: Int, sizes: IntArray, outPositions: IntArray
+        ) {
+            with(normal) { arrange(totalSize, sizes, outPositions) }
+            if (sizes.isNotEmpty()) {
+                val last = sizes.lastIndex
+                outPositions[last] = maxOf(outPositions[last], totalSize - sizes[last])
+            }
+        }
+    }
+}
+
 @Composable
 internal fun PageLayoutFooter(layout: PageLayoutState, language: AppLanguage) {
     if (layout.draft != null) return
