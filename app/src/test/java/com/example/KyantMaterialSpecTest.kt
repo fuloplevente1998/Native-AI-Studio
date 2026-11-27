@@ -99,7 +99,7 @@ class KyantMaterialSpecTest {
         assertFalse(com.example.ui.theme.glassPrismaticRimRole(GlassMaterialRole.Tile))
         assertFalse(com.example.ui.theme.glassPrismaticRimRole(GlassMaterialRole.Performance))
         for (role in listOf(GlassMaterialRole.Navigation, GlassMaterialRole.Panel,
-            GlassMaterialRole.Selection, GlassMaterialRole.Button, GlassMaterialRole.Input)) {
+            GlassMaterialRole.Selection, GlassMaterialRole.Button, GlassMaterialRole.Input, GlassMaterialRole.Overlay)) {
             assertTrue(com.example.ui.theme.glassPrismaticRimRole(role))
         }
     }
@@ -110,6 +110,8 @@ class KyantMaterialSpecTest {
             assertTrue(role(GlassMaterialRole.Navigation).tintAlpha < role(GlassMaterialRole.Panel).tintAlpha)
             assertTrue(role(GlassMaterialRole.Overlay).tintAlpha > role(GlassMaterialRole.Button).tintAlpha)
             assertTrue(role(GlassMaterialRole.Selection).lensAmountDp > role(GlassMaterialRole.Navigation).lensAmountDp)
+            assertTrue(role(GlassMaterialRole.Panel).lensAmountDp > role(GlassMaterialRole.Navigation).lensAmountDp)
+            assertTrue(role(GlassMaterialRole.Input).lensAmountDp < role(GlassMaterialRole.Button).lensAmountDp)
             assertFalse(role(GlassMaterialRole.Tile).shadow)
             assertFalse(role(GlassMaterialRole.Performance).shadow)
             assertFalse(role(GlassMaterialRole.Performance).usesBackdrop)
