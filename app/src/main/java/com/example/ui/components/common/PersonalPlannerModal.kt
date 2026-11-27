@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassTile
 
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
@@ -253,7 +254,7 @@ fun PersonalPlannerModalDialog(
         Box(modifier = modifier) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = palette.surface,
+                color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(
@@ -388,7 +389,7 @@ fun PersonalPlannerModalDialog(
                 // 1. Cél és edzettség
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -448,7 +449,7 @@ fun PersonalPlannerModalDialog(
 
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = palette.surfaceElevated,
+                        color = palette.glassTile(palette.surfaceElevated, elevated = true),
                         modifier = Modifier.fillMaxWidth()
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                     ) {
@@ -485,7 +486,7 @@ fun PersonalPlannerModalDialog(
                 // 2. Felszerelés (Több opció egyidejű kijelölése)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -519,7 +520,7 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.surface,
+                                color = palette.glassTile(palette.surface),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .trainPilotBorder(
@@ -634,7 +635,7 @@ fun PersonalPlannerModalDialog(
                 // 3. Edzésbeosztás
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -694,7 +695,7 @@ fun PersonalPlannerModalDialog(
                 // 4. Korlátozások (Piros kiemeléssel, fölé nyíló legördülő menükkel)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated,
+                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotFrame(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
@@ -728,7 +729,7 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.surface,
+                                color = palette.glassTile(palette.surface),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(
@@ -830,7 +831,7 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.surface,
+                                color = palette.glassTile(palette.surface),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(

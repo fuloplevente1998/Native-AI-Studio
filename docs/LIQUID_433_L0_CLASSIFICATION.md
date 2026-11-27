@@ -36,3 +36,9 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 
 ## L5 source triage (not a fix)
 - Both MainActivity files, GlassSceneHost, GlassAwareScaffold, TrainPilotRouteContent, SettingsMainScreen, StudioPaletteCategories, PalettePickerSheet, VmAppearance and VmBackupSettings inspected. Active manifest entry is com.repforge.app.MainActivity. No direct navigation in selectPalette/syncNativeSettings. Route keys independent of palette. Settings reveal and DataStore feedback timing require integration reproduction. No causal claim or runtime modification yet.
+
+## L1/L3 compatibility continuation
+- LiquidGlassPalettes.withGlassClarity surface/surfaceElevated: active common compatibility fields (Material theme, nativeStudioColors, raw icon fills), now palette-derived bounded opaque hue instead of white coat composite; optical cardPaint preserved. Standard/custom branch returns before calculation.
+- PersonalPlannerModal: four raw base and five elevated Surface sites → shared glassTile. DropdownMenu alias already shared, restriction red outlines/labels semantic exceptions. Standard pass-through. Native popup items still separate press review.
+- ProgramTypeEmblemIcon: non-highlighted raw elevated surface → glassTile; active highlight explicit state retained.
+- LiquidDropMaterial: normal palette-primary accent uses background hue; explicit other accents remain semantic; remember cheap gradient brush.

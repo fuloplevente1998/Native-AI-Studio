@@ -29,7 +29,7 @@ class LiquidGlass433PaintTest {
                 val fallback = glassFallbackPaint(p, step)
                 val popup = p.glassOverlayFill(Color.Magenta)
                 val overlay = GlassMaterialRole.entries.map { glassOverlayRolePaint(p, it) }
-                val paints = listOf(tile, elevated, selection, nav, fallback, popup) + overlay
+                val paints = listOf(tile, elevated, selection, nav, fallback, popup, p.surface, p.surfaceElevated) + overlay
                 for (paint in paints) {
                     assertTrue("${p.key} step=$step hue=$paint", hueDistance(p.background, paint) <= 6f)
                     assertTrue("${p.key} step=$step bounded=$paint",

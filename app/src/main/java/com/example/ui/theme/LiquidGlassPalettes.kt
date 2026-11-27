@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import com.repforge.app.ui.theme.NativeThemeTokens
 
 internal const val DEFAULT_GLASS_CLARITY = 65
@@ -49,22 +50,27 @@ internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
     val clarity = value.coerceIn(0, 100)
     val end = lerp(background, Color(0xFF080D17), .65f)
     val optics = GlassOptics.from(clarity)
-    // 2810/6: the card paint is the thin white-ish tint (.40 Frosted -> .06 Clear). The representative
-    // opaque card (dialogs, legacy call sites) is that tint over the backdrop as the lens limits it.
+    // Keep the optical coat white-ish; opaque compatibility surfaces are a separate
+    // palette-derived material. Otherwise native icon backgrounds inherit a grey frost coat.
     val paint = GlassOptics.TINT.copy(alpha = optics.coat)
-    val card = paint.compositeOver(GlassScene.guard(background, optics.backdropCap))
-    val inner = lerp(card, Color.White, .05f)
+    val opticalCard = paint.compositeOver(GlassScene.guard(background, optics.backdropCap))
+    val opticalInner = lerp(opticalCard, Color.White, .05f)
+    val card = glassBackgroundTint(opticalCard.luminance().coerceAtMost(.115f), saturation = .55f)
+    val inner = glassBackgroundTint(opticalInner.luminance().coerceAtMost(.124f), saturation = .55f)
     val fallback = glassFallbackPaint(this, clarity)
     // Worst cases of the rendered material: the glass ceiling (every lens/tint composite stays at or
     // below SURFACE_LUMA_MAX), the guarded page, the V4 scene bound and the API 31–32 blur-only lens.
     val rendered = listOf(GlassOptics.lensWorstCase, GlassContrast.grey(GlassScene.lumaCap),
         GlassOptics.sceneWorstCase(background), GlassOptics.blurOnlyWorstCase(clarity))
     // Inner tiles: palette-derived tints bounded below the ceiling over any of these surfaces.
-    val tiles = (rendered + listOf(card, background)).flatMap { under ->
-        listOf(glassTilePaint(this, clarity, false), glassTilePaint(this, clarity, true)).map { it.compositeOver(under) } }
-    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner,
+    val tilePaints = listOf(glassTilePaint(this, clarity, false), glassTilePaint(this, clarity, true))
+    val tiles = (rendered + listOf(card, background, opticalCard)).flatMap { under ->
+        tilePaints.map { it.compositeOver(under) } }
+    val surfaces = listOf(background, end, card, paint.compositeOver(end), inner, opticalCard, opticalInner,
         fallback.compositeOver(background), fallback.compositeOver(end)) + rendered + tiles +
-        listOf(.12f, .16f, .22f).map { primary.copy(alpha = it).compositeOver(card) }
+        listOf(.12f, .16f, .22f).flatMap { alpha ->
+            listOf(card, opticalCard).map { primary.copy(alpha = alpha).compositeOver(it) }
+        }
     fun readable(seed: Color, minimum: Float): Color {
         for (step in 0..100) {
             val candidate = lerp(seed, Color.White, step / 100f)
