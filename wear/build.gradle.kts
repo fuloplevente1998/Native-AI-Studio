@@ -8,7 +8,7 @@ val phoneAndroid = project(":app").extensions.getByType<com.android.build.api.ds
 
 android {
     namespace = "com.repforge.app.wear"
-    compileSdk { version = release(36) { minorApiLevel = 1 } }
+    compileSdk = 37
     defaultConfig {
         // Data Layer requires matching phone identity and signer.
         applicationId = "com.TrainPilot.com"

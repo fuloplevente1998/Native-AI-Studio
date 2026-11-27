@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
-import android.graphics.ColorMatrixColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorMatrixColorFilter
 import android.os.Build
 import android.view.View
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,7 +42,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 
 /**
- * Kyant Backdrop 1.0.6 (Apache-2.0). Only public APIs; one guarded backdrop per window,
+ * Kyant Backdrop 2.0.1 (Apache-2.0). Only public APIs; one guarded backdrop per window,
  * with a separate combined source for scrolling header content. Legacy palettes never use it.
  */
 internal object KyantGlass {
@@ -94,7 +95,7 @@ internal fun Modifier.kyantSceneLayer(palette: TrainPilotPalette, backdrop: Laye
 
 /**
  * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
- * Backdrop 1.0.6 LayerBackdropNode.draw calls drawContent then records its custom onDraw.
+ * Backdrop 2.0.1 LayerBackdropNode.draw calls drawContent then records its custom onDraw.
  * Our outer draw modifier runs that recording first, then displays the very same GraphicsLayer.
  * No second procedural/photo draw, no additional graphics layer or bitmap, and no child capture.
  */
@@ -122,7 +123,7 @@ internal fun Modifier.kyantGlass(
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
     val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
-        val filter = ColorMatrixColorFilter(glassVibrancyMatrix(spec.saturation, scale))
+        val filter = ColorMatrixColorFilter(ColorMatrix(glassVibrancyMatrix(spec.saturation, scale)))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
         val height = with(density) { spec.lensHeightDp.dp.toPx() }
         val amount = with(density) { spec.lensAmountDp.dp.toPx() }

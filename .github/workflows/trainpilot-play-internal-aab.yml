@@ -36,14 +36,13 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Install Android API 36 SDK
+      - name: Install Android API 37 SDK
         shell: bash
         run: |
           SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
           test -n "${SDKMANAGER}"
           yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+          "${SDKMANAGER}" --install 'platforms;android-37' 'build-tools;37.0.0'
 
       - name: Set up Gradle 9.9.3
         uses: gradle/actions/setup-gradle@v6.4.1
