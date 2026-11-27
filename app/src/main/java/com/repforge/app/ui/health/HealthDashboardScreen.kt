@@ -196,7 +196,11 @@ fun HealthDashboardScreen(
             color = colors.dangerText, modifier = Modifier.testTag("health_background_error").padding(12.dp)
         )
         // Két fül: Egészségnapló vs #111 BLE Eszközkereső
-        TabRow(
+        if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+            val labels = listOf(com.repforge.app.ui.text.nativeResources(context, state.language).getString(com.repforge.app.R.string.health_history_title), strings.getString(R.string.native_health_ble_tab))
+            com.example.ui.components.LiquidSegmentedTabs(labels, if (state.activeTab == "journal") 0 else 1,
+                { viewModel.setTab(if (it == 0) "journal" else "ble") }, "native_health_tab_track") { _, label, _ -> com.example.ui.components.TrainPilotFitText(label) }
+        } else TabRow(
             selectedTabIndex = if (state.activeTab == "journal") 0 else 1,
             containerColor = colors.card,
             contentColor = colors.text,
@@ -331,7 +335,13 @@ fun HealthJournalTabContent(
                             TextButton(onClick = { onDay(day) }) { Text(day) }
                         }
                     }
-                    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        val channels = listOf("journal", "health_connect", "samsung_health", "legacy", com.repforge.app.HealthJournalStore.BLE)
+                        val labels = channels.map { channel -> when (channel) { "journal" -> text.getString(com.repforge.app.R.string.health_history_auto)
+                            "health_connect" -> "Health Connect"; "samsung_health" -> "Samsung Health"; com.repforge.app.HealthJournalStore.BLE -> "BLE"; else -> text.getString(com.repforge.app.R.string.health_history_legacy) } }
+                        com.example.ui.components.LiquidSegmentedTabs(labels, channels.indexOf(state.historyChannel),
+                            { onChannel(channels[it]) }, "health_history_channel_track", scrollable = true) { _, label, _ -> Text(label, maxLines = 1) }
+                    } else androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(listOf("journal", "health_connect", "samsung_health", "legacy", com.repforge.app.HealthJournalStore.BLE)) { channel ->
                             val label = when (channel) { "journal" -> text.getString(com.repforge.app.R.string.health_history_auto)
                                 "health_connect" -> "Health Connect"; "samsung_health" -> "Samsung Health"; com.repforge.app.HealthJournalStore.BLE -> "BLE"; else -> text.getString(com.repforge.app.R.string.health_history_legacy) }
@@ -385,7 +395,16 @@ fun HealthJournalTabContent(
                     if (state.provider == com.repforge.app.HealthJournalStore.HC) {
                         val text = com.repforge.app.ui.text.nativeResources(LocalContext.current, state.language)
                         Text(text.getString(com.repforge.app.R.string.health_daily_source_title), color = colors.text)
-                        androidx.compose.foundation.lazy.LazyRow(modifier = Modifier.testTag("health_daily_sources_row"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                            val choices = listOf("auto", "priority") + state.dailySourceOptions
+                            val labels = choices.map { choice -> when (choice) {
+                                "auto" -> text.getString(R.string.health_daily_source_auto)
+                                "priority" -> text.getString(R.string.health_daily_source_priority)
+                                else -> choice } }
+                            com.example.ui.components.LiquidSegmentedTabs(labels, choices.indexOf(state.dailySourcePreference),
+                                { onDailySource(choices[it]) }, "health_daily_sources_row", scrollable = true,
+                                enabled = !state.sourceSaving && !state.historyLoading, itemTag = { "health_daily_${choices[it]}" }) { _, label, _ -> Text(label, maxLines = 1) }
+                        } else androidx.compose.foundation.lazy.LazyRow(modifier = Modifier.testTag("health_daily_sources_row"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(listOf("auto", "priority") + state.dailySourceOptions, key = { it }) { choice ->
                                 com.example.ui.components.TrainPilotFilterChip(selected = state.dailySourcePreference == choice,
                                     enabled = !state.sourceSaving && !state.historyLoading,
