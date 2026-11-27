@@ -507,7 +507,9 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                                 "Tagesliste (${ordered.size})", "Listă zilnică (${ordered.size})"),
                             color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f).testTag("statistics_steps_sheet_header"))
-                        IconButton(onClick = { listOpen = false }, modifier = Modifier.testTag("statistics_steps_sheet_close")) {
+                        if (palette.isLiquidGlass) {
+                            com.example.ui.components.TrainPilotRedCloseButton(onClick = { listOpen = false }, testTag = "statistics_steps_sheet_close")
+                        } else IconButton(onClick = { listOpen = false }, modifier = Modifier.testTag("statistics_steps_sheet_close")) {
                             Icon(Icons.Default.Close, contentDescription = statsTr(lang, "Bezárás", "Close", "Schließen", "Închide"),
                                 tint = palette.primary)
                         }
