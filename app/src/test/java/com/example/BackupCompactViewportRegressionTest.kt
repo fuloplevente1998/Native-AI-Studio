@@ -125,7 +125,10 @@ class BackupCompactViewportRegressionTest {
         compose.runOnIdle {
             flow.value = flow.value.copy(googleSyncState = GoogleSyncUiState(connectedEmail = "fixture@example.test"))
         }
-        quick.assertIsDisplayed().assertHeightIsAtLeast(48.dp).performClick()
+        quick.assertIsDisplayed().assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+        compose.onNodeWithTag("settings_google_quick_sync_icon", useUnmergedTree = true)
+            .assertWidthIsEqualTo(36.dp).assertHeightIsEqualTo(36.dp)
+        quick.performClick()
         compose.onNodeWithTag("settings_google_expanded").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(1, cloudCalls)

@@ -116,5 +116,5 @@
 
 ## Beállítások – Google Cloud gyorsszinkron
 
-- `fix/settings-cloud-quick-sync`, alap `9e0fa11a`. Az összecsukott Beállítások-kártya jobb oldalán a Drive + Naptár szinkron indítható. A gyorsgomb külön érintési felület, a kibontott művelettel azonos útvonalon és tiltásokkal működik. A Biztonsági mentés külön gyorsikonja kikerült. A meglévő Drive-mentés működése megmaradt.
+- `fix/settings-cloud-quick-sync`, alap `9e0fa11a`. Az összecsukott Beállítások-kártya jobb oldalán a Drive + Naptár szinkron indítható. A gyorsgomb kerek, 36 dp-es vizuális kerettel és 48 dp-es érintési felülettel rendelkezik, a kibontott művelettel azonos útvonalon és tiltásokkal működik. A Biztonsági mentés külön gyorsikonja kikerült. A meglévő Drive-mentés működése megmaradt.
 - A naptár árva teljesítéspipája külön nyitott hibapont. A Liquid megjelenés, a témaváltás és az érintési nyúlás fizikai eszközön ellenőrizendő.

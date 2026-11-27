@@ -229,17 +229,25 @@ fun StudioGoogleCloudSyncCard(
                     val enabled = !busyAny && activity != null
                     val syncLabel = tr(lang, "Google Cloud szinkronizálása", "Sync Google Cloud",
                         "Google Cloud synchronisieren", "Sincronizează Google Cloud")
-                    val shape = RoundedCornerShape(10.dp)
-                    Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                    Box(
                         modifier = Modifier.size(48.dp)
-                            .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
-                            .trainPilotBorder(1.dp, palette.cardBorder, shape)
-                            .trainPilotClickable(shape, enabled = enabled, onClick = syncCloudNow)
+                            .trainPilotClickable(CircleShape, enabled = enabled, onClick = syncCloudNow)
                             .testTag("settings_google_quick_sync")
-                            .semantics { contentDescription = syncLabel }) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)
-                            else Icon(Icons.Default.Sync, null, tint = if (enabled) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                            .semantics { contentDescription = syncLabel },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            modifier = Modifier.size(36.dp)
+                                .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
+                                .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
+                                .testTag("settings_google_quick_sync_icon")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)
+                                else Icon(Icons.Default.Sync, null, tint = if (enabled) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                            }
                         }
                     }
                 }
