@@ -81,8 +81,6 @@ fun StudioGoogleCloudSyncCard(
     onCloudSyncCompleted: () -> Unit = {},
     settingsViewModel: SettingsViewModel = viewModel(),
     compact: Boolean = false,
-    compactDriveSyncEnabled: Boolean = true,
-    onCompactDriveSync: (() -> Unit)? = null,
     onSyncAllCloud: (() -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -227,21 +225,17 @@ fun StudioGoogleCloudSyncCard(
                 Icon(if (cloudExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
             }
 
-                if (!cloudExpanded && connected) {
-                    val enabled = (!compact || compactDriveSyncEnabled) && !busyAny && activity != null
-                    val syncLabel = if (compact) tr(lang, "Google Drive szinkronizálása", "Sync Google Drive",
-                        "Google Drive synchronisieren", "Sincronizează Google Drive") else tr(lang,
-                        "Google Cloud szinkronizálása", "Sync Google Cloud", "Google Cloud synchronisieren", "Sincronizează Google Cloud")
+                if (!compact && !cloudExpanded && connected) {
+                    val enabled = !busyAny && activity != null
+                    val syncLabel = tr(lang, "Google Cloud szinkronizálása", "Sync Google Cloud",
+                        "Google Cloud synchronisieren", "Sincronizează Google Cloud")
                     val shape = RoundedCornerShape(10.dp)
                     Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = true),
                         modifier = Modifier.size(48.dp)
                             .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
                             .trainPilotBorder(1.dp, palette.cardBorder, shape)
-                            .trainPilotClickable(shape, enabled = enabled) {
-                                if (!compact) syncCloudNow()
-                                else if (onCompactDriveSync != null) onCompactDriveSync()
-                                else activity?.let { settingsViewModel.syncDriveCloud(it) }
-                            }.testTag(if (compact) "backup_drive_quick_sync" else "settings_google_quick_sync")
+                            .trainPilotClickable(shape, enabled = enabled, onClick = syncCloudNow)
+                            .testTag("settings_google_quick_sync")
                             .semantics { contentDescription = syncLabel }) {
                         Box(contentAlignment = Alignment.Center) {
                             if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)

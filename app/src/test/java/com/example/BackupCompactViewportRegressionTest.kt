@@ -84,42 +84,26 @@ class BackupCompactViewportRegressionTest {
         compose.onNodeWithText("Drive sync completed.").assertIsDisplayed()
     }
 
-    @Test fun compactDriveShortcutRunsWithoutExpandingAndHonorsTheBackupGuard() {
+    @Test fun compactBackupCardKeepsItsExpandableStatusWithoutAQuickSyncIcon() {
         val settings = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]
         val field = SettingsViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
         @Suppress("UNCHECKED_CAST")
         val flow = field.get(settings) as MutableStateFlow<SettingsUiState>
-        var allowed by mutableStateOf(true)
-        var calls = 0
         compose.setContent {
             CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(AppLanguage.HU)) {
                 TrainPilotTheme {
                     com.example.ui.screens.StudioGoogleCloudSyncCard(onShowBanner = {},
-                        settingsViewModel = settings, compact = true, compactDriveSyncEnabled = allowed,
-                        onCompactDriveSync = { calls++ })
+                        settingsViewModel = settings, compact = true)
                 }
             }
         }
         compose.runOnIdle {
             flow.value = flow.value.copy(googleSyncState = GoogleSyncUiState(connectedEmail = "fixture@example.test"))
         }
-        val quick = compose.onNodeWithTag("backup_drive_quick_sync")
-        quick.assertIsDisplayed().assertIsEnabled().assertHeightIsAtLeast(48.dp).performClick()
-        compose.onNodeWithTag("settings_google_expanded").assertDoesNotExist()
-        compose.runOnIdle { assertEquals(1, calls); allowed = false }
-        quick.assertIsNotEnabled()
-        compose.runOnIdle {
-            allowed = true
-            flow.value = flow.value.copy(googleSyncState = flow.value.googleSyncState.copy(isBusy = true))
-        }
-        quick.assertIsNotEnabled()
-        compose.runOnIdle {
-            flow.value = flow.value.copy(googleSyncState = flow.value.googleSyncState.copy(isBusy = false))
-        }
+        compose.onNodeWithTag("backup_drive_quick_sync").assertDoesNotExist()
+        compose.onNodeWithTag("settings_google_quick_sync").assertDoesNotExist()
         compose.onNodeWithTag("settings_google_expand").performClick()
-        quick.assertDoesNotExist()
         compose.onNodeWithTag("settings_google_expanded").assertExists()
-        compose.runOnIdle { assertEquals(1, calls) }
     }
 
     @Test fun settingsCloudShortcutSharesTheFullSyncActionWithoutExpanding() {
@@ -128,12 +112,11 @@ class BackupCompactViewportRegressionTest {
         @Suppress("UNCHECKED_CAST")
         val flow = field.get(settings) as MutableStateFlow<SettingsUiState>
         var cloudCalls = 0
-        var driveOnlyCalls = 0
         compose.setContent {
             CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(AppLanguage.HU)) {
                 TrainPilotTheme {
                     com.example.ui.screens.StudioGoogleCloudSyncCard(onShowBanner = {}, settingsViewModel = settings,
-                        onCompactDriveSync = { driveOnlyCalls++ }, onSyncAllCloud = { cloudCalls++ })
+                        onSyncAllCloud = { cloudCalls++ })
                 }
             }
         }
@@ -146,7 +129,6 @@ class BackupCompactViewportRegressionTest {
         compose.onNodeWithTag("settings_google_expanded").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(1, cloudCalls)
-            assertEquals(0, driveOnlyCalls)
             flow.value = flow.value.copy(googleSyncState = flow.value.googleSyncState.copy(isBusy = true))
         }
         quick.assertIsNotEnabled()
@@ -156,7 +138,7 @@ class BackupCompactViewportRegressionTest {
         compose.onNodeWithTag("settings_google_expand").performClick()
         quick.assertDoesNotExist()
         compose.onNodeWithTag("settings_google_sync_now_btn").performClick()
-        compose.runOnIdle { assertEquals(2, cloudCalls); assertEquals(0, driveOnlyCalls) }
+        compose.runOnIdle { assertEquals(2, cloudCalls) }
     }
 
     @Test fun controlsFitAndHealthConsentRemainsAccessibleInAllLanguages() {
