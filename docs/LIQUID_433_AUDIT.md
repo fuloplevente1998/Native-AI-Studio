@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (84/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (98/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -285,3 +285,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/progress/NativeProgressQuery.kt` | 127 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/progress/NativeStrengthRange.kt` | 28 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/progress/NativeWeightJournalRepository.kt` | 125 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/ProgressScreen.kt` | 446 | 7 | 229, 391, 392, 414 | — | — | 35, 36, 135, 177, 200 | 188, 208 |
+| `com/repforge/app/ui/progress/ProgressViewModel.kt` | 280 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/progress/StatisticsMetricTile.kt` | 35 | 1 | — | — | 24, 25 | — | — |
+| `com/repforge/app/ui/progress/WeightJournalScreen.kt` | 236 | 4 | 74, 131, 142, 146, 222 | 79, 97, 129, 162, 175, 221 | — | 12, 13, 58, 164 | 166 |
+| `com/repforge/app/ui/progress/WeightJournalViewModel.kt` | 108 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/settings/NativeGoogleConsentLauncher.kt` | 32 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/settings/NativeGoogleMaintenance.kt` | 43 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/settings/NativeGoogleMaintenanceUi.kt` | 76 | 3 | — | 35, 54, 58 | — | — | — |
+| `com/repforge/app/ui/settings/NativeLanguagePicker.kt` | 67 | 1 | 38 | 55 | — | — | — |
+| `com/repforge/app/ui/settings/NativeThemePicker.kt` | 78 | 1 | 42 | 59 | — | — | — |
+| `com/repforge/app/ui/settings/NativeTimerDefaultsDialog.kt` | 101 | 3 | 53 | 77, 97 | — | 12, 56 | — |
+| `com/repforge/app/ui/settings/NativeTrainingModeComparison.kt` | 144 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/settings/NativeTrainingModePicker.kt` | 287 | 1 | 119, 158, 283 | 130, 132, 144, 146, 153, 265, 279 | — | 13, 45, 198 | — |
+| `com/repforge/app/ui/settings/ReplacementRecoveryPanel.kt` | 51 | 1 | — | 40 | — | — | — |
