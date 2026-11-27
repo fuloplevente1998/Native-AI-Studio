@@ -1,5 +1,12 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.KyantWindowOverlay
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.LocalGlassPowerSave
+import com.example.ui.theme.glassOverlayFill
+import androidx.compose.runtime.CompositionLocalProvider
 import com.example.ui.theme.liquidDropMaterial
 
 import com.example.ui.theme.glassStateTile
@@ -22,7 +29,7 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
 
-import androidx.compose.foundation.background
+import com.example.ui.components.trainPilotMenuSelection
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,6 +57,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -286,13 +294,34 @@ internal fun PlannerFieldTile(
                                 onSelectOption(opt)
                                 expanded = false
                             },
-                            modifier = Modifier.background(
-                                if (isSelected) palette.primary.copy(alpha = 0.16f)
-                                else Color.Transparent
-                            )
+                            modifier = Modifier.trainPilotMenuSelection(isSelected, palette.primary.copy(alpha = 0.16f))
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun CalendarReplanSurface(content: @Composable () -> Unit) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(24.dp)
+    val panel: @Composable (Color) -> Unit = { fill ->
+        Surface(
+            shape = shape,
+            color = fill,
+            modifier = Modifier.fillMaxWidth().testTag("calendar_replan_dialog")
+                .trainPilotBorder(1.dp, palette.cardBorder, shape),
+            content = content
+        )
+    }
+    Box(Modifier.padding(horizontal = 12.dp, vertical = 20.dp)) {
+        if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current) {
+            KyantWindowOverlay(palette, shape, staticSheet = true) { panel(Color.Transparent) }
+        } else {
+            CompositionLocalProvider(LocalGlassOverlay provides palette.isLiquidGlass) {
+                panel(palette.glassOverlayFill(palette.surfaceCard))
             }
         }
     }

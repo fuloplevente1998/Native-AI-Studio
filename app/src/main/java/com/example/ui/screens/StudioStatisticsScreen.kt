@@ -4,6 +4,8 @@ import com.example.ui.components.TrainPilotListDivider
 import com.example.ui.components.trainPilotListPanel
 
 
+import com.example.ui.theme.GlassScrollChrome
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -35,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -124,40 +127,40 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
+    val exerciseList = state.statsSubTab == 0
+    val exerciseListState = rememberLazyListState()
+    val activityListState = rememberLazyListState()
+    val listState = if (exerciseList) exerciseListState else activityListState
+    val tabs: @Composable (Modifier) -> Unit = { modifier ->
+        StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier)
+    }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
-        val listState = rememberLazyListState()
+        GlassScrollChrome(
+            modifier = if (exerciseList) scrollModifier.clipToBounds() else scrollModifier,
+            enabled = exerciseList,
+            rootInset = if (exerciseList) topInset else 0.dp,
+            localWindow = true,
+            top = {
+                if (exerciseList) {
+                    val shape = RoundedCornerShape(14.dp)
+                    tabs(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        .glassHeaderMaterial(palette, shape)
+                        .padding(4.dp))
+                }
+            }
+        ) { listModifier, tabsInset, _ ->
+        key(exerciseList) {
         com.example.ui.components.TrainPilotScrollableListBox(
             lazyListState = listState,
-            modifier = scrollModifier
+            modifier = listModifier
         ) {
-            val exerciseList = state.statsSubTab == 0
             val panel = if (exerciseList) Modifier.padding(horizontal = 6.dp).trainPilotListPanel() else Modifier
+            val contentTop = 4.dp + (if (exerciseList) tabsInset else topInset)
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize().then(panel).testTag("studio_statistics_screen"),
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp + topInset, bottom = 4.dp),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = contentTop, bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(if (exerciseList) 0.dp else 6.dp)) {
-            // 2779: three tabs in one row: Strength (records) · Cardio · Steps. The stored state stays
-            // statsSubTab 0/1 + cardioFilterStepsMode, so the view model and saved settings are unchanged.
-            val visibleTab = when {
-                state.statsSubTab == 0 -> 0
-                state.cardioFilterStepsMode -> 2
-                else -> 1
-            }
-            item(key = "statistics_tabs", contentType = "tabs") { Row(Modifier.fillMaxWidth().padding(bottom = if (exerciseList) 6.dp else 0.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
-                    statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
-                subTabLabels.forEachIndexed { index, label ->
-                    com.example.ui.components.TrainPilotFilterChip(selected = visibleTab == index, onClick = {
-                        when (index) {
-                            0 -> onSelectTab(0)
-                            1 -> { onActivity(NativeCardioModel.ALL_ACTIVITIES); onSelectTab(1); onStepsMode(false) }
-                            else -> { onSelectTab(1); onStepsMode(true) }
-                        }
-                    }, label = { com.example.ui.components.TrainPilotFitText(label, modifier = Modifier.testTag("statistics_subtab_label_$index")) },
-                        modifier = Modifier.weight(com.example.ui.components.trainPilotLabelWeight(label, subTabLabels)).heightIn(min = 48.dp)
-                        .testTag("statistics_subtab_$index"))
-                }
-            } }
-            if (state.statsSubTab == 0) {
+            if (!exerciseList) item(key = "statistics_tabs", contentType = "tabs") { tabs(Modifier) }
+            if (exerciseList) {
                 when {
                     state.savedRecordsLoading -> item(key = "records_loading", contentType = "status") { Text(statsTr(lang, "Rekordok betöltése…", "Loading records…", "Rekorde werden geladen…", "Se încarcă recordurile…"), color = palette.textSecondary) }
                     state.savedRecordsError -> {
@@ -270,7 +273,54 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             }
         }
     }
+        }
+        }
+    }
 }
+
+@Composable
+private fun StatisticsTabs(
+    state: TrainPilotUiState,
+    onSelectTab: (Int) -> Unit,
+    onStepsMode: (Boolean) -> Unit,
+    onActivity: (String) -> Unit,
+    modifier: Modifier
+) {
+    val lang = state.language
+    val visibleTab = when {
+        state.statsSubTab == 0 -> 0
+        state.cardioFilterStepsMode -> 2
+        else -> 1
+    }
+    val labels = listOf(
+        statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"),
+        statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
+        statsTr(lang, "Lépések", "Steps", "Schritte", "Pași")
+    )
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        labels.forEachIndexed { index, label ->
+            com.example.ui.components.TrainPilotFilterChip(
+                selected = visibleTab == index,
+                onClick = {
+                    when (index) {
+                        0 -> onSelectTab(0)
+                        1 -> {
+                            onActivity(NativeCardioModel.ALL_ACTIVITIES)
+                            onSelectTab(1)
+                            onStepsMode(false)
+                        }
+                        else -> {
+                            onSelectTab(1)
+                            onStepsMode(true)
+                        }
+                    }
+                },
+                label = { com.example.ui.components.TrainPilotFitText(label, modifier = Modifier.testTag("statistics_subtab_label_$index")) },
+                modifier = Modifier.weight(com.example.ui.components.trainPilotLabelWeight(label, labels))
+                    .heightIn(min = 48.dp).testTag("statistics_subtab_$index")
+            )
+        }
+    }
 }
 
 internal fun savedRecordLabel(

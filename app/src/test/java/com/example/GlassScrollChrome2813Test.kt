@@ -30,6 +30,7 @@ class GlassScrollChrome2813Test {
         compose.setContent {
             TrainPilotTheme {
                 MeasuredScrollChrome(rootInset = 60.dp,
+                        panel = Modifier.testTag("chrome_panel"),
                         top = { Box(Modifier.fillMaxWidth().height(48.dp).testTag("chrome_top")) },
                         bottom = { Box(Modifier.fillMaxWidth().height(72.dp).testTag("chrome_bottom")) }
                     ) { modifier, top, bottom ->
@@ -44,6 +45,9 @@ class GlassScrollChrome2813Test {
         }
         val upper = compose.onNodeWithTag("chrome_top").getUnclippedBoundsInRoot()
         val lower = compose.onNodeWithTag("chrome_bottom").getUnclippedBoundsInRoot()
+        val panel = compose.onNodeWithTag("chrome_panel").getUnclippedBoundsInRoot()
+        assertEquals(upper.top, panel.top)
+        assertEquals(lower.top, panel.bottom)
         val first = compose.onNodeWithTag("chrome_row_0").getUnclippedBoundsInRoot()
         assertEquals(upper.bottom, first.top)
         compose.onNodeWithTag("chrome_list").performScrollToIndex(8)

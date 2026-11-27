@@ -52,3 +52,15 @@
 - Az Alap programok fülön az Új program teljes szélességű. A három művelet a Saját programok fülön érhető el. A hagyományos témák egészségnaplós értékei külön háttérrel és finom kerettel jelennek meg.
 - A teljes JVM és R8 CI szükséges. Készüléken ellenőrizendő a naptárfestés és a görgetés.
 - A 2816-os készülékes próbához a belső verzió telefonon 281600, Wear OS-en 281602. Megjelenített verzió 1.5.5.
+
+## #426 – Fotónapló és Programok üvegfelületei
+
+- `fix/photo-journal-contrast`, alap `60ac9631`. A nagykép átlátszatlan hátteret, a bélyegképek kivágott, lekerekített sarkot, a fotóhozzáadó gombok Liquid témában sötétebb hátteret kaptak.
+- A Programok listája a címsáv és az alsó műveletsáv mögött görgethető. A fülek és az aktív kártya a listán kívül maradnak. Az alsó sáv peremét a gomb peremfénye emeli ki.
+- Fizikai készüléken ellenőrizendők a képkivágások és a görgetés közbeni üveghatás.
+- A Fejlődés gyakorlatstatisztikáiban a rekordlista a Gyakorlatok / Kardió / Lépések választósáv mögött görög, a felső navigáció és fő fülek előtt véget ér.
+- A naptári és személyes tervező, valamint a naplózott edzés visszajelzési menüje lekerekített, beljebb húzott kijelölést használ.
+- A „További programok” cím és a lista közös keretet kapott, a cím alá erősebb elválasztó került. Az alsó műveletsáv külön felület.
+- A 40-es Liquid Glass téma neve Arany. A meglévő témakulcs a mentett választások miatt megmaradt. A háttér fényeinek színárnyalata a TrainPilot sárgájából származik.
+- A naptári Újratervezés a Liquid témák saját üveges ablakanyagát használja. A Bezárás kerete 36 dp, az érintési felület 48 dp.
+- A dátumablakból indítható a még le nem járt tervezett edzés. A gomb az adott alkalom azonosítóját adja át; a normál edzésmotor ellenőrzi a mentett alkalmat és a naplózást ahhoz kapcsolja.

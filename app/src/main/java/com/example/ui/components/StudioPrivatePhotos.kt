@@ -6,6 +6,9 @@ import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.glassOverlayFill
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -147,6 +150,9 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
         state.privatePhotoWorkoutId == null || (it.kind == "workout" && it.workoutId == state.privatePhotoWorkoutId)
     }
     val lang = state.language
+    val photoActionFill = if (palette.isLiquidGlass) {
+        lerp(palette.glassOverlayFill(palette.surfaceElevated), Color.Black, .22f).copy(alpha = .88f)
+    } else palette.surfaceElevated
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
         Column(Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("private_photos_screen")
             .padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,8 +206,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (palette.isLiquidGlass)
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
+                                    containerColor = photoActionFill,
                                     contentColor = palette.textPrimary
                                 ),
                                 modifier = Modifier.weight(1f).heightIn(min = 48.dp)
@@ -225,8 +230,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (palette.isLiquidGlass)
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
+                                    containerColor = photoActionFill,
                                     contentColor = palette.textPrimary
                                 ),
                                 modifier = Modifier.weight(1f).heightIn(min = 48.dp)
@@ -325,7 +329,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.surfaceElevated,
+                                    containerColor = photoActionFill,
                                     contentColor = palette.textPrimary
                                 ),
                                 modifier = Modifier
@@ -352,7 +356,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.surfaceElevated,
+                                    containerColor = photoActionFill,
                                     contentColor = palette.textPrimary
                                 ),
                                 modifier = Modifier

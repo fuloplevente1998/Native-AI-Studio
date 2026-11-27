@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassOverlayFill
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -247,7 +248,7 @@ private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifi
                 }
             } else Image(result.image,
                 strings.getString(R.string.native_progress_photo_title),
-                Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).testTag("progress_photo_image_$id"), contentScale = ContentScale.Fit)
+                Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).testTag("progress_photo_image_$id"), contentScale = ContentScale.Crop)
         }
     }
 }
@@ -314,7 +315,7 @@ internal fun NativeProgressPhotoGallery(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 PrivateProgressPhoto(photo.id, 256, state.language,
-                                    Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
+                                    Modifier.size(112.dp))
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)), color = colors.text)
                                     val label = if (photo.kind == "weight") {
@@ -373,7 +374,7 @@ internal fun NativeProgressPhotoGallery(
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 PrivateProgressPhoto(photo.id, 256, state.language,
-                                    Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
+                                    Modifier.size(112.dp))
                             val label = if (photo.kind == "weight") {
                                 val weightLabel = photo.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
                                 when (state.language) {
@@ -405,7 +406,9 @@ internal fun NativeProgressPhotoGallery(
             val palette = LocalTrainPilotPalette.current
             val frameShape = RoundedCornerShape(28.dp)
             Column(
-                Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp)
+                Modifier.fillMaxSize()
+                    .background(palette.glassOverlayFill(colors.bg).copy(alpha = 1f))
+                    .systemBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp)
                     .clip(frameShape).trainPilotScreenBackdrop(palette)
                     .trainPilotBorder(1.dp, colors.line, frameShape).padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)

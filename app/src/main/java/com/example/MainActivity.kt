@@ -204,6 +204,7 @@ import com.example.ui.viewmodel.skipRestTimer
 import com.example.ui.viewmodel.startCoachWorkout
 import com.example.ui.viewmodel.startGpsTrackingSession
 import com.example.ui.viewmodel.startOutdoorWorkout
+import com.example.ui.viewmodel.startCalendarWorkout
 import com.example.ui.viewmodel.startPlannedWorkout
 import com.example.ui.viewmodel.startQueuedWorkout
 import com.example.ui.viewmodel.stopActiveWorkoutSession
@@ -656,6 +657,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectDay = { viewModel.selectCalendarDay(it) },
                                     onSelectMonth = { viewModel.selectCalendarMonth(it) },
                             onOpenReplanModal = { viewModel.toggleReplanModal(it) },
+                            onStartPlannedWorkout = { viewModel.startCalendarWorkout(it) },
                             onApplyReplan = { dateStr, firstDay, programId ->
                                 viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                             },
@@ -1132,6 +1134,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSelectDay = { viewModel.selectCalendarDay(it) },
                                     onSelectMonth = { viewModel.selectCalendarMonth(it) },
                                     onOpenReplanModal = { viewModel.toggleReplanModal(it) },
+                                    onStartPlannedWorkout = { viewModel.startCalendarWorkout(it) },
                                     onApplyReplan = { dateStr, firstDay, programId ->
                                         viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                                     },

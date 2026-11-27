@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.liquidDropMaterial
+import com.example.model.StudioCalendarDates
+import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
 
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -106,7 +108,8 @@ fun CalendarPlannerScreen(
     onActivateProgram: (String) -> Unit = {},
     onRequestClearCalendar: () -> Unit = {},
     onConfirmClearCalendar: () -> Unit = {},
-    onCancelClearCalendar: () -> Unit = {}
+    onCancelClearCalendar: () -> Unit = {},
+    onStartPlannedWorkout: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -862,6 +865,21 @@ fun CalendarPlannerScreen(
                                     }
                                 }
 
+                                if (onStartPlannedWorkout != null && StudioCalendarDates.canStart(ev)) {
+                                    TrainPilotGlassPrimaryButton(
+                                        onClick = {
+                                            openedDay = null
+                                            onStartPlannedWorkout(ev.id)
+                                        },
+                                        enabled = !state.isWorkoutSessionActive && !state.isSavingWorkout,
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                            .testTag("calendar_start_planned_${ev.id}")
+                                    ) {
+                                        Text(strings.startPlannedBtn)
+                                    }
+                                }
+
                                 // 4-button Action row: Módosítás | Áthelyezés | Törlés | Visszavonás
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -922,14 +940,7 @@ fun CalendarPlannerScreen(
             onDismissRequest = { onOpenReplanModal(false) },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 20.dp)
-                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(24.dp))
-            ) {
+            CalendarReplanSurface {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -948,20 +959,21 @@ fun CalendarPlannerScreen(
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.danger.copy(alpha = 0.12f),
-                            modifier = Modifier
-                                .size(48.dp).testTag("calendar_replan_close")
-                                .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenReplanModal(false) }
+                        val closeShape = RoundedCornerShape(10.dp)
+                        Box(
+                            modifier = Modifier.size(48.dp).testTag("calendar_replan_close")
+                                .semantics { contentDescription = trW(state.language, "Bezárás", "Close", "Schließen", "Închide") }
+                                .trainPilotClickable(closeShape) { onOpenReplanModal(false) },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "✕",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.textPrimary
-                                )
+                            Box(
+                                modifier = Modifier.size(36.dp)
+                                    .background(palette.danger.copy(alpha = .12f), closeShape)
+                                    .border(1.dp, palette.danger.copy(alpha = .5f), closeShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("✕", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = palette.textPrimary)
                             }
                         }
                     }

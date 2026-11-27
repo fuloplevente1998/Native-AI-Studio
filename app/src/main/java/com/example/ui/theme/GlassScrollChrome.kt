@@ -27,6 +27,7 @@ internal fun GlassScrollChrome(
     localWindow: Boolean = false,
     top: (@Composable () -> Unit)? = null,
     bottom: (@Composable () -> Unit)? = null,
+    panel: Modifier? = null,
     content: @Composable (Modifier, Dp, Dp) -> Unit
 ) {
     // Only a real window-local scene layer can be combined with the list capture.
@@ -44,8 +45,15 @@ internal fun GlassScrollChrome(
     if (!live) {
         Column(modifier) {
             if (rootInset > 0.dp) Spacer(Modifier.height(rootInset))
-            top?.invoke()
-            Box(Modifier.weight(1f).fillMaxWidth()) { content(Modifier.fillMaxSize(), 0.dp, 0.dp) }
+            if (panel == null) {
+                top?.invoke()
+                Box(Modifier.weight(1f).fillMaxWidth()) { content(Modifier.fillMaxSize(), 0.dp, 0.dp) }
+            } else {
+                Column(Modifier.weight(1f).fillMaxWidth().then(panel)) {
+                    top?.invoke()
+                    Box(Modifier.weight(1f).fillMaxWidth()) { content(Modifier.fillMaxSize(), 0.dp, 0.dp) }
+                }
+            }
             bottom?.invoke()
         }
         return
@@ -58,6 +66,7 @@ internal fun GlassScrollChrome(
         modifier = modifier,
         rootInset = rootInset,
         capture = Modifier.layerBackdrop(layer),
+        panel = panel,
         top = { CompositionLocalProvider(LocalKyantHeader provides chrome, LocalPinnedGlassChrome provides chrome) { top?.invoke() } },
         bottom = { CompositionLocalProvider(LocalKyantHeader provides chrome, LocalPinnedGlassChrome provides chrome) { bottom?.invoke() } },
         content = content

@@ -20,7 +20,7 @@ internal object LiquidGlassPalettes {
         Tone("emerald", "Smaragd", "Emerald", "Smaragd", "Smarald", 0xFF78F2BC, 0xFF12392E),
         Tone("amethyst", "Ametiszt", "Amethyst", "Amethyst", "Ametist", 0xFFD0B2FF, 0xFF35234F),
         Tone("rose", "Rózsaszín", "Rose", "Rosé", "Roz", 0xFFFFB9D8, 0xFF41253B),
-        Tone("amber", "Borostyán", "Amber", "Bernstein", "Chihlimbar", 0xFFFFD18C, 0xFF402E1A)
+        Tone("amber", "Arany", "Gold", "Gold", "Auriu", 0xFFFFD18C, 0xFF382E08)
     )
     val all: List<TrainPilotPalette> = tones.mapIndexed { i, t ->
         val bg = Color(t.backdrop)

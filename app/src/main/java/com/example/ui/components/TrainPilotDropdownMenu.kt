@@ -1,8 +1,10 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -10,8 +12,11 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.glassOverlayFill
@@ -66,3 +71,11 @@ internal fun WorkoutEditorDropdownMenu(
         CompositionLocalProvider(LocalContentColor provides p.textPrimary) { content() }
     }
 }
+
+private val menuSelectionShape = RoundedCornerShape(10.dp)
+
+internal fun Modifier.trainPilotMenuSelection(isSelected: Boolean, selectedFill: Color): Modifier =
+    padding(horizontal = 4.dp, vertical = 2.dp)
+        .clip(menuSelectionShape)
+        .background(if (isSelected) selectedFill else Color.Transparent)
+        .semantics { selected = isSelected }

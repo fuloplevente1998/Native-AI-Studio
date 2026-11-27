@@ -8,6 +8,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import com.example.model.AppLanguage
 
+internal const val TRAIN_PILOT_GOLD = 0xFFFFD426L
+
 enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmoji: String) {
     ALL("Összes téma", "All Themes", "🎨"),
     MATTE("Matt témák", "Matte Themes", "🌑"),
@@ -287,7 +289,7 @@ object TrainPilotPalettes {
             background = Color(0xFF101216),
             surface = Color(0xFF262D36),
             surfaceElevated = Color(0xFF1B2129),
-            primary = Color(0xFFFFD426),
+            primary = Color(TRAIN_PILOT_GOLD),
             onPrimary = Color(0xFF171305),
             secondary = Color(0xFF00E5FF),
             textPrimary = Color(0xFFF5F7FB),

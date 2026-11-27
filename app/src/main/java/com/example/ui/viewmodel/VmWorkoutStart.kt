@@ -55,6 +55,22 @@ fun TrainPilotViewModel.openPlannedProgramDetails() {
     toggleInlineProgramEditor(program.id, index, INLINE_EDITOR_HOST_HOME)
 }
 
+fun TrainPilotViewModel.startCalendarWorkout(eventId: String) {
+    startCanonicalWorkout(allowExisting = false) {
+        calendarWriteJob?.join()
+        check(calendarWriteError == null) { requireNotNull(calendarWriteError) }
+        val state = _uiState.value
+        val event = state.calendarEvents.find { it.id == eventId }
+        require(event != null && com.example.model.StudioCalendarDates.canStart(event)) {
+            tr("Ez a tervezett edzés már nem indítható.", "This planned workout can no longer be started.",
+                "Dieses geplante Training kann nicht mehr gestartet werden.",
+                "Acest antrenament planificat nu mai poate fi început.")
+        }
+        NativeWorkoutSession.startProgramWorkout(requireNotNull(nativeContext), event.programId, event.dayId,
+            scheduleId = event.id, database = requireNotNull(nativeDatabase), automaticEnabled = state.autoModeEnabled).snapshot
+    }
+}
+
 fun TrainPilotViewModel.startCoachWorkout(programId: String, dayId: String, scheduleId: String?) {
     startCanonicalWorkout {
         com.repforge.app.NativeWorkoutSession.startProgramWorkout(requireNotNull(nativeContext),

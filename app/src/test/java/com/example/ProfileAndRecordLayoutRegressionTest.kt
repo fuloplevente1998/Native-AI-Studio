@@ -82,6 +82,26 @@ class ProfileAndRecordLayoutRegressionTest {
         assertTrue(card.bottom - card.top >= collapsed + 160.dp)
         assertTrue(plot.top >= card.top && plot.bottom <= card.bottom)
     }
+    @Test fun exerciseStatisticsTabsStayVisibleWhenTheRecordsScroll() {
+        compose.setContent { TrainPilotTheme {
+            StudioStatisticsContent(
+                state = TrainPilotUiState(statsSubTab = 0, savedRecordsLoading = false,
+                    savedExerciseBests = List(30) { index ->
+                        SavedExerciseBest("exercise_$index", "Gyakorlat $index", "Exercise $index",
+                            "reps", "weight", 5.5, 15, null, null)
+                    }),
+                native = ProgressUiState(),
+                onSelectTab = {}, onStepsMode = {}, onExercise = {}, onActivity = {},
+                onRetry = {}, onRefreshRecords = {})
+        } }
+        val tab = compose.onNodeWithTag("statistics_subtab_0").assertIsDisplayed()
+        val initialPosition = tab.getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("studio_statistics_screen").performScrollToIndex(29)
+        compose.onNodeWithTag("statistics_record_exercise_29").assertIsDisplayed()
+        tab.assertIsDisplayed()
+        assertEquals(initialPosition, tab.getUnclippedBoundsInRoot())
+    }
+
     @Test fun cardioAndStepsAreSeparateTabsOfTheStatistics() {
         // 2779: Erő · Kardió · Lépések. Daily steps live only on their own tab.
         val selected = androidx.compose.runtime.mutableStateOf("cycling")
