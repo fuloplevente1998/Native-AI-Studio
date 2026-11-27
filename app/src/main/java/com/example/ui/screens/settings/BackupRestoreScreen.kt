@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotPressIndication
+
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassStateTile
 
@@ -214,7 +216,7 @@ fun BackupRestoreScreen(
                     listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
                         val sel = uiState.selectedBackupFormat == fmt
                         val interaction = remember(fmt) { MutableInteractionSource() }
-                        val pressed by interaction.collectIsPressedAsState()
+                        val pressed = if (palette.isLiquidGlass) false else interaction.collectIsPressedAsState().value
                         val shape = RoundedCornerShape(10.dp)
                         val background = if (sel) palette.glassStateTile(palette.primary, palette.primary, strong = true)
                             else palette.glassTile(palette.surfaceCard)
@@ -229,7 +231,7 @@ fun BackupRestoreScreen(
                                 shape = shape,
                                 color = if (palette.isLiquidGlass) background else lerp(background, palette.primary, if (pressed) 0.12f else 0f),
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clip(shape)
-                                    .indication(interaction, ripple())
+                                    .then(if (palette.isLiquidGlass) Modifier.trainPilotPressIndication(shape, interaction) else Modifier.indication(interaction, ripple()))
                                     .trainPilotGlassRim(palette, shape)
                                     .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, shape)
                                     .testTag("backup_format_${fmt}_visual")

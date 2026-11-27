@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotFullHeightFormSheet
 
@@ -21,7 +23,6 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Checkbox
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -136,7 +137,7 @@ fun AddCustomExerciseModalDialog(
                         modifier = if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surfaceElevated)
                     ) {
                         ExerciseCategory.entries.filter { it != ExerciseCategory.ALL }.forEach { cat ->
-                            DropdownMenuItem(
+                            TrainPilotMenuItem(
                                 text = {
                                     Text(
                                         text = cat.localized(lang),
@@ -186,7 +187,7 @@ fun AddCustomExerciseModalDialog(
                         modifier = if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surfaceElevated)
                     ) {
                         equipmentOptions.forEach { (canonicalEq, displayEq) ->
-                            DropdownMenuItem(
+                            TrainPilotMenuItem(
                                 text = {
                                     Text(
                                         text = displayEq,

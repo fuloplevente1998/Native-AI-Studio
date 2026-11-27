@@ -451,7 +451,7 @@ fun TrainPilotRedCloseButton(
     val strings = LocalTrainPilotStrings.current
     val palette = LocalTrainPilotPalette.current
     val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
+    val pressed = if (palette.isLiquidGlass) false else interaction.collectIsPressedAsState().value
     val colors = com.repforge.app.ui.theme.TrainPilotActionAppearance
     val shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(11.dp)
     val width = if (palette.isLiquidGlass) size + 10.dp else size
@@ -463,7 +463,7 @@ fun TrainPilotRedCloseButton(
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
         Surface(shape = shape, color = if (palette.isLiquidGlass) fill.copy(alpha = .78f) else fill,
             modifier = Modifier.size(width, height).clip(shape)
-                .indication(interaction, ripple())
+                .then(if (palette.isLiquidGlass) Modifier.trainPilotPressIndication(shape, interaction, enabled) else Modifier.indication(interaction, ripple()))
                 .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
                 .border(1.dp, colors.negativeOutline.copy(alpha = 0.7f), shape)
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {

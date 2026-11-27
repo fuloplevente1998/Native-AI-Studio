@@ -144,7 +144,7 @@ internal fun StudioStrengthSetCard(
                     }
                     DropdownMenu(expanded = menuOpen && enabled, onDismissRequest = { menuOpen = false },
                         modifier = Modifier.testTag("set_menu_${item.setNumber}_menu")) {
-                        DropdownMenuItem(
+                        TrainPilotMenuItem(
                             text = { Text(tr("Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = p.danger) },
                             enabled = enabled,
                             onClick = { menuOpen = false; onDelete() },
@@ -226,12 +226,12 @@ private fun WorkoutSetValuePicker(
             }
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
                 scrollState = scroll, modifier = Modifier.heightIn(max = 300.dp).testTag("${tag}_menu")) {
-                if (customValid != null) DropdownMenuItem(
+                if (customValid != null) TrainPilotMenuItem(
                     text = { Text(tr("Egyedi érték…", "Custom value…", "Eigener Wert…", "Valoare personalizată…"), color = selection.foreground) },
                     modifier = Modifier.testTag("${tag}_custom"),
                     onClick = { expanded = false; draft = value; custom = true })
                 choices.forEach { option ->
-                    DropdownMenuItem(text = { Text(display(option), color = if (option == value) selection.foreground else p.textPrimary,
+                    TrainPilotMenuItem(text = { Text(display(option), color = if (option == value) selection.foreground else p.textPrimary,
                         fontWeight = if (option == value) FontWeight.Bold else FontWeight.Normal) },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_option_$option"),
                         onClick = { expanded = false; onSelect(option) })

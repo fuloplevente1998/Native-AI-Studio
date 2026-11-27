@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.theme.KyantGlass
 import com.example.ui.theme.KyantWindowOverlay
 import com.example.ui.theme.LocalGlassOpticsEnabled
@@ -45,7 +47,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -266,7 +267,7 @@ internal fun PlannerFieldTile(
                 ) {
                     dropdownOptions.forEach { opt ->
                         val isSelected = opt == value
-                        androidx.compose.material3.DropdownMenuItem(
+                        TrainPilotMenuItem(
                             text = {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

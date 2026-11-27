@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -16,7 +18,6 @@ import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.Text
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
@@ -129,7 +130,7 @@ internal fun NativeTrainingModePicker(
                 }
                 DropdownMenu(expanded = styleExpanded, onDismissRequest = { styleExpanded = false }) {
                     for (option in listOf("normal", "hit")) {
-                        DropdownMenuItem(text = { Text(styleLabel(option)) },
+                        TrainPilotMenuItem(text = { Text(styleLabel(option)) },
                             onClick = { style = option; pending = null; styleExpanded = false },
                             modifier = Modifier.testTag("${tag}_style_$option"))
                     }
@@ -143,7 +144,7 @@ internal fun NativeTrainingModePicker(
                 }
                 DropdownMenu(expanded = progressionExpanded, onDismissRequest = { progressionExpanded = false }) {
                     for (option in listOf("double", "linear", "rir")) {
-                        DropdownMenuItem(text = { Text(progressionLabel(option)) },
+                        TrainPilotMenuItem(text = { Text(progressionLabel(option)) },
                             onClick = { progression = option; pending = null; progressionExpanded = false },
                             modifier = Modifier.testTag("${tag}_progression_$option"))
                     }

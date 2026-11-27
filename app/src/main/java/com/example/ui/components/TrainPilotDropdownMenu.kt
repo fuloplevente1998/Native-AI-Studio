@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.glassOverlayFill
+import com.repforge.app.ui.theme.trainPilotPressIndication
 
 /** Popup windows use a single bounded matte fill: no capture, blur or per-row lens. */
 @Composable
@@ -79,3 +80,26 @@ internal fun Modifier.trainPilotMenuSelection(isSelected: Boolean, selectedFill:
         .clip(menuSelectionShape)
         .background(if (isSelected) selectedFill else Color.Transparent)
         .semantics { selected = isSelected }
+
+/** Keep Material menu semantics and sizing; only Liquid replaces the built-in ripple. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun TrainPilotMenuItem(
+    text: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    enabled: Boolean = true,
+) {
+    if (!LocalTrainPilotPalette.current.isLiquidGlass) {
+        androidx.compose.material3.DropdownMenuItem(text, onClick, modifier, leadingIcon, trailingIcon, enabled)
+        return
+    }
+    val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    CompositionLocalProvider(androidx.compose.material3.LocalRippleConfiguration provides null) {
+        androidx.compose.material3.DropdownMenuItem(text, onClick,
+            modifier.trainPilotPressIndication(menuSelectionShape, source, enabled),
+            leadingIcon, trailingIcon, enabled, interactionSource = source)
+    }
+}

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.components.trainPilotMenuSelection
 import com.example.ui.theme.LocalTrainPilotPalette
 
@@ -56,7 +58,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
             modifier = if (LocalTrainPilotPalette.current.isLiquidGlass) Modifier else Modifier.background(colors.card)) {
             choices.forEach { (key, label) ->
                 val chosen = answer?.first == key
-                DropdownMenuItem(text = { Text(label, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal,
+                TrainPilotMenuItem(text = { Text(label, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal,
                     color = if (chosen) colors.accentText else colors.text) },
                     trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accentText) },
                     onClick = { onSelect(key); expanded = false },

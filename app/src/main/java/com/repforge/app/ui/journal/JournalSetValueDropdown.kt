@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.theme.LocalTrainPilotPalette
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
@@ -62,10 +64,10 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
             }
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
                 modifier = Modifier.heightIn(max = 280.dp).then(if (LocalTrainPilotPalette.current.isLiquidGlass) Modifier else Modifier.background(colors.card))) {
-                DropdownMenuItem(text = { Text(customLabel, color = colors.text) },
+                TrainPilotMenuItem(text = { Text(customLabel, color = colors.text) },
                     onClick = { custom = true; expanded = false }, modifier = Modifier.testTag("${tag}_custom"))
                 choices.forEach { choice ->
-                    DropdownMenuItem(text = { Text(choice.ifEmpty { "–" }, color = colors.text) },
+                    TrainPilotMenuItem(text = { Text(choice.ifEmpty { "–" }, color = colors.text) },
                         onClick = { custom = false; onChange(choice); expanded = false },
                         modifier = Modifier.testTag("${tag}_option_${choice.ifEmpty { "empty" }}"))
                 }

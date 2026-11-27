@@ -56,7 +56,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.semantics.contentDescription
 import com.example.localization.LocalTrainPilotStrings
 
@@ -311,7 +310,7 @@ fun PersonalPlannerModalDialog(
             ) {
                 options.forEachIndexed { index, optionText ->
                     val isSelected = optionText == selectedValue
-                    DropdownMenuItem(
+                    TrainPilotMenuItem(
                         text = {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -575,7 +574,7 @@ fun PersonalPlannerModalDialog(
                             ) {
                                 equipmentCatalog.forEachIndexed { idx, (eqName, eqDesc) ->
                                     val isChecked = eqName in selectedEquipments
-                                    DropdownMenuItem(
+                                    TrainPilotMenuItem(
                                         text = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -789,7 +788,7 @@ fun PersonalPlannerModalDialog(
                             ) {
                                 muscleOptions.forEach { muscle ->
                                     val isChecked = muscle in excludedMuscles
-                                    DropdownMenuItem(
+                                    TrainPilotMenuItem(
                                         text = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -891,7 +890,7 @@ fun PersonalPlannerModalDialog(
                             ) {
                                 exerciseOptions.forEach { (exName, exSub) ->
                                     val isChecked = exName in excludedExercises
-                                    DropdownMenuItem(
+                                    TrainPilotMenuItem(
                                         text = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,

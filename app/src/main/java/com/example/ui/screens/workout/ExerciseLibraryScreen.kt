@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.glassControlFill
@@ -49,11 +51,10 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.IconToggleButton
+import com.example.ui.components.TrainPilotIconToggleButton as IconToggleButton
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -393,7 +394,7 @@ fun ExerciseLibraryScreen(
                                         border = com.repforge.app.ui.theme.trainPilotFrameStroke(androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder))
                                     ) {
                                         val videoLabel = "${strings.videoLabel}: $name"
-                                        DropdownMenuItem(
+                                        TrainPilotMenuItem(
                                             text = { Text(strings.videoLabel, color = palette.textPrimary) },
                                             leadingIcon = { Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color(0xFFE53935)) },
                                             onClick = { rowMenuOpen = false; openVideo(name, ex.id) },
@@ -402,7 +403,7 @@ fun ExerciseLibraryScreen(
                                         )
                                         val queueLabel = if (inQueue) trW(state.language, "Visszavonás az összeállításból", "Remove from workout selection", "Aus Trainingsauswahl entfernen", "Elimină din selecția antrenamentului")
                                             else trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament")
-                                        DropdownMenuItem(
+                                        TrainPilotMenuItem(
                                             text = { Text(queueLabel, color = palette.textPrimary) },
                                             leadingIcon = { Icon(if (inQueue) Icons.Default.Check else Icons.Default.Add, contentDescription = null,
                                                 tint = if (inQueue) Color(0xFFE53935) else palette.primary) },
@@ -414,7 +415,7 @@ fun ExerciseLibraryScreen(
                                             modifier = Modifier.semantics { contentDescription = queueLabel }
                                                 .testTag("exercise_library_add_to_queue_${ex.id}")
                                         )
-                                        if (ex.isCustom && onDeleteCustomExercise != null) DropdownMenuItem(
+                                        if (ex.isCustom && onDeleteCustomExercise != null) TrainPilotMenuItem(
                                             text = { Text(strings.deleteAction, color = palette.danger) },
                                             leadingIcon = { Icon(Icons.Default.DeleteOutline, null, tint = palette.danger) },
                                             enabled = !state.libraryMutationBusy,

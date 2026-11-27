@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.theme.liquidDropMaterial
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
@@ -481,7 +483,7 @@ private fun ActivityPicker(state: OutdoorGpsDisplay, actions: OutdoorGpsActions,
         }
         DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
             translated.forEach { (label, name) ->
-                DropdownMenuItem(text = { Text(label) }, onClick = {
+                TrainPilotMenuItem(text = { Text(label) }, onClick = {
                     expanded = false; actions.selectActivity(name)
                 }, modifier = Modifier.testTag("outdoor_chip_${name.lowercase()}"))
             }
