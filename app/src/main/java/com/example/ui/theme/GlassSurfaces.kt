@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.repforge.app.ui.theme.NativeThemeTokens
 
@@ -85,7 +86,9 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
  */
 internal fun TrainPilotPalette.slidingSheetBackground(legacy: Color): Color {
     if (!isLiquidGlass) return legacy
-    return boundedSubtleWindowFill(liquidChromeTint(this), glassClarity)
+    // The brightened foreground accent can be nearly white, especially in the Ice palette.
+    val tint = Color.hsv(GlassScene.hueOf(background), saturation = .55f, value = 1f)
+    return boundedSubtleWindowFill(GlassContrast.limit(tint, liquidChromeTint(this).luminance()), glassClarity)
 }
 
 /** A window is the sole optical surface; descendants use paint and vector rims. */
