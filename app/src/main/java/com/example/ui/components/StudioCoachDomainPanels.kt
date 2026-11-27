@@ -253,7 +253,12 @@ internal fun StudioCoachNextTrainingCard(
         return
     }
     // Do not invent an A/B badge from a UUID; prefer the actual day title.
-    val letterDay = target.title.trim().uppercase().takeIf { it in setOf("A", "B", "C", "D") }
+    val dayTitle = target.title.trim()
+    val titleLetter = listOf("A", "B", "C", "D").firstOrNull { letter ->
+        listOf(letter, "$letter nap", "Day $letter", "Tag $letter", "Ziua $letter")
+            .any { it.equals(dayTitle, ignoreCase = true) }
+    }
+    val letterDay = titleLetter ?: dayTitle.takeIf { it.length in 1..2 }
         ?: target.dayId.uppercase().takeIf { it in setOf("A", "B", "C", "D") }
     val shape = RoundedCornerShape(18.dp)
     Surface(color = palette.glassCardFill(palette.tintedSurface(0.12f)), shape = shape,
@@ -280,7 +285,7 @@ internal fun StudioCoachNextTrainingCard(
                         color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.testTag("studio_coach_program_name"))
                     // Hide only the duplicate label; a descriptive day name must remain visible.
-                    if (letterDay == null || target.title.trim().uppercase() != letterDay)
+                    if (letterDay == null || (titleLetter == null && dayTitle != letterDay))
                         Text(target.title, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
                             modifier = Modifier.testTag("studio_coach_day_name"))
                     // 2773: same date line as the Home card (today / still doable today / next date / cycle).
