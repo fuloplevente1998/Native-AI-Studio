@@ -16,6 +16,8 @@ import kotlinx.coroutines.withContext
 internal object NativeDataReplacement {
     private const val PREFS = "trainpilot_data_replacement"
     private val mutex = Mutex()
+    // Distinguish another restore/erase from a transient metadata writer on the data mutex.
+    private val replacementAdmission = Mutex()
     private val replacementEpoch = AtomicLong(0)
     private class Access(val replacement: Boolean) : AbstractCoroutineContextElement(Key) {
         val active = AtomicBoolean(true)
@@ -72,11 +74,20 @@ internal object NativeDataReplacement {
     suspend fun <T> exclusively(context: Context, operation: suspend () -> T): T = run(context, false, operation)
     internal suspend fun <T> recover(context: Context, operation: suspend () -> T): T = run(context, true, operation)
     private suspend fun <T> run(context: Context, recovering: Boolean, operation: suspend () -> T): T {
-        check(mutex.tryLock()) { "Már folyamatban van egy adat-visszaállítás vagy törlés." }
         val app = context.applicationContext
+        check(currentCoroutineContext()[Access]?.active?.get() != true && replacementAdmission.tryLock()) {
+            "Már folyamatban van egy adat-visszaállítás vagy törlés."
+        }
+        var mutexAcquired = false
         var acquired = false
         var versionChanged = false
         try {
+            // A writer queued before the previous durable fence was installed may briefly own
+            // the data mutex while rejecting its stale epoch. Recovery must drain that writer,
+            // not mistake it for another restore. Concurrent replacements still fail immediately.
+            if (recovering) mutex.lock()
+            else check(mutex.tryLock()) { "Már folyamatban van egy adat-visszaállítás vagy törlés." }
+            mutexAcquired = true
             NativeCloudPhotoDeletion.requireNoPendingDeletes()
             withContext(NonCancellable + Dispatchers.Main.immediate) {
                 // Same order as ownership publication: journal -> snapshot -> native execution.
@@ -116,7 +127,8 @@ internal object NativeDataReplacement {
                 }
             } finally {
                 if (versionChanged) replacementEpoch.incrementAndGet()
-                mutex.unlock()
+                try { if (mutexAcquired) mutex.unlock() }
+                finally { replacementAdmission.unlock() }
             }
         }
     }
