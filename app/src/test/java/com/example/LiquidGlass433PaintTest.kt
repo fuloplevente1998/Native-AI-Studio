@@ -29,7 +29,7 @@ class LiquidGlass433PaintTest {
                 val fallback = glassFallbackPaint(p, step)
                 val popup = p.glassOverlayFill(Color.Magenta)
                 val overlay = GlassMaterialRole.entries.map { glassOverlayRolePaint(p, it) }
-                val paints = listOf(tile, elevated, selection, nav, fallback, popup, p.surface, p.surfaceElevated, p.selectionColors().surface) + overlay
+                val paints = listOf(tile, elevated, selection, nav, fallback, popup, p.surface, p.surfaceElevated, p.selectionColors().surface, liquidChromeTint(p), p.slidingSheetBackground(Color.Magenta), p.photoViewerBackground(Color.Magenta)) + overlay
                 for (paint in paints) {
                     assertTrue("${p.key} step=$step hue=$paint", hueDistance(if (p.id == 33) Color.hsv(307f, .55f, 1f) else p.background, paint) <= 6f)
                     assertTrue("${p.key} step=$step bounded=$paint",
@@ -60,6 +60,24 @@ class LiquidGlass433PaintTest {
             val emerald = LiquidGlassPalettes.all.single { it.id == 37 }.withGlassClarity(step)
             assertNotEquals(gold.glassTile(Color.Black), emerald.glassTile(Color.Black))
             assertNotEquals(gold.glassOverlayFill(Color.Black), emerald.glassOverlayFill(Color.Black))
+        }
+    }
+
+    @Test fun allEightMaterialFamiliesMatchTheirLivingScene() {
+        // Independent expected hue bands; do not derive expected colors from the
+        // material helper under test. The multicolor graphite scene uses violet.
+        val expected = mapOf(33 to 307f, 34 to 202f, 35 to 222f, 36 to 190f,
+            37 to 163f, 38 to 265f, 39 to 313f, 40 to 45f)
+        assertEquals(expected.keys, LiquidGlassPalettes.all.map { it.id }.toSet())
+        for (p in LiquidGlassPalettes.all) {
+            val seed = Color.hsv(expected.getValue(p.id), .55f, 1f)
+            val actual = Color.hsv(GlassScene.materialHue(p), .55f, 1f)
+            assertTrue("${p.key} material family", hueDistance(seed, actual) <= 8f)
+            assertTrue("${p.key} material must match at least one scene light",
+                GlassScene.tones(p).any { hueDistance(it, actual) <= 24f })
+            if (p.id != 33) {
+                assertEquals(GlassScene.hueOf(p.background), GlassScene.materialHue(p), .01f)
+            }
         }
     }
 
