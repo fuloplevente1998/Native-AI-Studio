@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
@@ -188,3 +189,17 @@ internal fun Modifier.programDaySelectionGlow(palette: TrainPilotPalette, select
             }
         }
     }
+
+/** Fuse source-over coats before drawing; same sRGB material, one surface fill.
+ * The white specular rim is independent of this body paint. Semantic accents stay explicit.
+ */
+internal fun kyantSurfaceCoat(palette: TrainPilotPalette, role: GlassMaterialRole,
+    accent: Color?, chromeCoat: Color?): Color {
+    val tint = GlassOptics.TINT.copy(alpha = KyantMaterialSpec.forRole(role, palette.glassClarity).tintAlpha)
+    val accentCoat = accent?.let {
+        (if (it == palette.primary) palette.glassBackgroundTint(GLASS_TILE_LUMA)
+        else GlassContrast.limit(it, GLASS_TILE_LUMA)).copy(alpha = .20f)
+    }
+    val material = accentCoat?.compositeOver(tint) ?: tint
+    return chromeCoat?.compositeOver(material) ?: material
+}

@@ -42,3 +42,6 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 - PersonalPlannerModal: four raw base and five elevated Surface sites → shared glassTile. DropdownMenu alias already shared, restriction red outlines/labels semantic exceptions. Standard pass-through. Native popup items still separate press review.
 - ProgramTypeEmblemIcon: non-highlighted raw elevated surface → glassTile; active highlight explicit state retained.
 - LiquidDropMaterial: normal palette-primary accent uses background hue; explicit other accents remain semantic; remember cheap gradient brush.
+
+## L4 first optical integration
+- #378 reference (b16bcd90) single Kyant fill/edge. Current fixed chrome duplicate paint/rim: shared live path now precomposites coat and retains one Kyant highlight. Old API/overlay fallback unchanged. Minimum blur and alpha left intact pending visual verification. Tile/Performance remain no backdrop.

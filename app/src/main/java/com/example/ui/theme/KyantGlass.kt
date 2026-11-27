@@ -109,12 +109,12 @@ internal fun Modifier.kyantGlass(
     accent: Color? = null,
     pressSource: MutableInteractionSource? = null,
     minimumBlurDp: Float = 0f,
-    showRim: Boolean = true
+    showRim: Boolean = true,
+    chromeCoat: Color? = null
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
     if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
-    val tint = GlassOptics.TINT.copy(alpha = spec.tintAlpha)
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
     val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
@@ -151,12 +151,9 @@ internal fun Modifier.kyantGlass(
             provider
         }
     }
-    val surface: DrawScope.() -> Unit = remember(tint, accent) {
-        val coat = accent?.let { GlassContrast.limit(it, GLASS_TILE_LUMA).copy(alpha = .20f) }
-        val drawSurface: DrawScope.() -> Unit = {
-            drawRect(tint)
-            if (coat != null) drawRect(coat)
-        }
+    val surface: DrawScope.() -> Unit = remember(palette, role, accent, chromeCoat) {
+        val coat = kyantSurfaceCoat(palette, role, accent, chromeCoat)
+        val drawSurface: DrawScope.() -> Unit = { drawRect(coat) }
         drawSurface
     }
     val shapeProvider = remember(shape) { { shape } }
@@ -177,12 +174,12 @@ internal fun Modifier.kyantGlass(
 /** Shared entry: only the matching window may sample a recorded backdrop. */
 @Composable
 internal fun Modifier.kyantGlassOrNull(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
-    minimumBlurDp: Float = 0f, showRim: Boolean = true): Modifier? {
+    minimumBlurDp: Float = 0f, showRim: Boolean = true, chromeCoat: Color? = null): Modifier? {
     if (LocalGlassOverlay.current || !KyantGlass.active(palette) || !LocalGlassOpticsEnabled.current) return null
     val scene = (if (role == GlassMaterialRole.Navigation || role == GlassMaterialRole.Selection)
         LocalKyantHeader.current ?: LocalKyantScene.current else LocalKyantScene.current).forThisWindow()
         ?: return null
-    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp, showRim = showRim)
+    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp, showRim = showRim, chromeCoat = chromeCoat)
 }
 
 /** Composite of [backdrop] + [content] for content-sampling glass (header, nav pill). */

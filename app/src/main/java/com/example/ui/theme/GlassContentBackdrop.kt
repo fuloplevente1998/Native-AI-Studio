@@ -72,21 +72,31 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
     val chrome = LocalKyantHeader.current.forThisWindow()
     val backdrop = LocalGlassHeaderBackdrop.current
-    val material = when {
-        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
-        LocalGlassOverlay.current -> if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
+    val coatAlpha = fixedGlassChromeShadeAlpha(palette.glassClarity) * if (softenUnderlap) .88f else 1f
+    val coat = if (preserveOriginalMaterial) null else remember(palette, coatAlpha) {
+        liquidChromeTint(palette).copy(alpha = coatAlpha)
+    }
+    // Live chrome uses the same one Kyant surface as the body material. Fuse the
+    // protective coat into its body fill and retain only the original Kyant rim.
+    // Tile/Performance never acquire a live backdrop.
+    val optical = if (KyantMaterialSpec.forRole(role, palette.glassClarity).usesBackdrop) when {
+        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat)
+        LocalGlassOverlay.current -> null
         // Keep the existing chrome-only optics exception on scrolling measurement routes.
         LocalGlassChromeUnderlap.current && chrome != null ->
-            kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
-        else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
-            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape, minimumBlurDp = minBlur, showRim = showRim)
-            else if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
+            kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat)
+        else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat)
+    } else null
+    if (optical != null) return optical
+
+    // Older APIs / window-isolated / software fallback keep their current safe paint path.
+    val material = when {
+        LocalGlassOverlay.current -> if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
+        backdrop != null && KyantMaterialSpec.forRole(role, palette.glassClarity).usesBackdrop ->
+            liveGlassLens(backdrop, palette, shape, minimumBlurDp = minBlur, showRim = showRim)
+        else -> if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
     }
-    // Inner background draws after the lens but before foreground controls: the text,
-    // icons and touch targets are unchanged. This also covers static/old-device fallback.
-    val coatAlpha = fixedGlassChromeShadeAlpha(palette.glassClarity) * if (softenUnderlap) .88f else 1f
-    return if (preserveOriginalMaterial) material else material.background(
-        liquidChromeTint(palette).copy(alpha = coatAlpha), shape)
+    return if (coat == null) material else material.background(coat, shape)
         .then(if (showRim) Modifier.trainPilotGlassRim(palette, shape, role) else Modifier)
 }
 
