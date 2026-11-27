@@ -445,7 +445,8 @@ fun TrainPilotRedCloseButton(
     modifier: Modifier = Modifier,
     size: androidx.compose.ui.unit.Dp = 38.dp,
     testTag: String = "",
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    closeDescription: String? = null
 ) {
     val strings = LocalTrainPilotStrings.current
     val palette = LocalTrainPilotPalette.current
@@ -466,7 +467,7 @@ fun TrainPilotRedCloseButton(
                 .border(1.dp, colors.negativeOutline.copy(alpha = 0.7f), shape)
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(Icons.Default.Close, contentDescription = strings.closeAction,
+                Icon(Icons.Default.Close, contentDescription = closeDescription ?: strings.closeAction,
                     tint = colors.negativeForeground, modifier = Modifier.size(18.dp))
             }
         }
