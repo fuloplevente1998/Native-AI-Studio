@@ -427,12 +427,16 @@ internal fun NativeProgressPhotoGallery(
                         Text(date.format(Instant.ofEpochMilli(selected.workoutStartedEpochMs)),
                             color = colors.muted)
                     }
-                    IconButton(onClick = close, modifier = Modifier.size(48.dp)
-                        .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(24.dp))
-                        .testTag("progress_photo_close")) {
-                        Icon(Icons.Default.Close,
-                            contentDescription = strings.getString(R.string.native_progress_photo_close),
-                            tint = colors.text)
+                    if (palette.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = close, testTag = "progress_photo_close")
+                    } else {
+                        IconButton(onClick = close, modifier = Modifier.size(48.dp)
+                            .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(24.dp))
+                            .testTag("progress_photo_close")) {
+                            Icon(Icons.Default.Close,
+                                contentDescription = strings.getString(R.string.native_progress_photo_close),
+                                tint = colors.text)
+                        }
                     }
                 }
                 PrivateProgressPhoto(selected.id, 1600, state.language,

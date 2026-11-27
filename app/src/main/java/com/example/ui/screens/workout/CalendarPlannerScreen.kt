@@ -959,23 +959,9 @@ fun CalendarPlannerScreen(
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
-                        val closeShape = RoundedCornerShape(10.dp)
-                        Box(
-                            modifier = Modifier.size(48.dp).testTag("calendar_replan_close")
-                                .semantics { contentDescription = trW(state.language, "Bezárás", "Close", "Schließen", "Închide") }
-                                .trainPilotClickable(closeShape) { onOpenReplanModal(false) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier.size(36.dp)
-                                    .background(palette.danger.copy(alpha = .12f), closeShape)
-                                    .border(1.dp, palette.danger.copy(alpha = .5f), closeShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("✕", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.textPrimary)
-                            }
-                        }
+                        com.example.ui.components.TrainPilotRedCloseButton(
+                            onClick = { onOpenReplanModal(false) }, size = 36.dp, testTag = "calendar_replan_close"
+                        )
                     }
 
                     Text(

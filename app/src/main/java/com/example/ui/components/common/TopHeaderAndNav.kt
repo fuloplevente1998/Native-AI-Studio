@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.rememberGlassMotionEnabled
 import com.example.ui.theme.glassNavigationFade
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -450,21 +451,23 @@ fun TrainPilotRedCloseButton(
     val palette = LocalTrainPilotPalette.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val iconColor = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground
-    // The painted control shrinks ~10%; its independent hit target remains 48 dp.
+    val colors = com.repforge.app.ui.theme.TrainPilotActionAppearance
+    val shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(11.dp)
+    val width = if (palette.isLiquidGlass) size + 8.dp else size
+    val fill = lerp(colors.negativeBackground, colors.negativeForeground, if (pressed) .10f else 0f)
+    // The visual capsule sits inside the same accessible hit target.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(11.dp), color = lerp(
-            com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
-            com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground, if (pressed) 0.10f else 0f),
-            modifier = Modifier.size(size).clip(RoundedCornerShape(11.dp))
+        Surface(shape = shape, color = if (palette.isLiquidGlass) fill.copy(alpha = .78f) else fill,
+            modifier = Modifier.size(width, size).clip(shape)
                 .indication(interaction, ripple())
-                .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f), RoundedCornerShape(11.dp))
+                .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
+                .border(1.dp, colors.negativeOutline.copy(alpha = 0.7f), shape)
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(Icons.Default.Close, contentDescription = strings.closeAction,
-                    tint = iconColor, modifier = Modifier.size(18.dp))
+                    tint = colors.negativeForeground, modifier = Modifier.size(18.dp))
             }
         }
     }
