@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (25/91)
+## Studio közös komponensek – leltár (38/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -85,3 +85,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/StudioExerciseSequenceStrip.kt` | 77 | — | — | 62 | 6, 45 | 65 |
 | `com/example/ui/components/StudioHealthMetricsBrowser.kt` | 380 | — | 179, 307, 318 | 156, 162, 164 | 11, 14, 148, 163, 193 | 166, 240 |
 | `com/example/ui/components/StudioHealthPermissionAction.kt` | 19 | — | — | — | — | — |
+| `com/example/ui/components/StudioHealthRootEffects.kt` | 51 | — | — | — | — | — |
+| `com/example/ui/components/StudioHourlyStepsChart.kt` | 165 | — | — | — | — | — |
+| `com/example/ui/components/StudioLiveWorkoutHealth.kt` | 155 | 110, 120 | 48, 141 | 49 | 14, 95 | 100 |
+| `com/example/ui/components/StudioLoggedWorkoutDeleteActions.kt` | 66 | — | 62 | — | — | — |
+| `com/example/ui/components/StudioLoggedWorkoutEditActions.kt` | 38 | — | — | — | — | — |
+| `com/example/ui/components/StudioNativeEditorTheme.kt` | 14 | — | — | — | — | — |
+| `com/example/ui/components/StudioPaletteCategories.kt` | 137 | — | — | 72, 74 | — | 78, 110 |
+| `com/example/ui/components/StudioPausedWorkoutActions.kt` | 64 | — | 31, 58 | — | — | — |
+| `com/example/ui/components/StudioPersonalPlannerDialog.kt` | 73 | — | — | — | — | — |
+| `com/example/ui/components/StudioPlatformAccess.kt` | 449 | — | — | — | — | — |
+| `com/example/ui/components/StudioPrivatePhotos.kt` | 381 | 164 | 318, 345 | 154, 163, 173, 174, 253, 254 | — | 295 |
+| `com/example/ui/components/StudioProgramManagementControls.kt` | 119 | — | 90, 117 | — | — | — |
+| `com/example/ui/components/StudioRestTimerDock.kt` | 230 | 131 | — | 80, 83, 104, 107, 139 | — | 89, 136, 168, 207 |
