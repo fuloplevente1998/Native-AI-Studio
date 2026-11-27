@@ -176,7 +176,13 @@ fun CalendarPlannerScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(trW(state.language, "Edzésnap típusa (A / B):", "Workout day type (A / B):", "Trainingstag-Typ (A / B):", "Tipul zilei de antrenament (A / B):"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (palette.isLiquidGlass) {
+                        val splits = listOf("A", "B")
+                        com.example.ui.components.LiquidSegmentedTabs(splits.map { sp -> trW(state.language, "Alap $sp", "Day $sp", "Tag $sp", "Ziua $sp") },
+                            splits.indexOf(splitSel), { splitSel = splits[it] }, "calendar_split_track") { _, label, _ ->
+                            com.example.ui.components.TrainPilotFitText(label)
+                        }
+                    } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("A", "B").forEach { sp ->
                             val isSel = splitSel == sp
                             Surface(
@@ -194,7 +200,13 @@ fun CalendarPlannerScreen(
                         }
                     }
                     Text(trW(state.language, "Időpont:", "Time:", "Uhrzeit:", "Ora:"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (palette.isLiquidGlass) {
+                        val times = listOf("08:00", "10:00", "16:00", "18:00")
+                        com.example.ui.components.LiquidSegmentedTabs(times, times.indexOf(timeSel),
+                            { timeSel = times[it] }, "calendar_time_track") { _, label, _ ->
+                            com.example.ui.components.TrainPilotFitText(label, style = MaterialTheme.typography.labelSmall)
+                        }
+                    } else Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("08:00", "10:00", "16:00", "18:00").forEach { tm ->
                             val isSel = timeSel == tm
                             Surface(
