@@ -128,7 +128,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
         color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
         modifier = Modifier
             .fillMaxWidth()
-            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp))
+            .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), primaryNavigation = true)
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
