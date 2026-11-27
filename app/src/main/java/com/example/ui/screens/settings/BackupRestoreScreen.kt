@@ -247,7 +247,8 @@ fun BackupRestoreScreen(
                     onShowBanner = onShowBanner,
                     onCloudSyncCompleted = onCloudSyncCompleted,
                     settingsViewModel = settingsViewModel,
-                    compact = true
+                    compact = true,
+                    compactDriveSyncEnabled = driveBlock == null
                 )
             }
             item(key = "contents") {
