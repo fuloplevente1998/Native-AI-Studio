@@ -47,6 +47,17 @@ class LiquidDrop2814Test {
         }
     }
 
+    @Test fun unaccentedControlsFollowTheirPaletteAtFullClarity() {
+        val ice = LiquidGlassPalettes.all.first { it.key == "glass_ice" }.withGlassClarity(100)
+        val gold = LiquidGlassPalettes.all.first { it.key == "glass_amber" }.withGlassClarity(100)
+        for (role in listOf(GlassMaterialRole.Button, GlassMaterialRole.Selection)) {
+            val icePaint = liquidDropPaints(ice, role).first()
+            val goldPaint = liquidDropPaints(gold, role).first()
+            assertTrue(icePaint.blue - icePaint.red > .08f)
+            assertTrue(goldPaint.red - goldPaint.blue > .08f)
+        }
+    }
+
     @Test fun dropButtonsHaveStrongerLensThanNavigationAndKeepDenseTilesCheap() {
         for (step in 0..100) {
             val button = KyantMaterialSpec.forRole(GlassMaterialRole.Button, step)

@@ -112,16 +112,16 @@ internal fun Modifier.kyantGlass(
     scene: KyantScene, palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
     accent: Color? = null,
     pressSource: MutableInteractionSource? = null,
-    minimumBlurDp: Float = 0f
+    minimumBlurDp: Float = 0f,
+    showRim: Boolean = true
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
-    if (!spec.usesBackdrop) return this
-        .trainPilotGlassRim(palette, shape)
+    if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
     val tint = GlassOptics.TINT.copy(alpha = spec.tintAlpha)
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
-    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp) {
+    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
         val filter = ColorMatrixColorFilter(glassVibrancyMatrix(spec.saturation, scale))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
         val height = with(density) { spec.lensHeightDp.dp.toPx() }
@@ -129,7 +129,7 @@ internal fun Modifier.kyantGlass(
         val block: com.kyant.backdrop.BackdropEffectScope.() -> Unit = {
             colorFilter(filter)
             blur(blurPx)
-            if (Build.VERSION.SDK_INT >= 33 && spec.usesLens && this.shape is CornerBasedShape && size.minDimension > 1f) {
+            if (showRim && Build.VERSION.SDK_INT >= 33 && spec.usesLens && this.shape is CornerBasedShape && size.minDimension > 1f) {
                 lens(height.coerceAtMost(size.minDimension / 2f), amount,
                     depthEffect = role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
                     chromaticAberration = clarity > 60)
@@ -139,12 +139,12 @@ internal fun Modifier.kyantGlass(
     }
     val interactiveSurface = pressSource != null
     val prism = glassPrismaticRimRole(role) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
-    val highlight = remember(spec, interactiveSurface, prism) {
+    val highlight = remember(spec, interactiveSurface, prism, showRim) {
         val value = Highlight(
             width = (if (prism) 0.9f + 1.5f * spec.highlightAlpha else 0.5f + 0.8f * spec.highlightAlpha).dp,
             alpha = if (prism) (spec.highlightAlpha * 1.12f).coerceAtMost(1f) else spec.highlightAlpha,
             style = if (interactiveSurface || prism) HighlightStyle.Default(angle = 34f, falloff = 1.15f) else HighlightStyle.Default)
-        val provider: () -> Highlight? = { value }
+        val provider: () -> Highlight? = { value.takeIf { showRim } }
         provider
     }
     val shadow: (() -> Shadow?)? = remember(spec.shadow, role) {
@@ -203,12 +203,12 @@ internal fun Modifier.kyantGlass(
 /** Shared entry: only the matching window may sample a recorded backdrop. */
 @Composable
 internal fun Modifier.kyantGlassOrNull(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
-    minimumBlurDp: Float = 0f): Modifier? {
+    minimumBlurDp: Float = 0f, showRim: Boolean = true): Modifier? {
     if (LocalGlassOverlay.current || !KyantGlass.active(palette) || !LocalGlassOpticsEnabled.current) return null
     val scene = (if (role == GlassMaterialRole.Navigation || role == GlassMaterialRole.Selection)
         LocalKyantHeader.current ?: LocalKyantScene.current else LocalKyantScene.current).forThisWindow()
         ?: return null
-    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp)
+    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp, showRim = showRim)
 }
 
 /** Composite of [backdrop] + [content] for content-sampling glass (header, nav pill). */

@@ -37,7 +37,6 @@ import com.example.ui.theme.selectionColors
 import com.example.ui.theme.readablePrimaryLabel
 import androidx.compose.runtime.remember
 import com.example.ui.theme.PaletteCategory
-import com.example.ui.theme.TrainPilotPalettes
 
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
@@ -211,11 +210,10 @@ fun PalettePickerBottomSheet(
                 PaletteCategory.entries.firstOrNull { it.name == expandedFamily },
                 onExpand = { expandedFamily = it?.name.orEmpty(); revealThemeId = null; onSelectCategory(it) },
                 onSelect = { id ->
-                    if (TrainPilotPalettes.getById(id).isLiquidGlass != palette.isLiquidGlass)
-                        revealThemeId = id
+                    revealThemeId = id
                     onSelectPalette(id)
                 }, choiceTag = "palette_option_", revealSelectedId = revealThemeId,
-                onSelectionRevealed = { revealThemeId = null })
+                onSelectionRevealed = { id -> if (revealThemeId == id) revealThemeId = null })
             CustomThemeSection(currentLanguage)
         }
     }

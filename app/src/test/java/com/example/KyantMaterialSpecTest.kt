@@ -46,7 +46,7 @@ class KyantMaterialSpecTest {
             val blur = com.example.ui.theme.fixedGlassChromeMinimumBlurDp(step)
             val tint = liquidChromeTint(p)
             assertTrue(shade in 0.819f..0.881f)
-            assertTrue(blur in 12f..16f)
+            assertTrue(blur in 18f..22f)
             assertTrue("colored midtone: ${p.key} step $step", tint.luminance() in 0.075f..0.110f)
             val coat = tint.copy(alpha = shade)
             val dark = coat.compositeOver(Color.Black)

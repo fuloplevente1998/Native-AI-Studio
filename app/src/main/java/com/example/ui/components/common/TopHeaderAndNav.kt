@@ -218,17 +218,18 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         compact = true
                     )
 
+                    val iconShortcutShape = if (palette.isLiquidGlass) liquidTopShortcutShape else RoundedCornerShape(10.dp)
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = iconShortcutShape,
                         color = if (palette.isLiquidGlass) Color.Transparent else if (isCalendarActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, RoundedCornerShape(10.dp),
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, iconShortcutShape,
                                 if (isCalendarActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
+                            .trainPilotClickable(iconShortcutShape) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
-                            .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isCalendarActive) selection.border else palette.cardBorder, iconShortcutShape)
+                            .clip(iconShortcutShape)
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -245,16 +246,16 @@ fun TrainPilotGlobalTopHeaderAndNav(
 
                     // 3. Beállítások (Settings) Icon Button
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = iconShortcutShape,
                         color = if (palette.isLiquidGlass) Color.Transparent else if (isSettingsActive) selection.surface else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, RoundedCornerShape(10.dp),
+                            .then(if (palette.isLiquidGlass) Modifier.glassHeaderControl(palette, iconShortcutShape,
                                 if (isSettingsActive) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
+                            .trainPilotClickable(iconShortcutShape) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
-                            .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isSettingsActive) selection.border else palette.cardBorder, iconShortcutShape)
+                            .clip(iconShortcutShape)
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -359,6 +360,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
     }
 }
 
+private val liquidTopShortcutShape = RoundedCornerShape(50)
+
 @Composable
 internal fun TopNavPillItem(
     label: String,
@@ -377,9 +380,8 @@ internal fun TopNavPillItem(
     // Material family is independent from the expensive optics gate (active measurement).
     val glass = palette.isLiquidGlass
     val hosted = glass && pillTrack != null
-    val shape = RoundedCornerShape(if (glass) 50 else 20)
     val legacyShape = RoundedCornerShape(12.dp)
-    val itemShape = if (glass) shape else legacyShape
+    val itemShape = if (glass) liquidTopShortcutShape else legacyShape
     val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
     val fill = if (glass) Color.Transparent else if (selected) selection.surface else palette.surface
     val source = remember { MutableInteractionSource() }

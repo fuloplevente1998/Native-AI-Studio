@@ -51,38 +51,43 @@ internal fun fixedGlassChromeShadeAlpha(clarity: Int): Float =
  */
 internal fun liquidChromeTint(palette: TrainPilotPalette): Color {
     val t = palette.glassClarity.coerceIn(0, 100) / 100f
-    val target = .105f - .025f * t
-    val seed = lerp(palette.background, palette.primary, .60f)
-    return GlassContrast.limit(seed, target)
+    return palette.glassBackgroundTint(.105f - .025f * t)
 }
 
 internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
-    16f - 4f * (clarity.coerceIn(0, 100) / 100f)
+    22f - 4f * (clarity.coerceIn(0, 100) / 100f)
 
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Navigation,
-    preserveOriginalMaterial: Boolean = false): Modifier {
+    preserveOriginalMaterial: Boolean = false,
+    showRim: Boolean = true,
+    softenUnderlap: Boolean = false): Modifier {
     if (!palette.isLiquidGlass) return this
-    val minBlur = if (preserveOriginalMaterial) 0f else fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+    val minBlur = when {
+        preserveOriginalMaterial && !LocalGlassChromeUnderlap.current -> 0f
+        softenUnderlap -> fixedGlassChromeMinimumBlurDp(palette.glassClarity) + 2f
+        else -> fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+    }
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
     val chrome = LocalKyantHeader.current.forThisWindow()
     val backdrop = LocalGlassHeaderBackdrop.current
     val material = when {
-        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur)
-        LocalGlassOverlay.current -> trainPilotGlassMaterial(palette, shape, role)
+        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
+        LocalGlassOverlay.current -> if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
         // Keep the existing chrome-only optics exception on scrolling measurement routes.
         LocalGlassChromeUnderlap.current && chrome != null ->
-            kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur)
-        else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur)
-            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape)
-            else trainPilotGlassMaterial(palette, shape, role)
+            kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
+        else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
+            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape, minimumBlurDp = minBlur, showRim = showRim)
+            else if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
     }
     // Inner background draws after the lens but before foreground controls: the text,
     // icons and touch targets are unchanged. This also covers static/old-device fallback.
+    val coatAlpha = fixedGlassChromeShadeAlpha(palette.glassClarity) * if (softenUnderlap) .88f else 1f
     return if (preserveOriginalMaterial) material else material.background(
-        liquidChromeTint(palette).copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
-        .trainPilotGlassRim(palette, shape, role)
+        liquidChromeTint(palette).copy(alpha = coatAlpha), shape)
+        .then(if (showRim) Modifier.trainPilotGlassRim(palette, shape, role) else Modifier)
 }
 
 @Composable
@@ -116,25 +121,31 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
  * [GlassOptics.blurOnlyScale]) + white-ish tint + vector rim. Older / software: opaque paint.
  */
 @Composable
-internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape): Modifier {
+internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape,
+    minimumBlurDp: Float = 0f, showRim: Boolean = true): Modifier {
     if (!palette.isLiquidGlass) return this
-    if (backdrop.view !== LocalView.current) return trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Selection)
+    if (backdrop.view !== LocalView.current) {
+        return if (showRim) trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Selection) else this
+    }
     val enabled = LocalGlassOpticsEnabled.current
     if (enabled && backdrop.kyant != null && backdrop.view === LocalView.current) {
         return kyantGlass(rememberKyantScene(backdrop.kyant, samplesContent = true), palette, shape,
-            GlassMaterialRole.Selection)
+            GlassMaterialRole.Selection, minimumBlurDp = minimumBlurDp, showRim = showRim)
     }
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
-    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity) }
+    val optics = remember(palette.glassClarity, minimumBlurDp) {
+        val base = GlassOptics.from(palette.glassClarity)
+        base.copy(blurDp = maxOf(base.blurDp, minimumBlurDp))
+    }
     return onGloballyPositioned { origin.value = it.positionInRoot() }
         .drawWithCache {
             val outline = shape.createOutline(size, layoutDirection, this)
             val path = Path().apply { addOutline(outline) }
             val radii = outline.glassCornerRadii()
             val dimensions = IntSize(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
-            val effect = if (!enabled) null else if (Build.VERSION.SDK_INT >= 33) runCatching {
+            val effect = if (!enabled) null else if (showRim && Build.VERSION.SDK_INT >= 33) runCatching {
                 GlassPrograms33.contentEffect(dimensions.width, dimensions.height, radii, optics, density = density, highlight = 0f)
             }.getOrNull() else if (Build.VERSION.SDK_INT >= 31) runCatching {
                 createContentBlur31(optics.blurDp.dp.toPx(), optics)
@@ -154,14 +165,14 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
                             }
                             drawLayer(lensLayer)
                         }.isSuccess
-                    if (live && Build.VERSION.SDK_INT < 33) {
+                    if (live && (!showRim || Build.VERSION.SDK_INT < 33)) {
                         // The colour matrix bounds every channel; the thin tint stays under the ceiling.
                         drawRect(GlassOptics.TINT.copy(alpha = optics.coat))
-                        drawGlassHighlights(path, palette, optics, 0f)
+                        if (showRim) drawGlassHighlights(path, palette, optics, 0f)
                     } else if (!live) {
                         drawRect(fallback)
                         drawRect(glassFallbackPaint(palette.glassClarity))
-                        drawGlassHighlights(path, palette, optics, 0f)
+                        if (showRim) drawGlassHighlights(path, palette, optics, 0f)
                     }
                 }
                 drawContent()

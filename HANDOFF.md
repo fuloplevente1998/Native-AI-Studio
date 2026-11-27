@@ -105,3 +105,11 @@
 - Az új draft kontraszt-, árnyalat-, fény-lejtő-, szerepkapu- és footer-elosztás teszteket tartalmaz. CI/fizikai vizsgálat nem történt, main nem módosult. Az előző 12–18% belső fix chrome coat-átlátszóság maradt; ez nem a felcsúszó panelek 0–5%-a.
 
 - #429 a mainen `46384851`. Az első főági JVM-futás 1355 próbából egyet jelzett a Jég színtelítettségére, az R8 sikeres. A panel festékszíne a téma háttérárnyalatából készül a meglévő fényességkorláttal és átlátszósággal. Az ellenőrzés a CI-ben fut.
+
+## Liquid vezérlők 100%-os beállításon
+
+- `fix/liquid-control-frames`, alap `d69bee8b`. A felső Naptár és Beállítások a Coach és Napló lekerekített formáját használja. A semleges Liquid vezérlőfestés és a fix sávok a választott háttér árnyalatát kapják a meglévő fényességkorláttal.
+- A További programok címsávja 4 dp-vel magasabb. Az alsó sáv vékonyabb, a lista mögötte továbbra is görgethető. A sáv háttérmintája elmosott, a hangsúlyos perem az Új program gombhoz tartozik.
+- JVM-próba védi a Jég és az Arany vezérlőfestését 100%-on. Az üveghatás és a gombok pereme fizikai készüléken ellenőrizendő.
+- A közös görgetés fölötti Liquid üveg 18–22 dp minimum elmosást használ. A Napló erősebb, helyi matt réteget kapott. A lista mintavétele és rajzolása a fő navigáció alatt kezdődik, a kereső és a dátumválasztó mögé továbbra is becsúszik.
+- Az aktív edzés Coach és Részletek gombja enyhe Liquid peremfényt kap, a felső vezérlés és a pihenősáv belső csempéi palettaárnyalatot használhatnak. A Beállítások és a Témák választó azonos Liquid családon belüli váltáskor is a kiválasztott témát hozza látható helyre.

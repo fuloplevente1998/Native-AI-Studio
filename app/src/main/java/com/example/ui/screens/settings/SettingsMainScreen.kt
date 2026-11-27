@@ -77,7 +77,6 @@ import com.example.model.AppLanguage
 import com.example.model.SubScreen
 import com.example.ui.components.SubScreenTopBar
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -110,7 +109,7 @@ fun SettingsMainScreen(
     var expandedThemeFamily by rememberSaveable {
         mutableStateOf(currentPaletteObj.subGroup.name)
     }
-    // Only an explicit selection across the glass boundary asks to retain the selected tile.
+    // Preserve the selected tile through both a palette change and a viewport remeasure.
     var revealThemeId by rememberSaveable { mutableStateOf<Int?>(null) }
     var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
@@ -157,7 +156,7 @@ fun SettingsMainScreen(
 
     val settingsListState = androidx.compose.foundation.lazy.rememberLazyListState()
     androidx.compose.runtime.LaunchedEffect(revealThemeId, uiState.selectedPaletteId, palette.isLiquidGlass) {
-        if (revealThemeId != null && revealThemeId == uiState.selectedPaletteId) {
+        if (revealThemeId != null && revealThemeId == uiState.selectedPaletteId && revealThemeId == palette.id) {
             androidx.compose.runtime.withFrameNanos { }
             // If a changed header/viewport moved the entire group out of composition, restore
             // the stable Themes item first; its selected tile then performs minimal reveal.
@@ -242,12 +241,11 @@ fun SettingsMainScreen(
                             expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
                             onExpand = { expandedThemeFamily = it?.name.orEmpty(); revealThemeId = null },
                             onSelect = { id ->
-                                if (TrainPilotPalettes.getById(id).isLiquidGlass != palette.isLiquidGlass)
-                                    revealThemeId = id
+                                revealThemeId = id
                                 onSelectPalette(id)
                             },
                             revealSelectedId = revealThemeId,
-                            onSelectionRevealed = { revealThemeId = null }
+                            onSelectionRevealed = { id -> if (revealThemeId == id) revealThemeId = null }
                         )
                         com.example.ui.components.CustomThemeSection(uiState.language)
                     }

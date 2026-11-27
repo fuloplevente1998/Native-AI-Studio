@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassStateTile
@@ -466,8 +468,14 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
         .then(if (warning || proposal) Modifier.semantics { stateDescription = adviceDescription } else Modifier)
         .trainPilotClickable(shape) { open = true }.testTag("studio_active_coach_chip"),
         contentAlignment = androidx.compose.ui.Alignment.Center) {
-        Surface(shape = shape, color = if (warning || proposal) tint.copy(alpha = 0.14f) else palette.surfaceElevated,
-            modifier = Modifier.trainPilotBorder(1.dp, if (warning || proposal) tint.copy(alpha = 0.8f) else palette.cardBorder, shape)
+        Surface(shape = shape, color = when {
+            palette.isLiquidGlass -> androidx.compose.ui.graphics.Color.Transparent
+            warning || proposal -> tint.copy(alpha = .14f)
+            else -> palette.surfaceElevated
+        },
+            modifier = Modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Button,
+                accent = tint.takeIf { warning || proposal }, live = false)
+                .trainPilotBorder(1.dp, if (warning || proposal) tint.copy(alpha = .8f) else palette.cardBorder, shape)
                 .testTag("studio_active_coach_chip_pill")) {
             Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {

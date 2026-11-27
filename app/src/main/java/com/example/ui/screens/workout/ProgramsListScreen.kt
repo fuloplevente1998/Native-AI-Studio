@@ -593,7 +593,7 @@ fun ProgramsListScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = palette.textPrimary,
                         modifier = Modifier.fillMaxWidth()
-                            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
+                            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp)
                             .testTag("programs_fixed_list_header")
                     )
                     HorizontalDivider(
@@ -604,12 +604,13 @@ fun ProgramsListScreen(
                 }
             },
             bottom = {
-        Column(Modifier.fillMaxWidth().padding(top = 4.dp)
-            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Input)
+        Column(Modifier.fillMaxWidth().padding(top = if (palette.isLiquidGlass) 2.dp else 4.dp)
+            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Input, showRim = false)
             .then(if (palette.isLiquidGlass) Modifier else Modifier
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                 .background(palette.surface, RoundedCornerShape(18.dp)))
-            .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
+            .padding(horizontal = 8.dp, vertical = if (palette.isLiquidGlass) 2.dp else 4.dp)
+            .testTag("programs_fixed_actions"),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(
