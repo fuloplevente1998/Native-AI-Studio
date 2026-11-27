@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (77/91)
+## Studio közös komponensek – teljes fájlleltár (91/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -137,3 +137,17 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/common/LiquidGlassControl.kt` | 156 | 129 | 55 | — | 22, 118, 119, 139 | — |
 | `com/example/ui/components/common/PalettePickerSheet.kt` | 221 | 77 | — | — | 43, 83 | 135, 167, 192 |
 | `com/example/ui/components/common/PersonalPlannerModal.kt` | 1012 | 256, 304, 333, 391, 451, 488, 522, 568, 637, 697, 712, 731, 757, 782, 833, 859, 884 | 301, 313, 565, 577, 779, 791, 881, 893 | — | 56, 358 | 264, 530, 739, 841 |
+| `com/example/ui/components/common/ScrollHelpers.kt` | 130 | 48 | — | — | — | — |
+| `com/example/ui/components/common/TopHeaderAndNav.kt` | 592 | 152, 181, 188, 534 | 392, 396, 462, 564 | 145, 228, 254, 293, 353, 394, 467, 533 | 12, 278, 393 | 169, 230, 256, 391 |
+| `com/example/ui/components/healthreadings/HealthReadingRows.kt` | 248 | 158, 165, 238 | — | 132, 224 | — | — |
+| `com/example/ui/components/inappvideo/InAppVideoPolicy.kt` | 166 | — | — | — | — | — |
+| `com/example/ui/components/inappvideo/SecureExerciseVideoWebView.kt` | 342 | — | — | — | — | — |
+| `com/example/ui/components/mapcontrols/MapAppearanceSelector.kt` | 110 | 71 | 75, 84, 91 | — | — | — |
+| `com/example/ui/components/visual/AnatomicalFigure.kt` | 177 | — | — | — | — | — |
+| `com/example/ui/components/visual/ExercisePostureIllustration.kt` | 316 | — | — | 35 | — | — |
+| `com/example/ui/components/visual/IntegrationBadges.kt` | 122 | 37, 50, 84, 90, 97 | — | — | — | — |
+| `com/example/ui/components/visual/MuscleHeatmapCard.kt` | 602 | 386, 488, 496, 509 | 285 | 257, 260, 292, 294, 467, 470 | 541 | 295, 363, 437, 473, 499, 560 |
+| `com/example/ui/components/visual/ProgramEquipmentSummary.kt` | 239 | — | — | — | — | — |
+| `com/example/ui/components/visual/ProgramTypeEmblem.kt` | 181 | — | — | — | — | — |
+| `com/example/ui/components/visual/WorkoutRouteMapBox.kt` | 267 | 110, 205, 256 | 260 | — | — | — |
+| `com/example/ui/components/watchinfo/StudioWatchInformationCard.kt` | 186 | 103 | 96 | 69, 71 | — | 67 |
