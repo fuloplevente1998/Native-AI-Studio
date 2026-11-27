@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTintedTile
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
@@ -76,7 +77,7 @@ internal fun StudioRestTimerDock(
         // COMPACT FLAT STICKY REST TIMER BAR
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.glassTile(palette.surfaceCard, elevated = true),
+            color = palette.glassTintedTile(palette.surfaceCard),
             modifier = Modifier
                 .fillMaxWidth()
                 .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Performance)
@@ -100,7 +101,7 @@ internal fun StudioRestTimerDock(
         // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = palette.glassTile(palette.surfaceCard, elevated = true),
+            color = palette.glassTintedTile(palette.surfaceCard),
             modifier = Modifier
                 .fillMaxWidth()
                 .trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Performance)

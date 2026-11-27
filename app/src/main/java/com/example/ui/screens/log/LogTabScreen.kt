@@ -70,6 +70,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import com.example.ui.theme.glassTintedTile
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -305,9 +307,10 @@ fun LogTabScreen(
     val logListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     com.example.ui.theme.GlassScrollChrome(
-        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).padding(horizontal = 6.dp)
-            .testTag("log_fixed_chrome"),
-        rootInset = LocalGlassTopInset.current,
+        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette)
+            .padding(start = 6.dp, end = 6.dp, top = LocalGlassTopInset.current)
+            .clipToBounds().testTag("log_fixed_chrome"),
+        rootInset = 0.dp,
         localWindow = true,
         top = {
             val shape = RoundedCornerShape(18.dp)
@@ -315,7 +318,7 @@ fun LogTabScreen(
                 shape = shape,
                 color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
                 modifier = Modifier.fillMaxWidth()
-                    .glassHeaderMaterial(palette, shape)
+                    .glassHeaderMaterial(palette, shape, softenUnderlap = true)
                     .trainPilotBorder(1.dp, palette.cardBorder, shape)
                     .testTag("log_fixed_header")
             ) {
@@ -358,7 +361,7 @@ fun LogTabScreen(
                             }
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = palette.glassTile(palette.surfaceCard),
+                                color = palette.glassTintedTile(palette.surfaceCard),
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(horizontal = 10.dp)
@@ -541,7 +544,7 @@ internal fun CompactJournalSearchField(
     Row(
         modifier = Modifier.fillMaxWidth().height(48.dp)
             .clip(shape)
-            .background(palette.glassTile(palette.surfaceCard))
+            .background(palette.glassTintedTile(palette.surfaceCard))
             .then(if (palette.isLiquidGlass) Modifier.border(1.dp, edge, shape)
                 else if (focused) Modifier.trainPilotFrame(1.dp, palette.primary, shape)
                 else Modifier.trainPilotFrame(1.dp, palette.cardBorder, shape))

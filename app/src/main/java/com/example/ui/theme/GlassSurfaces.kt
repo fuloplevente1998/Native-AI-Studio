@@ -83,6 +83,9 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
 internal fun TrainPilotPalette.glassBackgroundTint(cap: Float, saturation: Float = .42f): Color =
     GlassContrast.limit(Color.hsv(GlassScene.hueOf(background), saturation, 1f), cap)
 
+internal fun TrainPilotPalette.glassTintedTile(legacy: Color): Color =
+    if (isLiquidGlass) glassBackgroundTint(GLASS_TILE_LUMA).copy(alpha = glassTileAlpha(glassClarity)) else legacy
+
 /** A sliding panel uses the active Liquid palette hue, not a second procedural
  * scene or a neutral grey fill. Preserve the existing quantized 0–5% transparency.
  * Only its background is translucent. Centered alerts and popup menus stay opaque.

@@ -180,10 +180,11 @@ class LiquidGlass2810Test {
         val coach = src("ui/screens/health/CoachDetailScreen.kt").substringAfter("LazyColumn(").substringBefore("if (uiState.currentSubScreen")
         val journal = src("ui/screens/log/LogTabScreen.kt")
         assertTrue(coach.contains("contentPadding = PaddingValues(") && coach.contains("top = 16.dp + LocalGlassTopInset.current, bottom = 16.dp"))
-        // Journal now has measured pinned search/date chrome. The root inset must be
-        // forwarded exactly once and the measured bars reserved INSIDE the scroll list.
+        // The journal's local capture starts below navigation. Its measured header
+        // remains inside that window so only the local bars receive the scrolling rows.
         val journalChrome = journal.substringAfter("GlassScrollChrome(").substringBefore("LazyColumn(")
-        assertTrue(journalChrome.contains("rootInset = LocalGlassTopInset.current"))
+        assertTrue(journalChrome.contains("top = LocalGlassTopInset.current"))
+        assertTrue(journalChrome.contains(".clipToBounds()") && journalChrome.contains("rootInset = 0.dp"))
         assertTrue(journalChrome.contains("top = {") && journalChrome.contains("log_fixed_header"))
         assertTrue(journalChrome.contains("{ scrollModifier, topInset, bottomInset ->"))
         val journalList = journal.substringAfter("LazyColumn(").substringBefore("internal fun CompactJournalSearchField(")

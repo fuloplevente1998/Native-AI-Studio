@@ -49,7 +49,7 @@ internal fun StudioPaletteCategories(
     onSelect: (Int) -> Unit,
     choiceTag: String = "settings_palette_choice_",
     revealSelectedId: Int? = null,
-    onSelectionRevealed: () -> Unit = {}
+    onSelectionRevealed: (Int) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val titles = when (language) {
@@ -102,7 +102,7 @@ internal fun StudioPaletteCategories(
                                     LaunchedEffect(option.id, palette.isLiquidGlass) {
                                         withFrameNanos { }
                                         requester.bringIntoView()
-                                        onSelectionRevealed()
+                                        onSelectionRevealed(option.id)
                                     }
                                 }
                                 Box(Modifier.weight(1f).height(48.dp)

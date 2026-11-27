@@ -55,15 +55,20 @@ internal fun liquidChromeTint(palette: TrainPilotPalette): Color {
 }
 
 internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
-    16f - 4f * (clarity.coerceIn(0, 100) / 100f)
+    22f - 4f * (clarity.coerceIn(0, 100) / 100f)
 
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Navigation,
     preserveOriginalMaterial: Boolean = false,
-    showRim: Boolean = true): Modifier {
+    showRim: Boolean = true,
+    softenUnderlap: Boolean = false): Modifier {
     if (!palette.isLiquidGlass) return this
-    val minBlur = if (preserveOriginalMaterial) 0f else fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+    val minBlur = when {
+        preserveOriginalMaterial && !LocalGlassChromeUnderlap.current -> 0f
+        softenUnderlap -> fixedGlassChromeMinimumBlurDp(palette.glassClarity) + 2f
+        else -> fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+    }
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
     val chrome = LocalKyantHeader.current.forThisWindow()
     val backdrop = LocalGlassHeaderBackdrop.current
@@ -74,13 +79,14 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
         LocalGlassChromeUnderlap.current && chrome != null ->
             kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
         else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur, showRim = showRim)
-            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape, showRim)
+            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape, minimumBlurDp = minBlur, showRim = showRim)
             else if (showRim) trainPilotGlassMaterial(palette, shape, role) else Modifier
     }
     // Inner background draws after the lens but before foreground controls: the text,
     // icons and touch targets are unchanged. This also covers static/old-device fallback.
+    val coatAlpha = fixedGlassChromeShadeAlpha(palette.glassClarity) * if (softenUnderlap) .88f else 1f
     return if (preserveOriginalMaterial) material else material.background(
-        liquidChromeTint(palette).copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
+        liquidChromeTint(palette).copy(alpha = coatAlpha), shape)
         .then(if (showRim) Modifier.trainPilotGlassRim(palette, shape, role) else Modifier)
 }
 
@@ -116,7 +122,7 @@ internal fun Modifier.captureGlassBackdrop(backdrop: GlassBackdrop): Modifier =
  */
 @Composable
 internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilotPalette, shape: Shape,
-    showRim: Boolean = true): Modifier {
+    minimumBlurDp: Float = 0f, showRim: Boolean = true): Modifier {
     if (!palette.isLiquidGlass) return this
     if (backdrop.view !== LocalView.current) {
         return if (showRim) trainPilotGlassMaterial(palette, shape, GlassMaterialRole.Selection) else this
@@ -124,12 +130,15 @@ internal fun Modifier.liveGlassLens(backdrop: GlassBackdrop, palette: TrainPilot
     val enabled = LocalGlassOpticsEnabled.current
     if (enabled && backdrop.kyant != null && backdrop.view === LocalView.current) {
         return kyantGlass(rememberKyantScene(backdrop.kyant, samplesContent = true), palette, shape,
-            GlassMaterialRole.Selection, showRim = showRim)
+            GlassMaterialRole.Selection, minimumBlurDp = minimumBlurDp, showRim = showRim)
     }
     val lensLayer = rememberGraphicsLayer()
     // Read only while drawing: moving the lens (scroll, sliding pill) re-records, never recompiles.
     val origin = remember { mutableStateOf(Offset.Zero) }
-    val optics = remember(palette.glassClarity) { GlassOptics.from(palette.glassClarity) }
+    val optics = remember(palette.glassClarity, minimumBlurDp) {
+        val base = GlassOptics.from(palette.glassClarity)
+        base.copy(blurDp = maxOf(base.blurDp, minimumBlurDp))
+    }
     return onGloballyPositioned { origin.value = it.positionInRoot() }
         .drawWithCache {
             val outline = shape.createOutline(size, layoutDirection, this)

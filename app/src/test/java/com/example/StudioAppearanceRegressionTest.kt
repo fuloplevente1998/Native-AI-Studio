@@ -98,7 +98,7 @@ class StudioAppearanceRegressionTest {
                 CompositionLocalProvider(
                     com.example.ui.theme.LocalGlassOpticsEnabled provides false,
                     com.example.ui.theme.LocalGlassTopInset provides
-                        (if (palette.isLiquidGlass) 108.dp else 0.dp)
+                        (when (selected) { 40 -> 132.dp; 35 -> 108.dp; else -> 0.dp })
                 ) {
                     SettingsMainScreen(uiState = TrainPilotUiState(selectedPaletteId = selected),
                         strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
@@ -119,6 +119,10 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_palette_choice_35").assertIsSelected().assertIsDisplayed()
         compose.onNodeWithTag("liquid_glass_clarity").assertExists()
         compose.runOnIdle { assertEquals(35, selected); assertEquals(0, backCalls) }
+        list.performScrollToNode(hasTestTag("settings_palette_choice_40"))
+        compose.onNodeWithTag("settings_palette_choice_40").performClick()
+        compose.onNodeWithTag("settings_palette_choice_40").assertIsSelected().assertIsDisplayed()
+        compose.runOnIdle { assertEquals(40, selected); assertEquals(0, backCalls) }
         list.performScrollToNode(hasTestTag("settings_theme_category_toggle_1"))
         compose.onNodeWithTag("settings_theme_category_toggle_1").performClick()
         list.performScrollToNode(hasTestTag("settings_palette_choice_9"))

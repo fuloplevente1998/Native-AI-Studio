@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassTintedTile
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.LocalGlassChromeUnderlap
 import com.example.ui.theme.glassHeaderMaterial
@@ -97,9 +98,9 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         else if (state.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction
     val liveChrome = LocalGlassChromeUnderlap.current && palette.isLiquidGlass
     val shape = RoundedCornerShape(10.dp)
-    val fill = if (palette.isLiquidGlass) palette.glassTile(selection.surface, elevated = true) else selection.surface
+    val fill = if (palette.isLiquidGlass) palette.glassTintedTile(selection.surface) else selection.surface
     val foreground = if (palette.isLiquidGlass) palette.textPrimary else selection.foreground
-    Surface(color = if (liveChrome) Color.Transparent else palette.glassTile(palette.surfaceCard, elevated = true), shape = RoundedCornerShape(14.dp),
+    Surface(color = if (liveChrome) Color.Transparent else palette.glassTintedTile(palette.surfaceCard), shape = RoundedCornerShape(14.dp),
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(0.75.dp, palette.cardBorder)),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)
             .then(if (liveChrome) Modifier.glassHeaderMaterial(palette, RoundedCornerShape(14.dp))
