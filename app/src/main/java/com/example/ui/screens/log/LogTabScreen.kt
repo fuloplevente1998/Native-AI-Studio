@@ -306,8 +306,9 @@ fun LogTabScreen(
 
     com.example.ui.theme.GlassScrollChrome(
         modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).padding(horizontal = 6.dp)
-            .testTag("log_tab_screen"),
+            .testTag("log_fixed_chrome"),
         rootInset = LocalGlassTopInset.current,
+        localWindow = true,
         top = {
             val shape = RoundedCornerShape(18.dp)
             Surface(
@@ -478,7 +479,7 @@ fun LogTabScreen(
         ) {
             LazyColumn(
                 state = logListState,
-                modifier = Modifier.fillMaxSize().trainPilotListPanel().testTag("log_workouts_scroll"),
+                modifier = Modifier.fillMaxSize().trainPilotListPanel().testTag("log_tab_screen"),
                 contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
                     end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp + topInset, bottom = 24.dp + bottomInset)
             ) {
