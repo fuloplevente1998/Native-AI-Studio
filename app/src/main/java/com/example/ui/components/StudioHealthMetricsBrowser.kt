@@ -158,7 +158,7 @@ internal fun StudioHealthMetricsBrowser(
                 Column(Modifier.fillMaxWidth().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     pinnedHeader?.invoke()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            val pillShape = RoundedCornerShape(14.dp)
+            val pillShape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
             Surface(shape = pillShape, color = palette.overlayRoleFill(palette.glassTile(palette.surfaceCard), GlassMaterialRole.Button), modifier = Modifier
                 .then(if (LocalGlassOverlay.current && palette.isLiquidGlass) Modifier.overlayRoleRim(palette, pillShape, GlassMaterialRole.Button)
                     else Modifier.trainPilotGlassRim(palette, pillShape)).weight(1f).heightIn(min = 48.dp)

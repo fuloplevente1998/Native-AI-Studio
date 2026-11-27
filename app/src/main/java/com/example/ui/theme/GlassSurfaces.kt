@@ -125,6 +125,10 @@ internal fun androidx.compose.ui.Modifier.overlayRoleRim(
     palette: TrainPilotPalette, shape: androidx.compose.ui.graphics.Shape, role: GlassMaterialRole
 ): androidx.compose.ui.Modifier {
     if (!palette.isLiquidGlass || !LocalGlassOverlay.current) return this
+    // Modal children cannot sample the parent window. Share the directional rim with
+    // the main UI, retaining the dedicated blue selected-state treatment below.
+    if (role != GlassMaterialRole.Selection && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current)
+        return trainPilotGlassRim(palette, shape, role)
     val strength = KyantMaterialSpec.forRole(role, palette.glassClarity).highlightAlpha
     return this.drawWithCache {
         val path = androidx.compose.ui.graphics.Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }

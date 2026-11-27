@@ -56,12 +56,12 @@ internal data class KyantMaterialSpec(
             val saturation = 1.08f + .22f * t
             // Tile paint is composited over its parent, not separately captured or blurred.
             val (blur, lens, coat) = when (role) {
-                GlassMaterialRole.Panel -> Triple(1f, 1f, .20f - .15f * t)
+                GlassMaterialRole.Panel -> Triple(1f, 1.12f, .20f - .15f * t)
                 GlassMaterialRole.Tile -> Triple(0f, 0f, .16f - .06f * t)
                 GlassMaterialRole.Navigation -> Triple(.8f, .65f, .12f - .09f * t)
                 GlassMaterialRole.Selection -> Triple(.65f, 1.50f, .16f - .12f * t)
                 GlassMaterialRole.Button -> Triple(.55f, 1.30f, .14f - .10f * t)
-                GlassMaterialRole.Input -> Triple(1.1f, .25f, .23f - .13f * t)
+                GlassMaterialRole.Input -> Triple(1.1f, .35f, .23f - .13f * t)
                 GlassMaterialRole.Overlay -> Triple(1.4f, .3f, .28f - .16f * t)
                 GlassMaterialRole.Performance -> Triple(0f, 0f, .16f - .06f * t)
             }

@@ -165,7 +165,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
             Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(text.getString(R.string.journal_details), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                    IconButton(onClick = model::closeDetails, enabled = !state.deleting,
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = model::closeDetails, enabled = !state.deleting, testTag = "journal_details_close", closeDescription = text.getString(R.string.journal_close))
+                    } else IconButton(onClick = model::closeDetails, enabled = !state.deleting,
                         modifier = Modifier.size(48.dp).testTag("journal_details_close").background(colors.danger, RoundedCornerShape(12.dp))) {
                         Icon(Icons.Default.Close, text.getString(R.string.journal_close), tint = colors.dangerText)
                     }
@@ -290,7 +292,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
         Dialog(onDismissRequest = { photo = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize(), color = colors.bg) {
                 Column(Modifier.fillMaxSize().systemBarsPadding()) {
-                    IconButton(onClick = { photo = null }, modifier = Modifier.align(Alignment.End).size(48.dp)) {
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = { photo = null }, modifier = Modifier.align(Alignment.End), closeDescription = text.getString(R.string.journal_close))
+                    } else IconButton(onClick = { photo = null }, modifier = Modifier.align(Alignment.End).size(48.dp)) {
                         Icon(Icons.Default.Close, text.getString(R.string.journal_close), tint = colors.dangerText)
                     }
                     PrivateJournalPhoto(entry.id, 1600, text, Modifier.fillMaxSize())

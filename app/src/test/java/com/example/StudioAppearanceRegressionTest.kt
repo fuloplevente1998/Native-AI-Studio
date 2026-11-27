@@ -50,6 +50,21 @@ class StudioAppearanceRegressionTest {
         assertTrue(heading.bottom - heading.top <= 24.dp)
     }
 
+    @Test fun liquidCloseHasAnElongatedFrameAndRetainsItsTapTarget() {
+        var closed = 0
+        compose.setContent {
+            TrainPilotTheme(palette = TrainPilotPalettes.getById(40)) {
+                TrainPilotRedCloseButton(onClick = { closed++ }, testTag = "liquid_close_fixture")
+            }
+        }
+        val close = compose.onNodeWithTag("liquid_close_fixture")
+        close.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+        compose.onNodeWithTag("liquid_close_fixture_visual", useUnmergedTree = true)
+            .assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(28.dp)
+        close.performClick()
+        compose.runOnIdle { assertEquals(1, closed) }
+    }
+
     @Test fun settingsThemesStartClosedThenShareAGroupAndKeepPaletteSelectionWorking() {
         var selected by mutableIntStateOf(1)
         compose.setContent {

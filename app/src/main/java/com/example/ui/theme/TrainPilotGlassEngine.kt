@@ -166,14 +166,17 @@ internal fun DrawScope.drawGlassDropShadow(path: Path) {
  */
 internal fun glassPrismaticRimRole(role: GlassMaterialRole): Boolean =
     role in listOf(GlassMaterialRole.Panel, GlassMaterialRole.Navigation,
-        GlassMaterialRole.Button, GlassMaterialRole.Selection, GlassMaterialRole.Input)
+        GlassMaterialRole.Button, GlassMaterialRole.Selection, GlassMaterialRole.Input, GlassMaterialRole.Overlay)
 
 @Composable
 internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Tile): Modifier {
     if (!palette.glassRimActive()) return this
-    // Do not increase drawing work for dense tiles, measurement or battery saver.
-    val prism = glassPrismaticRimRole(role) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    // Dense tiles keep a single cached edge gradient; no extra lens or draw pass.
+    // Measurement and battery saver retain the original restrained edge.
+    val fullRim = LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    val prism = glassPrismaticRimRole(role) && fullRim
+    val tileEdge = role == GlassMaterialRole.Tile && fullRim
     return drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
@@ -188,6 +191,9 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
         val shine = if (role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection) {
             Brush.linearGradient(0f to light, .55f to mid, 1f to dim,
                 end = Offset(size.width * .70f, size.height))
+        } else if (tileEdge) {
+            Brush.linearGradient(0f to light, .45f to mid, .82f to palette.primary.copy(alpha = strength * .55f), 1f to dim,
+                end = Offset(size.width, size.height))
         } else {
             Brush.verticalGradient(0f to light, .5f to mid, 1f to dim)
         }

@@ -69,7 +69,7 @@ fun TrainPilotFilterChip(
     @Suppress("UNUSED_PARAMETER") interactionSource: MutableInteractionSource? = null
 ) {
     val p = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(14.dp)
+    val shape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
     val selection = remember(p) { p.selectionColors() }
     val content = when {
         !enabled -> p.textSecondary.copy(alpha = 0.5f)
@@ -164,12 +164,17 @@ fun TrainPilotTextField(
     @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
     @Suppress("UNUSED_PARAMETER") colors: TextFieldColors? = null
 ) {
+    val p = LocalTrainPilotPalette.current
+    // Single-line Liquid controls are capsules; multiline fields keep readable corner space.
+    val fieldShape = if (p.isLiquidGlass) {
+        if (singleLine) RoundedCornerShape(50) else RoundedCornerShape(20.dp)
+    } else RoundedCornerShape(14.dp)
     OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier, enabled = enabled,
         readOnly = readOnly, textStyle = textStyle, label = label, placeholder = placeholder, leadingIcon = leadingIcon,
         trailingIcon = trailingIcon, prefix = prefix, suffix = suffix, supportingText = supportingText, isError = isError,
         visualTransformation = visualTransformation, keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
         singleLine = singleLine, maxLines = maxLines, minLines = minLines, interactionSource = interactionSource,
-        shape = RoundedCornerShape(14.dp), colors = trainPilotFieldColors())
+        shape = fieldShape, colors = trainPilotFieldColors(p))
 }
 
 @Composable
@@ -198,12 +203,17 @@ fun TrainPilotTextField(
     @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
     @Suppress("UNUSED_PARAMETER") colors: TextFieldColors? = null
 ) {
+    val p = LocalTrainPilotPalette.current
+    // Single-line Liquid controls are capsules; multiline fields keep readable corner space.
+    val fieldShape = if (p.isLiquidGlass) {
+        if (singleLine) RoundedCornerShape(50) else RoundedCornerShape(20.dp)
+    } else RoundedCornerShape(14.dp)
     OutlinedTextField(value = value, onValueChange = onValueChange, modifier = modifier, enabled = enabled,
         readOnly = readOnly, textStyle = textStyle, label = label, placeholder = placeholder, leadingIcon = leadingIcon,
         trailingIcon = trailingIcon, prefix = prefix, suffix = suffix, supportingText = supportingText, isError = isError,
         visualTransformation = visualTransformation, keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
         singleLine = singleLine, maxLines = maxLines, minLines = minLines, interactionSource = interactionSource,
-        shape = RoundedCornerShape(14.dp), colors = trainPilotFieldColors())
+        shape = fieldShape, colors = trainPilotFieldColors(p))
 }
 
 /** 2785: main action of a form (theme accent fill, e.g. gold "Mentés"). */
@@ -211,7 +221,7 @@ fun TrainPilotTextField(
 fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.isLiquidGlass
-    val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
+    val shape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
     Surface(shape = shape, color = if (glass) Color.Transparent else if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
         border = if (glass) BorderStroke(1.dp, p.selectionColors().border) else null,
         modifier = modifier.heightIn(min = 48.dp)
@@ -230,7 +240,7 @@ fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifie
 fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val p = LocalTrainPilotPalette.current
     val glass = enabled && p.isLiquidGlass
-    val shape = if (glass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
+    val shape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(14.dp)
     Surface(shape = shape, color = if (glass) Color.Transparent else p.surfaceElevated, border = com.repforge.app.ui.theme.trainPilotFrameStroke(BorderStroke(1.dp, p.cardBorder)),
         modifier = modifier.heightIn(min = 48.dp)
             .then(if (glass) Modifier.liquidDropMaterial(p, shape, GlassMaterialRole.Button) else Modifier)

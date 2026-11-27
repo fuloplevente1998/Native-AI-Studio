@@ -1,6 +1,10 @@
 package com.example.ui.components
 import com.example.ui.theme.LocalGlassScene
 import com.example.ui.theme.LocalGlassOverlay
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.LocalGlassPowerSave
+import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.sheetUsesGlass
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
@@ -91,6 +95,8 @@ internal fun TrainPilotModalBottomSheet(
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
+                    .then(if (glass && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current)
+                        Modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Overlay) else Modifier)
                     .drawWithCache {
                         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
                         val color = outlineColor.copy(alpha = outlineColor.alpha * 0.22f)

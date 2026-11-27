@@ -380,7 +380,7 @@ fun HomeScreen(
                                             state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
                                     } else TrainPilotGlassPrimaryButton(
                                         onClick = onStartOrContinueWorkout,
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(12.dp),
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = palette.primary,
@@ -517,7 +517,7 @@ fun HomeScreen(
 private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String, subtitle: String, onClick: () -> Unit, enabled: Boolean = true, connected: Boolean? = null) {
     val p = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(if (p.isLiquidGlass) 22.dp else 14.dp)
     Surface(color = p.glassCardFill(p.surface), shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp).trainPilotGlassMaterial(p, shape)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)

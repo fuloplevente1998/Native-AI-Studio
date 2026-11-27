@@ -113,3 +113,28 @@
 - JVM-próba védi a Jég és az Arany vezérlőfestését 100%-on. Az üveghatás és a gombok pereme fizikai készüléken ellenőrizendő.
 - A közös görgetés fölötti Liquid üveg 18–22 dp minimum elmosást használ. A Napló erősebb, helyi matt réteget kapott. A lista mintavétele és rajzolása a fő navigáció alatt kezdődik, a kereső és a dátumválasztó mögé továbbra is becsúszik.
 - Az aktív edzés Coach és Részletek gombja enyhe Liquid peremfényt kap, a felső vezérlés és a pihenősáv belső csempéi palettaárnyalatot használhatnak. A Beállítások és a Témák választó azonos Liquid családon belüli váltáskor is a kiválasztott témát hozza látható helyre.
+
+## Beállítások – Google Cloud gyorsszinkron
+
+- `fix/settings-cloud-quick-sync`, alap `9e0fa11a`. Az összecsukott Beállítások-kártya jobb oldalán a Drive + Naptár szinkron indítható. A gyorsgomb kerek, 36 dp-es vizuális kerettel és 48 dp-es érintési felülettel rendelkezik, a kibontott művelettel azonos útvonalon és tiltásokkal működik. A Biztonsági mentés külön gyorsikonja kikerült. A meglévő Drive-mentés működése megmaradt.
+- A naptár árva teljesítéspipája külön nyitott hibapont. A Liquid megjelenés, a témaváltás és az érintési nyúlás fizikai eszközön ellenőrizendő.
+- Liquid témában a közös Bezárás kerete 8 dp-vel szélesebb a magasságánál, teljesen lekerekített, 48 dp-es érintési felülettel. A naptári Újratervezés és a Liquid fotónéző is ezt használja.
+
+## #432 – Liquid formavilág finomítása (2026-11-27)
+
+- A felhasználó kérésére a #432 meglévő `fix/settings-cloud-quick-sync` ágán folytatva; forráscommit `8c296e33`. A közös piros X már vízszintesen elnyújtott (38×46 dp vizuális méret: szélesség 46, magasság 38; 48 dp érintési cél), a hagyományos forma változatlan.
+- `TrainPilotControls.kt`: Liquid szűrőchipek és egysoros beviteli mezők kapszula alakúak, a több soros mezők 20 dp ívet kapnak; a közös elsődleges/másodlagos gombok tiltott állapotban is megtartják Liquid alakjukat. A nem Liquid paletták eredeti 14 dp geometriája, színek, méretezés és műveletek változatlanok.
+- Szándékosan nincs globális alakcsere: nagy panelek, speciális diagramok, egyedi vezérlők és Wear érintetlenek. Forrásszintű célzott módosítás; fordítás, JVM CI és készülékes vizuális ellenőrzés még szükséges. Nincs merge, APK vagy verzióemelés; közös későbbi CI-kör.
+
+
+## #432 – jóváhagyott Liquid mockupok és teljes telefonos felület auditja
+
+- Hatókör: kizárólag a 8 Liquid Glass paletta (`isLiquidGlass`); a 4 standard színes és az összes többi nem Liquid téma eredeti geometriája, festése, művelete és szövege megmarad. A 3 jóváhagyott mockup vizuális referencia, nem pixelazonos renderelési szerződés. Személyes képernyőképek nem kerülnek a repóba.
+- Közös X: alapértelmezett Liquid festett méret 48×28 dp, teljesen lekerekített, 48×48 dp érintési cél és eredeti piros jelentés, standard 38×38 dp. A meglévő közös komponenshez terelve a Health napló/források, Mai állapot, heti célok előzménye, napi lépésstatisztika, aktív edzés visszajelzése, natív egészségrekord, naplórészlet/fotó, útvonal és anatómia bezárását. Eredeti nem Liquid ágak, visszahívások, tiltás, tesztcímkék, natív akadálymentes szöveg megmaradnak. A törlés, szűrőtörlés, megjegyzéstörlés és banner-elvetés nem képernyőbezárás, nem kevertük össze.
+- A Kezdőlapon Liquid edzésindító kapszula, 22 dp gyorsparancskártyák, 20 dp Mai állapot csempék, lekerekített heti célok vezérlő; Egészségnapló dátumtartomány kapszula. A standard ágak eredeti dp-értékei változatlanok. A három jóváhagyott oldal többi kártyáját a közös anyagút javítja, nem erőltetünk globális 50%-os sarkot a nagy, többsoros panelekre.
+- Optika: meglévő Kyant `Panel` lencse magasság/eltolás szorzó 1→1.12, `Input` .25→.35, a többi anyagszerep és clarity/kontrasztkorlát változatlan. Közös irányított perem a modal külső felületén és nem kijelölt belső szerepeken; Tile csak a meglévő egyetlen cached edge gradient színirányát változtatja. Nincs új layer capture, új shader vagy új lencse minden csempére. Energia-/méréskapu és 0–5% sheet transparency, külön ablak mintavételi tilalma megmarad. A modal perem vektoros közelítés, nem valódi háttér-refrakció.
+- Forrásaudit: a CODEMAP alapján közös anyagok, navigáció, vezérlők, X-kódhelyek és képernyőcsoportok áttekintése; GitHub kódkeresés a default branchből, a találatok ellenőrzése a #432 ágán. A teljes alkalmazás készülékes auditja még nyitott. Kötelező vizuális mátrix: Home/Programok/Edzés/Fejlődés/Egészség; Coach, Napló, Naptár, Beállítások/kapcsolt eszközök; felcsúszó és középső modalok, dátumválasztók, keresők, program-/gyakorlat-/edzésrészletek, aktív/pihenő/intervall/kültéri GPS, fotó/térkép, hibák/tiltott gombok. Mind a 8 Liquid 0/50/100%-on, a 4 standard előtte/utána; nagy font, kis kijelző, scroll és alácsúszás, TalkBack, 48 dp, saját háttér, akkukímélés, régebbi API; aktív mérés jank/battery és állapot működés. Az egyedi kártyák és a tényleges fénytörés teljes appos kiterjesztése csak ezen audit alapján, nem blanket live lens.
+- Optikai szerep- és X geometria regresszió frissítve; utolsó forráscommit `7a6bd5e5`. Forrásellenőrzés, nem lefuttatott CI vagy készülékteszt. Nincs merge, APK, verzióemelés. A közös későbbi CI-kör és fizikai vizuális elfogadás szükséges.
+
+- Felhasználói elfogadás: #432 PR CI → sikeres ellenőrzés után main merge → teljes main CI → tartós aláírású telefon és Wear APK + AAB. A korábbi 46×38 dp Liquid X méretet a jóváhagyott 48×28 dp váltotta fel. Kiadási verzióemelésre külön utasítás nincs. A készülékes elfogadás továbbra is nyitott.
+- Felhasználói pontosítás: emelt verziókkal készül a kiadás: 1.5.7, telefon 281800, Wear 281802; a korábbi CI forrása már nem kiadási jelölt. A teljes PR és main CI az új forráson szükséges.

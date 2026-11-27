@@ -10,7 +10,6 @@ import com.example.ui.components.trainPilotAnimatedExpansion
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
-import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -82,8 +81,7 @@ fun StudioGoogleCloudSyncCard(
     onCloudSyncCompleted: () -> Unit = {},
     settingsViewModel: SettingsViewModel = viewModel(),
     compact: Boolean = false,
-    compactDriveSyncEnabled: Boolean = true,
-    onCompactDriveSync: (() -> Unit)? = null
+    onSyncAllCloud: (() -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = com.example.localization.LocalTrainPilotStrings.current
@@ -138,6 +136,10 @@ fun StudioGoogleCloudSyncCard(
     val headerStatus = if (connected && !gs.errorMessage.isNullOrBlank()) CloudSyncStatus.ERROR
         else cloudSyncHeaderStatus(listOf(driveStatus, calendarStatus))
     val busyAny = gs.isBusy || settingsState.replacementBusy || settingsState.maintenanceBusy
+    val syncCloudNow: () -> Unit = {
+        if (onSyncAllCloud != null) onSyncAllCloud()
+        else activity?.let { settingsViewModel.syncAllCloud(it) }
+    }
     fun statusLabel(st: CloudSyncStatus) = when (st) {
         CloudSyncStatus.OK -> tr(lang, "Szinkron rendben", "Sync OK", "Sync in Ordnung", "Sincronizare în regulă")
         CloudSyncStatus.LATE -> tr(lang, "Több mint 3 napja nem volt sikeres szinkron", "No successful sync for more than 3 days", "Seit über 3 Tagen kein erfolgreicher Sync", "Nicio sincronizare reușită de peste 3 zile")
@@ -223,21 +225,29 @@ fun StudioGoogleCloudSyncCard(
                 Icon(if (cloudExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
             }
 
-                if (compact && !cloudExpanded && connected) {
-                    val enabled = compactDriveSyncEnabled && !busyAny && activity != null
-                    val shape = RoundedCornerShape(10.dp)
-                    Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                if (!compact && !cloudExpanded && connected) {
+                    val enabled = !busyAny && activity != null
+                    val syncLabel = tr(lang, "Google Cloud szinkronizálása", "Sync Google Cloud",
+                        "Google Cloud synchronisieren", "Sincronizează Google Cloud")
+                    Box(
                         modifier = Modifier.size(48.dp)
-                            .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
-                            .trainPilotBorder(1.dp, palette.cardBorder, shape)
-                            .trainPilotClickable(shape, enabled = enabled) {
-                                if (onCompactDriveSync != null) onCompactDriveSync()
-                                else activity?.let { settingsViewModel.syncDriveCloud(it) }
-                            }.testTag("backup_drive_quick_sync")
-                            .semantics { contentDescription = tr(lang, "Google Drive szinkronizálása", "Sync Google Drive", "Google Drive synchronisieren", "Sincronizează Google Drive") }) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)
-                            else Icon(Icons.Default.Sync, null, tint = if (enabled) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                            .trainPilotClickable(CircleShape, enabled = enabled, onClick = syncCloudNow)
+                            .testTag("settings_google_quick_sync")
+                            .semantics { contentDescription = syncLabel },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                            modifier = Modifier.size(36.dp)
+                                .trainPilotGlassRim(palette, CircleShape, GlassMaterialRole.Button)
+                                .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
+                                .testTag("settings_google_quick_sync_icon")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)
+                                else Icon(Icons.Default.Sync, null, tint = if (enabled) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                            }
                         }
                     }
                 }
@@ -286,7 +296,7 @@ fun StudioGoogleCloudSyncCard(
                 if (autoSync.any) AutoRow(tr(lang, "Csak Wi-Fi-n", "Wi-Fi only", "Nur über WLAN", "Doar pe Wi-Fi"),
                     autoSync.wifiOnly, "settings_google_auto_wifi") { saveAutoSync(autoSync.copy(wifiOnly = it)) }
                 com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(
-                    onClick = { activity?.let { settingsViewModel.syncAllCloud(it) } },
+                    onClick = syncCloudNow,
                     enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),

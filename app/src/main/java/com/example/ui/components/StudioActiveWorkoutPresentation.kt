@@ -104,7 +104,9 @@ internal fun rememberExerciseFeedbackNext(state: TrainPilotUiState, onNext: () -
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(feedbackWord(state, "Gyakorlat visszajelzés", "Exercise feedback", "Übungsfeedback", "Feedback exercițiu"),
                     modifier = Modifier.weight(1f), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                IconButton(onClick = { pending = false }, modifier = Modifier.testTag("active_feedback_close")) {
+                if (LocalTrainPilotPalette.current.isLiquidGlass) {
+                    TrainPilotRedCloseButton(onClick = { pending = false }, testTag = "active_feedback_close")
+                } else IconButton(onClick = { pending = false }, modifier = Modifier.testTag("active_feedback_close")) {
                     Icon(Icons.Default.Close, feedbackWord(state, "Bezárás", "Close", "Schließen", "Închide"),
                         tint = LocalTrainPilotPalette.current.textSecondary)
                 }

@@ -239,7 +239,9 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
                 Text(if (historySheet == "workouts") tr(lang, "Edzéselőzmények", "Workout history", "Trainingsverlauf", "Istoric antrenamente")
                     else tr(lang, "Napi lépések", "Daily steps", "Tagesschritte", "Pași zilnici"),
                     style = MaterialTheme.typography.titleMedium, color = palette.textPrimary, modifier = Modifier.weight(1f))
-                IconButton(onClick = { historySheet = null }, modifier = Modifier.testTag("health_weekly_history_close")) {
+                if (palette.isLiquidGlass) {
+                    com.example.ui.components.TrainPilotRedCloseButton(onClick = { historySheet = null }, testTag = "health_weekly_history_close")
+                } else IconButton(onClick = { historySheet = null }, modifier = Modifier.testTag("health_weekly_history_close")) {
                     Icon(Icons.Default.Close, contentDescription = tr(lang, "Bezárás", "Close", "Schließen", "Închide"), tint = palette.textPrimary)
                 }
             }

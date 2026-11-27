@@ -59,7 +59,9 @@ fun WorkoutRouteMapDialog(route: RouteCoordinatesUiModel, onDismiss: () -> Unit,
             Column(Modifier.fillMaxSize().systemBarsPadding().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(text.getString(com.repforge.app.R.string.journal_route_title), Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = onDismiss, testTag = "route_close", closeDescription = text.getString(com.repforge.app.R.string.journal_close))
+                    } else IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)
                         .testTag("route_close").clip(RoundedCornerShape(12.dp)).background(colors.danger)) {
                         Icon(Icons.Default.Close, text.getString(com.repforge.app.R.string.journal_close), tint = colors.dangerText)
                     }

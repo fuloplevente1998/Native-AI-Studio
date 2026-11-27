@@ -55,7 +55,7 @@ internal fun MainTodayStatusTile(
     titleTag: String = "today_tile_title"
 ) {
     val palette = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(if (palette.isLiquidGlass) 20.dp else 16.dp)
     Surface(
         shape = shape,
         color = palette.glassTile(palette.background.copy(alpha = 0.55f)),

@@ -74,7 +74,9 @@ internal fun NativeMuscleLoadVisual(loads: List<MuscleLoadUiModel>, language: St
         TrainPilotSectionSurface(Modifier.fillMaxWidth().padding(16.dp).testTag("progress_anatomy_dialog")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                IconButton(onClick = { zoom = false }, modifier = Modifier.size(48.dp).testTag("progress_anatomy_close")) {
+                if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                    com.example.ui.components.TrainPilotRedCloseButton(onClick = { zoom = false }, testTag = "progress_anatomy_close", closeDescription = strings.getString(R.string.journal_close))
+                } else IconButton(onClick = { zoom = false }, modifier = Modifier.size(48.dp).testTag("progress_anatomy_close")) {
                     Icon(Icons.Default.Close, strings.getString(R.string.journal_close))
                 }
             }
