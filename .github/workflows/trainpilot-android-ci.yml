@@ -57,11 +57,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -175,11 +175,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -234,7 +234,7 @@ jobs:
       - uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - name: Install Android SDK
         shell: bash
         run: |

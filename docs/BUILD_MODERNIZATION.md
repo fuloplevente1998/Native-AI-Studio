@@ -6,7 +6,7 @@ Branch: `chore/build-modernization`, baseline `b14dc497448b2e3b4df0f9715ea65cb67
 
 | Component | Baseline | Candidate | Reason |
 |---|---|---|---|
-| Temurin runner JDK | 17 | 21 LTS | Kyant 1.0.6 contains class-file major 65; JVM17 cannot load it. One JDK on CI/build/signing runners; Android Java target remains 17. |
+| Temurin runner JDK | 17 | 25 LTS | Gradle supports JDK 25 from 9.1; AGP 9.5 includes a JDK25 warning fix (#553121473). Kyant 1.0.6 requires at least Java 21. One JDK for CI/build/signing; Android Java target remains 17. Exact-head full CI must verify compatibility. |
 | Gradle | 9.3.1 | 9.9.3 | Latest stable GitHub release; wrapper and all three workflows aligned. AGP 9.5 requires at least Gradle 9.6.0; actual integration must pass. |
 | AGP | 9.1.1 | 9.5.1 | Stable release per official Android release notes; leave compileSdk 36.1 / targetSdk 36 / minSdk unchanged. |
 | Kotlin/Compose compiler plugin | 2.3.10 | 2.4.21 | Latest stable; D8/R8 must catch any inline/dex regression. |
@@ -28,7 +28,7 @@ Three existing workflows updated, no new signing path. The historical Play-inter
 
 ## M2 – runtime dependency audit (not yet implemented)
 
-- Evaluate JDK25 LTS independently after JDK21 passes, verify AGP/Gradle/Robolectric compatibility, retain Android compile target 17.
+- JDK25 LTS is now the selected build runner in M1; only retain a lower runner version if an actual incompatibility is demonstrated and documented. Android Java target stays 17.
 - Phone Compose BOM 2026.02.00 -> 2026.11.01 candidate; current wear BOM 2024.09.00 stays untouched for M1. Kyant 1.0.6 -> 2.0.1 is a major API migration, not a blind version substitution. 2.0.1 release notes specify Compose 1.12.0, while BOM 2026.11.01 maps UI 1.13.0; choose and verify compatible pairing, then actual renderer source migration with #433 merged. Preserve local touch, bounded palette paint, active measurement/Tile/Performance no capture, all 32 standard palettes and custom themes.
 - Inventory other direct dependencies (AndroidX lifecycle/activity/navigation/Room/DataStore/WorkManager/CameraX/Credentials, Play Services/Firebase, networking/Moshi/Coil, etc.) and transitive constraints. Major updates need migration and behavioral tests, especially Room schemas, persisted workout/session ownership and Wear sync. No blanket version bump.
 - Keep existing library checks, no alpha/beta/RC, no disabling tests, no application version or signer changes. No local Gradle/emulator.
@@ -39,3 +39,6 @@ Three existing workflows updated, no new signing path. The historical Play-inter
 2. #433 is separately blocked on its CI and source review. Reconcile workflow/HANDOFF changes after #433 integration; preserve all #433 tests and gates. Avoid overwriting its renderer implementation.
 3. M2 source migrations and dependency updates in scoped commits, full CI after completed batch; no intermediate signing.
 4. Only approved integrated main SHA with green full CI triggers persistent signed phone+Wear APK+AAB; verify signer/package/version/hash and artifact digest. Physical A57 acceptance remains separate. No Play upload.
+
+## JDK25 candidate – user clarification
+All three workflow files now use Temurin JDK25. Gradle official compatibility table supports running Gradle on Java25 from 9.1; AGP 9.5 fixed issue #553121473; Robolectric 4.18 documentation lists Gradle 9.8.2/AGP 9.5.0 as its build environment (not a blanket guarantee of every JDK combination). Sources: https://docs.gradle.org/current/userguide/compatibility.html ; https://developer.android.com/build/releases/agp-9-5-0-release-notes ; https://robolectric.org/compatibility_table/ . Exact new head must pass. JDK21 run 46071048835 was in progress when inspected and is superseded; no success claim. Runtime dependency updates remain M2, not blindly forcing incompatible Compose/Kyant majors. No change to Android JVM target, minSdk, signer, package, versions or #433 branch.

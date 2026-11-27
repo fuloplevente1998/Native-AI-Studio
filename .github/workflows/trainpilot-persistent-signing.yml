@@ -126,11 +126,11 @@ jobs:
       - name: Validate release APK verification script syntax
         run: python3 -m py_compile scripts/verify_android_apk_metadata.py
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -300,11 +300,11 @@ jobs:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
