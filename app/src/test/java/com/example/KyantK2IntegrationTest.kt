@@ -40,6 +40,26 @@ class KyantK2IntegrationTest {
         }
     }
 
+    @Test fun photoViewerHasAtMostFivePercentTransparencyAndKeepsForegroundContrast() {
+        for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
+            val p = seed.withGlassClarity(step)
+            val fill = p.photoViewerBackground(Color.Black)
+            assertEquals(1f - .05f * step / 100f, fill.alpha, .001f)
+            assertTrue(fill.alpha >= .949f)
+            val brightest = fill.compositeOver(Color.White)
+            assertTrue(brightest.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
+            assertTrue(NativeThemeTokens.contrast(p.textPrimary, brightest) >= 4.5f)
+            assertTrue(NativeThemeTokens.contrast(p.textSecondary, brightest) >= 4.5f)
+        }
+        for (p in TrainPilotPalettes.allPalettes) {
+            assertEquals(p.surface.copy(alpha = 1f), p.photoViewerBackground(p.surface))
+        }
+        val viewer = File("src/main/java/com/repforge/app/ui/progress/NativeProgressPhotoGallery.kt").readText()
+            .substringAfter("if (selected != null)")
+        assertTrue(viewer.contains(".background(palette.photoViewerBackground(colors.bg))"))
+        assertTrue(viewer.contains("if (palette.isLiquidGlass) Modifier else Modifier.trainPilotScreenBackdrop(palette)"))
+    }
+
     @Test fun coachDividerAndProgramDayPaintRespectThemeAndSelection() {
         assertEquals(GlassMaterialRole.Button, programDayGlassRole(false))
         assertEquals(GlassMaterialRole.Selection, programDayGlassRole(true))
