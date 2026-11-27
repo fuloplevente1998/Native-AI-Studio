@@ -138,3 +138,7 @@
 
 - Felhasználói elfogadás: #432 PR CI → sikeres ellenőrzés után main merge → teljes main CI → tartós aláírású telefon és Wear APK + AAB. A korábbi 46×38 dp Liquid X méretet a jóváhagyott 48×28 dp váltotta fel. Kiadási verzióemelésre külön utasítás nincs. A készülékes elfogadás továbbra is nyitott.
 - Felhasználói pontosítás: emelt verziókkal készül a kiadás: 1.5.7, telefon 281800, Wear 281802; a korábbi CI forrása már nem kiadási jelölt. A teljes PR és main CI az új forráson szükséges.
+
+
+## Build modernization – külön draft ág (2026-11-27)
+- `chore/build-modernization` a stabil b14dc497 mainből; #433 / #434 külön marad. M1 jelölt: JDK21, Gradle9.9.3, AGP9.5.1, Kotlin2.4.21, KSP2.3.14, Robolectric4.18.1, friss stabil GitHub Actions. Android forrás/cél 17, SDK/verzió/aláíró változatlan. Robolectric API28/34 i7 azonos artifact, checksum megmarad. A régi külön Play-internal workflow kézi recovery, a normál persistent signing továbbra is main full CI után automatikus. Modernizációs PR: teljes JVM/no-skips, phone/Wear R8, DEX. M1 még nem tesztelt. M2: JDK25 külön ellenőrzés, Compose/Kyant nagyverzió-migráció és többi runtime függőség auditja nyitott. Részletes források és elfogadás: docs/BUILD_MODERNIZATION.md. Mainre csak teljes zöld integrált CI után; nincs Play feltöltés.

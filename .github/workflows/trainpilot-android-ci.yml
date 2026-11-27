@@ -55,13 +55,13 @@ jobs:
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -73,17 +73,17 @@ jobs:
           "${SDKMANAGER}" --version
           yes | "${SDKMANAGER}" --licenses > /dev/null || true
           "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
+          # The project requests compileSdk 36.1; install it when listed.
           "${SDKMANAGER}" --install 'platforms;android-36.1' || true
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: false
 
       - name: Cache Robolectric Android SDK dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
@@ -135,12 +135,12 @@ jobs:
         shell: bash
         env:
           TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
+          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || github.head_ref == 'chore/build-modernization' || startsWith(github.head_ref, 'test/kyant-final-') }}
         run: python3 scripts/verify_junit_xml.py
 
       - name: Upload unit test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-jvm-test-reports
           path: |
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload Gradle task timing profile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-build-profile
           path: build/reports/profile/
@@ -173,13 +173,13 @@ jobs:
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -191,20 +191,20 @@ jobs:
           "${SDKMANAGER}" --version
           yes | "${SDKMANAGER}" --licenses > /dev/null || true
           "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
+          # The project requests compileSdk 36.1; install it when listed.
           "${SDKMANAGER}" --install 'platforms;android-36.1' || true
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: false
 
       - name: Run release R8 minification
         shell: bash
         if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
         env:
-          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
+          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || github.head_ref == 'chore/build-modernization' || startsWith(github.head_ref, 'test/kyant-final-') }}
         run: |
           if [[ "$KYANT_GATE" == "true" ]]; then
             gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8 :wear:minifyReleaseWithR8
@@ -214,7 +214,7 @@ jobs:
 
       - name: Upload R8 Gradle task timing profile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-r8-build-profile
           path: build/reports/profile/
@@ -223,18 +223,18 @@ jobs:
 
   kyant-debug-dex:
     # Compatibility gate, not an installable test artifact or production signing job.
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/kyant-glass'
+    if: github.event_name == 'pull_request' && (github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || github.head_ref == 'chore/build-modernization')
     name: Kyant debug DEX compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - name: Install Android SDK
         shell: bash
         run: |
@@ -243,9 +243,9 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;36.0.0'
           "$SDKMANAGER" --install 'platforms;android-36.1' || true
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           cache-read-only: true
       - name: Verify debug D8 dexing without signing
         run: gradle --no-daemon --stacktrace :app:dexBuilderDebug :app:mergeExtDexDebug
