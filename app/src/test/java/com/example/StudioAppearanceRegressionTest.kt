@@ -60,7 +60,7 @@ class StudioAppearanceRegressionTest {
         val close = compose.onNodeWithTag("liquid_close_fixture")
         close.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
         compose.onNodeWithTag("liquid_close_fixture_visual", useUnmergedTree = true)
-            .assertWidthIsEqualTo(46.dp).assertHeightIsEqualTo(38.dp)
+            .assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(28.dp)
         close.performClick()
         compose.runOnIdle { assertEquals(1, closed) }
     }
