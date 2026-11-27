@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassHeaderMaterial
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -148,15 +150,22 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
         Column(Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("private_photos_screen")
             .padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SubScreenTopBar(strings.privatePhotosTitle, back, settings)
-            NativeProgressPhotoGallery(all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
-                model::openPhoto, model::closePhoto, vertical = true, modifier = Modifier.weight(1f))
-
+            NativeProgressPhotoGallery(
+                all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
+                model::openPhoto, model::closePhoto, vertical = true, modifier = Modifier.weight(1f),
+                pinnedHeader = {
+                    Box(Modifier.fillMaxWidth().glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                        .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))) {
+                        SubScreenTopBar(strings.privatePhotosTitle, back, settings)
+                    }
+                },
+                pinnedFooter = {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.privatePhotoWorkoutId == null) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                         .testTag("other_photo_attach_card")
                 ) {
@@ -237,8 +246,8 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
             if (state.privatePhotoWorkoutId != null) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(18.dp))
+                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.glassTile(palette.surfaceCard),
+                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                         .testTag("journal_photo_attach_card")
@@ -359,6 +368,9 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                     }
                 }
             }
+                    }
+                }
+            )
         }
     }
 }
