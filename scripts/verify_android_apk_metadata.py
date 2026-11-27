@@ -8,6 +8,72 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 
+def signer_digests(output):
+    """Require one certificate identity across every reported APK signature scheme."""
+    records = {}
+    label_pattern = r"(?:Signer #\d+|Signer \(minSdkVersion=.*\)|V[1-4](?:\.\d+)? Signer(?: #\d+)?(?: \([^\n]*\))?:)"
+    for line in output.splitlines():
+        match = re.fullmatch(r"\s*(.+?) certificate SHA-(1|256) digest:\s*(.*?)\s*", line)
+        if not match:
+            continue
+        label, algorithm, digest = match.groups()
+        if label in ("Source Stamp Signer", "Source Stamp Signer:"):
+            continue  # Source stamps are not APK signing identities.
+        if not re.fullmatch(label_pattern, label):
+            raise ValueError("Unrecognized APK signer certificate label")
+        length = 40 if algorithm == "1" else 64
+        if not re.fullmatch(r"[0-9a-fA-F]{" + str(length) + "}", digest):
+            raise ValueError("Malformed APK signer certificate digest")
+        digests = records.setdefault(label, {})
+        if algorithm in digests and digests[algorithm] != digest.lower():
+            raise ValueError("Conflicting APK signer certificate evidence")
+        digests[algorithm] = digest.lower()
+    if not records or any(set(digests) != {"1", "256"} for digests in records.values()):
+        raise ValueError("APK signer evidence unavailable")
+    identities = {(digests["1"], digests["256"]) for digests in records.values()}
+    if len(identities) != 1:
+        raise ValueError("APK signing certificate differs across signers or schemes")
+    return identities.pop()
+
+
+if __name__ == "__main__" and __import__("sys").argv[1:] == ["--self-test"]:
+    import unittest
+
+    class SignerDigestsTest(unittest.TestCase):
+        @staticmethod
+        def lines(label, sha1="a" * 40, sha256="b" * 64):
+            return f"{label} certificate SHA-256 digest: {sha256}\n{label} certificate SHA-1 digest: {sha1}\n"
+
+        def test_legacy(self):
+            self.assertEqual(signer_digests(self.lines("Signer #1")), ("a" * 40, "b" * 64))
+
+        def test_build_tools_37_multiple_schemes(self):
+            output = self.lines("V2 Signer:") + self.lines("V3.0 Signer:")
+            self.assertEqual(signer_digests(output), ("a" * 40, "b" * 64))
+
+        def test_stamp_is_not_signer(self):
+            output = self.lines("V3.0 Signer:") + self.lines("Source Stamp Signer", "c" * 40, "d" * 64)
+            self.assertEqual(signer_digests(output), ("a" * 40, "b" * 64))
+            with self.assertRaises(ValueError):
+                signer_digests(self.lines("Source Stamp Signer"))
+
+        def test_conflicting_certificates(self):
+            with self.assertRaises(ValueError):
+                signer_digests(self.lines("V2 Signer:") + self.lines("V3.0 Signer:", "c" * 40, "d" * 64))
+
+        def test_missing_and_invalid_evidence(self):
+            for output in ("", "V3.0 Signer: certificate SHA-256 digest: " + "b" * 64,
+                           self.lines("V2 Signer:", "a" * 39), self.lines("Unknown Signer")):
+                with self.subTest(output=output), self.assertRaises(ValueError):
+                    signer_digests(output)
+
+        def test_conflicting_duplicate(self):
+            with self.assertRaises(ValueError):
+                signer_digests(self.lines("V2 Signer:") + self.lines("V2 Signer:", "c" * 40))
+
+    unittest.main(argv=[__file__])
+
+
 release = os.environ.get("TRAINPILOT_VERIFY_RELEASE") == "true"
 phone = pathlib.Path("app/build/outputs/apk/release/app-release.apk" if release else "app/build/outputs/apk/debug/app-debug.apk")
 if not phone.is_file():
@@ -22,16 +88,14 @@ android = "{http://schemas.android.com/apk/res/android}"
 def inspect(apk):
     manifest = ET.fromstring(subprocess.check_output([analyzer, "manifest", "print", str(apk)], text=True))
     verified = subprocess.check_output([str(signer_tool), "verify", "--print-certs", str(apk)], text=True)
-    sha1 = re.search(r"Signer #1 certificate SHA-1 digest: ([0-9a-fA-F]+)", verified)
-    sha256 = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)", verified)
-    assert sha1 and sha256, "APK signer evidence unavailable"
+    sha1, sha256 = signer_digests(verified)
     return manifest, {
         "applicationId": manifest.get("package"),
         "versionCode": manifest.get(android + "versionCode"),
         "versionName": manifest.get(android + "versionName"),
         "apkSha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
-        "signerSha1": sha1.group(1),
-        "signerSha256": sha256.group(1),
+        "signerSha1": sha1,
+        "signerSha256": sha256,
     }
 
 
