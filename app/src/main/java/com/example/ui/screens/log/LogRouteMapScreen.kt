@@ -4,8 +4,6 @@ import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotBorder
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
 import com.example.ui.components.NativeWorkoutRouteMapBox
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.trainPilotScreenBackdrop
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.viewmodel.TrainPilotUiState
 
 /**
@@ -50,7 +50,7 @@ fun LogRouteMapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .trainPilotScreenBackdrop(palette)
             .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp)
             .testTag("log_route_map_screen"),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -70,20 +70,19 @@ fun LogRouteMapScreen(
             com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "close_route_map_button")
         }
 
-        // High-precision Margitsziget + Duna + Vizafogó + Újlipótváros + Margit híd Map Canvas
         NativeWorkoutRouteMapBox(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            interactiveControls = true, routeKeys = workout?.routeKeys.orEmpty()
+            interactiveControls = true, routeKeys = workout?.routeKeys.orEmpty(), fitRecordedRoute = true
         )
 
-        // Bottom info card + Km Splits matching Mockup 3/4 #3
         Surface(
             shape = RoundedCornerShape(22.dp),
-            color = palette.surfaceCard,
+            color = palette.glassTile(palette.surfaceCard),
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotGlassRim(palette, RoundedCornerShape(22.dp))
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

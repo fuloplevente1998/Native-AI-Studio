@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.StudioHealthMetricsBrowser
 import com.example.ui.theme.TrainPilotTheme
@@ -76,8 +77,8 @@ class UnifiedHealthJournalUiRegressionTest {
         } finally { compose.mainClock.autoAdvance = previous }
     }
 
-    private fun awaitTag(tag: String) = awaitUi {
-        compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+    private fun awaitTag(tag: String, useUnmergedTree: Boolean = false) = awaitUi {
+        compose.onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes().isNotEmpty()
     }
 
     private fun awaitReloadDisabled() = awaitUi {
@@ -101,10 +102,15 @@ class UnifiedHealthJournalUiRegressionTest {
         val snapshot = store.exportSnapshot().toString()
         journal(samsungSupplement = true)
         val summary = "journal_summary_${day}_steps"
-        awaitTag(summary)
-        compose.onNodeWithTag(summary).assertTextEquals("0")
+        awaitTag(summary, useUnmergedTree = true)
+        compose.onNodeWithTag(summary, useUnmergedTree = true).assertTextEquals("0")
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
-        compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
+        val dayRow = compose.onNodeWithTag("journal_day_$day")
+        dayRow.performScrollTo()
+        val bounds = dayRow.getUnclippedBoundsInRoot()
+        val height = bounds.bottom - bounds.top
+        assertTrue("Collapsed day height was $height", height in 48.dp..64.dp)
+        dayRow.performClick()
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo()
         compose.onNode(hasAnyAncestor(hasTestTag("journal_metric_${day}_steps")) and hasText("0"), useUnmergedTree = true).assertExists()
         compose.onNode(hasAnyAncestor(hasTestTag("journal_metric_${day}_activeCalories")) and hasText("27 kcal"), useUnmergedTree = true).assertExists()
@@ -163,7 +169,7 @@ class UnifiedHealthJournalUiRegressionTest {
             }
         } }
         val summary = "journal_summary_${day}_steps"
-        awaitTag(summary)
+        awaitTag(summary, useUnmergedTree = true)
         compose.onNodeWithTag("journal_reload").performScrollTo()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("journal_reload").performClick()
@@ -184,9 +190,9 @@ class UnifiedHealthJournalUiRegressionTest {
             androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
             compose.mainClock.advanceTimeByFrame()
-            compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("7", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithTag(summary).assertTextEquals("7")
+        compose.onNodeWithTag(summary, useUnmergedTree = true).assertTextEquals("7")
         compose.mainClock.autoAdvance = true
         compose.onNodeWithTag("journal_reload").performScrollTo()
         compose.mainClock.autoAdvance = false

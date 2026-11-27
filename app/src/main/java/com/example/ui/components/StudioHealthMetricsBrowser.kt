@@ -8,6 +8,7 @@ import com.example.ui.theme.overlayRoleFill
 import com.example.ui.theme.overlayRoleRim
 import com.example.ui.theme.LocalGlassOverlay
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +35,6 @@ import com.example.model.localWorkoutDate
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.ui.health.*
-import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -145,103 +146,129 @@ internal fun StudioHealthMetricsBrowser(
         failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again.",
             "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = palette.danger)
         snapshot == null -> LinearProgressIndicator(Modifier.fillMaxWidth())
-        else -> range.days.forEach { date -> key(date) {
-            val primaryPage = snapshot.getJSONObject(primary)
-            val daySources = remember(snapshot, date) {
-                HealthDaySources(date, NativeHealthJournal.day(primaryPage, primary, "", date),
-                    snapshot.optJSONObject(supplement)?.let { NativeHealthJournal.day(it, supplement, "", date) },
-                    Instant.now(), ZoneId.systemDefault())
-            }
-            val sleep = remember(daySources) { daySources.sleep() }
-            val chosen = remember(daySources) {
-                NativeHealthMetrics.definitions.mapNotNull { metric ->
-                    daySources.metric(metric.key)?.let { metric.key to it }
-                }.toMap()
-            }
-            val metrics = remember(chosen, language) {
-                val values = JSONObject()
-                chosen.forEach { (key, reading) -> values.put(key, reading.number) }
-                NativeHealthMetrics.parse(context, values, language)
-            }
-            val dayWorkouts = workoutsByDay[date].orEmpty()
-            var expanded by rememberSaveable(samsungSupplement, date) { mutableStateOf(false) }
-            var type by rememberSaveable(samsungSupplement, date) { mutableStateOf("") }
-            LaunchedEffect(focus, focusKey) {
-                if (focus != null && focus.first == date.toString()) {
-                    expanded = true
-                    type = focus.second
-                }
-            }
-            val sleepText = sleep?.let { value ->
-                val minutes = value.number.toInt()
-                if (minutes >= 60) "${minutes / 60} ${label("ó", "h", "Std.", "h")} ${minutes % 60} ${label("p", "m", "Min.", "m")}" else "$minutes min"
-            }
-            val available = metrics.filter { it.isAvailable }
-            Surface(shape = RoundedCornerShape(14.dp), color = palette.overlayRoleFill(palette.glassTile(palette.surfaceElevated, elevated = true), GlassMaterialRole.Tile),
-                border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.dp, palette.cardBorder)), modifier = Modifier.fillMaxWidth().overlayRoleRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile).trainPilotAnimatedExpansion()) {
-                Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
-                        Text(date.format(dayFormat), fontWeight = FontWeight.Bold, color = palette.textPrimary,
-                            modifier = Modifier.weight(1f))
-                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
+        else -> {
+            val listShape = RoundedCornerShape(20.dp)
+            Column(
+                Modifier.fillMaxWidth()
+                    .background(palette.overlayRoleFill(palette.glassTile(palette.surfaceElevated, elevated = true), GlassMaterialRole.Tile), listShape)
+                    .overlayRoleRim(palette, listShape, GlassMaterialRole.Tile)
+                    .trainPilotBorder(1.dp, palette.cardBorder, listShape)
+            ) {
+                range.days.forEachIndexed { index, date -> key(date) {
+                    if (index > 0) {
+                        HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
                     }
-                    if (!expanded) {
-                        val steps = metrics.first { it.key == "steps" }
-                        val line = buildList {
-                            add(Triple("steps", if (steps.isAvailable) steps.valueText else "—", steps.unit.ifBlank { steps.label }))
-                            sleepText?.let { add(Triple("sleep", it, label("alvás", "sleep", "Schlaf", "somn"))) }
-                            listOf("activeCalories", "averageHeartRate").forEach { key -> metrics.first { it.key == key }.takeIf { it.isAvailable }
-                                ?.let { add(Triple(key, it.valueText, it.unit)) } }
-                            if (dayWorkouts.isNotEmpty()) add(Triple("workouts", dayWorkouts.size.toString(),
-                                label("edzés", if (dayWorkouts.size == 1) "workout" else "workouts", "Training", "antrenamente")))
+                    val primaryPage = snapshot.getJSONObject(primary)
+                    val daySources = remember(snapshot, date) {
+                        HealthDaySources(date, NativeHealthJournal.day(primaryPage, primary, "", date),
+                            snapshot.optJSONObject(supplement)?.let { NativeHealthJournal.day(it, supplement, "", date) },
+                            Instant.now(), ZoneId.systemDefault())
+                    }
+                    val sleep = remember(daySources) { daySources.sleep() }
+                    val chosen = remember(daySources) {
+                        NativeHealthMetrics.definitions.mapNotNull { metric ->
+                            daySources.metric(metric.key)?.let { metric.key to it }
+                        }.toMap()
+                    }
+                    val metrics = remember(chosen, language) {
+                        val values = JSONObject()
+                        chosen.forEach { (key, reading) -> values.put(key, reading.number) }
+                        NativeHealthMetrics.parse(context, values, language)
+                    }
+                    val dayWorkouts = workoutsByDay[date].orEmpty()
+                    var expanded by rememberSaveable(samsungSupplement, date) { mutableStateOf(false) }
+                    var type by rememberSaveable(samsungSupplement, date) { mutableStateOf("") }
+                    LaunchedEffect(focus, focusKey) {
+                        if (focus != null && focus.first == date.toString()) {
+                            expanded = true
+                            type = focus.second
                         }
-                        androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().testTag("journal_day_line_$date"),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            line.forEachIndexed { index, (metricKey, value, unit) ->
-                                if (index > 0) Text("·", color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
-                                if (unit.isNotBlank()) Text(unit, color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    } else {
-                        val tiles = buildList {
-                            sleepText?.let { add(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), it)) }
-                            available.filter { it.key in visibleHealthJournalMetrics || type == NativeDetailedHealthMetrics.recordType(it.key) }
-                                .forEach { add(Triple(it.key, it.label, "${it.valueText} ${it.unit}".trim())) }
-                        }
-                        tiles.chunked(3).forEach { cells ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                cells.forEach { (metricKey, title, value) ->
-                                    val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
-                                    val tileShape = RoundedCornerShape(10.dp)
-                                    val role = if (type == recordType) GlassMaterialRole.Selection else GlassMaterialRole.Tile
-                                    Surface(shape = tileShape, color = palette.overlayRoleFill(
-                                        if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
-                                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
-                                            .testTag("journal_metric_${date}_$metricKey")) {
-                                        Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                                            Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                            Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                    }
+                    val sleepText = sleep?.let { value ->
+                        val minutes = value.number.toInt()
+                        if (minutes >= 60) "${minutes / 60} ${label("ó", "h", "Std.", "h")} ${minutes % 60} ${label("p", "m", "Min.", "m")}" else "$minutes min"
+                    }
+                    val available = metrics.filter { it.isAvailable }
+                    Surface(color = Color.Transparent, modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
+                        Column {
+                            val headerShape = RoundedCornerShape(12.dp)
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .trainPilotClickable(headerShape, stretchOnDrag = true) { expanded = !expanded }
+                                    .testTag("journal_day_$date")
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(date.format(dayFormat), fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    if (!expanded) {
+                                        val steps = metrics.first { it.key == "steps" }
+                                        val line = buildList {
+                                            add(Triple("steps", if (steps.isAvailable) steps.valueText else "—", steps.unit.ifBlank { steps.label }))
+                                            sleepText?.let { add(Triple("sleep", it, label("alvás", "sleep", "Schlaf", "somn"))) }
+                                            listOf("activeCalories", "averageHeartRate").forEach { key -> metrics.first { it.key == key }.takeIf { it.isAvailable }
+                                                ?.let { add(Triple(key, it.valueText, it.unit)) } }
+                                            if (dayWorkouts.isNotEmpty()) add(Triple("workouts", dayWorkouts.size.toString(),
+                                                label("edzés", if (dayWorkouts.size == 1) "workout" else "workouts", "Training", "antrenamente")))
+                                        }
+                                        androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().testTag("journal_day_line_$date"),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            line.forEachIndexed { index, (metricKey, value, unit) ->
+                                                if (index > 0) Text("·", color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+                                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
+                                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                                                if (unit.isNotBlank()) Text(unit, color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+                                            }
                                         }
                                     }
                                 }
-                                repeat(3 - cells.size) { Spacer(Modifier.weight(1f)) }
+                                Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
                             }
-                        }
-                        dayWorkouts.forEach { workout ->
-                            TextButton(onClick = { onOpenWorkout(workout.id) }, modifier = Modifier.fillMaxWidth()
-                                .heightIn(min = 48.dp).testTag("health_journal_workout_${workout.id}")) {
-                                Text(workoutTitle(workout), modifier = Modifier.weight(1f), color = palette.textPrimary)
-                                if (workout.durationMinutes > 0) Text("${workout.durationMinutes} min", color = palette.textSecondary)
+                            if (expanded) Column(
+                                Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val tiles = buildList {
+                                    sleepText?.let { add(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), it)) }
+                                    available.filter { it.key in visibleHealthJournalMetrics || type == NativeDetailedHealthMetrics.recordType(it.key) }
+                                        .forEach { add(Triple(it.key, it.label, "${it.valueText} ${it.unit}".trim())) }
+                                }
+                                tiles.chunked(3).forEach { cells ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        cells.forEach { (metricKey, title, value) ->
+                                            val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
+                                            val tileShape = RoundedCornerShape(10.dp)
+                                            val role = if (type == recordType) GlassMaterialRole.Selection else GlassMaterialRole.Tile
+                                            Surface(shape = tileShape, color = palette.overlayRoleFill(
+                                                if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
+                                                modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
+                                                    .testTag("journal_metric_${date}_$metricKey")) {
+                                                Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                                                    Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                                    Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                                                }
+                                            }
+                                        }
+                                        repeat(3 - cells.size) { Spacer(Modifier.weight(1f)) }
+                                    }
+                                }
+                                dayWorkouts.forEach { workout ->
+                                    TextButton(onClick = { onOpenWorkout(workout.id) }, modifier = Modifier.fillMaxWidth()
+                                        .heightIn(min = 48.dp).testTag("health_journal_workout_${workout.id}")) {
+                                        Text(workoutTitle(workout), modifier = Modifier.weight(1f), color = palette.textPrimary)
+                                        if (workout.durationMinutes > 0) Text("${workout.durationMinutes} min", color = palette.textSecondary)
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                } }
             }
-        } }
+        }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = { end = range.newer().pageEnd.toString() }, enabled = range.pageEnd < range.to,

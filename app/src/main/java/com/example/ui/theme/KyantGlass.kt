@@ -36,6 +36,8 @@ import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorFilter
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.highlight.HighlightStyle
+import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 
 /**
@@ -134,8 +136,10 @@ internal fun Modifier.kyantGlass(
         }
         block
     }
-    val highlight = remember(spec) {
-        val value = Highlight(width = (0.5f + 0.8f * spec.highlightAlpha).dp, alpha = spec.highlightAlpha)
+    val interactiveSurface = pressSource != null
+    val highlight = remember(spec, interactiveSurface) {
+        val value = Highlight(width = (0.5f + 0.8f * spec.highlightAlpha).dp, alpha = spec.highlightAlpha,
+            style = if (interactiveSurface) HighlightStyle.Default(angle = 34f, falloff = 1.15f) else HighlightStyle.Default)
         val provider: () -> Highlight? = { value }
         provider
     }
@@ -156,27 +160,39 @@ internal fun Modifier.kyantGlass(
         drawSurface
     }
     val shapeProvider = remember(shape) { { shape } }
-    val pressLayer = if (pressSource != null && rememberGlassMotionEnabled()) {
+    val innerShadow = remember(interactiveSurface) {
+        if (interactiveSurface) {
+            val value = InnerShadow(radius = 4.dp, offset = androidx.compose.ui.unit.DpOffset(0.dp, 1.dp),
+                color = Color.Black.copy(alpha = .15f))
+            val style: () -> InnerShadow? = { value }
+            style
+        } else null
+    }
+    val drag = if (interactiveSurface && rememberGlassMotionEnabled()) remember { GlassControlDrag() } else null
+    val pressLayer = if (pressSource != null && drag != null) {
         val isPressed = pressSource.collectIsPressedAsState()
         val press = animateFloatAsState(
             if (isPressed.value) 1f else 0f,
             spring(dampingRatio = .58f, stiffness = 520f),
             label = "Kyant control press"
         )
-        remember(press) {
+        remember(press, drag) {
             val animateLayer: GraphicsLayerScope.() -> Unit = {
                 // As in the Kyant reference, animate the rendered lens with the control.
                 // The public backdrop effect and its shader stay stable through the spring.
                 val scale = 1f + (3.dp.toPx() / size.height.coerceAtLeast(1f)).coerceAtMost(.08f) *
                     press.value.coerceIn(-.2f, 1.1f)
-                scaleX = scale
-                scaleY = scale
+                val travel = glassDragTransform(drag.offset, 5.dp.toPx(), press.value.coerceIn(0f, 1f))
+                translationX = travel.x
+                translationY = travel.y
+                scaleX = scale + glassDragStretch(travel.x, size.width)
+                scaleY = scale + glassDragStretch(travel.y, size.height)
             }
             animateLayer
         }
     } else null
-    return drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
-        highlight = highlight, shadow = shadow, layerBlock = pressLayer, onDrawSurface = surface)
+    return then(drag?.observe() ?: Modifier).drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
+        highlight = highlight, shadow = shadow, innerShadow = innerShadow, layerBlock = pressLayer, onDrawSurface = surface)
 }
 
 /** Shared entry: only the matching window may sample a recorded backdrop. */

@@ -24,6 +24,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.GlassMotion
+import com.example.ui.theme.GlassControlDrag
+import com.example.ui.theme.glassDragTransform
+import com.example.ui.theme.glassDragStretch
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.unit.dp
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.rememberGlassMotionEnabled
@@ -33,6 +38,7 @@ import kotlin.math.roundToInt
 /** Item bounds (left, right in px, row coordinates) reported by the items under one pill. */
 @Stable
 internal class GlassPillTrack {
+    val drag = GlassControlDrag()
     internal val bounds = mutableStateMapOf<Int, Pair<Float, Float>>()
 }
 
@@ -60,6 +66,8 @@ internal fun BoxScope.GlassSelectionPill(
 ) {
     val target = track.bounds[selectedIndex]
     val motion = rememberGlassMotionEnabled()
+    val dragProgress = animateFloatAsState(if (motion && track.drag.held) 1f else 0f,
+        spring(dampingRatio = .62f, stiffness = 520f), label = "Liquid navigation touch")
     val left = remember { Animatable(0f) }
     val right = remember { Animatable(0f) }
     var placed by remember { mutableStateOf(false) }
@@ -88,7 +96,12 @@ internal fun BoxScope.GlassSelectionPill(
                 layout(constraints.maxWidth, height) { placeable.place(start.roundToInt(), 0) }
             }
             .graphicsLayer {
-                scaleY = if (motion) GlassMotion.squash(right.value - left.value, restWidth) else 1f
+                val travel = glassDragTransform(track.drag.offset, 4.dp.toPx(), if (motion) dragProgress.value else 0f)
+                translationX = travel.x
+                translationY = travel.y
+                scaleX = 1f + glassDragStretch(travel.x, restWidth)
+                scaleY = if (motion) GlassMotion.squash(right.value - left.value, restWidth) +
+                    glassDragStretch(travel.y, size.height) else 1f
             }
             .clip(shape)
             .glassHeaderControl(palette, shape, GlassMaterialRole.Selection)

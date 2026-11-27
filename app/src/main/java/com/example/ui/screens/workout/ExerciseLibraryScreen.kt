@@ -1,15 +1,9 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.GlassMaterialRole
-
-import com.example.ui.theme.liquidDropMaterial
-
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassStateTile
-import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
-import com.example.ui.theme.glassCardFill
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 
@@ -55,12 +49,14 @@ import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -270,8 +266,21 @@ fun ExerciseLibraryScreen(
                     }
                 }
             }
+        }
 
-            filtered.forEach { ex ->
+        val listShape = RoundedCornerShape(20.dp)
+        if (filtered.isNotEmpty()) Column(
+            Modifier.fillMaxWidth()
+                .padding(top = 4.dp)
+                .background(palette.glassTile(palette.surface), listShape)
+                .trainPilotGlassRim(palette, listShape)
+                .trainPilotBorder(1.dp, palette.cardBorder, listShape)
+                .clip(listShape)
+        ) {
+            filtered.forEachIndexed { index, ex -> key(ex.id) {
+                if (index > 0) {
+                    HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
+                }
                 val inQueue = state.quickWorkoutQueue.any { it.id == ex.id }
                 val favorite = ex.id in state.favoriteExerciseIds
                 val name = ex.localizedName(state.language)
@@ -287,12 +296,13 @@ fun ExerciseLibraryScreen(
                     name.split(Regex("\\s+")).maxOfOrNull { measurer.measure(it, style = nameStyle).size.width } ?: 0
                 }
                 Surface(
-                    shape = RoundedCornerShape(14.dp), color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surface,
-                    modifier = Modifier.liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Tile, live = false).fillMaxWidth()
-                        .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
-                            if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (inQueue) palette.glassStateTile(palette.primary, palette.primary.copy(alpha = .10f)) else Color.Transparent,
+                    modifier = Modifier.fillMaxWidth()
+                        .then(if (inQueue) Modifier.trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp)) else Modifier)
                         .trainPilotCombinedClickable(
                             shape = RoundedCornerShape(14.dp),
+                            stretchOnDrag = true,
                             onLongClickLabel = trW(state.language, "Műveletek: $name", "Actions: $name", "Aktionen: $name", "Acțiuni: $name"),
                             onLongClick = { rowMenuOpen = true },
                             onClick = { onSelectExercise(ex.id) }
@@ -329,7 +339,7 @@ fun ExerciseLibraryScreen(
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onStartExerciseNow(ex) }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp), stretchOnDrag = true) { onStartExerciseNow(ex) }
                                         .semantics { contentDescription = "$startLabel: $name" }
                                         .testTag("exercise_library_start_now_${ex.id}")
                                 ) {
@@ -348,7 +358,7 @@ fun ExerciseLibraryScreen(
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier.size(48.dp)
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { rowMenuOpen = true }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp), stretchOnDrag = true) { rowMenuOpen = true }
                                             .semantics { contentDescription = trW(state.language, "További műveletek: $name", "More actions: $name", "Weitere Aktionen: $name", "Mai multe acțiuni: $name") }
                                             .testTag("exercise_library_more_${ex.id}")
                                     ) {
@@ -411,7 +421,7 @@ fun ExerciseLibraryScreen(
                         }
                     }
                 }
-            }
+            } }
         }
     }
 }

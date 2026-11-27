@@ -142,8 +142,9 @@ fun SettingsMainScreen(
                 }
             },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(
                     onClick = { showPrivacyPolicyDialog = false },
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
                     Text(strings.closeAction, fontWeight = FontWeight.Bold)

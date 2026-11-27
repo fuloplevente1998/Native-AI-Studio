@@ -196,7 +196,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 )
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
+                                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
                                     onClick = {
                                         try {
                                             pendingLoosePhoto = NativeLoosePhotos.prepare(context)
@@ -208,18 +208,20 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = palette.surfaceElevated,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = if (palette.isLiquidGlass)
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
                                         contentColor = palette.textPrimary
                                     ),
-                                    modifier = Modifier.weight(1f).height(42.dp).testTag("other_camera_button")
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                        .testTag("other_camera_button")
                                 ) {
                                     Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
                                     Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"),
                                         style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                                 }
-                                Button(
+                                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
                                     onClick = {
                                         try {
                                             pendingLoosePhoto = NativeLoosePhotos.prepare(context)
@@ -231,11 +233,13 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = palette.surfaceElevated,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = if (palette.isLiquidGlass)
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f) else palette.surfaceElevated,
                                         contentColor = palette.textPrimary
                                     ),
-                                    modifier = Modifier.weight(1f).height(42.dp).testTag("other_gallery_button")
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                        .testTag("other_gallery_button")
                                 ) {
                                     Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))

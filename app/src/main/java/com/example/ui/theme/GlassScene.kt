@@ -57,6 +57,18 @@ internal object GlassScene {
     /** Knee of the luminance guard, as a fraction of [lumaCap]: darker colours pass unchanged. */
     const val KNEE = .55f
     private const val WRAP_SECONDS = 36_000f
+    // Four light sources, in anchor order. Distinct combinations give the glass presets their
+    // own backdrop without changing stored theme IDs, accent colors or the user photo path.
+    private val paletteHues = mapOf(
+        33 to listOf(4f, 48f, 307f, 152f),     // Graphite
+        34 to listOf(196f, 212f, 186f, 33f),   // Ice
+        35 to listOf(222f, 233f, 254f, 20f),   // Sapphire
+        36 to listOf(169f, 184f, 203f, 294f),  // Turquoise
+        37 to listOf(146f, 111f, 166f, 41f),   // Emerald
+        38 to listOf(268f, 254f, 295f, 174f),  // Amethyst
+        39 to listOf(333f, 353f, 314f, 214f),  // Rose
+        40 to listOf(27f, 45f, 11f, 155f)      // Amber
+    )
     private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
     private val periods = floatArrayOf(53f, 67f, 59f, 79f)
     // x, y (fraction of the screen), radius (fraction of the width).
@@ -99,8 +111,8 @@ internal object GlassScene {
 
     /** Vivid hue rotations of the theme accent (the shader guards their luminance after mixing). */
     fun tones(palette: TrainPilotPalette): List<Color> {
-        val hue = hueOf(palette.primary)
-        return hueOffsets.map { Color.hsv(((hue + it) % 360f + 360f) % 360f, .90f, 1f) }
+        val hues = paletteHues[palette.id] ?: hueOffsets.map { hueOf(palette.primary) + it }
+        return hues.map { Color.hsv(((it % 360f) + 360f) % 360f, .90f, 1f) }
     }
 
     /**

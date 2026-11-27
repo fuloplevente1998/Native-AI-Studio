@@ -1,5 +1,9 @@
 package com.repforge.app.ui.progress
 
+import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassTile
+import com.example.ui.theme.trainPilotGlassRim
+import androidx.compose.material3.HorizontalDivider
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 import android.graphics.Bitmap
@@ -237,6 +241,8 @@ internal fun NativeProgressPhotoGallery(
     vertical: Boolean = false
 ) {
     val colors = LocalTrainPilotColors.current
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(18.dp)
     val context = LocalContext.current
     val strings = remember(context, state.language) { nativeResources(context, state.language) }
     val locale = remember(state.language) { Locale.forLanguageTag(state.language) }
@@ -247,10 +253,11 @@ internal fun NativeProgressPhotoGallery(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(18.dp))
+            .then(if (vertical) Modifier.trainPilotGlassRim(palette, shape) else Modifier)
+            .trainPilotBorder(1.dp, colors.line, shape)
             .testTag("progress_photo_gallery"),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.card)
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = if (vertical) palette.glassTile(colors.card) else colors.card)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(strings.getString(R.string.native_progress_photo_title), color = colors.text)
@@ -268,7 +275,11 @@ internal fun NativeProgressPhotoGallery(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.heightIn(max = 600.dp).testTag("progress_photo_choices")
                     ) {
-                        items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.galleryKey }) { photo ->
+                        val sortedPhotos = state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }
+                        items(sortedPhotos, key = { it.galleryKey }) { photo ->
+                            if (photo.galleryKey != sortedPhotos.first().galleryKey) {
+                                HorizontalDivider(color = colors.line.copy(alpha = .38f), modifier = Modifier.padding(bottom = 10.dp))
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.galleryKey) }
                                     .testTag("progress_photo_${photo.id}"),
