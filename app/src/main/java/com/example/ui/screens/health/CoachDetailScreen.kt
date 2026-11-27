@@ -20,6 +20,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -178,6 +180,7 @@ internal fun CoachPageLayout(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun StudioCoachReadinessCard(
     uiState: TrainPilotUiState,
@@ -196,10 +199,10 @@ internal fun StudioCoachReadinessCard(
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = tr(uiState.language, "Mai felkészültség", "Today's Readiness", "Heutige Bereitschaft", "Pregătirea de azi"),
@@ -240,7 +243,7 @@ internal fun StudioCoachReadinessCard(
                 modifier = Modifier.fillMaxWidth().testTag("studio_coach_final_readiness"),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CoachReadinessGauge(displayScore.takeIf { hasScore }, compact = true)
+                CoachReadinessGauge(displayScore.takeIf { hasScore }, compact = androidx.compose.ui.platform.LocalDensity.current.fontScale <= 1.3f)
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
