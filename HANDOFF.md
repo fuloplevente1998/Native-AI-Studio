@@ -64,3 +64,11 @@
 - A 40-es Liquid Glass téma neve Arany. A meglévő témakulcs a mentett választások miatt megmaradt. A háttér fényeinek színárnyalata a TrainPilot sárgájából származik.
 - A naptári Újratervezés a Liquid témák saját üveges ablakanyagát használja. A Bezárás kerete 36 dp, az érintési felület 48 dp.
 - A dátumablakból indítható a még le nem járt tervezett edzés. A gomb az adott alkalom azonosítóját adja át; a normál edzésmotor ellenőrzi a mentett alkalmat és a naplózást ahhoz kapcsolja.
+
+## Készülékes finomítások – 281600 tesztelése (2026-11-27)
+- Alap: main `5ba380f5`, ág `fix/liquid-theme-selection-stability`. A kiadási APK tesztje után gyűjtött módosítások; verzió, adatmodell, signer változatlan.
+- Témaválasztás: a normál ↔ Liquid Glass átmenetnél az explicit kiválasztott csempe görgetési horgonya, a stabil Témák listaelem, nyitott kategória és a külön felnyíló palettaválasztó állapota megőrzendő. A forrásban nincs explicit visszanavigálás a selectPalette útvonalon; az eszközön észlelt pontos kiváltó ok még nincs reprodukálva. JVM-próba a változó felső insettel; valódi Kyant/készülékes próba szükséges.
+- Biztonsági mentés: az összecsukott Google Drive kártya külön, 48 dp érintési célú szinkronikonja a meglévő Drive-only műveletet hívja. A kibontott Drive+Naptár művelet változatlan. Aktív edzés, mentés/visszaállítás, karbantartás, foglaltság és bejelentkezési feltételek megtartva. A kártya nem nyílik ki a gyorsszinkron érintésére.
+- Heti/Havi célok: Egészség oldali Edzések/Lépések összecsukva kisebb függőleges margó és térköz, kinyitva megmaradó diagramok/tartalom szűkebb térközzel, 48 dp fejléc érintés; mérések és célképletek változatlanok.
+- Három JVM regresszió hozzáadva (témaváltás és viewport, gyorsszinkron callback/tiltások, célkártya geometria és diagram). CI még nem futott; gyűjtő draft, közös integráció az elfogadást követően.
+- További gyűjtött funkcióhiba: a naptár egy nem létező naplóbejegyzéshez is teljesített státuszt/pipát mutathat. Ellenőrizni a valódi scheduleId–workoutId kapcsolatot, törlés/mentés/elvetés és restore/undo útvonalakat; árva státusz helyreállítása adatvesztés nélkül. Ez még nem implementált; az ok nincs készülékesen bizonyítva. Eredeti képernyőképek nem kerülnek a public repóba.
