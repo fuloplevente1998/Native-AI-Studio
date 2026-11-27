@@ -16,7 +16,7 @@ data class HomePlanLine(val text: String, val timing: HomePlanTiming)
  * for the whole calendar day even after its time passed ("still doable today"); the selection
  * moves to the next plan only after local midnight. No calendar row = next day in the cycle.
  */
-fun homePlannedDateLine(startIso: String?, now: ZonedDateTime, language: AppLanguage): HomePlanLine {
+fun homePlannedDateLine(startIso: String?, now: ZonedDateTime, language: AppLanguage, compact: Boolean = false): HomePlanLine {
     fun t(hu: String, en: String, de: String, ro: String) = when (language) {
         AppLanguage.HU -> hu; AppLanguage.EN -> en; AppLanguage.DE -> de; AppLanguage.RO -> ro
     }
@@ -34,7 +34,7 @@ fun homePlannedDateLine(startIso: String?, now: ZonedDateTime, language: AppLang
         else -> {
             val locale = Locale.forLanguageTag(language.code)
             val date = start.format(DateTimeFormatter.ofPattern("EEE, MMM d.", locale))
-            HomePlanLine(t("📅 Következő: $date · $time", "📅 Next: $date · $time", "📅 Nächstes: $date · $time", "📅 Următorul: $date · $time"), HomePlanTiming.LATER)
+            HomePlanLine(if (compact) "📅 $date · $time" else t("📅 Következő: $date · $time", "📅 Next: $date · $time", "📅 Nächstes: $date · $time", "📅 Următorul: $date · $time"), HomePlanTiming.LATER)
         }
     }
 }
