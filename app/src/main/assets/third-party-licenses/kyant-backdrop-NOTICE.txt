@@ -4,12 +4,12 @@ TrainPilot – third-party notice
 TrainPilot uses the following libraries as unmodified binary Maven dependencies
 for Liquid Glass rendering:
 
-  Backdrop (io.github.kyant0:backdrop:1.0.6)
-  "Jetpack Compose blur and Liquid Glass effects"
+  Backdrop (io.github.kyant0:backdrop:2.0.1)
+  "Compose Multiplatform Liquid Glass effects"
   Copyright (c) Kyant (Kyant0)
   Source: https://github.com/Kyant0/AndroidLiquidGlass
 
-  Shapes (io.github.kyant0:shapes:1.2.0), runtime dependency of Backdrop
+  Shapes (io.github.kyant0:shapes:1.2.1), runtime dependency of Backdrop
   Copyright (c) Kyant (Kyant0)
 
 Both are licensed under the Apache License, Version 2.0 (the "License");

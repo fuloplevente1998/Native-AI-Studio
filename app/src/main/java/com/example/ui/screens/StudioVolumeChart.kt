@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import com.example.ui.components.trainPilotChartClick
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -75,7 +75,7 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
                             val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
                             val isSelected = selected == index
                             val mark = trainPilotChartMarkColor(isSelected, palette.primary, palette.textSecondary)
-                            Column(Modifier.weight(1f).fillMaxHeight().clickable { onSelect(index) }
+                            Column(Modifier.weight(1f).fillMaxHeight().trainPilotChartClick { onSelect(index) }
                                 .testTag("progress_${mode}_column_$index")
                                 .trainPilotChartSelection(isSelected, "$date · $kg kg"),
                                 verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {

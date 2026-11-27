@@ -619,6 +619,8 @@ fun ProgramsListScreen(
             ) {
                 TrainPilotGlassPrimaryButton(
                     onClick = { showCreateCustomProgramDialog = true },
+                    // The pinned action bar already owns the live lens; no second lens behind this button.
+                    liveMaterial = false,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.primary,

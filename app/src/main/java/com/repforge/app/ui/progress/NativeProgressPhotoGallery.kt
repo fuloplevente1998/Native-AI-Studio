@@ -1,5 +1,7 @@
 package com.repforge.app.ui.progress
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.components.TrainPilotListDivider
 import com.example.ui.components.trainPilotListPanel
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -32,7 +34,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.photoViewerBackground
@@ -430,7 +431,7 @@ internal fun NativeProgressPhotoGallery(
                     if (palette.isLiquidGlass) {
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = close, testTag = "progress_photo_close")
                     } else {
-                        IconButton(onClick = close, modifier = Modifier.size(48.dp)
+                        TrainPilotIconButton(onClick = close, modifier = Modifier.size(48.dp)
                             .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(24.dp))
                             .testTag("progress_photo_close")) {
                             Icon(Icons.Default.Close,

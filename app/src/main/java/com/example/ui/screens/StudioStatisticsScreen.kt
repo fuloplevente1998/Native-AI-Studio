@@ -301,6 +301,7 @@ private fun StatisticsTabs(
         labels.forEachIndexed { index, label ->
             com.example.ui.components.TrainPilotFilterChip(
                 selected = visibleTab == index,
+                liveGlass = false,
                 onClick = {
                     when (index) {
                         0 -> onSelectTab(0)

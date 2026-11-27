@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.1"
+agp = "9.5.1"
 coreKtx = "1.18.0"
 appcompat = "1.7.0"
 coreSplashscreen = "1.2.0"
@@ -10,14 +10,14 @@ lifecycleRuntimeKtx = "2.8.7"
 lifecycleViewmodelCompose = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
-# [Kyant integration] 2.3.10 (2026-02-04) = backdrop 1.0.6 stdlib; 2.2 left invalid non-local-return dex markers.
-kotlin = "2.3.10"
-composeBom = "2024.09.00"
-# Phone app only; Wear retains composeBom.
-# Backdrop 1.0.6 (2026-02-14) needs Compose foundation/ui 1.10.3 = BOM 2026.02.00.
-composeBomKyant = "2026.02.00"
-kyantBackdrop = "1.0.6"
-googleDevtoolsKsp = "2.3.5"
+# [Kyant integration] Kotlin 2.2 left invalid non-local-return dex markers; verify newer Kotlin with D8 and release R8.
+kotlin = "2.4.21"
+composeBom = "2026.11.01"
+# Backdrop 2.0.1 uses Compose 1.12.0; this BOM uses Compose 1.13 (compileSdk 37.1).
+# Latest stable AndroidX BOM is a candidate; verify the actual renderer + DEX/R8.
+composeBomKyant = "2026.11.01"
+kyantBackdrop = "2.0.1"
+googleDevtoolsKsp = "2.3.14"
 navigationCompose = "2.8.9"
 paging = "3.3.6"
 roomRuntime = "2.7.0"
@@ -51,7 +51,7 @@ okhttp = "4.10.0"
 moshiKotlin = "1.15.2"
 moshiKotlinCodegen = "1.15.2"
 datastorePreferences = "1.1.7"
-robolectric = "4.16.1"
+robolectric = "4.18.1"
 firebaseBom = "34.17.0"
 secretsGradlePlugin = "2.0.1"
 googleServices = "4.5.0"

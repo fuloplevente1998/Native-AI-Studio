@@ -287,6 +287,10 @@ class MainActivity : ComponentActivity() {
 fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val palette = LocalTrainPilotPalette.current
+    val settingsPanel = if (uiState.currentSubScreen == SubScreen.SETTINGS_MAIN ||
+        uiState.backStack.any { it.subScreen == SubScreen.SETTINGS_MAIN }) {
+        com.example.ui.screens.settings.rememberSettingsThemePanelState()
+    } else null
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = TrainPilotStrings.forLanguage(uiState.language)
     val measurementStart by viewModel.pendingWatchMeasurementStart.collectAsStateWithLifecycle()
@@ -931,6 +935,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         SettingsMainScreen(
                             uiState = uiState,
                             strings = strings,
+                            themePanelState = settingsPanel ?: com.example.ui.screens.settings.rememberSettingsThemePanelState(),
                             onBack = { viewModel.navigateBack() },
                             onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                             onSelectPalette = { viewModel.selectPalette(it) },

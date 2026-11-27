@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.theme.liquidDropMaterial
 import com.example.model.StudioCalendarDates
 import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
@@ -55,7 +57,6 @@ import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -649,7 +650,7 @@ fun CalendarPlannerScreen(
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
                                 maxLines = if (palette.isLiquidGlass) 2 else 1, overflow = TextOverflow.Ellipsis)
                         }
-                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
+                        if (state.calendarUndoStack.isNotEmpty()) TrainPilotIconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
                             Icon(Icons.AutoMirrored.Filled.Undo,
                                 contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})"),

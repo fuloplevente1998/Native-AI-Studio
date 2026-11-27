@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotPressIndication
+
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -56,7 +58,7 @@ fun SmallExerciseVideoButton(
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
+    val pressed = if (palette.isLiquidGlass) false else interaction.collectIsPressedAsState().value
     val openVideo = LocalOpenExerciseVideo.current
 
     Box(
@@ -71,7 +73,7 @@ fun SmallExerciseVideoButton(
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = Color(0xFFE53935).copy(alpha = if (pressed) 0.24f else 0.16f),
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).indication(interaction, ripple()).border(1.dp, Color(0xFFE53935).copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).then(if (palette.isLiquidGlass) Modifier.trainPilotPressIndication(RoundedCornerShape(8.dp), interaction) else Modifier.indication(interaction, ripple())).border(1.dp, Color(0xFFE53935).copy(alpha = 0.55f), RoundedCornerShape(8.dp))
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = if (compactIconOnly) 8.dp else 10.dp, vertical = 6.dp),

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -48,7 +50,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -486,7 +487,7 @@ internal fun EditorStepperBox(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onMinus, modifier = Modifier.size(48.dp)) {
+                TrainPilotIconButton(onClick = onMinus, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.Default.Remove,
                         contentDescription = strings.decreaseValueDesc,
@@ -499,7 +500,7 @@ internal fun EditorStepperBox(
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = palette.textPrimary
                 )
-                IconButton(onClick = onPlus, modifier = Modifier.size(48.dp).testTag("editor_stepper_plus")) {
+                TrainPilotIconButton(onClick = onPlus, modifier = Modifier.size(48.dp).testTag("editor_stepper_plus")) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = strings.increaseValueDesc,

@@ -172,7 +172,7 @@ fun TrainPilotViewModel.syncNativeSettings(
     _uiState.update { current ->
         current.copy(
             language = lang,
-            selectedPaletteId = palette?.id ?: TrainPilotPalettes.getById(1).id,
+            selectedPaletteId = pendingPaletteWrite?.id ?: palette?.id ?: TrainPilotPalettes.getById(1).id,
             defaultRestSec = if (restSec > 0) restSec else current.defaultRestSec,
             soundAlertEnabled = sound,
             vibrationEnabled = vibration

@@ -1,5 +1,7 @@
 package com.example.ui.components.watchinfo
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.trainPilotGlassMaterial
 import com.example.ui.theme.glassTile
@@ -23,7 +25,6 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -93,7 +94,7 @@ fun StudioWatchInformationCard(
                         }
                     )
                 }
-                IconButton(
+                TrainPilotIconButton(
                     onClick = onRefresh, enabled = !data.loading,
                     modifier = Modifier.size(48.dp).testTag("watch_refresh_device_info")
                 ) {

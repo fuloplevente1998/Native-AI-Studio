@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.screens.settings.SettingsThemePanelState
+import com.example.ui.screens.settings.rememberSettingsThemePanelState
+
 import com.example.ui.theme.liquidDropMaterial
 
 import androidx.compose.ui.semantics.semantics
@@ -78,6 +81,8 @@ import com.example.model.SubScreen
 import com.example.ui.components.SubScreenTopBar
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * 4/4 #1 BEÁLLÍTÁSOK (Mockup 4/4 #1 + main Beállítások + 4 lenyíló téma-kategória oszlopokban)
@@ -100,17 +105,14 @@ fun SettingsMainScreen(
     onPreviewProgression: (String, String, Boolean) -> Unit = { _, _, _ -> },
     onApproveProgression: () -> Unit = {},
     onEditProgressionPreview: () -> Unit = {},
-    onUndoProgression: () -> Unit = {}
+    onUndoProgression: () -> Unit = {},
+    themePanelState: SettingsThemePanelState = rememberSettingsThemePanelState()
 ) {
     val palette = LocalTrainPilotPalette.current
-    val currentPaletteObj = palette
 
-    var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var expandedThemeFamily by rememberSaveable {
-        mutableStateOf(currentPaletteObj.subGroup.name)
-    }
-    // Preserve the selected tile through both a palette change and a viewport remeasure.
-    var revealThemeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val expandedMainThemesSection = themePanelState.expanded
+    val expandedThemeFamily = themePanelState.familyName
+    val revealThemeId = themePanelState.revealId
     var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
 
@@ -154,14 +156,36 @@ fun SettingsMainScreen(
         )
     }
 
-    val settingsListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    androidx.compose.runtime.LaunchedEffect(revealThemeId, uiState.selectedPaletteId, palette.isLiquidGlass) {
-        if (revealThemeId != null && revealThemeId == uiState.selectedPaletteId && revealThemeId == palette.id) {
+    val settingsListState = themePanelState.listState
+    val topInset = LocalGlassTopInset.current
+    var revealReadyId by androidx.compose.runtime.remember { mutableStateOf<Int?>(null) }
+    var previousPaletteId by rememberSaveable { mutableStateOf(palette.id) }
+    androidx.compose.runtime.LaunchedEffect(palette.id, uiState.selectedPaletteId, expandedMainThemesSection, expandedThemeFamily) {
+        // Also handle a new selection arriving from the quick palette sheet or a newer
+        // settings-flow write while this family is open. Do not reopen a collapsed group.
+        if (previousPaletteId != palette.id && palette.id == uiState.selectedPaletteId) {
+            previousPaletteId = palette.id
+            if (expandedMainThemesSection && expandedThemeFamily == palette.subGroup.name)
+                themePanelState.revealId = palette.id
+        }
+    }
+    androidx.compose.runtime.LaunchedEffect(revealThemeId, uiState.selectedPaletteId, palette.id, expandedMainThemesSection, topInset) {
+        revealReadyId = null
+        val requested = revealThemeId
+        if (expandedMainThemesSection && requested != null &&
+            requested == uiState.selectedPaletteId && requested == palette.id) {
+            snapshotFlow { settingsListState.layoutInfo.totalItemsCount }.first { it > 2 }
             androidx.compose.runtime.withFrameNanos { }
-            // If a changed header/viewport moved the entire group out of composition, restore
-            // the stable Themes item first; its selected tile then performs minimal reveal.
-            if (settingsListState.layoutInfo.visibleItemsInfo.none { it.key == "settings_themes" })
+            // Re-anchor the group after the new root has a viewport. A child requester
+            // must not finish and clear the request before the parent is measured.
+            val layout = settingsListState.layoutInfo
+            val group = layout.visibleItemsInfo.firstOrNull { it.key == "settings_themes" }
+            if (group == null || group.offset < layout.viewportStartOffset ||
+                group.offset + group.size > layout.viewportEndOffset) {
                 settingsListState.scrollToItem(2)
+            }
+            androidx.compose.runtime.withFrameNanos { }
+            revealReadyId = requested
         }
     }
 
@@ -215,8 +239,8 @@ fun SettingsMainScreen(
                         shape = RoundedCornerShape(14.dp),
                         color = Color.Transparent,
                         modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(14.dp)) {
-                            expandedMainThemesSection = !expandedMainThemesSection
-                            if (!expandedMainThemesSection) revealThemeId = null
+                            themePanelState.expanded = !expandedMainThemesSection
+                            if (!themePanelState.expanded) themePanelState.revealId = null
                         }.testTag("settings_open_palettes_row")
                     ) {
                         Row(
@@ -239,13 +263,15 @@ fun SettingsMainScreen(
                             language = uiState.language,
                             selectedId = if (palette.id == -1) -1 else uiState.selectedPaletteId,
                             expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
-                            onExpand = { expandedThemeFamily = it?.name.orEmpty(); revealThemeId = null },
+                            onExpand = { themePanelState.familyName = it?.name.orEmpty(); themePanelState.revealId = null },
                             onSelect = { id ->
-                                revealThemeId = id
+                                themePanelState.expanded = true
+                                themePanelState.familyName = com.example.ui.theme.TrainPilotPalettes.getById(id).subGroup.name
+                                themePanelState.revealId = id
                                 onSelectPalette(id)
                             },
-                            revealSelectedId = revealThemeId,
-                            onSelectionRevealed = { id -> if (revealThemeId == id) revealThemeId = null }
+                            revealSelectedId = revealReadyId?.takeIf { it == revealThemeId },
+                            onSelectionRevealed = { id -> if (themePanelState.revealId == id) themePanelState.revealId = null }
                         )
                         com.example.ui.components.CustomThemeSection(uiState.language)
                     }

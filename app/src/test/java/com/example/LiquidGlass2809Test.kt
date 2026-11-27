@@ -202,11 +202,11 @@ class LiquidGlass2809Test {
             lastCard = card
         }
         assertTrue("low-opacity at the Clear end", glassTileAlpha(100) <= .15f)
-        // 2810/6: the tile tint is a neutral below the glass ceiling (no longer the dark paint at .66), so a
+        // 2810/6: the tile tint is bounded below the glass ceiling (no longer the dark paint at .66), so a
         // tile can never lift a glass composite above it; it stays clearly visible at the Frosted end.
         assertTrue(glassTileAlpha(0) >= .14f && glassTileAlpha(0) > glassTileAlpha(100))
-        for (elevated in listOf(false, true))
-            assertTrue(glassTilePaint(50, elevated).copy(alpha = 1f).luminance() < GlassOptics.SURFACE_LUMA_MAX)
+        for (p in glass) for (elevated in listOf(false, true))
+            assertTrue(glassTilePaint(p, 50, elevated).copy(alpha = 1f).luminance() < GlassOptics.SURFACE_LUMA_MAX)
         assertEquals(glassTileAlpha(0), glassTileAlpha(-5), 0f)
         assertEquals(glassTileAlpha(100), glassTileAlpha(180), 0f)
         for (p in glass) for (step in listOf(0, 50, 100)) {

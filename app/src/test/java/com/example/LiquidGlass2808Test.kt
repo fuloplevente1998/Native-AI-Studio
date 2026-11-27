@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.Size
 import com.example.model.MainTab
 import com.example.model.SubScreen
@@ -49,15 +50,14 @@ class LiquidGlass2808Test {
 
     // ---- 11 ----
 
-    @Test fun touchBubbleOnlyForGlassWithMotionOnAnEnabledControl() {
-        assertTrue(GlassTouchBubble.enabled(glassActive = true, motionEnabled = true, controlEnabled = true))
-        assertFalse("reduced motion", GlassTouchBubble.enabled(true, GlassMotion.enabled(0f), true))
-        assertFalse("disabled control", GlassTouchBubble.enabled(true, true, false))
-        assertFalse("legacy palette", GlassTouchBubble.enabled(
-            TrainPilotPalettes.getById(1).glassEffectsActive(true), true, true))
-        assertFalse("active measurement screen", GlassTouchBubble.enabled(
-            glass.glassEffectsActive(glassOpticsEnabledFor(SubScreen.ACTIVE_STRENGTH)), true, true))
-        assertTrue(GlassTouchBubble.enabled(glass.glassEffectsActive(glassOpticsEnabledFor(SubScreen.NONE)), true, true))
+    @Test fun vectorTouchBubbleIsAvailableEvenWithoutOpticsOrMotion() {
+        for (p in LiquidGlassPalettes.all + TrainPilotPalettes.allPalettes) {
+            assertEquals(p.isLiquidGlass, GlassTouchBubble.enabled(p.isLiquidGlass, true))
+            assertFalse(GlassTouchBubble.enabled(p.isLiquidGlass, false))
+        }
+        // Measurement disables expensive optics, not the local vector press mark.
+        assertFalse(glass.glassEffectsActive(glassOpticsEnabledFor(SubScreen.ACTIVE_STRENGTH)))
+        assertTrue(GlassTouchBubble.enabled(glass.isLiquidGlass, true))
     }
 
     @Test fun touchBubbleGeometryIsBoundedAndSpringsAway() {
@@ -83,7 +83,12 @@ class LiquidGlass2808Test {
         val source = java.io.File("src/main/java/com/example/ui/theme/GlassTouchBubble.kt").readText()
         assertFalse(source.contains("RuntimeShader"))
         assertFalse(source.contains("graphicsLayer"))
-        assertTrue(source.indexOf("progress.animateTo(1f") < source.indexOf("snapshotFlow { heldPress }"))
+        assertTrue(source.contains("if (progress.value < .8f) progress.animateTo(1f, tween(50))"))
+        assertTrue(source.contains("delay(80L)"))
+        assertFalse(source.contains("collectIsPressedAsState"))
+        assertEquals(Offset(16f, 20f), GlassTouchBubble.pressPoint(Offset(16f, 20f), Offset.Unspecified))
+        assertEquals(Offset(260f, 20f), GlassTouchBubble.pressPoint(Offset(16f, 20f), Offset(260f, 20f)))
+        assertFalse(GlassTouchBubble.pressPoint(Offset.Unspecified, Offset.Unspecified).isSpecified)
         assertTrue(source.contains("PointerEventPass.Initial"))
     }
 

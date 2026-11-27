@@ -39,6 +39,26 @@ class KyantMaterialSpecTest {
         }
     }
 
+    @Test fun fusedChromeCoatMatchesLayeredPaintWithoutAnotherDrawPass() {
+        for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
+            val p = seed.withGlassClarity(step)
+            for (role in listOf(GlassMaterialRole.Navigation, GlassMaterialRole.Input, GlassMaterialRole.Panel)) {
+                val base = GlassOptics.TINT.copy(alpha = KyantMaterialSpec.forRole(role, step).tintAlpha)
+                val coat = liquidChromeTint(p).copy(alpha = com.example.ui.theme.fixedGlassChromeShadeAlpha(step))
+                val fused = com.example.ui.theme.kyantSurfaceCoat(p, role, null, coat)
+                for (under in listOf(Color.Black, GlassOptics.lensWorstCase, p.background)) {
+                    val expected = coat.compositeOver(base.compositeOver(under))
+                    val actual = fused.compositeOver(under)
+                    assertEquals(expected.red, actual.red, .012f)
+                    assertEquals(expected.green, actual.green, .012f)
+                    assertEquals(expected.blue, actual.blue, .012f)
+                    assertTrue(NativeThemeTokens.contrast(p.textPrimary, actual) >= 4.5f)
+                }
+                assertEquals(base, com.example.ui.theme.kyantSurfaceCoat(p, role, null, null))
+            }
+        }
+    }
+
     @Test fun fixedChromeKeepsColorBlurAndSuppressesScrollingGhostsAtEveryClarity() {
         for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
             val p = seed.withGlassClarity(step)

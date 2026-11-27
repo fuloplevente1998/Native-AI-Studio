@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.components.healthDetailsToggle
 import com.example.ui.theme.glassTile
 import com.example.ui.theme.trainPilotGlassRim
@@ -45,7 +49,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -241,7 +244,7 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
                     style = MaterialTheme.typography.titleMedium, color = palette.textPrimary, modifier = Modifier.weight(1f))
                 if (palette.isLiquidGlass) {
                     com.example.ui.components.TrainPilotRedCloseButton(onClick = { historySheet = null }, testTag = "health_weekly_history_close")
-                } else IconButton(onClick = { historySheet = null }, modifier = Modifier.testTag("health_weekly_history_close")) {
+                } else TrainPilotIconButton(onClick = { historySheet = null }, modifier = Modifier.testTag("health_weekly_history_close")) {
                     Icon(Icons.Default.Close, contentDescription = tr(lang, "Bezárás", "Close", "Schließen", "Închide"), tint = palette.textPrimary)
                 }
             }
@@ -414,18 +417,18 @@ internal fun WeightLogBody(
                     Spacer(Modifier.width(4.dp))
                 }
                 Box {
-                    IconButton(onClick = { menu = true }, modifier = Modifier.testTag("health_weight_menu_${entry.id}")) {
+                    TrainPilotIconButton(onClick = { menu = true }, modifier = Modifier.testTag("health_weight_menu_${entry.id}")) {
                         Icon(Icons.Default.MoreVert, contentDescription = tr(lang, "Műveletek", "Actions", "Aktionen", "Acțiuni"), tint = palette.textSecondary)
                     }
                     com.example.ui.components.TrainPilotDropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        androidx.compose.material3.DropdownMenuItem(text = { Text(strings.editAction) }, onClick = { menu = false; onEdit(entry) },
+                        TrainPilotMenuItem(text = { Text(strings.editAction) }, onClick = { menu = false; onEdit(entry) },
                             modifier = Modifier.testTag("health_weight_edit_${entry.id}"))
-                        androidx.compose.material3.DropdownMenuItem(
+                        TrainPilotMenuItem(
                             text = { Text(tr(lang, "Fotó hozzáadása", "Add photo", "Foto hinzufügen", "Adaugă fotografie")) },
                             onClick = { menu = false; onPhoto(entry) },
                             modifier = Modifier.testTag("health_weight_photo_${entry.id}")
                         )
-                        androidx.compose.material3.DropdownMenuItem(text = { Text(strings.deleteAction, color = palette.danger) }, onClick = { menu = false; onDelete(entry) },
+                        TrainPilotMenuItem(text = { Text(strings.deleteAction, color = palette.danger) }, onClick = { menu = false; onDelete(entry) },
                             modifier = Modifier.testTag("health_weight_delete_${entry.id}"))
                     }
                 }

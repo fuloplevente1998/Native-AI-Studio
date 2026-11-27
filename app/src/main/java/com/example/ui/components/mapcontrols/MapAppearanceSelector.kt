@@ -1,11 +1,12 @@
 package com.example.ui.components.mapcontrols
 
+import com.example.ui.components.TrainPilotMenuItem
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -88,7 +89,7 @@ internal fun MapAppearanceSelector(
                 MapAppearance.DARK
             ).forEach { choice ->
                 val label = labelFor(choice)
-                DropdownMenuItem(
+                TrainPilotMenuItem(
                     text = {
                         Text(label + if (appearance == choice) " ✓" else "",
                             color = palette.textPrimary)

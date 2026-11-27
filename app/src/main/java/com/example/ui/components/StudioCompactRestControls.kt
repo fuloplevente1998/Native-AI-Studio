@@ -96,7 +96,7 @@ internal fun StudioCompactRestControls(
                 if (canSkip) action("skip", skip, click = onSkip) {
                     Icon(Icons.Default.SkipNext, null, tint = p.textPrimary)
                 }
-                IconButton(onClick = onExpand, modifier = Modifier.size(48.dp).testTag("compact_rest_expand")) {
+                TrainPilotIconButton(onClick = onExpand, modifier = Modifier.size(48.dp).testTag("compact_rest_expand")) {
                     Icon(Icons.Default.ExpandLess, expand, tint = p.primary, modifier = Modifier.size(18.dp))
                 }
             }

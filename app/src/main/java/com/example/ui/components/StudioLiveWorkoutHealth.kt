@@ -45,7 +45,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         com.example.model.AppLanguage.DE -> de
         com.example.model.AppLanguage.RO -> ro
     }
-    IconButton(onClick = open, modifier = Modifier.size(48.dp)
+    TrainPilotIconButton(onClick = open, modifier = Modifier.size(48.dp)
         .liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Button, live = false)
         .testTag("workout_read_health")) {
         Icon(Icons.Default.FavoriteBorder, contentDescription = word(

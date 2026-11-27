@@ -3,11 +3,11 @@ package com.example.ui.theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import com.repforge.app.ui.theme.glassPressMotion
 
 /** Only opt-in controls use a live lens while measuring. Dense rows, separate-window children,
  * battery saver and older APIs retain a bounded, dimensional paint. No new capture layer. */
@@ -20,7 +20,7 @@ internal fun liquidDropUsesLens(glass: Boolean, supported: Boolean, powerSave: B
 
 /** Three opaque RGB seeds bounded below the existing glass ceiling; alpha is kept low. */
 internal fun liquidDropPaints(palette: TrainPilotPalette, role: GlassMaterialRole, accent: Color? = null): List<Color> {
-    val base = accent?.let { GlassContrast.limit(it, GLASS_TILE_LUMA) }
+    val base = accent?.takeUnless { it == palette.primary }?.let { GlassContrast.limit(it, GLASS_TILE_LUMA) }
         ?: palette.glassBackgroundTint(GLASS_TILE_LUMA)
     val alpha = when (role) {
         GlassMaterialRole.Selection -> (.36f - .12f * palette.glassClarity / 100f)
@@ -49,10 +49,7 @@ internal fun Modifier.liquidDropMaterial(palette: TrainPilotPalette, shape: Shap
         val scene = LocalKyantScene.current.forThisWindow()
         if (scene != null) return kyantGlass(scene, palette, shape, role, accent, pressSource)
     }
-    val materialMotion = if (pressSource != null) Modifier.glassPressMotion(
-        pressSource, enabled = true, shape = shape, stretchOnDrag = true, includeTouchBubble = false
-    ) else Modifier
-    return then(materialMotion)
-        .background(Brush.verticalGradient(liquidDropPaints(palette, role, accent)), shape)
-        .trainPilotGlassRim(palette, shape, role)
+    // The control's shared indication owns touch feedback, not the material.
+    val brush = remember(palette, role, accent) { Brush.verticalGradient(liquidDropPaints(palette, role, accent)) }
+    return background(brush, shape).trainPilotGlassRim(palette, shape, role)
 }

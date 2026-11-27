@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.glassTile
 
 /**
  * Custom Program Category Emblem Icon matching Mockup 1/4 #3 (`Programok`):
@@ -40,7 +41,7 @@ fun ProgramTypeEmblemIcon(
 
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = if (isHighlighted) palette.primary.copy(alpha = 0.16f) else palette.surfaceElevated,
+        color = if (isHighlighted) palette.primary.copy(alpha = 0.16f) else palette.glassTile(palette.surfaceElevated, elevated = true),
         modifier = modifier.trainPilotBorder(
             1.dp,
             if (isHighlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,

@@ -3,30 +3,8 @@ package com.repforge.app.ui.theme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.snap
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.addOutline
-import androidx.compose.ui.graphics.drawscope.clipPath
-import com.example.ui.theme.GlassMotion
-import com.example.ui.theme.GlassControlDrag
-import com.example.ui.theme.KyantGlass
-import com.example.ui.theme.LocalGlassOverlay
-import com.example.ui.theme.LocalGlassPowerSave
-import com.example.ui.theme.LocalKyantScene
-import com.example.ui.theme.forThisWindow
-import com.example.ui.theme.glassEffectsActive
-import com.example.ui.theme.glassDragStretch
-import com.example.ui.theme.glassDragTransform
 import com.example.ui.theme.glassTouchBubble
-import com.example.ui.theme.rememberGlassMotionEnabled
-import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.example.ui.theme.LocalGlassOpticsEnabled
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -52,7 +30,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlin.math.max
@@ -128,68 +105,50 @@ fun Modifier.trainPilotCombinedClickable(
         )
 }
 
-/**
- * Glass-only press: spring scale to [GlassMotion.PRESS_SCALE] with a light-side highlight that
- * brightens while held; release springs back with a small overshoot. Under reduced motion only
- * the highlight remains (no scale). Draw-only: layout and the accessible touch bounds stay put.
- */
+/** Glass pointer feedback has a single local owner. Selection-pill motion is separate:
+ * it is driven by selection state, not by painting or scaling the entire pressed control. */
 @Composable
 internal fun Modifier.glassPressMotion(
     source: MutableInteractionSource,
     enabled: Boolean,
     shape: Shape? = null,
-    stretchOnDrag: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") stretchOnDrag: Boolean = false,
     includeTouchBubble: Boolean = true
-): Modifier {
-    val palette = LocalTrainPilotPalette.current
-    val optics = palette.glassEffectsActive(LocalGlassOpticsEnabled.current)
-    val canStretch = palette.isLiquidGlass && stretchOnDrag && enabled && !LocalGlassPowerSave.current
-    if (!optics && !canStretch) return this
-    val kyant = KyantGlass.active(palette) &&
-        (LocalGlassOverlay.current || LocalKyantScene.current.forThisWindow() != null)
-    val motion = rememberGlassMotionEnabled()
-    val drag = if (canStretch && motion) remember { GlassControlDrag() } else null
-    val held by source.collectIsPressedAsState()
-    val press = animateFloatAsState(
-        targetValue = if (enabled && held) 1f else 0f,
-        animationSpec = if (motion) spring(dampingRatio = .55f, stiffness = Spring.StiffnessMediumLow) else snap(),
-        label = "glass press"
-    )
-    // 2808/11: the touch bubble rides inside the same scaled draw (glass + motion only, see GlassTouchBubble).
-    return then(drag?.observe() ?: Modifier).drawWithContent {
-        val progress = press.value
-        val factor = if (motion) GlassMotion.pressScale(progress) else 1f
-        val travel = drag?.let { glassDragTransform(it.offset, 5.dp.toPx(), progress.coerceIn(0f, 1f)) } ?: Offset.Zero
-        val shortEdge = minOf(size.width, size.height)
-        withTransform({
-            translate(travel.x, travel.y)
-            scale(factor + glassDragStretch(travel.x, shortEdge), factor + glassDragStretch(travel.y, shortEdge))
-        }) {
-            this@drawWithContent.drawContent()
-            val glow = progress.coerceIn(0f, 1f) * GlassMotion.PRESS_HIGHLIGHT
-            if (glow > .001f && !kyant) {
-                val light = Brush.radialGradient(listOf(Color.White.copy(alpha = glow), Color.Transparent),
-                    center = Offset(size.width * .3f, 0f), radius = maxOf(size.width, size.height) * .9f)
-                if (shape == null) drawRect(light) else {
-                    val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithContent)) }
-                    clipPath(path) { drawRect(light) }
-                }
-            }
-        }
-    }.then(if (includeTouchBubble) Modifier.glassTouchBubble(source, enabled, shape) else Modifier)
+): Modifier = if (includeTouchBubble) then(Modifier.glassTouchBubble(source, enabled, shape)) else this
+
+/** Preserve keyboard and mouse feedback without the whole-surface touch tint. */
+@Composable
+private fun focusInteractionAlpha(source: MutableInteractionSource, enabled: Boolean): Float {
+    val focused by source.collectIsFocusedAsState()
+    val hovered by source.collectIsHoveredAsState()
+    val alpha by animateFloatAsState(when {
+        !enabled -> 0f
+        focused -> .12f
+        hovered -> .08f
+        else -> 0f
+    }, label = "control focus")
+    return if (enabled) alpha else 0f
 }
+
+@Composable
+private fun controlFeedbackAlpha(source: MutableInteractionSource, enabled: Boolean): Float =
+    if (LocalTrainPilotPalette.current.isLiquidGlass) focusInteractionAlpha(source, enabled)
+    else interactionAlpha(source, enabled)
 
 /** Paint on the visual child while the accessible parent retains the larger hit area. */
 @Composable
 internal fun Modifier.trainPilotPressIndication(
-    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true, stretchOnDrag: Boolean = false
+    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true, stretchOnDrag: Boolean = false,
+    trackDrag: Boolean = false
 ): Modifier {
-    val alpha = interactionAlpha(source, enabled)
+    val alpha = controlFeedbackAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    return glassPressMotion(source, enabled, shape, stretchOnDrag).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
+    val visual = if (trackDrag) glassTouchBubble(source, enabled, shape, trackDrag = true)
+        else glassPressMotion(source, enabled, shape, stretchOnDrag)
+    return visual.clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
 }
 
-/** A held press covers the whole painted outline, including wide buttons. */
+/** Legacy press paint is unchanged; Liquid buttons retain only keyboard/hover tint here. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrainPilotPressFeedback(
@@ -199,7 +158,7 @@ internal fun TrainPilotPressFeedback(
     content: @Composable (ButtonColors, MutableInteractionSource) -> Unit,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
-    val alpha = interactionAlpha(source, enabled)
+    val alpha = controlFeedbackAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     val feedbackColors = colors.copy(containerColor = tint.compositeOver(colors.containerColor))
     CompositionLocalProvider(LocalRippleConfiguration provides null) {

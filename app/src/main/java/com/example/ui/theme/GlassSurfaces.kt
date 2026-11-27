@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
@@ -17,11 +18,12 @@ import com.repforge.app.ui.theme.NativeThemeTokens
 /**
  * Liquid Glass 2.0 / G3 (2811): shared fills of the common components (buttons, cells, tiles, state chips)
  * in the glass family. One contrast rule for all of them: a fill is a colour whose luminance is at most the
- * neutral tile tint's ([GLASS_TILE_LUMA] < [GlassOptics.SURFACE_LUMA_MAX]) at a low alpha, so drawn over any
+ * bounded state-tile cap ([GLASS_TILE_LUMA] < [GlassOptics.SURFACE_LUMA_MAX]) at a low alpha, so drawn over any
  * glass composite (an sRGB mix, convex in luminance) it never lifts it above the ceiling and the palette text
  * stays >= 4.5:1. Legacy palettes and custom themes always get exactly the colour they passed in.
  */
-internal val GLASS_TILE_LUMA: Float = GlassContrast.luminance(GLASS_TILE.red, GLASS_TILE.green, GLASS_TILE.blue)
+// Keep the previous semantic tint luminance budget, not the previous neutral RGB seed.
+internal const val GLASS_TILE_LUMA: Float = .1177f
 
 /** Strength of a state tint relative to the neutral tile (planned/selected/semantic states). */
 internal const val GLASS_STATE_STRENGTH = 1.7f
@@ -53,8 +55,8 @@ internal fun glassReadable(color: Color, minimum: Float = 4.55f): Color {
  * Use one matte material across the complete surface, including the drag handle. */
 internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
     if (!isLiquidGlass) return legacy
-    val base = GlassContrast.limit(surfaceCard.copy(alpha = 1f), GlassOptics.SURFACE_LUMA_MAX)
-    val tint = GlassContrast.limit(primary.copy(alpha = 1f), GlassOptics.SURFACE_LUMA_MAX)
+    val base = glassBackgroundTint(surfaceCard.luminance().coerceAtMost(GlassContrast.target), saturation = .52f)
+    val tint = glassBackgroundTint(.121f, saturation = .60f)
     val coat = KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, glassClarity).tintAlpha
     return lerp(base, tint, coat)
 }
@@ -104,29 +106,29 @@ internal fun sheetUsesGlass(palette: TrainPilotPalette, @Suppress("UNUSED_PARAME
     palette.isLiquidGlass
 
 /** Contrasting, bounded paint for nested window roles; capped for text contrast. */
-internal fun glassOverlayRolePaint(clarity: Int, role: GlassMaterialRole): Color {
-    val tile = KyantMaterialSpec.forRole(GlassMaterialRole.Tile, clarity).tintAlpha
-    val neutral = GlassContrast.grey(GlassContrast.target)
+internal fun glassOverlayRolePaint(palette: TrainPilotPalette, role: GlassMaterialRole): Color {
+    val tile = glassTileAlpha(palette.glassClarity)
     return when (role) {
-        GlassMaterialRole.Selection -> GlassContrast.limit(Color(0xFF579BFF), GlassContrast.target)
+        GlassMaterialRole.Selection -> palette.glassBackgroundTint(.121f, saturation = .60f)
             .copy(alpha = (tile * GLASS_STATE_STRONG).coerceIn(.28f, .45f))
-        GlassMaterialRole.Button -> neutral.copy(alpha = tile + .04f)
-        else -> neutral.copy(alpha = tile)
+        GlassMaterialRole.Button -> palette.glassBackgroundTint(.121f, saturation = .48f)
+            .copy(alpha = tile + .04f)
+        else -> palette.glassBackgroundTint(.115f, saturation = .48f).copy(alpha = tile)
     }
 }
 
 @androidx.compose.runtime.Composable
 internal fun TrainPilotPalette.overlayRoleFill(legacy: Color, role: GlassMaterialRole): Color =
-    if (isLiquidGlass && LocalGlassOverlay.current) glassOverlayRolePaint(glassClarity, role) else legacy
+    if (isLiquidGlass && LocalGlassOverlay.current) glassOverlayRolePaint(this, role) else legacy
 
-/** Vector-only top highlight and blue selection edge/glow; no backdrop capture. */
+/** Vector-only top highlight and palette selection edge/glow; no backdrop capture. */
 @androidx.compose.runtime.Composable
 internal fun androidx.compose.ui.Modifier.overlayRoleRim(
     palette: TrainPilotPalette, shape: androidx.compose.ui.graphics.Shape, role: GlassMaterialRole
 ): androidx.compose.ui.Modifier {
     if (!palette.isLiquidGlass || !LocalGlassOverlay.current) return this
     // Modal children cannot sample the parent window. Share the directional rim with
-    // the main UI, retaining the dedicated blue selected-state treatment below.
+    // the main UI, retaining the dedicated selected-state treatment below.
     if (role != GlassMaterialRole.Selection && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current)
         return trainPilotGlassRim(palette, shape, role)
     val strength = KyantMaterialSpec.forRole(role, palette.glassClarity).highlightAlpha
@@ -138,7 +140,7 @@ internal fun androidx.compose.ui.Modifier.overlayRoleRim(
             GlassMaterialRole.Button -> .8f
             else -> .55f
         }
-        val edge = if (selected) Color(0xFFB6D8FF) else Color.White
+        val edge = if (selected) lerp(palette.primary, Color.White, .35f) else Color.White
         val rim = androidx.compose.ui.graphics.Brush.verticalGradient(
             0f to edge.copy(alpha = alpha), 1f to edge.copy(alpha = alpha * .4f))
         onDrawWithContent {
@@ -187,3 +189,17 @@ internal fun Modifier.programDaySelectionGlow(palette: TrainPilotPalette, select
             }
         }
     }
+
+/** Fuse source-over coats before drawing; same sRGB material, one surface fill.
+ * The white specular rim is independent of this body paint. Semantic accents stay explicit.
+ */
+internal fun kyantSurfaceCoat(palette: TrainPilotPalette, role: GlassMaterialRole,
+    accent: Color?, chromeCoat: Color?): Color {
+    val tint = GlassOptics.TINT.copy(alpha = KyantMaterialSpec.forRole(role, palette.glassClarity).tintAlpha)
+    val accentCoat = accent?.let {
+        (if (it == palette.primary) palette.glassBackgroundTint(GLASS_TILE_LUMA)
+        else GlassContrast.limit(it, GLASS_TILE_LUMA)).copy(alpha = .20f)
+    }
+    val material = accentCoat?.compositeOver(tint) ?: tint
+    return chromeCoat?.compositeOver(material) ?: material
+}

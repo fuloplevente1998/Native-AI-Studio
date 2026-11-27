@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,7 +55,7 @@ internal fun WorkoutFeedbackPopup(
                             Surface(shape = shape, color = paint.fill, border = BorderStroke(1.dp, paint.border),
                                 modifier = Modifier.weight(1f).heightIn(min = 54.dp)
                                     .trainPilotGlassRim(p, shape, if (chosen) GlassMaterialRole.Selection else GlassMaterialRole.Button)
-                                    .selectable(chosen, enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
+                                    .trainPilotSelectable(chosen, shape, enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
                                     .testTag("${tag}_$key")) {
                                 Row(Modifier.padding(horizontal = 5.dp, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -85,7 +84,7 @@ internal fun WorkoutFeedbackPopup(
         TrainPilotTextField(value = note, onValueChange = { onNote(it.take(3000)) }, enabled = enabled,
             placeholder = { Text(feedbackText(language, "Rövid megjegyzés…", "Short note…", "Kurze Notiz…", "Notiță scurtă…")) },
             trailingIcon = if (note.isNotBlank()) {
-                { IconButton(onClick = { onNote("") }, enabled = enabled) {
+                { TrainPilotIconButton(onClick = { onNote("") }, enabled = enabled) {
                     Icon(Icons.Default.Close, feedbackText(language, "Megjegyzés törlése", "Clear note", "Notiz löschen", "Șterge notița"))
                 } }
             } else null,

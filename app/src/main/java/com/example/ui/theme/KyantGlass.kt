@@ -1,12 +1,10 @@
 package com.example.ui.theme
 
-import android.graphics.ColorMatrixColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorMatrixColorFilter
 import android.os.Build
 import android.view.View
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -14,11 +12,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -41,7 +37,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 
 /**
- * Kyant Backdrop 1.0.6 (Apache-2.0). Only public APIs; one guarded backdrop per window,
+ * Kyant Backdrop 2.0.1 (Apache-2.0). Only public APIs; one guarded backdrop per window,
  * with a separate combined source for scrolling header content. Legacy palettes never use it.
  */
 internal object KyantGlass {
@@ -85,16 +81,9 @@ internal fun rememberKyantSceneBackdrop(
 private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?) =
     drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
 
-/** Draws the page backdrop visibly and records it as [backdrop] (children are not recorded). */
-@Composable
-internal fun Modifier.kyantSceneLayer(palette: TrainPilotPalette, backdrop: LayerBackdrop): Modifier {
-    val scene = LocalGlassScene.current
-    return drawBehind { drawKyantScene(palette, scene) }.layerBackdrop(backdrop)
-}
-
 /**
  * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
- * Backdrop 1.0.6 LayerBackdropNode.draw calls drawContent then records its custom onDraw.
+ * Backdrop 2.0.1 LayerBackdropNode.draw calls drawContent then records its custom onDraw.
  * Our outer draw modifier runs that recording first, then displays the very same GraphicsLayer.
  * No second procedural/photo draw, no additional graphics layer or bitmap, and no child capture.
  */
@@ -113,16 +102,16 @@ internal fun Modifier.kyantGlass(
     accent: Color? = null,
     pressSource: MutableInteractionSource? = null,
     minimumBlurDp: Float = 0f,
-    showRim: Boolean = true
+    showRim: Boolean = true,
+    chromeCoat: Color? = null
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
     if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
-    val tint = GlassOptics.TINT.copy(alpha = spec.tintAlpha)
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
     val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
-        val filter = ColorMatrixColorFilter(glassVibrancyMatrix(spec.saturation, scale))
+        val filter = ColorMatrixColorFilter(ColorMatrix(glassVibrancyMatrix(spec.saturation, scale)))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
         val height = with(density) { spec.lensHeightDp.dp.toPx() }
         val amount = with(density) { spec.lensAmountDp.dp.toPx() }
@@ -155,12 +144,9 @@ internal fun Modifier.kyantGlass(
             provider
         }
     }
-    val surface: DrawScope.() -> Unit = remember(tint, accent) {
-        val coat = accent?.let { GlassContrast.limit(it, GLASS_TILE_LUMA).copy(alpha = .20f) }
-        val drawSurface: DrawScope.() -> Unit = {
-            drawRect(tint)
-            if (coat != null) drawRect(coat)
-        }
+    val surface: DrawScope.() -> Unit = remember(palette, role, accent, chromeCoat) {
+        val coat = kyantSurfaceCoat(palette, role, accent, chromeCoat)
+        val drawSurface: DrawScope.() -> Unit = { drawRect(coat) }
         drawSurface
     }
     val shapeProvider = remember(shape) { { shape } }
@@ -172,43 +158,21 @@ internal fun Modifier.kyantGlass(
             style
         } else null
     }
-    val drag = if (interactiveSurface && rememberGlassMotionEnabled()) remember { GlassControlDrag() } else null
-    val pressLayer = if (pressSource != null && drag != null) {
-        val isPressed = pressSource.collectIsPressedAsState()
-        val press = animateFloatAsState(
-            if (isPressed.value) 1f else 0f,
-            spring(dampingRatio = .58f, stiffness = 520f),
-            label = "Kyant control press"
-        )
-        remember(press, drag) {
-            val animateLayer: GraphicsLayerScope.() -> Unit = {
-                // As in the Kyant reference, animate the rendered lens with the control.
-                // The public backdrop effect and its shader stay stable through the spring.
-                val scale = 1f + (3.dp.toPx() / size.height.coerceAtLeast(1f)).coerceAtMost(.08f) *
-                    press.value.coerceIn(-.2f, 1.1f)
-                val travel = glassDragTransform(drag.offset, 5.dp.toPx(), press.value.coerceIn(0f, 1f))
-                translationX = travel.x
-                translationY = travel.y
-                val shortEdge = minOf(size.width, size.height)
-                scaleX = scale + glassDragStretch(travel.x, shortEdge)
-                scaleY = scale + glassDragStretch(travel.y, shortEdge)
-            }
-            animateLayer
-        }
-    } else null
-    return then(drag?.observe() ?: Modifier).drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
-        highlight = highlight, shadow = shadow, innerShadow = innerShadow, layerBlock = pressLayer, onDrawSurface = surface)
+    // The optical layer and its resting rim remain stable during a touch. The shared
+    // control indication draws the local bubble; selection-pill motion remains separate.
+    return drawBackdrop(backdrop = scene.backdrop, shape = shapeProvider, effects = effects,
+        highlight = highlight, shadow = shadow, innerShadow = innerShadow, onDrawSurface = surface)
 }
 
 /** Shared entry: only the matching window may sample a recorded backdrop. */
 @Composable
 internal fun Modifier.kyantGlassOrNull(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole,
-    minimumBlurDp: Float = 0f, showRim: Boolean = true): Modifier? {
+    minimumBlurDp: Float = 0f, showRim: Boolean = true, chromeCoat: Color? = null): Modifier? {
     if (LocalGlassOverlay.current || !KyantGlass.active(palette) || !LocalGlassOpticsEnabled.current) return null
     val scene = (if (role == GlassMaterialRole.Navigation || role == GlassMaterialRole.Selection)
         LocalKyantHeader.current ?: LocalKyantScene.current else LocalKyantScene.current).forThisWindow()
         ?: return null
-    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp, showRim = showRim)
+    return kyantGlass(scene, palette, shape, role, minimumBlurDp = minimumBlurDp, showRim = showRim, chromeCoat = chromeCoat)
 }
 
 /** Composite of [backdrop] + [content] for content-sampling glass (header, nav pill). */

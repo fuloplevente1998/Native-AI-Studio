@@ -61,7 +61,7 @@ jobs:
     steps:
       - name: Validate original main SHA and required full CI steps
         id: validate
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             if (context.eventName === 'workflow_dispatch') {
@@ -90,16 +90,20 @@ jobs:
                 step.conclusion === 'success'
               )
             );
-            const r8 = data.jobs.find(job =>
-              job.name === 'Release R8 minification check' &&
+            const passedStep = (jobName, stepName) => data.jobs.some(job =>
+              job.name === jobName &&
               job.conclusion === 'success' &&
-              job.steps?.some(step =>
-                step.name === 'Run release R8 minification' &&
-                step.conclusion === 'success'
-              )
+              job.steps?.some(step => step.name === stepName && step.conclusion === 'success')
             );
-            if (!jvm || !r8) {
-              core.notice('No signed build: full JVM verification and release R8 must both pass.');
+            const shards = ['phone-a', 'phone-b', 'wear-shared'].every(suite =>
+              passedStep(`JVM regressions (${suite})`, 'Compile and run module JVM tests')
+            );
+            const r8 = ['app', 'wear'].every(module =>
+              passedStep(`Release R8 minification check (${module})`, 'Run release R8 minification')
+            );
+            const dex = passedStep('Kyant debug DEX compatibility', 'Verify debug D8 dexing without signing');
+            if (!jvm || !shards || !r8 || !dex) {
+              core.notice('No signed build: full raw JVM verification, both R8 jobs and debug DEX must pass.');
               return;
             }
             core.setOutput('source_sha', run.head_sha);
@@ -118,7 +122,7 @@ jobs:
       TRAINPILOT_RELEASE_CERT_SHA256: ${{ secrets.TRAINPILOT_RELEASE_CERT_SHA256 }}
     steps:
       - name: Checkout trusted main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
@@ -126,29 +130,20 @@ jobs:
       - name: Validate release APK verification script syntax
         run: python3 -m py_compile scripts/verify_android_apk_metadata.py
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25 LTS
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
 
-      - name: Install Android API 36 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
-          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+        run: bash scripts/install_android_build_sdk.sh
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           # Signed main builds seed the default-branch cache for future main/PR builds.
           # No configuration-cache encryption key is supplied: setup-gradle will not
           # persist project configuration (which may contain signing credentials).
@@ -251,7 +246,7 @@ jobs:
 
       - name: Stage verified signed APKs and public metadata
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: staged-signed-apk-pair
           path: |
@@ -263,7 +258,7 @@ jobs:
 
       - name: Stage signed Play Console AAB pair
         if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.build_aab) }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: staged-play-aab-pair
           path: |
@@ -275,7 +270,7 @@ jobs:
 
       - name: Upload Gradle task timing profile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-build-profile
           path: build/reports/profile/
@@ -295,41 +290,32 @@ jobs:
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout trusted main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25 LTS
+        uses: actions/setup-java@v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
 
-      - name: Install Android API 36 SDK from hosted runner
+      - name: Install Android API 37.1 stable SDK
         shell: bash
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          test -n "${SDKMANAGER}"
-          echo "Using ${SDKMANAGER}"
-          "${SDKMANAGER}" --version
-          yes | "${SDKMANAGER}" --licenses > /dev/null || true
-          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 requests compileSdk 36.1; install it when listed.
-          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+        run: bash scripts/install_android_build_sdk.sh
 
-      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle 9.9.3 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v6.4.1
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '9.9.3'
           # Signed main builds seed the default-branch cache for future main/PR builds.
           # No configuration-cache encryption key is supplied: setup-gradle will not
           # persist project configuration (which may contain signing credentials).
           cache-read-only: false
 
       - name: Cache Robolectric Android SDK dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
@@ -348,11 +334,12 @@ jobs:
         if: always()
         env:
           TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
+          TRAINPILOT_REQUIRE_NO_SKIPS: 'true'
         run: python3 scripts/verify_junit_xml.py
 
       - name: Upload JVM test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-persistent-signing-test-reports
           path: |
@@ -365,7 +352,7 @@ jobs:
 
       - name: Upload test Gradle task timing profile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-test-build-profile
           path: build/reports/profile/
@@ -380,13 +367,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Download staged signed APK pair
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.2
         with:
           name: staged-signed-apk-pair
           path: dist/apk
 
       - name: Upload verified signed APKs and public metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-persistent-signed-apk-pair
           path: dist/apk/
@@ -395,14 +382,14 @@ jobs:
 
       - name: Download staged Play Console AAB pair
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.2
         with:
           name: staged-play-aab-pair
           path: dist/aab
 
       - name: Upload signed Play Console AAB pair
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: trainpilot-play-internal-aab-pair
           path: dist/aab/

@@ -13,6 +13,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import com.repforge.app.NativeDataReplacement
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.store.ThemePaletteOption
@@ -21,53 +22,72 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.LocalDate
 
+/** A request is identified by instance, even when the user chooses the same palette twice. */
+internal class PaletteWriteRequest(val id: Int)
+
 fun TrainPilotViewModel.selectPalette(paletteId: Int) {
-    _uiState.update {
-        it.copy(
-            selectedPaletteId = paletteId,
-            statusBannerMessage = tr(
-                "Színpaletta frissítve (#$paletteId)",
-                "Color palette updated (#$paletteId)",
-                "Farbpalette aktualisiert (#$paletteId)",
-                "Paletă de culori actualizată (#$paletteId)",
-                it.language
-            )
-        )
-    }
+    val pal = TrainPilotPalettes.getById(paletteId)
     val store = nativeSettingsStore
     val scope = nativeScope
-    if (store != null && scope != null) {
-        val pal = TrainPilotPalettes.getById(paletteId)
-        val hexAccent = "#" + (pal.primary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
-        val hexAccent2 = "#" + (pal.secondary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
-        val option = ThemePaletteOption(
-            key = pal.key,
-            nameHu = pal.nameHu,
-            nameEn = pal.nameEn,
-            accent = hexAccent,
-            accent2 = hexAccent2,
-            family = when (pal.category) {
-                PaletteCategory.MATTE, PaletteCategory.BASIC -> "matte"
-                PaletteCategory.CONTRAST -> "contrast"
-                PaletteCategory.GLOW, PaletteCategory.VIVID -> "glow"
-                PaletteCategory.LIGHT -> "light"
-                PaletteCategory.LIQUID_GLASS -> "glass"
-                else -> "matte"
-            },
-            nameDe = pal.nameDe,
-            nameRo = pal.nameRo
-        )
-        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(requireNotNull(nativeContext)) }
-            .getOrElse { showBannerMessage(it.message ?: "A téma nem menthető."); return }
-        val previous = paletteWriteJob
-        previous?.cancel()
-        paletteWriteJob = scope.launch(Dispatchers.IO) {
-            try {
-                previous?.join()
-                store.setThemeForDataset(option, ticket)
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { showBannerMessage(tr("A téma mentése nem sikerült.", "Could not save theme.",
-                "Das Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată.", _uiState.value.language)) }
+    if (store == null || scope == null) {
+        _uiState.update { it.copy(selectedPaletteId = pal.id) }
+        return
+    }
+    val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(requireNotNull(nativeContext)) }
+        .getOrElse { showBannerMessage(it.message ?: "A téma nem menthető."); return }
+    val request = PaletteWriteRequest(pal.id)
+    pendingPaletteWrite = request
+    _uiState.update { it.copy(selectedPaletteId = pal.id) }
+    val hexAccent = "#" + (pal.primary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
+    val hexAccent2 = "#" + (pal.secondary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
+    val option = ThemePaletteOption(
+        key = pal.key, nameHu = pal.nameHu, nameEn = pal.nameEn,
+        accent = hexAccent, accent2 = hexAccent2,
+        family = when (pal.category) {
+            PaletteCategory.MATTE, PaletteCategory.BASIC -> "matte"
+            PaletteCategory.CONTRAST -> "contrast"
+            PaletteCategory.GLOW, PaletteCategory.VIVID -> "glow"
+            PaletteCategory.LIGHT -> "light"
+            PaletteCategory.LIQUID_GLASS -> "glass"
+            else -> "matte"
+        },
+        nameDe = pal.nameDe, nameRo = pal.nameRo
+    )
+    val previous = paletteWriteJob
+    previous?.cancel()
+    paletteWriteJob = scope.launch(Dispatchers.IO) {
+        try {
+            previous?.join()
+            store.setThemeForDataset(option, ticket)
+            // Read the durable selection, not an earlier queued settings-flow value.
+            val committed = store.current()
+            withContext(Dispatchers.Main.immediate) {
+                if (pendingPaletteWrite === request) {
+                    pendingPaletteWrite = null
+                    val committedId = TrainPilotPalettes.getByKey(committed.themeKey)?.id ?: 1
+                    _uiState.update { it.copy(selectedPaletteId = committedId) }
+                    if (committedId == request.id) showBannerMessage(tr(
+                        "Színpaletta frissítve (#${request.id})", "Color palette updated (#${request.id})",
+                        "Farbpalette aktualisiert (#${request.id})", "Paletă de culori actualizată (#${request.id})"))
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable + Dispatchers.Main.immediate) {
+                if (pendingPaletteWrite === request) pendingPaletteWrite = null
+            }
+            throw cancelled
+        } catch (_: Exception) {
+            val stored = runCatching { store.current() }.getOrNull()
+            withContext(Dispatchers.Main.immediate) {
+                if (pendingPaletteWrite === request) {
+                    pendingPaletteWrite = null
+                    if (stored != null) _uiState.update {
+                        it.copy(selectedPaletteId = TrainPilotPalettes.getByKey(stored.themeKey)?.id ?: 1)
+                    }
+                    showBannerMessage(tr("A téma mentése nem sikerült.", "Could not save theme.",
+                        "Das Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată."))
+                }
+            }
         }
     }
 }

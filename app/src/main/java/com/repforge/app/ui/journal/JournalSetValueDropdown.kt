@@ -1,5 +1,9 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotIconButton
+
+import com.example.ui.components.TrainPilotMenuItem
+
 import com.example.ui.theme.LocalTrainPilotPalette
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
@@ -41,7 +45,7 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
                                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.text),
                                 modifier = Modifier.fillMaxWidth().testTag("${tag}_custom_input"))
                         }
-                        IconButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
+                        TrainPilotIconButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.ExpandMore, label, tint = colors.accentText)
                         }
                     }
@@ -62,10 +66,10 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
             }
             DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
                 modifier = Modifier.heightIn(max = 280.dp).then(if (LocalTrainPilotPalette.current.isLiquidGlass) Modifier else Modifier.background(colors.card))) {
-                DropdownMenuItem(text = { Text(customLabel, color = colors.text) },
+                TrainPilotMenuItem(text = { Text(customLabel, color = colors.text) },
                     onClick = { custom = true; expanded = false }, modifier = Modifier.testTag("${tag}_custom"))
                 choices.forEach { choice ->
-                    DropdownMenuItem(text = { Text(choice.ifEmpty { "–" }, color = colors.text) },
+                    TrainPilotMenuItem(text = { Text(choice.ifEmpty { "–" }, color = colors.text) },
                         onClick = { custom = false; onChange(choice); expanded = false },
                         modifier = Modifier.testTag("${tag}_option_${choice.ifEmpty { "empty" }}"))
                 }

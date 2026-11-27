@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -33,7 +35,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import com.example.ui.components.TrainPilotSwitch as Switch
@@ -205,7 +206,7 @@ internal fun IntervalStepperCard(
                 Text(valueText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(
+                TrainPilotIconButton(
                     onClick = onMinus,
                     modifier = Modifier
                         .size(48.dp)
@@ -215,7 +216,7 @@ internal fun IntervalStepperCard(
                 ) {
                     Icon(imageVector = Icons.Default.Remove, contentDescription = strings.decreaseValueDesc, tint = palette.textPrimary)
                 }
-                IconButton(
+                TrainPilotIconButton(
                     onClick = onPlus,
                     modifier = Modifier
                         .size(48.dp)
