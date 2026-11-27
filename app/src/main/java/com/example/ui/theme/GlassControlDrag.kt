@@ -40,11 +40,13 @@ internal class GlassControlDrag {
 }
 
 /** Bound the travel even if a drag continues beyond the control. */
-internal fun glassDragTransform(offset: Offset, limit: Float, progress: Float): Offset =
-    Offset(
+internal fun glassDragTransform(offset: Offset, limit: Float, progress: Float): Offset {
+    if (progress <= 0f) return Offset.Zero
+    return Offset(
         (offset.x * .22f).coerceIn(-limit, limit) * progress,
         (offset.y * .22f).coerceIn(-limit, limit) * progress
     )
+}
 
 internal fun glassDragStretch(translation: Float, size: Float): Float =
     (abs(translation) / size.coerceAtLeast(1f)).coerceAtMost(.065f)

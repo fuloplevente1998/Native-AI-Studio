@@ -132,13 +132,15 @@ fun ExerciseLibraryScreen(
             (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
     }
 
+    val panelMargin = 6.dp
+    val contentGutter = TrainPilotCardSpacing.ScreenGutter - panelMargin
     Column(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
-            .padding(horizontal = 6.dp)
+            .padding(horizontal = panelMargin)
             .trainPilotListPanel()
             .verticalScroll(rememberScrollState())
-            .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp, bottom = 24.dp)
+            .padding(start = contentGutter, end = contentGutter, top = 4.dp, bottom = 24.dp)
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         if (!embedded) SubScreenTopBar(
