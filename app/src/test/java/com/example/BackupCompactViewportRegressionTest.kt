@@ -122,6 +122,43 @@ class BackupCompactViewportRegressionTest {
         compose.runOnIdle { assertEquals(1, calls) }
     }
 
+    @Test fun settingsCloudShortcutSharesTheFullSyncActionWithoutExpanding() {
+        val settings = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]
+        val field = SettingsViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val flow = field.get(settings) as MutableStateFlow<SettingsUiState>
+        var cloudCalls = 0
+        var driveOnlyCalls = 0
+        compose.setContent {
+            CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(AppLanguage.HU)) {
+                TrainPilotTheme {
+                    com.example.ui.screens.StudioGoogleCloudSyncCard(onShowBanner = {}, settingsViewModel = settings,
+                        onCompactDriveSync = { driveOnlyCalls++ }, onSyncAllCloud = { cloudCalls++ })
+                }
+            }
+        }
+        val quick = compose.onNodeWithTag("settings_google_quick_sync")
+        quick.assertDoesNotExist()
+        compose.runOnIdle {
+            flow.value = flow.value.copy(googleSyncState = GoogleSyncUiState(connectedEmail = "fixture@example.test"))
+        }
+        quick.assertIsDisplayed().assertHeightIsAtLeast(48.dp).performClick()
+        compose.onNodeWithTag("settings_google_expanded").assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals(1, cloudCalls)
+            assertEquals(0, driveOnlyCalls)
+            flow.value = flow.value.copy(googleSyncState = flow.value.googleSyncState.copy(isBusy = true))
+        }
+        quick.assertIsNotEnabled()
+        compose.runOnIdle {
+            flow.value = flow.value.copy(googleSyncState = flow.value.googleSyncState.copy(isBusy = false))
+        }
+        compose.onNodeWithTag("settings_google_expand").performClick()
+        quick.assertDoesNotExist()
+        compose.onNodeWithTag("settings_google_sync_now_btn").performClick()
+        compose.runOnIdle { assertEquals(2, cloudCalls); assertEquals(0, driveOnlyCalls) }
+    }
+
     @Test fun controlsFitAndHealthConsentRemainsAccessibleInAllLanguages() {
         var language by mutableStateOf(AppLanguage.HU)
         var format by mutableStateOf("JSON")

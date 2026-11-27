@@ -113,3 +113,8 @@
 - JVM-próba védi a Jég és az Arany vezérlőfestését 100%-on. Az üveghatás és a gombok pereme fizikai készüléken ellenőrizendő.
 - A közös görgetés fölötti Liquid üveg 18–22 dp minimum elmosást használ. A Napló erősebb, helyi matt réteget kapott. A lista mintavétele és rajzolása a fő navigáció alatt kezdődik, a kereső és a dátumválasztó mögé továbbra is becsúszik.
 - Az aktív edzés Coach és Részletek gombja enyhe Liquid peremfényt kap, a felső vezérlés és a pihenősáv belső csempéi palettaárnyalatot használhatnak. A Beállítások és a Témák választó azonos Liquid családon belüli váltáskor is a kiválasztott témát hozza látható helyre.
+
+## Beállítások – Google Cloud gyorsszinkron
+
+- `fix/settings-cloud-quick-sync`, alap `9e0fa11a`. Az összecsukott Beállítások-kártya jobb oldalán a Drive + Naptár szinkron indítható. A gyorsgomb külön érintési felület, a kibontott művelettel azonos útvonalon és tiltásokkal működik. A Biztonsági mentés gyorsgombja továbbra is csak a Drive-ot szinkronizálja.
+- A naptár árva teljesítéspipája külön nyitott hibapont. A Liquid megjelenés, a témaváltás és az érintési nyúlás fizikai eszközön ellenőrizendő.
