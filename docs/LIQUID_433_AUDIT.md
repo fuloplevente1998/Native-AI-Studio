@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (98/106)
+## Natív UI, beágyazott komponensek és segédlogika – teljes fájlleltár (106/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -299,3 +299,11 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/settings/NativeTrainingModeComparison.kt` | 144 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/settings/NativeTrainingModePicker.kt` | 287 | 1 | 119, 158, 283 | 130, 132, 144, 146, 153, 265, 279 | — | 13, 45, 198 | — |
 | `com/repforge/app/ui/settings/ReplacementRecoveryPanel.kt` | 51 | 1 | — | 40 | — | — | — |
+| `com/repforge/app/ui/settings/SettingsScreen.kt` | 510 | 1 | 179, 201, 239, 247, 265, 274, 295, 320, 328, 342, 390, 398, 465, 483, 488, 501, 506 | 226, 235, 243, 255, 261, 317, 324, 358, 375, 394, 405, 453, 461, 481, 499 | — | 28, 30, 35, 145, 476 | 205 |
+| `com/repforge/app/ui/settings/SettingsViewModel.kt` | 400 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/settings/TrainingProfileDialog.kt` | 82 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/text/NativeLocalizedResources.kt` | 18 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/workout/ActiveWorkoutScreen.kt` | 1212 | 10 | 303, 339, 403, 447, 466, 490, 516, 525, 559, 620, 641, 649, 672, 691, 732, 741, 772, 782, 833, 855, 859, 865, 904, 939, 983, 985, 1128, 1132, 1147, 1209 | 337, 425, 443, 512, 521, 616, 630, 637, 648, 655, 689, 788, 832, 835, 858, 865, 902, 917, 919, 923, 928, 938, 941, 947, 984, 991, 1102, 1135, 1144, 1145, 1146, 1205 | — | 56, 57, 126, 343, 460, 565 | 570, 733 |
+| `com/repforge/app/ui/workout/ActiveWorkoutViewModel.kt` | 1235 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/workout/NativeGpsPermissionRecovery.kt` | 184 | 1 | 181 | 171, 177 | — | — | — |
+| `com/repforge/app/ui/workout/NativeTrainingModeProposal.kt` | 106 | 0 | — | — | — | — | — |
