@@ -205,10 +205,6 @@ internal fun glassVibrancyMatrix(saturation: Float, scale: Float): FloatArray {
     return matrix.array
 }
 
-/** Nested header controls composite over the one header lens, including active workout. */
-internal fun glassHeaderControlPaint(palette: TrainPilotPalette, role: GlassMaterialRole): Color =
-    glassControlPaint(palette, palette.glassClarity, role)
-
 @Composable
 internal fun Modifier.glassHeaderControl(palette: TrainPilotPalette, shape: Shape, role: GlassMaterialRole): Modifier =
     if (!palette.isLiquidGlass) this else liquidDropMaterial(palette, shape, role, live = false)

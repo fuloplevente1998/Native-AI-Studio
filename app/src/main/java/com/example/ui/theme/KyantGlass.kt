@@ -11,7 +11,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -80,13 +79,6 @@ internal fun rememberKyantSceneBackdrop(
 
 private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?) =
     drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
-
-/** Draws the page backdrop visibly and records it as [backdrop] (children are not recorded). */
-@Composable
-internal fun Modifier.kyantSceneLayer(palette: TrainPilotPalette, backdrop: LayerBackdrop): Modifier {
-    val scene = LocalGlassScene.current
-    return drawBehind { drawKyantScene(palette, scene) }.layerBackdrop(backdrop)
-}
 
 /**
  * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
