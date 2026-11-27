@@ -271,7 +271,16 @@ fun HealthTabScreen(
                     if (datePickerOpen) com.example.ui.components.CompactDatePickerDialog(pickedDate, uiState.language.name.lowercase(),
                         onDismiss = { datePickerOpen = false },
                         onConfirm = { dateText = it.format(dotFormatter); datePickerOpen = false })
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (palette.isLiquidGlass) {
+                        val presets = listOf(
+                            tr(uiState.language, "Ma", "Today", "Heute", "Azi") to today,
+                            tr(uiState.language, "Tegnap", "Yesterday", "Gestern", "Ieri") to today.minusDays(1),
+                            tr(uiState.language, "−3 nap", "−3 days", "−3 Tage", "−3 zile") to today.minusDays(3),
+                            tr(uiState.language, "−7 nap", "−7 days", "−7 Tage", "−7 zile") to today.minusDays(7))
+                        com.example.ui.components.LiquidSegmentedTabs(presets.map { it.first }, presets.indexOfFirst { it.second == pickedDate },
+                            { dateText = presets[it].second.format(dotFormatter) }, "health_weight_date_track",
+                            itemTag = { "health_weight_date_preset_$it" }, scrollable = true) { _, label, _ -> Text(label, maxLines = 1) }
+                    } else Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(
                             tr(uiState.language, "Ma", "Today", "Heute", "Azi") to today,
                             tr(uiState.language, "Tegnap", "Yesterday", "Gestern", "Ieri") to today.minusDays(1),
