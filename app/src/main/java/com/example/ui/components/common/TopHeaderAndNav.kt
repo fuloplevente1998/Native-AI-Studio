@@ -11,7 +11,7 @@ import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.glassHeaderControl
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.glassEffectsActive
-import com.repforge.app.ui.theme.glassPressMotion
+import com.repforge.app.ui.theme.trainPilotPressIndication
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
@@ -388,9 +388,9 @@ internal fun TopNavPillItem(
     val source = remember { MutableInteractionSource() }
     val ownGlass = !hosted && (selected || compact)
     val observeDrag = if (hosted && selected && rememberGlassMotionEnabled()) pillTrack?.drag?.observe() ?: Modifier else Modifier
-    val selectedModifier = if (glass) observeDrag.glassPressMotion(source, true, itemShape)
+    val selectedModifier = if (glass) observeDrag.trainPilotPressIndication(itemShape, source)
         .selectable(selected, interactionSource = source,
-            indication = if (LocalGlassOpticsEnabled.current) null else ripple(), role = Role.Tab, onClick = onClick)
+            indication = null, role = Role.Tab, onClick = onClick)
         .then(if (ownGlass) Modifier.glassHeaderControl(palette, itemShape,
             if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button) else Modifier)
     else Modifier.selectable(selected = selected, enabled = true, role = Role.Tab, onClick = onClick)

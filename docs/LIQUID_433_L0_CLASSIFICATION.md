@@ -18,3 +18,10 @@ Baseline: b14dc497, az audit: LIQUID_433_AUDIT.md. A jelen rész nem állítja a
 | Minden más auditált fájl / hívás | nyitott | kézi besorolás és regresszió szükséges |
 
 Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett fájljai; main és audit ág Kotlin forrása induláskor azonos (csak két docs fájl tért el). Nincs teljes hívásgráf vagy készülékes vizsgálat.
+
+## L2 központi press híváshelyek
+- trainPilotClickable/CombinedClickable → trainPilotPressIndication → glassPressMotion → glassTouchBubble (közös, egy lokális owner).
+- TrainPilotButton/ActionButtons/TextButton: glassPressMotion; GlassPrimaryButton/OutlinedButton: explicit glassTouchBubble. A TrainPilotPressFeedback csak Liquid focus/hover tint, standard press tint változatlan.
+- LiquidDropMaterial és KyantGlass: korábbi redundáns teljes kontroll press/drag layer eltávolítva, resting highlight/innerShadow megmarad. A GlassSelectionPill saját selection-state mozgása megmarad.
+- TopNavPillItem: közös press indication, a régi optics-off Material ripple eltávolítva. Külön nav X, videógomb, backup format, Material raw controls, chart és egyedi slider hívók L3-ban nyitottak.
+- Kompakt vizuális gyerek (TrainPilotDeleteIcon, MuscleHeatmapCard): a pointer helyi koordinátájának elsőbbsége, a nagyobb parent hit target változatlan. Készülékes margó/gesztus validáció még szükséges.

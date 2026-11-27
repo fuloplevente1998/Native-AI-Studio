@@ -7,12 +7,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -29,7 +25,9 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Touch lighting is drawn on the existing control. Kyant supplies the optical refraction;
@@ -43,12 +41,12 @@ internal object GlassTouchBubble {
     const val DAMPING = .58f
     const val STIFFNESS = 520f
 
-    /**
-     * Only Liquid Glass with full optics (so never on the active measurement screens), only with
-     * system animations on, and only for an enabled control.
-     */
-    fun enabled(glassActive: Boolean, motionEnabled: Boolean, controlEnabled: Boolean): Boolean =
-        glassActive && motionEnabled && controlEnabled
+    /** The vector-only indicator is safe even without an optical backdrop or animation. */
+    fun enabled(liquid: Boolean, controlEnabled: Boolean): Boolean = liquid && controlEnabled
+
+    /** Do not reuse the previous touch for a new press, including synthetic interactions. */
+    fun pressPoint(event: Offset, localPointer: Offset): Offset =
+        if (localPointer.isSpecified) localPointer else event
 
     fun radiusPx(size: Size, density: Float): Float {
         val shorter = minOf(size.width, size.height)
@@ -74,43 +72,64 @@ internal object GlassTouchBubble {
 @Composable
 internal fun Modifier.glassTouchBubble(source: MutableInteractionSource, enabled: Boolean, shape: Shape?): Modifier {
     val palette = LocalTrainPilotPalette.current
-    val motion = rememberGlassMotionEnabled()
-    if (!GlassTouchBubble.enabled(palette.glassEffectsActive(LocalGlassOpticsEnabled.current), motion, enabled)) return this
-    var heldPress by remember(source) { mutableStateOf<PressInteraction.Press?>(null) }
+    if (!GlassTouchBubble.enabled(palette.isLiquidGlass, enabled)) return this
+    val motion = rememberGlassMotionEnabled() && !LocalGlassPowerSave.current
     val touch = remember(source) { mutableStateOf(Offset.Unspecified) }
-    var pressCount by remember(source) { mutableIntStateOf(0) }
+    // Local coordinates are needed when the visual child is smaller than the hit target.
+    val localPointer = remember(source) { mutableStateOf(Offset.Unspecified) }
+    val held = remember(source) { mutableStateOf<PressInteraction.Press?>(null) }
     val progress = remember(source) { Animatable(0f) }
-    LaunchedEffect(source) {
+    LaunchedEffect(source, motion) {
+        progress.snapTo(0f)
+        held.value = null
+        var animation: Job? = null
         source.interactions.collect { interaction ->
             when (interaction) {
                 is PressInteraction.Press -> {
-                    heldPress = interaction
-                    if (!touch.value.isSpecified) touch.value = interaction.pressPosition
-                    pressCount++
+                    held.value = interaction
+                    touch.value = GlassTouchBubble.pressPoint(interaction.pressPosition, localPointer.value)
+                    animation?.cancel()
+                    animation = launch {
+                        progress.snapTo(0f)
+                        if (motion) progress.animateTo(1f, tween(75)) else progress.snapTo(1f)
+                    }
                 }
-                is PressInteraction.Release -> {
-                    if (heldPress == interaction.press) heldPress = null
+                is PressInteraction.Release -> if (held.value == interaction.press) {
+                    held.value = null
+                    animation?.cancel()
+                    animation = launch {
+                        // A press/release pair may arrive in the same frame. Finish the local
+                        // entry, or briefly show a static mark with reduced motion.
+                        if (motion) {
+                            if (progress.value < .8f) progress.animateTo(1f, tween(50))
+                            progress.animateTo(0f, spring(dampingRatio = GlassTouchBubble.DAMPING,
+                                stiffness = GlassTouchBubble.STIFFNESS))
+                        } else {
+                            progress.snapTo(1f)
+                            delay(80L)
+                            progress.snapTo(0f)
+                        }
+                    }
                 }
-                is PressInteraction.Cancel -> {
-                    if (heldPress == interaction.press) heldPress = null
+                is PressInteraction.Cancel -> if (held.value == interaction.press) {
+                    held.value = null
+                    animation?.cancel()
+                    animation = launch {
+                        if (motion) progress.animateTo(0f, spring(dampingRatio = GlassTouchBubble.DAMPING,
+                            stiffness = GlassTouchBubble.STIFFNESS)) else progress.snapTo(0f)
+                    }
                 }
                 else -> Unit
             }
         }
     }
-    LaunchedEffect(source, pressCount) {
-        if (pressCount == 0) return@LaunchedEffect
-        // Press and Release can arrive in one frame. Complete the short entry on either path.
-        progress.animateTo(1f, tween(75))
-        snapshotFlow { heldPress }.first { it == null }
-        progress.animateTo(0f, spring(dampingRatio = GlassTouchBubble.DAMPING, stiffness = GlassTouchBubble.STIFFNESS))
-    }
     return pointerInput(source) {
         awaitPointerEventScope {
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
-                // Keep the last point after release, so the bubble springs away where the finger left.
-                event.changes.firstOrNull { it.pressed }?.let { touch.value = it.position }
+                val point = event.changes.firstOrNull { it.pressed }?.position ?: Offset.Unspecified
+                localPointer.value = point
+                if (held.value != null && point.isSpecified) touch.value = point
             }
         }
     }.drawWithCache {
