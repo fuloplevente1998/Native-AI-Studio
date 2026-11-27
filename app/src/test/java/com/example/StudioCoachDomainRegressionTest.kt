@@ -1,6 +1,13 @@
 package com.example
 
 import androidx.compose.ui.test.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.ui.components.StudioCoachRecommendations
 import com.example.ui.components.StudioCoachNextTrainingCard
@@ -146,9 +153,51 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_coach_program_name").assertTextEquals("Otthoni A/B – Alap")
         compose.onNodeWithTag("studio_coach_day_badge").assertExists()
         compose.onNodeWithText("A").assertExists()
+        compose.onNodeWithTag("studio_coach_day_name").assertDoesNotExist()
         compose.onNodeWithTag("studio_coach_start_target").performClick()
         assertEquals(0, workoutPage)
         assertEquals(1, started)
+    }
+
+    @Test fun coachAdviceScrollsIndependentlyAndRetainsExpandedActions() {
+        val advice = NativeCoachExerciseAdvice.Advice("increase", "stable", 22.5, 20.0,
+            false, 3, NativeCoachExerciseAdvice.Target("reps", text = "8–12"))
+        val exercises = (0 until 24).map { CoachExerciseAdvice("ex-$it", "Exercise $it", advice, "total") }
+        val state = CoachUiState(loading = false, language = "hu", exercises = exercises)
+        var opened = ""
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.CoachPageLayout(
+                modifier = Modifier.size(360.dp, 600.dp),
+                upper = { Box(Modifier.fillMaxWidth().height(160.dp).testTag("coach_test_upper")) },
+                recommendations = { pinned, modifier ->
+                    StudioCoachRecommendations(state, { _, _, _ -> }, {}, { opened = it }, {}, {}, {},
+                        showTarget = false, modifier = modifier, pinnedList = pinned)
+                })
+        } }
+        val upper = compose.onNodeWithTag("coach_test_upper")
+        val header = compose.onNodeWithTag("studio_coach_fixed_advice_header")
+        val panel = compose.onNodeWithTag("studio_coach_advice_list")
+        val upperBounds = upper.getUnclippedBoundsInRoot()
+        val headerBounds = header.getUnclippedBoundsInRoot()
+        val panelBounds = panel.getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("studio_coach_advice_ex-23").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText("Gyakorlat részletei").performScrollTo().performClick()
+        assertEquals("ex-23", opened)
+        assertEquals(upperBounds, upper.getUnclippedBoundsInRoot())
+        assertEquals(headerBounds, header.getUnclippedBoundsInRoot())
+        assertEquals(panelBounds, panel.getUnclippedBoundsInRoot())
+    }
+
+    @Test fun coachCompactDayKeepsDescriptiveNamesButNotDuplicateLetterLabels() {
+        val target = mutableStateOf(CoachTarget("p", "a", "A nap", programTitle = "Otthoni A/B"))
+        compose.setContent { TrainPilotTheme {
+            StudioCoachNextTrainingCard(CoachUiState(loading = false, target = target.value),
+                { _, _, _ -> }, {})
+        } }
+        compose.onNodeWithTag("studio_coach_day_badge").assertExists()
+        compose.onNodeWithTag("studio_coach_day_name").assertDoesNotExist()
+        compose.runOnIdle { target.value = target.value.copy(title = "Felsőtest") }
+        compose.onNodeWithTag("studio_coach_day_name").assertTextEquals("Felsőtest")
     }
 
     @Test fun laterExerciseAdviceDoesNotDuplicateHighlightedNextDay() {
