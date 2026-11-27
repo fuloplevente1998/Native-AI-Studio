@@ -57,11 +57,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      # Kyant Backdrop 1.0.6 ships Java 21 class files (major 65). Real root
+      # Robolectric tests must load them; keep the Android compile target at 17.
+      - name: Set up JDK 21 for JVM regressions
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash
@@ -135,7 +137,7 @@ jobs:
         shell: bash
         env:
           TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
+          TRAINPILOT_REQUIRE_NO_SKIPS: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || startsWith(github.head_ref, 'test/kyant-final-') }}
         run: python3 scripts/verify_junit_xml.py
 
       - name: Upload unit test reports
@@ -204,7 +206,7 @@ jobs:
         shell: bash
         if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
         env:
-          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || startsWith(github.head_ref, 'test/kyant-final-') }}
+          KYANT_GATE: ${{ github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency' || startsWith(github.head_ref, 'test/kyant-final-') }}
         run: |
           if [[ "$KYANT_GATE" == "true" ]]; then
             gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8 :wear:minifyReleaseWithR8
@@ -223,7 +225,7 @@ jobs:
 
   kyant-debug-dex:
     # Compatibility gate, not an installable test artifact or production signing job.
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/kyant-glass'
+    if: github.event_name == 'pull_request' && (github.head_ref == 'feat/kyant-glass' || github.head_ref == 'fix/433-liquid-consistency')
     name: Kyant debug DEX compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 60

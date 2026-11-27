@@ -300,11 +300,13 @@ jobs:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
-      - name: Set up JDK 17
+      # Kyant Backdrop 1.0.6 ships Java 21 class files (major 65). Real root
+      # Robolectric tests must load them; keep the Android compile target at 17.
+      - name: Set up JDK 21 for JVM regressions
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Android API 36 SDK from hosted runner
         shell: bash

@@ -23,6 +23,13 @@ import androidx.compose.ui.test.performClick
 import com.example.ui.components.TrainPilotIconButton
 import com.example.ui.components.TrainPilotIconToggleButton
 import com.example.ui.components.TrainPilotMenuItem
+import com.example.ui.components.TrainPilotSlider
+import com.example.ui.components.TrainPilotCheckbox
+import com.example.ui.components.TrainPilotSwitch
+import com.example.ui.components.trainPilotChartTap
+import com.example.ui.components.trainPilotSelectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,6 +98,57 @@ class LiquidGlass433PressTest {
             assertEquals(1, clicks)
             assertEquals(1, toggles)
             assertEquals(1, menuClicks)
+        }
+    }
+
+    @Test fun adjustableAndChartControlsKeepNativeValuesAndSingleActions() {
+        var sliderValue = 25f
+        var finishes = 0
+        var chartCalls = 0
+        var chartIndex = -1
+        var choiceCalls = 0
+        val palette = LiquidGlassPalettes.all.first()
+        compose.setContent {
+            TrainPilotTheme(palette = palette) {
+                var value by remember { mutableStateOf(25f) }
+                var checked by remember { mutableStateOf(false) }
+                var switched by remember { mutableStateOf(false) }
+                var chosen by remember { mutableStateOf(false) }
+                Column {
+                    TrainPilotSlider(value, { value = it; sliderValue = it },
+                        modifier = Modifier.width(280.dp).testTag("adjustable"),
+                        valueRange = 0f..100f, onValueChangeFinished = { finishes++ })
+                    TrainPilotCheckbox(checked, { checked = it }, Modifier.testTag("checkbox"))
+                    TrainPilotCheckbox(false, { error("Disabled checkbox invoked") },
+                        Modifier.testTag("disabled_checkbox"), enabled = false)
+                    TrainPilotSwitch(switched, { switched = it }, Modifier.testTag("switch"))
+                    Box(Modifier.size(48.dp)
+                        .trainPilotSelectable(chosen, RoundedCornerShape(12.dp), role = Role.RadioButton) {
+                            chosen = true; choiceCalls++
+                        }.testTag("choice"))
+                    Box(Modifier.width(280.dp).height(64.dp)
+                        .trainPilotChartTap("chart", { x, width -> if (x >= width / 2) 1 else 0 }) {
+                            chartIndex = it; chartCalls++
+                        }.testTag("chart"))
+                }
+            }
+        }
+        compose.onNodeWithTag("adjustable").performTouchInput {
+            swipe(Offset(width * .25f, centerY), Offset(width * .8f, centerY))
+        }
+        compose.onNodeWithTag("checkbox").assertIsOff().performClick()
+        compose.onNodeWithTag("checkbox").assertIsOn()
+        compose.onNodeWithTag("disabled_checkbox").assertIsNotEnabled()
+        compose.onNodeWithTag("switch").assertIsOff().performClick()
+        compose.onNodeWithTag("switch").assertIsOn()
+        compose.onNodeWithTag("choice").performClick().assertIsSelected()
+        compose.onNodeWithTag("chart").performTouchInput { click(Offset(width * .8f, centerY)) }
+        compose.runOnIdle {
+            assertTrue("Slider must keep native range and drag: $sliderValue", sliderValue in 65f..95f)
+            assertEquals(1, finishes)
+            assertEquals(1, choiceCalls)
+            assertEquals(1, chartIndex)
+            assertEquals(1, chartCalls)
         }
     }
 
