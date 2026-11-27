@@ -9,6 +9,7 @@ import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
+import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.key
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -303,206 +304,184 @@ fun LogTabScreen(
 
     val logListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    com.example.ui.components.TrainPilotScrollableListBox(
-        lazyListState = logListState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LazyColumn(
-            state = logListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .trainPilotScreenBackdrop(palette)
-                .padding(horizontal = 6.dp)
-                .trainPilotListPanel()
-                .testTag("log_tab_screen"),
-            // The measured header inset scrolls with the list; no extra item or opaque clip.
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
-                end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 24.dp)
-        ) {
-        item(key = "log_search", contentType = "search") {
-            Box(Modifier.padding(bottom = TrainPilotCardSpacing.CardGap)) {
-                CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
-            }
-        }
-
-        // Interactive Month & Date selector row (< | 2026. október v | >)
-        item(key = "log_month", contentType = "month") {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    com.example.ui.theme.GlassScrollChrome(
+        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).padding(horizontal = 6.dp)
+            .testTag("log_tab_screen"),
+        rootInset = LocalGlassTopInset.current,
+        top = {
+            val shape = RoundedCornerShape(18.dp)
+            Surface(
+                shape = shape,
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                modifier = Modifier.fillMaxWidth()
+                    .glassHeaderMaterial(palette, shape)
+                    .trainPilotBorder(1.dp, palette.cardBorder, shape)
+                    .testTag("log_fixed_header")
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
-                        .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
-                        .trainPilotClickable(CircleShape) {
-                            filterAllMonths = false
-                            intervalStartDay = null
-                            intervalEndDay = null
-                            currentYearMonth = currentYearMonth.minusMonths(1)
+                Column(Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)) {
+                    Box {
+                        Box(Modifier.padding(bottom = TrainPilotCardSpacing.CardGap)) {
+                            CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
                         }
-                        .testTag("log_prev_month_button")
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = trL(uiState.language, "Előző hónap", "Previous month", "Vorheriger Monat", "Luna precedentă"),
-                            tint = palette.primary
-                        )
                     }
-                }
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 10.dp)
-                        .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
-                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .trainPilotClickable(RoundedCornerShape(14.dp)) { showInlineCalendar = !showInlineCalendar }
-                        .testTag("log_month_picker_button")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+
+                    // Interactive Month & Date selector row (< | 2026. október v | >)
+                    Box {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = currentFilterLabel,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                        }
-                        Icon(
-                            imageVector = if (showInlineCalendar) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = trL(uiState.language, "Dátumválasztó megnyitása", "Open date picker", "Datumsauswahl öffnen", "Deschide selectorul de dată"),
-                            tint = palette.primary
-                        )
-                    }
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
-                        .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
-                        .trainPilotClickable(CircleShape) {
-                            filterAllMonths = false
-                            intervalStartDay = null
-                            intervalEndDay = null
-                            currentYearMonth = currentYearMonth.plusMonths(1)
-                        }
-                        .testTag("log_next_month_button")
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = trL(uiState.language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"),
-                            tint = palette.primary
-                        )
-                    }
-                }
-            }
-        }
-
-        // Quick shortcut banner to Edzés részletei & Óra és szinkron
-        item(key = "log_summary", contentType = "summary") {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = trL(
-                        uiState.language,
-                        "$currentFilterLabel • ${filteredLogs.size} rögzített edzés",
-                        "$currentFilterLabel • ${filteredLogs.size} logged workouts",
-                        "$currentFilterLabel • ${filteredLogs.size} protokollierte Trainings",
-                        "$currentFilterLabel • ${filteredLogs.size} antrenamente înregistrate"
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.textSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-                // 2779: one tap back to the whole list, without opening the calendar (also after a month change).
-                if (!filterAllMonths) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.glassTile(palette.surfaceCard),
-                        modifier = Modifier
-                            .padding(end = 6.dp)
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                intervalStartDay = null
-                                intervalEndDay = null
-                                filterAllMonths = true
-                                currentYearMonth = java.time.YearMonth.from(today)
-                            }
-                            .testTag("log_clear_filter_chip")
-                    ) {
-                        Text(
-                            text = "✕ " + trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary,
-                            maxLines = 1,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-                if (filteredLogs.isNotEmpty()) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.primary.copy(alpha = 0.16f),
-                        modifier = Modifier
-                            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                            .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                val firstStrength = filteredLogs.firstOrNull { !it.isOutdoorRun } ?: filteredLogs.firstOrNull()
-                                if (firstStrength != null) {
-                                    onOpenWorkoutDetail(firstStrength.id)
+                            Surface(
+                                shape = CircleShape,
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
+                                    .trainPilotClickable(CircleShape) {
+                                        filterAllMonths = false
+                                        intervalStartDay = null
+                                        intervalEndDay = null
+                                        currentYearMonth = currentYearMonth.minusMonths(1)
+                                    }
+                                    .testTag("log_prev_month_button")
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                        contentDescription = trL(uiState.language, "Előző hónap", "Previous month", "Vorheriger Monat", "Luna precedentă"),
+                                        tint = palette.primary
+                                    )
                                 }
                             }
-                            .testTag("log_open_latest_detail_shortcut")
-                    ) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = palette.glassTile(palette.surfaceCard),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 10.dp)
+                                    .trainPilotGlassRim(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Input)
+                                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { showInlineCalendar = !showInlineCalendar }
+                                    .testTag("log_month_picker_button")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CalendarMonth,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = currentFilterLabel,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.textPrimary
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = if (showInlineCalendar) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = trL(uiState.language, "Dátumválasztó megnyitása", "Open date picker", "Datumsauswahl öffnen", "Deschide selectorul de dată"),
+                                        tint = palette.primary
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .liquidDropMaterial(palette, CircleShape, GlassMaterialRole.Button)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
+                                    .trainPilotClickable(CircleShape) {
+                                        filterAllMonths = false
+                                        intervalStartDay = null
+                                        intervalEndDay = null
+                                        currentYearMonth = currentYearMonth.plusMonths(1)
+                                    }
+                                    .testTag("log_next_month_button")
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = trL(uiState.language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"),
+                                        tint = palette.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Box {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = TrainPilotCardSpacing.CardGap),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = strings.workoutDetailTitle,
-                                style = MaterialTheme.typography.labelSmall,
+                                text = trL(
+                                    uiState.language,
+                                    "$currentFilterLabel • ${filteredLogs.size} rögzített edzés",
+                                    "$currentFilterLabel • ${filteredLogs.size} logged workouts",
+                                    "$currentFilterLabel • ${filteredLogs.size} protokollierte Trainings",
+                                    "$currentFilterLabel • ${filteredLogs.size} antrenamente înregistrate"
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.primary
+                                color = palette.textSecondary,
+                                modifier = Modifier.weight(1f)
                             )
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            // 2779: one tap back to the whole list, without opening the calendar (also after a month change).
+                            if (!filterAllMonths) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = palette.glassTile(palette.surfaceCard),
+                                    modifier = Modifier
+                                        .padding(end = 6.dp)
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) {
+                                            intervalStartDay = null
+                                            intervalEndDay = null
+                                            filterAllMonths = true
+                                            currentYearMonth = java.time.YearMonth.from(today)
+                                        }
+                                        .testTag("log_clear_filter_chip")
+                                ) {
+                                    Text(
+                                        text = "✕ " + trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary,
+                                        maxLines = 1,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
+    ) { scrollModifier, topInset, bottomInset ->
+        com.example.ui.components.TrainPilotScrollableListBox(
+            lazyListState = logListState,
+            modifier = scrollModifier
+        ) {
+            LazyColumn(
+                state = logListState,
+                modifier = Modifier.fillMaxSize().trainPilotListPanel().testTag("log_workouts_scroll"),
+                contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
+                    end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp + topInset, bottom = 24.dp + bottomInset)
+            ) {
         if (filteredLogs.isEmpty()) {
             item(key = "log_empty", contentType = "empty") {
                 Text(
@@ -537,8 +516,9 @@ fun LogTabScreen(
                 )
             }
         }
+            }
+        }
     }
-}
 }
 
 /** Compact, independently testable search that keeps the keyboard text-input semantics. */
