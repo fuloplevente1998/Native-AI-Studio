@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (51/91)
+## Studio közös komponensek – leltár (64/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -111,3 +111,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/TrainPilotFitText.kt` | 59 | — | — | — | — | — |
 | `com/example/ui/components/TrainPilotFullHeightFormSheet.kt` | 76 | 48 | — | — | — | — |
 | `com/example/ui/components/TrainPilotListPanel.kt` | 29 | 27 | — | 19, 20 | — | — |
+| `com/example/ui/components/TrainPilotModalBottomSheet.kt` | 133 | 56, 97 | — | 99 | 3, 5, 6, 92, 98 | — |
+| `com/example/ui/components/TrainPilotPageLayout.kt` | 540 | 470, 512, 519, 528 | — | — | — | — |
+| `com/example/ui/components/TrainPilotRangeCalendarSheet.kt` | 204 | 112 | — | 83, 126 | — | 119, 130, 173 |
+| `com/example/ui/components/TrainPilotReorder.kt` | 208 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotRouteContent.kt` | 72 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotScreenSheet.kt` | 222 | 101 | — | — | 14, 203 | — |
+| `com/example/ui/components/TrainPilotSheetRoutes.kt` | 32 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotSheetSafeArea.kt` | 34 | — | — | — | — | — |
+| `com/example/ui/components/WeeklyGoals.kt` | 276 | 183 | — | 127, 129, 159, 161, 182, 266 | — | 103, 132, 163, 243 |
+| `com/example/ui/components/WorkoutControlAppearance.kt` | 28 | — | — | 14 | — | — |
+| `com/example/ui/components/WorkoutEditorAppearance.kt` | 45 | — | — | 14 | — | — |
+| `com/example/ui/components/WorkoutFeedbackPopup.kt` | 113 | 38 | 59, 88 | 58, 103, 104 | — | — |
+| `com/example/ui/components/WorkoutModeArt.kt` | 69 | — | — | — | — | — |
