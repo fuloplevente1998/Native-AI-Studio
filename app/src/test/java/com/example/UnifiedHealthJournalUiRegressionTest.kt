@@ -107,7 +107,8 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
         val dayRow = compose.onNodeWithTag("journal_day_$day")
         dayRow.performScrollTo()
-        val height = dayRow.getUnclippedBoundsInRoot().height
+        val bounds = dayRow.getUnclippedBoundsInRoot()
+        val height = bounds.bottom - bounds.top
         assertTrue("Collapsed day height was $height", height in 48.dp..64.dp)
         dayRow.performClick()
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo()
