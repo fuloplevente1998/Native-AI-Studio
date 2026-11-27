@@ -195,7 +195,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
 
-## Natív UI, beágyazott komponensek és segédlogika – leltár (42/106)
+## Natív UI, beágyazott komponensek és segédlogika – leltár (56/106)
 
 A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
 
@@ -243,3 +243,17 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/home/NativeHomeRecoveryPresentation.kt` | 93 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/home/NativeHomeRepository.kt` | 66 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/home/QuickWorkoutScreen.kt` | 204 | 1 | — | 107, 132, 141, 156, 165, 168 | — | 14, 102 | 92, 154 |
+| `com/repforge/app/ui/journal/ExternalHeartRateZones.kt` | 44 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/ExternalRoutePreview.kt` | 195 | 2 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalEditorDialog.kt` | 310 | 6 | 78, 178, 256 | 91, 97, 180, 183, 243, 267 | — | 14, 88, 99 | — |
+| `com/repforge/app/ui/journal/JournalEditorFrame.kt` | 85 | 4 | 52, 78 | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalEffortDropdown.kt` | 70 | 1 | 56 | 55, 59 | — | — | — |
+| `com/repforge/app/ui/journal/JournalExternalWorkoutMetrics.kt` | 130 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalHealthPanel.kt` | 107 | 3 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalLinkedExternalSources.kt` | 53 | 1 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalScreen.kt` | 343 | 6 | 150, 195 | 82, 85, 90, 170, 281, 290, 297, 337 | — | 14, 15, 96, 189, 257 | 259 |
+| `com/repforge/app/ui/journal/JournalSetValueDropdown.kt` | 77 | 1 | 34, 51, 64 | 44, 63, 65, 68 | — | — | — |
+| `com/repforge/app/ui/journal/JournalViewModel.kt` | 316 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/JournalWorkoutHealthSummary.kt` | 119 | 2 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/NativeJournalRepository.kt` | 96 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/journal/NativeJournalText.kt` | 7 | 0 | — | — | — | — | — |
