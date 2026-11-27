@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (38/91)
+## Studio közös komponensek – leltár (51/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -98,3 +98,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/StudioPrivatePhotos.kt` | 381 | 164 | 318, 345 | 154, 163, 173, 174, 253, 254 | — | 295 |
 | `com/example/ui/components/StudioProgramManagementControls.kt` | 119 | — | 90, 117 | — | — | — |
 | `com/example/ui/components/StudioRestTimerDock.kt` | 230 | 131 | — | 80, 83, 104, 107, 139 | — | 89, 136, 168, 207 |
+| `com/example/ui/components/StudioStrengthSetCard.kt` | 255 | — | 123, 145, 147, 227, 229, 234, 247 | 82, 91, 118, 120, 206, 209 | — | 139, 210 |
+| `com/example/ui/components/StudioWorkoutHandoverBar.kt` | 205 | — | — | 101, 103, 106, 107, 142, 155, 158 | — | 152 |
+| `com/example/ui/components/StudioWorkoutHealth.kt` | 93 | — | — | — | — | — |
+| `com/example/ui/components/StudioWorkoutHealthPreviews.kt` | 97 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotAlertDialog.kt` | 116 | — | — | 71, 111 | 3, 7, 11, 87, 105, 106, 109 | — |
+| `com/example/ui/components/TrainPilotChartSelection.kt` | 77 | 74 | — | — | — | — |
+| `com/example/ui/components/TrainPilotCoachIcon.kt` | 9 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotControls.kt` | 286 | — | 274 | 94, 121, 122, 228, 246, 268, 271 | 39, 81 | 58, 93, 230, 247 |
+| `com/example/ui/components/TrainPilotDeleteControls.kt` | 73 | — | 62 | — | — | 64 |
+| `com/example/ui/components/TrainPilotDropdownMenu.kt` | 82 | — | 38, 46, 50, 66 | 41 | — | — |
+| `com/example/ui/components/TrainPilotFitText.kt` | 59 | — | — | — | — | — |
+| `com/example/ui/components/TrainPilotFullHeightFormSheet.kt` | 76 | 48 | — | — | — | — |
+| `com/example/ui/components/TrainPilotListPanel.kt` | 29 | 27 | — | 19, 20 | — | — |
