@@ -127,8 +127,10 @@ jobs:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
-      - name: Validate release APK verification script syntax
-        run: python3 -m py_compile scripts/verify_android_apk_metadata.py
+      - name: Validate release APK verification script and signer parser
+        run: |
+          python3 -m py_compile scripts/verify_android_apk_metadata.py
+          python3 scripts/verify_android_apk_metadata.py --self-test
 
       - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
