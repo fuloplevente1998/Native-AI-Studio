@@ -59,6 +59,18 @@ internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
 }
 
 
+/** Photo viewer only: retain 95–100% opacity, regardless of the general glass window policy.
+ * Limit the base conservatively so even a white parent behind the dialog cannot break the
+ * established surface-luminance ceiling. No parent-window capture and no foreground alpha.
+ */
+internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
+    if (!isLiquidGlass) return legacy.copy(alpha = 1f)
+    val transparency = .05f * (glassClarity.coerceIn(0, 100) / 100f)
+    val opacity = 1f - transparency
+    val cap = (GlassOptics.SURFACE_LUMA_MAX - transparency) / opacity
+    return GlassContrast.limit(glassOverlayFill(legacy), cap).copy(alpha = opacity)
+}
+
 /** A window is the sole optical surface; descendants use paint and vector rims. */
 internal val LocalGlassOverlay = androidx.compose.runtime.staticCompositionLocalOf { false }
 
