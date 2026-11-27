@@ -28,6 +28,7 @@ on:
       - 'scripts/verify_junit_xml.py'
       - 'scripts/prefetch_robolectric_sdk.py'
       - 'scripts/install_android_build_sdk.sh'
+      - 'scripts/test_install_android_build_sdk.sh'
       - 'scripts/ci_phone_test_shard_b.txt'
       - 'scripts/assemble_jvm_shards.py'
       - 'scripts/test_assemble_jvm_shards.py'
@@ -70,6 +71,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+
+      - name: Verify SDK installer fast-path and fallback contract
+        if: matrix.suite == 'phone-a'
+        run: bash scripts/test_install_android_build_sdk.sh
 
       - name: Install Android API 37.1 stable SDK
         shell: bash

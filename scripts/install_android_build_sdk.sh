@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Install the exact stable SDK used by the app, Wear, shared and release verifier.
-# Do not hide unavailable packages, silently downgrade, or switch to preview channels.
+# Install only the exact stable SDK needed by the app, Wear, shared and release verifier.
 set -euo pipefail
 
 sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
@@ -8,25 +7,55 @@ if [[ -z "$sdk_root" ]]; then
     echo "ANDROID_HOME or ANDROID_SDK_ROOT is required" >&2
     exit 1
 fi
+platform='platforms;android-37.1'
+build_tools='build-tools;37.0.0'
+
+sdk_ready() {
+    [[ -s "$sdk_root/platforms/android-37.1/android.jar" && -s "$sdk_root/licenses/android-sdk-license" ]] || return 1
+    local tool
+    for tool in aapt2 d8 zipalign apksigner; do
+        [[ -x "$sdk_root/build-tools/37.0.0/$tool" ]] || return 1
+    done
+}
+
+if sdk_ready; then
+    echo "Reusing verified Android compile SDK 37.1 and build-tools 37.0.0."
+    exit 0
+fi
+
 manager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
 if [[ ! -x "$manager" ]]; then
-    manager=$(find "$sdk_root/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+    manager=$(find "$sdk_root/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -n 1)
 fi
 test -x "$manager"
-echo "Android SDK manager: $manager"
-"$manager" --sdk_root="$sdk_root" --version
-# Accept official SDK licenses. yes may exit on a closed pipe; package installation
-# below must succeed and the exact installed platform/tool files must exist.
-yes | "$manager" --sdk_root="$sdk_root" --licenses > /dev/null || true
-# sdkmanager 20.0 did not list android-37 on the hosted runner. Inspect/update the
-# official stable command-line tooling before requesting the correct 37.1 package.
-"$manager" --sdk_root="$sdk_root" --channel=0 --install 'cmdline-tools;latest'
-manager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
-test -x "$manager"
-"$manager" --sdk_root="$sdk_root" --version
-echo "Stable platform/build-tools entries for Android 37:"
-"$manager" --sdk_root="$sdk_root" --channel=0 --list | grep -E 'platforms;android-37([.[:digit:]]*)[[:space:]]*\||build-tools;37[.[:digit:]]*[[:space:]]*\|' || true
-"$manager" --sdk_root="$sdk_root" --channel=0 --install 'platforms;android-37.1' 'build-tools;37.0.0'
-test -f "$sdk_root/platforms/android-37.1/android.jar"
-test -x "$sdk_root/build-tools/37.0.0/apksigner"
+
+# yes may receive SIGPIPE when sdkmanager exits. Check the manager's exit status,
+# not the producer's. Accept the official licenses, never fake license markers.
+accept() (
+    set +o pipefail
+    yes 2>/dev/null | "$manager" --sdk_root="$sdk_root" "$@"
+)
+install_exact() {
+    if [[ ! -s "$sdk_root/licenses/android-sdk-license" ]]; then
+        accept --licenses >/dev/null || return 1
+    fi
+    accept --channel=0 --install "$platform" "$build_tools" && sdk_ready
+}
+
+echo "Trying installed Android SDK manager: $manager"
+if ! install_exact; then
+    # Only update the stable manager when the current one cannot install the exact SDK.
+    echo "Exact SDK installation failed; refreshing stable command-line tools once." >&2
+    accept --channel=0 --install 'cmdline-tools;latest'
+    # sdkmanager can install alongside an occupied latest directory as latest-2, etc.
+    updated=$(find "$sdk_root/cmdline-tools" -type f -path '*/latest-*/bin/sdkmanager' | sort -V | tail -n 1)
+    if [[ -n "$updated" && -x "$updated" ]]; then
+        manager="$updated"
+    elif [[ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]]; then
+        manager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+    fi
+    echo "Retrying with Android SDK manager: $manager"
+    install_exact || { echo "Exact stable Android SDK 37.1 / build-tools 37.0.0 unavailable or incomplete" >&2; exit 1; }
+fi
+sdk_ready
 echo "Verified Android compile SDK 37.1 and build-tools 37.0.0."
