@@ -194,3 +194,24 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/repforge/app/ui/theme/TrainPilotPressFeedback.kt` | 209 | — | 102, 119 | — | 18, 19, 22, 29, 145, 146, 149 | 25, 31, 62, 70, 94, 101, 108, 118, 137, 179, 184, 187, 189, 202 |
 | `com/repforge/app/ui/theme/TrainPilotTheme.kt` | 84 | 55 | — | — | — | — |
 | `com/repforge/app/ui/theme/TrainPilotVisualSystem.kt` | 39 | — | — | — | — | — |
+
+## Natív UI, beágyazott komponensek és segédlogika – leltár (14/106)
+
+A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képernyők nem kerülnek automatikusan módosításra. A tényleges route és hívó vizsgálata szükséges.
+
+| Fájl | Sor | @Composable | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
+|---|---:|---:|---|---|---|---|---|
+| `com/repforge/app/ui/calendar/CalendarScreen.kt` | 316 | 4 | 90, 112 | 62, 65, 70, 77, 96, 98, 101, 102, 105, 116, 131, 132, 135, 162, 163, 170, 171, 185, 229, 234, 242, 258, 274, 284 | — | 10, 11, 14, 57, 67, 156, 227 | — |
+| `com/repforge/app/ui/calendar/CalendarViewModel.kt` | 182 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/calendar/NativeCalendarPlanner.kt` | 61 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/calendar/NativeCalendarRepository.kt` | 164 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/CoachScreen.kt` | 216 | 1 | 51, 68, 72, 87, 108, 124, 139 | 49, 114 | — | 10, 63 | — |
+| `com/repforge/app/ui/coach/CoachViewModel.kt` | 134 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachAdviceRepository.kt` | 216 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachAdviceText.kt` | 66 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachExerciseAdvice.kt` | 154 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachHistoryProjection.kt` | 52 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachReadiness.kt` | 143 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachSignals.kt` | 85 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachTargets.kt` | 59 | 0 | — | — | — | — | — |
+| `com/repforge/app/ui/coach/NativeCoachVariation.kt` | 171 | 0 | — | — | — | — | — |
