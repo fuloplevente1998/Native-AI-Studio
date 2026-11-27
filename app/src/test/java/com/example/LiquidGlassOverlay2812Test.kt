@@ -94,6 +94,30 @@ class LiquidGlassOverlay2812Test {
         }
     }
 
+    @Test fun slidingSheetPaintUsesRealWindowTransparencyWithBoundedContrast() {
+        for (seed in LiquidGlassPalettes.all) for (step in 0..100) {
+            val p = seed.withGlassClarity(step)
+            val fill = p.slidingSheetBackground(Color.Black)
+            assertEquals(1f - .05f * step / 100f, fill.alpha, .001f)
+            assertEquals(p.photoViewerBackground(Color.Black).alpha, fill.alpha, .001f)
+            val brightest = fill.compositeOver(Color.White)
+            assertTrue(brightest.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
+            assertTrue(NativeThemeTokens.contrast(p.textPrimary, brightest) >= 4.5f)
+            assertTrue(NativeThemeTokens.contrast(p.textSecondary, brightest) >= 4.5f)
+            assertEquals(1f, p.glassOverlayFill(Color.Black).alpha, .001f)
+        }
+        for (p in TrainPilotPalettes.allPalettes) {
+            assertEquals(p.surface, p.slidingSheetBackground(p.surface))
+        }
+        assertEquals(1f, subtleGlassWindowOpacity(-1), .001f)
+        assertEquals(.95f, subtleGlassWindowOpacity(101), .001f)
+        val source = java.io.File("src/main/java/com/example/ui/components/TrainPilotModalBottomSheet.kt").readText()
+        assertTrue(source.contains("palette.slidingSheetBackground(containerColor)"))
+        assertTrue(source.contains("containerColor = fill"))
+        assertFalse(source.contains("drawGlassSceneCompose"))
+        assertFalse(source.contains("freezeSheetScene("))
+    }
+
     @Test fun overlayRolesStayDistinctAndReadable() {
         for (step in 0..100) {
             val tile = glassOverlayRolePaint(step, GlassMaterialRole.Tile)

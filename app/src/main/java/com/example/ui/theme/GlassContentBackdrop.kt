@@ -38,22 +38,37 @@ internal class GlassBackdrop internal constructor(internal val layer: GraphicsLa
 internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?> { null }
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
+/** Fixed inner chrome must suppress the legibility of content passing behind it,
+ * even at maximum clarity. Allow the approved navbar and photo gallery to retain their original material. */
+internal fun fixedGlassChromeShadeAlpha(clarity: Int): Float =
+    .50f + .10f * (clarity.coerceIn(0, 100) / 100f)
+
+internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
+    16f - 4f * (clarity.coerceIn(0, 100) / 100f)
+
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
-    role: GlassMaterialRole = GlassMaterialRole.Navigation): Modifier {
+    role: GlassMaterialRole = GlassMaterialRole.Navigation,
+    preserveOriginalMaterial: Boolean = false): Modifier {
+    if (!palette.isLiquidGlass) return this
+    val minBlur = if (preserveOriginalMaterial) 0f else fixedGlassChromeMinimumBlurDp(palette.glassClarity)
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
-    if (pinned != null && palette.isLiquidGlass) return kyantGlass(pinned, palette, shape, role)
-    if (LocalGlassOverlay.current) return trainPilotGlassMaterial(palette, shape, role)
-    // A chrome-only lens is allowed on scrolling measurement screens, without enabling
-    // per-card optics, animated selection, or press effects in the workout content.
-    if (LocalGlassChromeUnderlap.current && palette.isLiquidGlass) {
-        val chrome = LocalKyantHeader.current.forThisWindow()
-        if (chrome != null) return kyantGlass(chrome, palette, shape, role)
-    }
-    kyantGlassOrNull(palette, shape, role)?.let { return it }
+    val chrome = LocalKyantHeader.current.forThisWindow()
     val backdrop = LocalGlassHeaderBackdrop.current
-    return if (backdrop != null) liveGlassLens(backdrop, palette, shape)
-    else trainPilotGlassMaterial(palette, shape, role)
+    val material = when {
+        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur)
+        LocalGlassOverlay.current -> trainPilotGlassMaterial(palette, shape, role)
+        // Keep the existing chrome-only optics exception on scrolling measurement routes.
+        LocalGlassChromeUnderlap.current && chrome != null ->
+            kyantGlass(chrome, palette, shape, role, minimumBlurDp = minBlur)
+        else -> kyantGlassOrNull(palette, shape, role, minimumBlurDp = minBlur)
+            ?: if (backdrop != null) liveGlassLens(backdrop, palette, shape)
+            else trainPilotGlassMaterial(palette, shape, role)
+    }
+    // Inner background draws after the lens but before foreground controls: the text,
+    // icons and touch targets are unchanged. This also covers static/old-device fallback.
+    return if (preserveOriginalMaterial) material else material.background(
+        Color.Black.copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
 }
 
 @Composable

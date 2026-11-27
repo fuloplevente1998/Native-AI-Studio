@@ -59,6 +59,34 @@ internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
 }
 
 
+/** One opacity rule for the photo viewer and sliding sheets. The real parent window
+ * may show through via ordinary window compositing, never through pixel capture.
+ */
+internal fun subtleGlassWindowOpacity(clarity: Int): Float =
+    1f - .05f * (clarity.coerceIn(0, 100) / 100f)
+
+private fun boundedSubtleWindowFill(base: Color, clarity: Int): Color {
+    val opacity = subtleGlassWindowOpacity(clarity)
+    // Convex sRGB mixing: even a white parent cannot lift the composite above the ceiling.
+    val cap = (GlassOptics.SURFACE_LUMA_MAX - (1f - opacity)) / opacity
+    return GlassContrast.limit(base, cap).copy(alpha = opacity)
+}
+
+internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
+    if (!isLiquidGlass) return legacy.copy(alpha = 1f)
+    return boundedSubtleWindowFill(glassOverlayFill(legacy), glassClarity)
+}
+
+/** A sliding panel is neutral smoked glass, not a second procedural page/gradient.
+ * Only its background is translucent. Centered alerts and popup menus stay opaque.
+ */
+internal fun TrainPilotPalette.slidingSheetBackground(legacy: Color): Color {
+    if (!isLiquidGlass) return legacy
+    val neutral = GlassContrast.grey(.065f)
+    val base = lerp(neutral, glassOverlayFill(legacy), .20f)
+    return boundedSubtleWindowFill(base, glassClarity)
+}
+
 /** A window is the sole optical surface; descendants use paint and vector rims. */
 internal val LocalGlassOverlay = androidx.compose.runtime.staticCompositionLocalOf { false }
 

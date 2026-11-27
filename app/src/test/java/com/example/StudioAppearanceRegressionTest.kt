@@ -87,6 +87,41 @@ class StudioAppearanceRegressionTest {
         compose.runOnIdle { assertEquals(9, selected) }
     }
 
+    @Test fun switchingBetweenLiquidAndOtherThemesKeepsTheSelectedCategoryAndTileVisible() {
+        var selected by mutableIntStateOf(1)
+        var backCalls = 0
+        compose.setContent {
+            val palette = TrainPilotPalettes.getById(selected)
+            TrainPilotTheme(palette = palette) {
+                CompositionLocalProvider(com.example.ui.theme.LocalGlassTopInset provides
+                    if (palette.isLiquidGlass) 108.dp else 0.dp) {
+                    SettingsMainScreen(uiState = TrainPilotUiState(selectedPaletteId = selected),
+                        strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                        onBack = { backCalls++ }, onOpenPalettePicker = {},
+                        onSelectPalette = { selected = it }, onSelectLanguage = {}, onCycleRestTimer = {},
+                        onToggleSoundAlert = {}, onToggleProgressionModal = {}, onToggleVibration = {},
+                        onNavigateToSubScreen = {}, onShowBanner = {})
+                }
+            }
+        }
+        val list = compose.onNodeWithTag("settings_main_screen")
+        list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
+        compose.onNodeWithTag("settings_open_palettes_row").performClick()
+        list.performScrollToNode(hasTestTag("settings_theme_category_toggle_4"))
+        compose.onNodeWithTag("settings_theme_category_toggle_4").performClick()
+        list.performScrollToNode(hasTestTag("settings_palette_choice_35"))
+        compose.onNodeWithTag("settings_palette_choice_35").performClick()
+        compose.onNodeWithTag("settings_palette_choice_35").assertIsSelected().assertIsDisplayed()
+        compose.onNodeWithTag("liquid_glass_clarity").assertExists()
+        compose.runOnIdle { assertEquals(35, selected); assertEquals(0, backCalls) }
+        list.performScrollToNode(hasTestTag("settings_theme_category_toggle_1"))
+        compose.onNodeWithTag("settings_theme_category_toggle_1").performClick()
+        list.performScrollToNode(hasTestTag("settings_palette_choice_9"))
+        compose.onNodeWithTag("settings_palette_choice_9").performClick()
+        compose.onNodeWithTag("settings_palette_choice_9").assertIsSelected().assertIsDisplayed()
+        compose.runOnIdle { assertEquals(9, selected); assertEquals(0, backCalls) }
+    }
+
     @Test fun settingsExposesGoogleCloudLoginAndDriveCalendarControls() {
         val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
         context.getSharedPreferences("repforge-google", android.content.Context.MODE_PRIVATE).edit().clear().commit()

@@ -88,7 +88,7 @@ fun TrainPilotScreenSheet(
     testTag: String,
     /** Explicit full-height editor/viewport opt-in; ordinary browsing sheets wrap content. */
     fillHeight: Boolean = false,
-    /** Compatibility flag: all glass sheets now use the frozen scene directly. */
+    /** Compatibility flag: all glass sheets use the same bounded translucent background. */
     staticGlass: Boolean = false,
     content: @Composable () -> Unit
 ) {

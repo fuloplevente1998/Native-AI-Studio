@@ -160,7 +160,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
                 model::openPhoto, model::closePhoto, vertical = true, modifier = Modifier.weight(1f),
                 pinnedHeader = {
-                    Box(Modifier.fillMaxWidth().glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                    Box(Modifier.fillMaxWidth().glassHeaderMaterial(palette, RoundedCornerShape(18.dp), preserveOriginalMaterial = true)
                         .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))) {
                         SubScreenTopBar(strings.privatePhotosTitle, back, settings)
                     }
@@ -171,7 +171,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp)).fillMaxWidth()
+                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp), preserveOriginalMaterial = true).fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                         .testTag("other_photo_attach_card")
                 ) {
@@ -251,7 +251,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.glassTile(palette.surfaceCard),
-                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                    modifier = Modifier.glassHeaderMaterial(palette, RoundedCornerShape(18.dp), preserveOriginalMaterial = true)
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                         .testTag("journal_photo_attach_card")

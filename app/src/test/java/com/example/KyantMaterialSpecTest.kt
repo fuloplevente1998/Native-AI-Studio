@@ -32,6 +32,22 @@ class KyantMaterialSpecTest {
         }
     }
 
+    @Test fun fixedChromeKeepsBlurAndSuppressesBrightScrollingContentAtEveryClarity() {
+        for (step in 0..100) {
+            val shade = com.example.ui.theme.fixedGlassChromeShadeAlpha(step)
+            val blur = com.example.ui.theme.fixedGlassChromeMinimumBlurDp(step)
+            assertTrue(shade in 0.49f..0.61f)
+            assertTrue(blur in 12f..16f)
+            // Bound the contrast of a captured bright glyph after the shade, not the
+            // real foreground text (which is drawn after this coat and stays bright).
+            val bright = GlassContrast.grey(GlassOptics.SURFACE_LUMA_MAX)
+            val luma = GlassContrast.luminance(bright.red * (1f - shade),
+                bright.green * (1f - shade), bright.blue * (1f - shade))
+            assertTrue("step $step: underlap ghost luma $luma", luma <= .04f)
+            assertTrue((1.05f / (luma + .05f)) >= 4.5f)
+        }
+    }
+
     @Test fun distinctRolesAndConservativeContrastBoundForSceneAndCapturedContent() {
         for (step in 0..100) {
             fun role(role: GlassMaterialRole) = KyantMaterialSpec.forRole(role, step)

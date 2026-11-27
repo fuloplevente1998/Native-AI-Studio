@@ -1,11 +1,5 @@
 package com.example.ui.components
-import com.example.ui.theme.GlassContrast
-import com.example.ui.theme.GlassMaterialRole
-import com.example.ui.theme.GlassOptics
-import com.example.ui.theme.KyantMaterialSpec
 import com.example.ui.theme.LocalGlassScene
-import com.example.ui.theme.drawGlassSceneCompose
-import com.example.ui.theme.freezeSheetScene
 import com.example.ui.theme.LocalGlassOverlay
 import com.example.ui.theme.sheetUsesGlass
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,9 +11,7 @@ import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.material3.SheetValue
 import kotlinx.coroutines.launch
-import com.example.ui.theme.glassOverlayFill
-import com.example.ui.theme.KyantGlass
-import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.slidingSheetBackground
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -37,12 +29,8 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.addOutline
@@ -70,12 +58,12 @@ internal fun TrainPilotModalBottomSheet(
 ) {
     val shape = BottomSheetDefaults.ExpandedShape
     val palette = LocalTrainPilotPalette.current
-    // Paint over a known gradient inside the sheet, not the unknown content/scrim behind it.
+    // Liquid sheets composite their bounded paint over the actual parent window.
     val customPaint = palette.customCardPaint != null && containerColor == palette.surface
     val glass = sheetUsesGlass(palette, containerColor)
-    val paintFrozenScene = glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current
     val parentScene = LocalGlassScene.current
-    val frozenScene = if (paintFrozenScene) remember(parentScene) { freezeSheetScene(parentScene) } else null
+    // Keep the existing root-animation pause while any sheet is visible; do not
+    // copy the root scene into the sheet or record the obscured parent window.
     if (glass && parentScene != null) {
         DisposableEffect(parentScene) {
             parentScene.sheetOpened()
@@ -83,28 +71,19 @@ internal fun TrainPilotModalBottomSheet(
         }
     }
     val scope = rememberCoroutineScope()
-    val fill = if (glass) palette.glassOverlayFill(containerColor) else if (customPaint) palette.background else containerColor
-    // Material owns measurement, anchors, drag and settling; glass is only static paint.
+    val fill = if (glass) palette.slidingSheetBackground(containerColor) else if (customPaint) palette.background else containerColor
+    // Material owns measurement, anchors, drag and settling; the background alone is translucent.
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
         sheetState = sheetState,
         shape = shape,
-        containerColor = if (paintFrozenScene) Color.Transparent else fill,
+        containerColor = fill,
+        tonalElevation = androidx.compose.ui.unit.Dp(0f),
         contentColor = contentColor,
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
-        val backdrop = if (frozenScene == null) Modifier else {
-            val tint = GlassOptics.TINT.copy(alpha =
-                KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, palette.glassClarity).tintAlpha)
-            val backdropCap = GlassContrast.backdropCap(tint.alpha)
-            Modifier.clip(shape).drawBehind {
-                drawGlassSceneCompose(palette, frozenScene, Offset.Zero,
-                    size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f), backdropCap)
-                drawRect(tint)
-            }
-        }
         CompositionLocalProvider(
             LocalGlassOverlay provides glass,
             LocalTrainPilotSheetMotion provides true
@@ -112,7 +91,6 @@ internal fun TrainPilotModalBottomSheet(
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
-                    .then(backdrop)
                     .drawWithCache {
                         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
                         val color = outlineColor.copy(alpha = outlineColor.alpha * 0.22f)

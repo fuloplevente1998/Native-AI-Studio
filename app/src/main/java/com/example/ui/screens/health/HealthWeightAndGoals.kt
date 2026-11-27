@@ -105,7 +105,7 @@ internal fun recentWeightTrend(entries: List<WeightMeasurementEntry>): List<Weig
 @Composable
 internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val palette = LocalTrainPilotPalette.current
-  Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+  Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     val today = java.time.LocalDate.now()
     val cachedDays = uiState.weeklyHealthDays.associateBy { it.dateIso }
     val goalDays = (6 downTo 0).map { offset ->
@@ -135,7 +135,8 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
         Surface(shape = RoundedCornerShape(18.dp), color = palette.glassTile(palette.background.copy(alpha = 0.55f)),
             modifier = Modifier.fillMaxWidth().trainPilotGlassRim(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Tile)
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = if (expanded) 8.dp else 4.dp),
+                verticalArrangement = Arrangement.spacedBy(if (expanded) 4.dp else 0.dp)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .healthDetailsToggle(expanded, lang, RoundedCornerShape(10.dp)) { expanded = !expanded }
                     .testTag("${tag}_toggle"), verticalAlignment = Alignment.CenterVertically) {
@@ -151,8 +152,8 @@ internal fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
 
     @Composable
     fun GoalProgress(summary: String, fraction: Float, tag: String) {
-        Column(Modifier.fillMaxWidth().padding(top = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(tr(lang, "Célteljesítés", "Goal progress", "Zielfortschritt", "Progresul obiectivului"),
                     style = MaterialTheme.typography.labelMedium, color = palette.textSecondary,

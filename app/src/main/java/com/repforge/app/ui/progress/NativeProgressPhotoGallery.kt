@@ -34,11 +34,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.text.font.FontWeight
-import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.example.ui.theme.glassOverlayFill
+import com.example.ui.theme.photoViewerBackground
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -273,22 +270,11 @@ internal fun NativeProgressPhotoGallery(
             .withZone(ZoneId.systemDefault())
     }
     if (vertical) {
-        val palette = LocalTrainPilotPalette.current
         com.example.ui.theme.GlassScrollChrome(
             modifier = modifier.fillMaxWidth().trainPilotListPanel().testTag("progress_photo_gallery"),
             rootInset = 0.dp,
             localWindow = true,
-            top = {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    pinnedHeader?.invoke()
-                    Text(strings.getString(R.string.native_progress_photo_title), color = colors.text,
-                        modifier = Modifier.fillMaxWidth()
-                            .glassHeaderMaterial(palette, shape)
-                            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(colors.card, shape))
-                            .trainPilotBorder(1.dp, colors.line, shape)
-                            .padding(12.dp))
-                }
-            },
+            top = pinnedHeader,
             bottom = pinnedFooter
         ) { scrollModifier, topInset, bottomInset ->
             LazyColumn(
@@ -352,7 +338,6 @@ internal fun NativeProgressPhotoGallery(
         colors = CardDefaults.cardColors(containerColor = colors.card)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(strings.getString(R.string.native_progress_photo_title), color = colors.text)
             if (state.photosLoading) {
                 Text(strings.getString(R.string.native_progress_photo_loading), color = colors.muted)
             } else if (state.photosError) {
@@ -407,16 +392,41 @@ internal fun NativeProgressPhotoGallery(
             val frameShape = RoundedCornerShape(28.dp)
             Column(
                 Modifier.fillMaxSize()
-                    .background(palette.glassOverlayFill(colors.bg).copy(alpha = 1f))
+                    .background(palette.photoViewerBackground(colors.bg))
                     .systemBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp)
-                    .clip(frameShape).trainPilotScreenBackdrop(palette)
+                    // No second opaque backdrop: it would cancel the viewer's slight transparency.
+                    .clip(frameShape).then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotScreenBackdrop(palette))
                     .trainPilotBorder(1.dp, colors.line, frameShape).padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(strings.getString(R.string.native_progress_photo_title),
-                        color = colors.text, style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        Modifier.weight(1f).background(colors.card2.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+                            .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(18.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (selected.kind == "weight") {
+                            val heading = when (state.language) {
+                                "hu" -> "Testsúlynapló"
+                                "de" -> "Gewichtslog"
+                                "ro" -> "Jurnal greutate"
+                                else -> "Weight log"
+                            }
+                            val weight = selected.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
+                            Text(listOf(heading, selected.dayName, weight).filter { it.isNotBlank() }.joinToString(" · "), color = colors.muted)
+                        } else {
+                            Text(
+                                "${strings.getString(R.string.native_progress_photo_workout)}: " +
+                                    listOf(selected.programName, selected.dayName, selected.originDevice)
+                                        .filter { it.isNotBlank() }.joinToString(" · "),
+                                color = colors.muted
+                            )
+                        }
+                        Text(date.format(Instant.ofEpochMilli(selected.workoutStartedEpochMs)),
+                            color = colors.muted)
+                    }
                     IconButton(onClick = close, modifier = Modifier.size(48.dp)
                         .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(24.dp))
                         .testTag("progress_photo_close")) {
@@ -424,32 +434,6 @@ internal fun NativeProgressPhotoGallery(
                             contentDescription = strings.getString(R.string.native_progress_photo_close),
                             tint = colors.text)
                     }
-                }
-                Column(
-                    Modifier.fillMaxWidth().background(colors.card2.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
-                        .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(18.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                if (selected.kind == "weight") {
-                    val heading = when (state.language) {
-                        "hu" -> "Testsúlynapló"
-                        "de" -> "Gewichtslog"
-                        "ro" -> "Jurnal greutate"
-                        else -> "Weight log"
-                    }
-                    val weight = selected.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
-                    Text(listOf(heading, selected.dayName, weight).filter { it.isNotBlank() }.joinToString(" · "), color = colors.muted)
-                } else {
-                    Text(
-                        "${strings.getString(R.string.native_progress_photo_workout)}: " +
-                            listOf(selected.programName, selected.dayName, selected.originDevice)
-                                .filter { it.isNotBlank() }.joinToString(" · "),
-                        color = colors.muted
-                    )
-                }
-                Text(date.format(Instant.ofEpochMilli(selected.workoutStartedEpochMs)),
-                    color = colors.muted)
                 }
                 PrivateProgressPhoto(selected.id, 1600, state.language,
                     Modifier.fillMaxWidth().weight(1f).testTag("progress_photo_detail"), roundedDetail = true)
