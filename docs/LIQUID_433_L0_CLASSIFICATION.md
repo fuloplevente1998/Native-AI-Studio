@@ -48,3 +48,7 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 
 ## L5 implementation
 - VmAppearance / VmBackupSettings: active request/data feedback race guarded by request identity, no route changes. SettingsMainScreen and StudioPaletteCategories: active keyed item/attached tile reveal coordinated with viewport. PalettePickerSheet explicitly retains chosen category. New full root + real store regression (not run).
+
+## L3 native call-site continuation / L6
+- Popup items: library, planner, personal planner, custom exercise, map, health weight, workout strength values, journal set/effort, training mode, GPS. Shared native Material semantics, one local Liquid indication. Standard calls retain Material ripple. Favorite toggle and active icon actions similarly wrapped; special video/close/backup visual children use local indication. No new capture.
+- Removed two definition-only renderer helpers after symbol/negative-test search. Legacy screen reachability is not fully proven; retain those files. L0 full 310-file classification, chart/slider remaining bespoke interaction, and actual render performance remain open.

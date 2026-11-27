@@ -196,3 +196,6 @@
 
 ### #433 L6 – verified unused render helpers
 - Removed only kyantSceneLayer and glassHeaderControlPaint. Default-main symbol search found definitions only, plus the KyantK3CacheTest negative assertion for the former; no class-name reflection results. Branch changes did not add call sites. Manifest launcher + nonexported secondary activity and Samsung reflection keep rules remain untouched. Legacy TrainingLandingScreen/ActiveWorkoutScreen not deleted without full reachability verification. CI pending.
+
+### #433 L7 – first full PR CI checkpoint
+- Added native Liquid icon action/toggle/menu semantics regression, including disabled controls, to LiquidGlass433PressTest. Existing paint, short press and root tests also included. This commit intentionally does NOT skip CI: verify actual compile/JVM/XML and R8 job results at exact PR head before any merge. No passing CI claim; remaining L0/L3 coverage, L4 physical performance and L8 acceptance documented separately. Main remains unchanged until implementation and CI gates satisfied. Signed APK/AAB must come from main persistent signing, not PR. User will only test signed final artifacts.

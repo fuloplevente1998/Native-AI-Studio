@@ -8,6 +8,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.performClick
+import com.example.ui.components.TrainPilotIconButton
+import com.example.ui.components.TrainPilotIconToggleButton
+import com.example.ui.components.TrainPilotMenuItem
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +58,41 @@ import kotlin.math.roundToInt
 @LooperMode(LooperMode.Mode.PAUSED)
 class LiquidGlass433PressTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun nativeLiquidControlsKeepClickToggleAndDisabledSemantics() {
+        var clicks = 0
+        var menuClicks = 0
+        var toggles = 0
+        val palette = LiquidGlassPalettes.all.first()
+        compose.setContent {
+            TrainPilotTheme(palette = palette) {
+                var checked by remember { mutableStateOf(false) }
+                Column {
+                    TrainPilotIconButton(onClick = { clicks++ },
+                        modifier = Modifier.size(48.dp).testTag("icon_action")) { Text("A") }
+                    TrainPilotIconButton(onClick = { clicks++ }, enabled = false,
+                        modifier = Modifier.size(48.dp).testTag("icon_disabled")) { Text("D") }
+                    TrainPilotIconToggleButton(checked, { checked = it; toggles++ },
+                        Modifier.size(48.dp).testTag("icon_toggle")) { Text("T") }
+                    TrainPilotMenuItem(text = { Text("Menu") }, onClick = { menuClicks++ },
+                        modifier = Modifier.testTag("menu_action"))
+                    TrainPilotMenuItem(text = { Text("Disabled") }, onClick = { menuClicks++ },
+                        enabled = false, modifier = Modifier.testTag("menu_disabled"))
+                }
+            }
+        }
+        compose.onNodeWithTag("icon_action").assertIsEnabled().performClick()
+        compose.onNodeWithTag("icon_disabled").assertIsNotEnabled()
+        compose.onNodeWithTag("icon_toggle").assertIsOff().performClick()
+        compose.onNodeWithTag("icon_toggle").assertIsOn()
+        compose.onNodeWithTag("menu_action").assertIsEnabled().performClick()
+        compose.onNodeWithTag("menu_disabled").assertIsNotEnabled()
+        compose.runOnIdle {
+            assertEquals(1, clicks)
+            assertEquals(1, toggles)
+            assertEquals(1, menuClicks)
+        }
+    }
 
     @Test fun shortWideControlPressIsLocalEvenWithOpticsDisabled() {
         val source = MutableInteractionSource()
