@@ -81,7 +81,9 @@ fun StudioGoogleCloudSyncCard(
     onShowBanner: (String) -> Unit,
     onCloudSyncCompleted: () -> Unit = {},
     settingsViewModel: SettingsViewModel = viewModel(),
-    compact: Boolean = false
+    compact: Boolean = false,
+    compactDriveSyncEnabled: Boolean = true,
+    onCompactDriveSync: (() -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = com.example.localization.LocalTrainPilotStrings.current
@@ -194,9 +196,12 @@ fun StudioGoogleCloudSyncCard(
             modifier = Modifier.padding(if (compact) 4.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // The refresh action is a sibling, never part of the expandable tap target.
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             // #352: one row – icon, title, a small status mark and the arrow; the whole row toggles.
-            Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                Row(
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("settings_google_expand").trainPilotClickable(RoundedCornerShape(10.dp)) { cloudExpanded = !cloudExpanded }
                     .semantics { stateDescription = if (cloudExpanded) tr(lang, "Lenyitva", "Expanded", "Aufgeklappt", "Extins")
                         else tr(lang, "Összecsukva", "Collapsed", "Zugeklappt", "Restrâns") },
@@ -216,6 +221,26 @@ fun StudioGoogleCloudSyncCard(
                 )
                 StatusDot(headerStatus, Modifier.testTag("settings_google_status_${headerStatus.name.lowercase()}"))
                 Icon(if (cloudExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
+            }
+
+                if (compact && !cloudExpanded && connected) {
+                    val enabled = compactDriveSyncEnabled && !busyAny && activity != null
+                    val shape = RoundedCornerShape(10.dp)
+                    Surface(shape = shape, color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                        modifier = Modifier.size(48.dp)
+                            .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
+                            .trainPilotBorder(1.dp, palette.cardBorder, shape)
+                            .trainPilotClickable(shape, enabled = enabled) {
+                                if (onCompactDriveSync != null) onCompactDriveSync()
+                                else activity?.let { settingsViewModel.syncDriveCloud(it) }
+                            }.testTag("backup_drive_quick_sync")
+                            .semantics { contentDescription = tr(lang, "Google Drive szinkronizálása", "Sync Google Drive", "Google Drive synchronisieren", "Sincronizează Google Drive") }) {
+                        Box(contentAlignment = Alignment.Center) {
+                            if (gs.isBusy) CircularProgressIndicator(Modifier.size(18.dp), color = palette.primary, strokeWidth = 2.dp)
+                            else Icon(Icons.Default.Sync, null, tint = if (enabled) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
             }
 
             if (cloudExpanded) {
