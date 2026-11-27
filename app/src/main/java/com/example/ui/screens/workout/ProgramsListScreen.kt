@@ -69,7 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -578,16 +578,15 @@ fun ProgramsListScreen(
         }
 
         Spacer(Modifier.height(4.dp))
+        val listTopShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         com.example.ui.theme.GlassScrollChrome(
-            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            modifier = Modifier.weight(1f).fillMaxWidth().clip(listTopShape),
             rootInset = 0.dp,
             localWindow = true,
+            panel = Modifier.trainPilotListPanel(),
             top = {
                 Column(
-                    Modifier.fillMaxWidth()
-                        .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                        .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
+                    Modifier.fillMaxWidth().glassHeaderMaterial(palette, listTopShape)
                 ) {
                     Text(
                         text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
@@ -599,7 +598,8 @@ fun ProgramsListScreen(
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-                        color = palette.cardBorder.copy(alpha = 0.65f)
+                        thickness = 1.dp,
+                        color = palette.cardBorder.copy(alpha = .85f)
                     )
                 }
             },
@@ -665,8 +665,7 @@ fun ProgramsListScreen(
             }
         ) { scrollModifier, topInset, bottomBarInset ->
             Column(
-                scrollModifier.trainPilotListPanel()
-                    .verticalScroll(programScroll).testTag("programs_list_scroll")
+                scrollModifier.verticalScroll(programScroll).testTag("programs_list_scroll")
                     .padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {

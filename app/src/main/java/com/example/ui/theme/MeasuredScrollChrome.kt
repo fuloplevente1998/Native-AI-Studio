@@ -17,6 +17,7 @@ internal fun MeasuredScrollChrome(
     modifier: Modifier = Modifier,
     rootInset: Dp,
     capture: Modifier = Modifier,
+    panel: Modifier? = null,
     top: (@Composable () -> Unit)? = null,
     bottom: (@Composable () -> Unit)? = null,
     content: @Composable (Modifier, Dp, Dp) -> Unit
@@ -33,6 +34,10 @@ internal fun MeasuredScrollChrome(
         val lower = subcompose("bottom") {
             Box(Modifier.pointerInput(Unit) {}) { bottom?.invoke() }
         }.single().measure(barConstraints.copy(maxHeight = (height - inset - upper.height).coerceAtLeast(0)))
+        val panelSurface = panel?.let {
+            subcompose("panel") { Box(it) }.single()
+                .measure(Constraints.fixed(width, height - inset - lower.height))
+        }
         val body = subcompose("body") {
             // The initial and terminal safe areas live INSIDE the scrolling viewport. The
             // measured heights are available in the same layout pass, including large font/rest dock.
@@ -41,6 +46,7 @@ internal fun MeasuredScrollChrome(
             }
         }.single().measure(Constraints.fixed(width, height))
         layout(width, height) {
+            panelSurface?.placeRelative(0, inset)
             body.placeRelative(0, 0)
             upper.placeRelative(0, inset)
             lower.placeRelative(0, height - lower.height)

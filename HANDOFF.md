@@ -60,3 +60,5 @@
 - Fizikai készüléken ellenőrizendők a képkivágások és a görgetés közbeni üveghatás.
 - A Fejlődés gyakorlatstatisztikáiban a rekordlista a Gyakorlatok / Kardió / Lépések választósáv mögött görög, a felső navigáció és fő fülek előtt véget ér.
 - A naptári és személyes tervező, valamint a naplózott edzés visszajelzési menüje lekerekített, beljebb húzott kijelölést használ.
+- A „További programok” cím és a lista közös keretet kapott, a cím alá erősebb elválasztó került. Az alsó műveletsáv külön felület.
+- A 40-es Liquid Glass téma neve Arany. A meglévő témakulcs a mentett választások miatt megmaradt. A háttér fényeinek színárnyalata a TrainPilot sárgájából származik.

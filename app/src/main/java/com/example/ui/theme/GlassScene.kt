@@ -59,6 +59,7 @@ internal object GlassScene {
     private const val WRAP_SECONDS = 36_000f
     // Four light sources, in anchor order. Distinct combinations give the glass presets their
     // own backdrop without changing stored theme IDs, accent colors or the user photo path.
+    private val goldHue = hueOf(Color(TRAIN_PILOT_GOLD))
     private val paletteHues = mapOf(
         33 to listOf(4f, 48f, 307f, 152f),     // Graphite
         34 to listOf(196f, 212f, 186f, 33f),   // Ice
@@ -67,7 +68,7 @@ internal object GlassScene {
         37 to listOf(146f, 111f, 166f, 41f),   // Emerald
         38 to listOf(268f, 254f, 295f, 174f),  // Amethyst
         39 to listOf(333f, 353f, 314f, 214f),  // Rose
-        40 to listOf(27f, 45f, 11f, 155f)      // Amber
+        40 to listOf(goldHue, goldHue - 7f, goldHue + 6f, goldHue - 14f) // Gold
     )
     private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
     private val periods = floatArrayOf(53f, 67f, 59f, 79f)

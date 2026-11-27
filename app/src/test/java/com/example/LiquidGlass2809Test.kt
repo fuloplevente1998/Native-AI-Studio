@@ -90,8 +90,14 @@ class LiquidGlass2809Test {
         assertTrue(Color(dim, dim, dim).luminance() <= GlassScene.lumaCap + .002f)
         for (seed in glass) {
             val tones = GlassScene.tones(seed)
-            val hues = tones.map { GlassScene.hueOf(it) }.sorted()
-            assertTrue("${seed.key} hues spread", hues.last() - hues.first() > 90f)
+            val hues = tones.map { GlassScene.hueOf(it) }
+            if (seed.key == "glass_amber") {
+                val brandHue = GlassScene.hueOf(legacy.single { it.id == 9 }.primary)
+                assertEquals(brandHue, hues.first(), .5f)
+                assertTrue(hues.all { abs(it - brandHue) <= 15f })
+            } else {
+                assertTrue("${seed.key} hues spread", hues.max() - hues.min() > 90f)
+            }
             for (tone in GlassScene.guardedTones(seed)) {
                 assertTrue("${seed.key} stays colourful", maxOf(tone.red, tone.green, tone.blue) -
                     minOf(tone.red, tone.green, tone.blue) > .08f)
