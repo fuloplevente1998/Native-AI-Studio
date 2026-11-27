@@ -137,3 +137,4 @@
 - Optikai szerep- és X geometria regresszió frissítve; utolsó forráscommit `7a6bd5e5`. Forrásellenőrzés, nem lefuttatott CI vagy készülékteszt. Nincs merge, APK, verzióemelés. A közös későbbi CI-kör és fizikai vizuális elfogadás szükséges.
 
 - Felhasználói elfogadás: #432 PR CI → sikeres ellenőrzés után main merge → teljes main CI → tartós aláírású telefon és Wear APK + AAB. A korábbi 46×38 dp Liquid X méretet a jóváhagyott 48×28 dp váltotta fel. Kiadási verzióemelésre külön utasítás nincs. A készülékes elfogadás továbbra is nyitott.
+- Felhasználói pontosítás: emelt verziókkal készül a kiadás: 1.5.7, telefon 281800, Wear 281802; a korábbi CI forrása már nem kiadási jelölt. A teljes PR és main CI az új forráson szükséges.
