@@ -19,6 +19,13 @@
 - Forrásszintű szerkezeti ellenőrzés és két regressziós teszt kiegészítése megtörtént; CI/JVM és fizikai eszközös optikai, görgetési, nagy betűméretes és navigációs ellenőrzés még nincs. Nincs merge, APK, verzióemelés. A commitok a közös későbbi CI-kör szerint skip ci jelölésűek.
 - Integrációs review: az eredeti Wear-only átadó megőrizve; fix alsó sávok helyi mintavétele és ablakhatárok ellenőrzése.
 
+## #425 – Jóváhagyott 6–7. pont: aktív edzés és Coach (2026-11-27)
+
+- Aktív edzés: a közös `StudioWorkoutHandoverBar` balra Vezérlés: + aktuális tulajdonos ikon, alatta a meglévő igazolt mérésállapot. Jobbra azonos méretű idő- és átadáskeret, SwapHoriz + cél eszköz ikon; lokalizált akadálymentes címke, legalább 48 dp érintési cél. A függő/pause/hibastátusz, engedélyezési feltétel, elapsed/ACK/ownership és callback megmaradt.
+- Coach: kompakt, tartalomfüggő felkészültségi kártya; egyetlen A/B/C/D jelölés, valódi leíró napnév megtartva, kisebb jelvény. A közös dátumformázó opcionális kompakt megjelenítése csak az ismételt jövőbeli előtagot hagyja el; Home változatlan. Normál portréban fix felső kártyák és önálló, fix fejléces, GlassScrollChrome-mal mintázott javaslatpanel. Kicsi kijelző/nagy betűméret esetén teljes oldalas scroll; túl magas felső blokk külön elérhető.
+- Kód: `StudioWorkoutHandoverBar.kt`, `CoachDetailScreen.kt`, `StudioCoachDomainPanels.kt`, `HomePlannedDateLine.kt`. A regressziók az eszközváltást, keretgeometriát, önálló Coach görgetést, sor műveletet, napjelölést és változatlan dátumszemantikát védik. Referenciák: `docs/mockups/pr-425-handover.svg`, `docs/mockups/pr-425-coach.svg` (szerkeszthető, szintetikus látványtervek).
+- A 6–7. pont implementálva, az új CI és a fizikai készülékes validálás szükséges. A korábbi zöld forrás `4d6976ea`: 1338/1338 teszt, 0 failure/error/skipped; nem bizonyíték az új commitokra. Külön gyűjtött hátralévő feladat: Egészségnapló nem Glass csempék és Programok alsó gombjai. Nincs main merge, kiadás vagy verzióemelés.
+
 ## Telefonos felület 1.5.5 után
 
 - Ág `fix/ui-followup-2814`, alap `f625b7e7`. #418 mentett útvonal első nézete és külön nyitható Heti célok. #419 közös Programok-panel és fotólista, szelektív lapmagasság, Mentés és visszaállítás gombok és az adatvédelmi lap bezárógombja. #420 nyolc külön Liquid Glass háttér és Kyant érintési mozgás, peremfény és belső árnyék.
