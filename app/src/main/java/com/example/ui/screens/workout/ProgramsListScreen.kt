@@ -69,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -486,14 +487,9 @@ fun ProgramsListScreen(
                 onOpenSettings = onOpenSettings,
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
+        } else {
+            Spacer(Modifier.height(com.example.ui.theme.LocalGlassTopInset.current))
         }
-        com.example.ui.theme.GlassScrollChrome(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            rootInset = if (state.currentSubScreen == SubScreen.PROGRAMS_LIST) 0.dp
-                else com.example.ui.theme.LocalGlassTopInset.current,
-            localWindow = true,
-            top = {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -501,10 +497,10 @@ fun ProgramsListScreen(
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = if (palette.isLiquidGlass) Color.Transparent else palette.glassCardFill(palette.surface),
+                color = palette.glassTile(palette.surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .glassHeaderMaterial(palette, RoundedCornerShape(24.dp))
+                    .trainPilotGlassRim(palette, RoundedCornerShape(24.dp), GlassMaterialRole.Panel)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(2.dp)) {
@@ -547,10 +543,10 @@ fun ProgramsListScreen(
                 val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (palette.isLiquidGlass) Color.Transparent else if (activeExpanded) palette.glassTile(palette.surface) else palette.glassCardFill(palette.surface),
+                    color = palette.glassTile(palette.surface, elevated = activeExpanded),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .glassHeaderMaterial(palette, RoundedCornerShape(16.dp))
+                        .trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Panel)
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .testTag("programs_active_program_card")
                 ) {
@@ -581,32 +577,38 @@ fun ProgramsListScreen(
 
         }
 
-                    Column(
-                        Modifier.fillMaxWidth()
-                            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-                            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
-                    ) {
-                        Text(
-                            text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = palette.textPrimary,
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
-                                .testTag("programs_fixed_list_header")
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-                            color = palette.cardBorder.copy(alpha = 0.65f)
-                        )
-                    }
+        Spacer(Modifier.height(4.dp))
+        com.example.ui.theme.GlassScrollChrome(
+            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            rootInset = 0.dp,
+            localWindow = true,
+            top = {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
+                ) {
+                    Text(
+                        text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = palette.textPrimary,
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
+                            .testTag("programs_fixed_list_header")
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+                        color = palette.cardBorder.copy(alpha = 0.65f)
+                    )
                 }
             },
             bottom = {
         Column(Modifier.fillMaxWidth().padding(top = 4.dp)
-            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp))
-            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-            .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surface, RoundedCornerShape(18.dp)))
+            .glassHeaderMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Input)
+            .then(if (palette.isLiquidGlass) Modifier else Modifier
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .background(palette.surface, RoundedCornerShape(18.dp)))
             .padding(horizontal = 8.dp, vertical = 4.dp).testTag("programs_fixed_actions"),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
