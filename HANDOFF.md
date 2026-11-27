@@ -1,19 +1,13 @@
 # Átadás — 2817 Wear-only napló
 
-## Programok – kompakt fix fejléc (2026-11-27)
-- Ág `fix/programs-compact-pinned-header`, main-alap; kapcsolódó #419. UI commit `a28d5263`.
-- Jelenlegi program cím eltávolítva, a felső kártyán nagyobb Aktív jelölés. A fülek, kártya, lista és műveletsáv közötti térköz kisebb.
-- A További programok / saját tervek címe fix a közös panelen belül, finom elválasztóval. Csak a sorok és lenyitott szerkesztők görögnek; meglévő műveletek és sorrendkezelés változatlan.
-- Forrásszintű ellenőrzés megtörtént; JVM/Android CI, fizikai készülék és nagy betűméret ellenőrzése még szükséges. Nincs main merge, build vagy verzióemelés. A PR draftként készül.
-
-- Ág: fix/2817-wear-only, alap e53a35a6 (281300/281302).
-- A: TrainPilot edzés részletei kizárólag érvényes mentett Wear pulzus/energia; Forrás csak Wear; külső edzés saját importmérése változatlan. HC/Samsung bizonyíték megőrizve, csak a megjelenítésből kizárva. A részletek megnyitása nem indít provider-olvasást.
-- B: négy nyelvű óratelepítési tipp, Play-link/web fallback, Később edzésenként külön UI-preferenciában; nincs adatbázis- vagy health240Json-írás.
-- C: napi HC elsődlegesség és Samsung kiegészítő kapcsoló változatlan, külön regresszió.
-- D: #414-ből csak helyi idő és statikus üvegfesték, a HC-elsőbbség nem került át. A megszüntetett HC/Samsung ablaklista nem igényel időformázást.
-- Az eredeti Wear mérés látható akkor is, ha a közvetlen kapcsolatot később kikapcsolták; nincs új mérésindítás.
-- Felhasználói pontosítás: a TrainPilot-edzés Statisztikák kártyáján csak összes Wear kcal látható, az aktív kcal mentve marad, nem helyettesíti a hiányzó összes kcal-t; napi és importált adatok változatlanok.
-- CI és fizikai eszközös ellenőrzés szükséges. Nincs merge, signing, verzióemelés. Helyi Git DNS-hiba.
+## #425 – Programok, Napló, fotógaléria és fix Liquid Glass sávok (2026-11-27)
+- Draft [PR #425](https://github.com/fuloplevente1998/Native-AI-Studio/pull/425), ág `fix/programs-compact-pinned-header`, main-alap, kapcsolódó #419; implementáció és vizuális referenciák commitja `2acf3b43`.
+- Programok: redundáns jelenlegi cím nélkül, nagyobb Aktív jelölés, szűkebb térköz, 4 dp alsó margó a meglévő scaffold safe inseten felül; fix További programok és fix alsó sáv.
+- Napló: kereső, dátumválasztó, edzésszám fix, nincs Edzés részletei shortcut; az egyedi sor a saját edzését nyitja.
+- Fotómegtekintő: 28 dp külső ív, 24 dp tényleges fotómaszk, aránytartó méretezés és rendezett fejléc/metaadat.
+- GlassScrollChrome: mért felső/alsó sáv és elkülönített listacapture; a Programok, Napló, Gyakorlatkönyvtár, Egészségnapló és privát fotógaléria fix sávjai mögé csúszik a lista. A helyi ablakra opt-in ág nem mintáz idegen ablakot; teljes optikai kapu, energiatakarékos fallback megőrizve. A sávok magassága a listán belüli kezdő/végső helyfoglalás.
+- A felhasználó által elfogadott elrendezések alapján 3 nyilvános, újrarajzolt SVG: `docs/mockups/pr-425-programs.svg`, `pr-425-journal.svg`, `pr-425-photo-viewer.svg`. A privát személyfotó nincs a public repóban; semleges képhelyőrző. Az eredeti PNG-k nem kerültek át.
+- Forrásszintű szerkezeti ellenőrzés és két regressziós teszt kiegészítése megtörtént; CI/JVM és fizikai eszközös optikai, görgetési, nagy betűméretes és navigációs ellenőrzés még nincs. Nincs merge, APK, verzióemelés. A commitok a közös későbbi CI-kör szerint skip ci jelölésűek.
 
 ## Telefonos felület 1.5.5 után
 
