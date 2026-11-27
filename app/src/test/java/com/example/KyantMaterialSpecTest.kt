@@ -45,9 +45,9 @@ class KyantMaterialSpecTest {
             val shade = com.example.ui.theme.fixedGlassChromeShadeAlpha(step)
             val blur = com.example.ui.theme.fixedGlassChromeMinimumBlurDp(step)
             val tint = liquidChromeTint(p)
-            assertTrue(shade in .819f...881f)
+            assertTrue(shade in 0.819f..0.881f)
             assertTrue(blur in 12f..16f)
-            assertTrue("colored midtone: ${p.key} step $step", tint.luminance() in .075f...110f)
+            assertTrue("colored midtone: ${p.key} step $step", tint.luminance() in 0.075f..0.110f)
             val coat = tint.copy(alpha = shade)
             val dark = coat.compositeOver(Color.Black)
             val bright = coat.compositeOver(GlassOptics.lensWorstCase)
@@ -71,7 +71,7 @@ class KyantMaterialSpecTest {
         for (frame in 100 downTo 0) {
             val alpha = com.example.ui.theme.navigationHeaderCoatAlpha(frame / 100f)
             assertTrue(alpha <= previous + .0001f)
-            assertTrue(alpha in .649f...881f)
+            assertTrue(alpha in 0.649f..0.881f)
             previous = alpha
             for (p in LiquidGlassPalettes.all) {
                 val coat = liquidChromeTint(p).copy(alpha = alpha)
