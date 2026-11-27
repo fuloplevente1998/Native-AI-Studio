@@ -151,3 +151,21 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/visual/ProgramTypeEmblem.kt` | 181 | — | — | — | — | — |
 | `com/example/ui/components/visual/WorkoutRouteMapBox.kt` | 267 | 110, 205, 256 | 260 | — | — | — |
 | `com/example/ui/components/watchinfo/StudioWatchInformationCard.kt` | 186 | 103 | 96 | 69, 71 | — | 67 |
+
+## Témarendszer és natív közös vezérlők – leltár (13/38)
+
+| Fájl | Sor | Színforrás/semleges token | Vezérlő | Közös üveg | Optikai kapu | Press |
+|---|---:|---|---|---|---|---|
+| `com/example/ui/theme/Color.kt` | 12 | — | — | — | — | — |
+| `com/example/ui/theme/CustomThemeCodec.kt` | 38 | — | — | — | — | — |
+| `com/example/ui/theme/CustomThemeDraft.kt` | 85 | — | — | — | — | — |
+| `com/example/ui/theme/CustomThemeResolver.kt` | 91 | 74 | — | — | — | — |
+| `com/example/ui/theme/GlassAwareScaffold.kt` | 139 | — | — | — | 19, 44, 45, 46, 47, 50, 97, 114, 117, 129 | — |
+| `com/example/ui/theme/GlassContentBackdrop.kt` | 205 | 170 | — | 61, 77, 83, 90, 128, 203, 204 | 3, 22, 76, 77, 80, 96, 130, 132, 184, 185, 188 | — |
+| `com/example/ui/theme/GlassContrast.kt` | 102 | 7, 31 | — | — | — | — |
+| `com/example/ui/theme/GlassControlDrag.kt` | 53 | — | — | — | — | — |
+| `com/example/ui/theme/GlassMotionState.kt` | 25 | — | — | — | — | — |
+| `com/example/ui/theme/GlassNavigationTransition.kt` | 52 | — | — | — | 33, 34 | — |
+| `com/example/ui/theme/GlassOptics.kt` | 167 | 72, 82 | — | — | 12, 115 | — |
+| `com/example/ui/theme/GlassPowerSave.kt` | 53 | — | — | — | 20 | — |
+| `com/example/ui/theme/GlassScene.kt` | 291 | — | — | — | 243, 264 | — |
