@@ -307,3 +307,21 @@ A @Composable előfordulások csak jelöltek; a régi, nem hívott natív képer
 | `com/repforge/app/ui/workout/ActiveWorkoutViewModel.kt` | 1235 | 0 | — | — | — | — | — |
 | `com/repforge/app/ui/workout/NativeGpsPermissionRecovery.kt` | 184 | 1 | 181 | 171, 177 | — | — | — |
 | `com/repforge/app/ui/workout/NativeTrainingModeProposal.kt` | 106 | 0 | — | — | — | — | — |
+
+## Gyökér és Studio állapotkezelés – leltár (13/26)
+
+| Fájl | Sor | Téma | Navigáció | UI állapot |
+|---|---:|---|---|---|
+| `com/example/MainActivity.kt` | 1372 | 99, 102, 189, 272, 274, 407, 409, 414, 518, 525, 936, 1263 | 77, 143, 144, 325, 326, 327, 330, 443, 468, 522, 523, 528, 531, 535, 562, 599, 600, 605, 609, 610, 616, 631, 632, 655, 656, 692, 693, 723, 728, 729, 745, 746, 747, 765, 780, 781, 782, 785, 803, 804, 805, 820, 835, 836, 837, 858, 883, 884, 888, 889, 905, 913, 914, 934, 942, 961, 962, 974, 975, 993, 994, 1030, 1031, 1038, 1071, 1078, 1080, 1090, 1091, 1097, 1112, 1116, 1118, 1132, 1133, 1170, 1171, 1189, 1207, 1209, 1235, 1237, 1246, 1266, 1267, 1273, 1281, 1282, 1283, 1284, 1285, 1303, 1311, 1367, 1368, 1369 | 45, 293, 311, 318, 333, 955 |
+| `com/example/ui/viewmodel/StudioProviderLabel324.kt` | 26 | — | — | — |
+| `com/example/ui/viewmodel/TrainPilotUiState.kt` | 486 | 204, 206 | 111, 116, 122, 215, 216, 217 | — |
+| `com/example/ui/viewmodel/TrainPilotViewModel.kt` | 1414 | 111 | 640, 772, 773, 846, 849, 850, 1301 | — |
+| `com/example/ui/viewmodel/VmActiveSets.kt` | 298 | — | — | — |
+| `com/example/ui/viewmodel/VmAppearance.kt` | 217 | 24, 27, 62, 64, 80 | — | — |
+| `com/example/ui/viewmodel/VmBackupSettings.kt` | 182 | 158, 160, 171, 175 | — | — |
+| `com/example/ui/viewmodel/VmCalendar.kt` | 256 | — | 27, 38 | — |
+| `com/example/ui/viewmodel/VmExerciseLibrary.kt` | 216 | — | 41, 205, 208, 211, 212 | — |
+| `com/example/ui/viewmodel/VmExerciseSwitch.kt` | 133 | — | 28, 29, 108 | — |
+| `com/example/ui/viewmodel/VmFinishWorkout.kt` | 179 | — | 154, 155 | — |
+| `com/example/ui/viewmodel/VmHealthJournal.kt` | 328 | — | — | — |
+| `com/example/ui/viewmodel/VmHealthWeight.kt` | 289 | — | 23, 25, 26, 27, 31 | — |
