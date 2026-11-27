@@ -9,6 +9,9 @@ import com.repforge.app.NativeReplacementJournal
 import com.repforge.app.PhoneWorkoutExecution
 import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.db.TrainPilotDatabase
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -94,6 +97,39 @@ class InterruptedBackupRecoveryRegressionTest {
         val result = awaitNative { BackupRestoreManager(context).resumeInterruptedReplacement() }
         assertTrue(result.isFailure)
         assertFalse(NativeDataReplacement.blocked(context))
+        assertFalse(NativeReplacementJournal(context).exists())
+    }
+
+    @Test fun recoveryDrainsAdmittedMetadataWriterButRejectsAnotherReplacement() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        awaitNative {
+            kotlinx.coroutines.coroutineScope {
+                val releaseWriter = CompletableDeferred<Unit>()
+                val writer = async(start = CoroutineStart.UNDISPATCHED) {
+                    NativeDataReplacement.mutate(context) { releaseWriter.await() }
+                }
+                try {
+                    // Start synchronously until the recovery suspends on the data mutex.
+                    val recovery = async(start = CoroutineStart.UNDISPATCHED) {
+                        runCatching {
+                            NativeDataReplacement.recover(context) {
+                                assertTrue(NativeDataReplacement.blocked(context))
+                            }
+                        }
+                    }
+                    assertFalse("Recovery must wait for the admitted writer", recovery.isCompleted)
+                    val duplicate = runCatching { NativeDataReplacement.recover(context) {} }
+                    assertTrue("Another replacement must still be rejected", duplicate.isFailure)
+                    releaseWriter.complete(Unit)
+                    writer.await()
+                    recovery.await().getOrThrow()
+                } finally {
+                    releaseWriter.complete(Unit)
+                }
+            }
+        }
+        assertFalse(NativeDataReplacement.blocked(context))
+        assertFalse(PhoneWorkoutExecution.store(context).restoreBlocked())
         assertFalse(NativeReplacementJournal(context).exists())
     }
 
