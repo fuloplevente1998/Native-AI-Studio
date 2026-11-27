@@ -71,7 +71,7 @@ class KyantMaterialSpecTest {
         for (frame in 100 downTo 0) {
             val alpha = com.example.ui.theme.navigationHeaderCoatAlpha(frame / 100f)
             assertTrue(alpha <= previous + .0001f)
-            assertTrue(alpha in 0.649f..0.881f)
+            assertTrue(alpha in 0f..0.241f)
             previous = alpha
             for (p in LiquidGlassPalettes.all) {
                 val coat = liquidChromeTint(p).copy(alpha = alpha)
@@ -81,8 +81,27 @@ class KyantMaterialSpecTest {
                 assertTrue(NativeThemeTokens.contrast(p.textSecondary, composite) >= 4.5f)
             }
         }
-        assertEquals(.65f, com.example.ui.theme.navigationHeaderCoatAlpha(-1f), .001f)
-        assertEquals(.88f, com.example.ui.theme.navigationHeaderCoatAlpha(2f), .001f)
+        assertEquals(0f, com.example.ui.theme.navigationHeaderCoatAlpha(-1f), .001f)
+        assertEquals(.24f, com.example.ui.theme.navigationHeaderCoatAlpha(2f), .001f)
+    }
+
+    @Test fun pageLightFallsOffContinuouslyWithoutAHeaderCutAndPrismAvoidsDenseRoles() {
+        var previous = 1f
+        for (i in 0..100) {
+            val value = com.example.ui.theme.GlassScene.topShadeAlpha(i / 100f)
+            assertTrue(value <= previous)
+            assertTrue(value in 0f..0.45f)
+            if (i > 0) assertTrue(previous - value <= .015f)
+            previous = value
+        }
+        assertEquals(.45f, com.example.ui.theme.GlassScene.topShadeAlpha(0f), .001f)
+        assertEquals(0f, com.example.ui.theme.GlassScene.topShadeAlpha(.32f), .001f)
+        assertFalse(com.example.ui.theme.glassPrismaticRimRole(GlassMaterialRole.Tile))
+        assertFalse(com.example.ui.theme.glassPrismaticRimRole(GlassMaterialRole.Performance))
+        for (role in listOf(GlassMaterialRole.Navigation, GlassMaterialRole.Panel,
+            GlassMaterialRole.Selection, GlassMaterialRole.Button, GlassMaterialRole.Input)) {
+            assertTrue(com.example.ui.theme.glassPrismaticRimRole(role))
+        }
     }
 
     @Test fun distinctRolesAndConservativeContrastBoundForSceneAndCapturedContent() {
