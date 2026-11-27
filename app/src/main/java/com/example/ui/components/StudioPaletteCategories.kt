@@ -13,6 +13,11 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,7 +46,9 @@ internal fun StudioPaletteCategories(
     expanded: PaletteCategory?,
     onExpand: (PaletteCategory?) -> Unit,
     onSelect: (Int) -> Unit,
-    choiceTag: String = "settings_palette_choice_"
+    choiceTag: String = "settings_palette_choice_",
+    revealSelectedId: Int? = null,
+    onSelectionRevealed: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val titles = when (language) {
@@ -89,7 +96,16 @@ internal fun StudioPaletteCategories(
                         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                             row.forEach { option ->
                                 val active = selectedId == option.id
+                                val requester = remember { BringIntoViewRequester() }
+                                if (active && revealSelectedId == option.id) {
+                                    LaunchedEffect(option.id, palette.isLiquidGlass) {
+                                        withFrameNanos { }
+                                        requester.bringIntoView()
+                                        onSelectionRevealed()
+                                    }
+                                }
                                 Box(Modifier.weight(1f).height(48.dp)
+                                    .bringIntoViewRequester(requester)
                                     .trainPilotClickable(CircleShape) { onSelect(option.id) }
                                     .semantics {
                                         role = Role.RadioButton
