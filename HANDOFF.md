@@ -8,6 +8,24 @@
 - Felhasználói pontosítás: a TrainPilot-edzés Statisztikák kártyáján csak összes Wear kcal látható, az aktív kcal mentve marad, nem helyettesíti a hiányzó összes kcal-t; napi és importált adatok változatlanok.
 - CI és fizikai eszközös ellenőrzés szükséges. Nincs merge, signing, verzióemelés. Helyi Git DNS-hiba.
 
+
+## #425 – Programok, Napló, fotógaléria és fix Liquid Glass sávok (2026-11-27)
+- Draft [PR #425](https://github.com/fuloplevente1998/Native-AI-Studio/pull/425), ág `fix/programs-compact-pinned-header`, main-alap, kapcsolódó #419; implementáció és vizuális referenciák commitja `2acf3b43`.
+- Programok: redundáns jelenlegi cím nélkül, nagyobb Aktív jelölés, szűkebb térköz, 4 dp alsó margó a meglévő scaffold safe inseten felül; fix További programok és fix alsó sáv.
+- Napló: kereső, dátumválasztó, edzésszám fix, nincs Edzés részletei shortcut; az egyedi sor a saját edzését nyitja.
+- Fotómegtekintő: 28 dp külső ív, 24 dp tényleges fotómaszk, aránytartó méretezés és rendezett fejléc/metaadat.
+- GlassScrollChrome: mért felső/alsó sáv és elkülönített listacapture; a Programok, Napló, Gyakorlatkönyvtár, Egészségnapló és privát fotógaléria fix sávjai mögé csúszik a lista. A helyi ablakra opt-in ág nem mintáz idegen ablakot; teljes optikai kapu, energiatakarékos fallback megőrizve. A sávok magassága a listán belüli kezdő/végső helyfoglalás.
+- A felhasználó által elfogadott elrendezések alapján 3 nyilvános, újrarajzolt SVG: `docs/mockups/pr-425-programs.svg`, `pr-425-journal.svg`, `pr-425-photo-viewer.svg`. A privát személyfotó nincs a public repóban; semleges képhelyőrző. Az eredeti PNG-k nem kerültek át.
+- Forrásszintű szerkezeti ellenőrzés és két regressziós teszt kiegészítése megtörtént; CI/JVM és fizikai eszközös optikai, görgetési, nagy betűméretes és navigációs ellenőrzés még nincs. Nincs merge, APK, verzióemelés. A commitok a közös későbbi CI-kör szerint skip ci jelölésűek.
+- Integrációs review: az eredeti Wear-only átadó megőrizve; fix alsó sávok helyi mintavétele és ablakhatárok ellenőrzése.
+
+## #425 – Jóváhagyott 6–7. pont: aktív edzés és Coach (2026-11-27)
+
+- Aktív edzés: a közös `StudioWorkoutHandoverBar` balra Vezérlés: + aktuális tulajdonos ikon, alatta a meglévő igazolt mérésállapot. Jobbra azonos méretű idő- és átadáskeret, SwapHoriz + cél eszköz ikon; lokalizált akadálymentes címke, legalább 48 dp érintési cél. A függő/pause/hibastátusz, engedélyezési feltétel, elapsed/ACK/ownership és callback megmaradt.
+- Coach: kompakt, tartalomfüggő felkészültségi kártya; egyetlen A/B/C/D jelölés, valódi leíró napnév megtartva, kisebb jelvény. A közös dátumformázó opcionális kompakt megjelenítése csak az ismételt jövőbeli előtagot hagyja el; Home változatlan. Normál portréban fix felső kártyák és önálló, fix fejléces, GlassScrollChrome-mal mintázott javaslatpanel. Kicsi kijelző/nagy betűméret esetén teljes oldalas scroll; túl magas felső blokk külön elérhető.
+- Kód: `StudioWorkoutHandoverBar.kt`, `CoachDetailScreen.kt`, `StudioCoachDomainPanels.kt`, `HomePlannedDateLine.kt`. A regressziók az eszközváltást, keretgeometriát, önálló Coach görgetést, sor műveletet, napjelölést és változatlan dátumszemantikát védik. Referenciák: `docs/mockups/pr-425-handover.svg`, `docs/mockups/pr-425-coach.svg` (szerkeszthető, szintetikus látványtervek).
+- A 6–7. pont implementálva, az új CI és a fizikai készülékes validálás szükséges. A korábbi zöld forrás `4d6976ea`: 1338/1338 teszt, 0 failure/error/skipped; nem bizonyíték az új commitokra. Külön gyűjtött hátralévő feladat: Egészségnapló nem Glass csempék és Programok alsó gombjai. Nincs main merge, kiadás vagy verzióemelés.
+
 ## Telefonos felület 1.5.5 után
 
 - Ág `fix/ui-followup-2814`, alap `f625b7e7`. #418 mentett útvonal első nézete és külön nyitható Heti célok. #419 közös Programok-panel és fotólista, szelektív lapmagasság, Mentés és visszaállítás gombok és az adatvédelmi lap bezárógombja. #420 nyolc külön Liquid Glass háttér és Kyant érintési mozgás, peremfény és belső árnyék.
@@ -26,3 +44,11 @@
 - `fix/pinned-list-controls`, alap `0fa5c617`. A Programok aktív kártyája, a fülek és az alsó műveletek fix helyet kaptak. A szerkesztés a hárompontos menüből érhető el. A Gyakorlatkönyvtár szűrői és az összeállítás sávja a görgethető listán kívül vannak.
 - Az Egészségnapló dátumszűrője rögzített, a lista hét napos lekérdezésekkel töltődik visszafelé. A galéria alsó sávja a két fotóhozzáadási műveletet tartalmazza.
 - Készüléken ellenőrizendő a négy lap görgetése és az Edzés indítása sáv megjelenése.
+
+## #425 – Integrációs ellenőrzés és naptárcsempék
+
+- `review/pr425`, alap `d0cd9b9b`. A képernyőszélesség a külső Compose konténerből jut el a keskeny edzésvezérlő elrendezéshez.
+- A fő naptár, a Napló és az Egészségnapló közös napcsempe-geometriát, peremet és állapotfestést használ. A tartományvégek és a belső napok külön kiemelést kapnak. A mai napot aláhúzás is jelzi az időszakválasztókban.
+- Az Alap programok fülön az Új program teljes szélességű. A három művelet a Saját programok fülön érhető el. A hagyományos témák egészségnaplós értékei külön háttérrel és finom kerettel jelennek meg.
+- A teljes JVM és R8 CI szükséges. Készüléken ellenőrizendő a naptárfestés és a görgetés.
+- A 2816-os készülékes próbához a belső verzió telefonon 281600, Wear OS-en 281602. Megjelenített verzió 1.5.5.

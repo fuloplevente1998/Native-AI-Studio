@@ -66,6 +66,21 @@ class HomePlannedTodayUntilMidnightRegressionTest {
         assertEquals(HomePlanTiming.CYCLE, homePlannedDateLine(null, now, AppLanguage.HU).timing)
     }
 
+    @Test fun coachCompactDateOnlyRemovesRedundantFuturePrefix() {
+        val now = ZonedDateTime.of(2026, 11, 19, 14, 30, 0, 0, zone)
+        val starts = listOf(null, now.minusHours(1).toInstant().toString(),
+            now.plusHours(1).toInstant().toString(), now.plusDays(1).toInstant().toString())
+        for (language in AppLanguage.entries) {
+            for (start in starts) assertEquals(homePlannedDateLine(start, now, language),
+                homePlannedDateLine(start, now, language, compact = true))
+            val future = now.plusDays(2).toInstant().toString()
+            val normal = homePlannedDateLine(future, now, language)
+            val compact = homePlannedDateLine(future, now, language, compact = true)
+            assertEquals(normal.timing, compact.timing)
+            assertEquals("📅 " + normal.text.substringAfter(": "), compact.text)
+        }
+    }
+
     @Test fun dayChangesEmitsTheLocalDate() = runBlocking {
         val fixed = Instant.parse("2026-11-19T22:59:00Z") // 23:59 in Budapest
         val first = com.repforge.app.ui.home.NativeHomeRepository.dayChanges({ zone }, { fixed }).first()

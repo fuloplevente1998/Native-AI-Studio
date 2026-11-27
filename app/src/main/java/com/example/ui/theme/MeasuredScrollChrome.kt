@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -26,10 +27,11 @@ internal fun MeasuredScrollChrome(
         val barConstraints = Constraints(minWidth = width, maxWidth = width, maxHeight = height)
         val inset = rootInset.roundToPx().coerceIn(0, height)
         val upper = subcompose("top") {
-            Box { top?.invoke() }
+            // A painted but non-clickable header must not forward taps to an underlying row.
+            Box(Modifier.pointerInput(Unit) {}) { top?.invoke() }
         }.single().measure(barConstraints.copy(maxHeight = height - inset))
         val lower = subcompose("bottom") {
-            Box { bottom?.invoke() }
+            Box(Modifier.pointerInput(Unit) {}) { bottom?.invoke() }
         }.single().measure(barConstraints.copy(maxHeight = (height - inset - upper.height).coerceAtLeast(0)))
         val body = subcompose("body") {
             // The initial and terminal safe areas live INSIDE the scrolling viewport. The

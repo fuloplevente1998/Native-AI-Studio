@@ -779,6 +779,7 @@ fun HealthTabScreen(
         ) {
             healthSectionState.SaveableStateProvider(healthSectionSheet) {
                 Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
+                    val sectionHeader: @Composable () -> Unit = {
                     Row(
                         Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -810,6 +811,8 @@ fun HealthTabScreen(
                                 .testTag(if (journal && uiState.healthSyncFailed) "journal_refresh_error" else "health_sync_result")
                         )
                     }
+                    }
+                    if (!journal) sectionHeader()
                     if (journal) {
                         com.example.ui.components.StudioHealthMetricsBrowser(
                             language = uiState.language.code.lowercase(),
@@ -821,6 +824,7 @@ fun HealthTabScreen(
                             samsungSupplement = uiState.permissionSamsungHealthEnabled,
                             workouts = uiState.loggedWorkouts,
                             modifier = Modifier.weight(1f),
+                            pinnedHeader = sectionHeader,
                             workoutTitle = { it.localizedTitle(uiState.language, uiState.programs) },
                             onOpenWorkout = { workoutId ->
                                 closeSheet()

@@ -539,11 +539,11 @@ fun CalendarPlannerScreen(
                     val firstDayOffset = displayedYearMonth.atDay(1).dayOfWeek.value - 1 // Monday=0 .. Sunday=6
                     val totalCells = calendarWeeks * 7
 
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(calendarDayRowGap)) {
                         for (weekIdx in 0 until (totalCells / 7)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(calendarDayColumnGap)
                             ) {
                                 for (dow in 0..6) {
                                     val cellIndex = weekIdx * 7 + dow
@@ -561,30 +561,19 @@ fun CalendarPlannerScreen(
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
                                         val isToday = displayedYearMonth.atDay(dayNumber) == today
                                         val dayStyle = calendarDayAppearance(palette, isSelected, isToday, plannedEv != null)
-                                        val dayShape = RoundedCornerShape(10.dp)
-
                                         Surface(
-                                            shape = dayShape,
+                                            shape = calendarDayShape,
                                             color = dayStyle.fill,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(calendarCellHeight)
-                                                .then(when {
-                                                    dayStyle.selectedLens -> Modifier.trainPilotGlassMaterial(palette, dayShape, GlassMaterialRole.Selection)
-                                                    dayStyle.lightRim -> Modifier.trainPilotGlassRim(palette, dayShape, GlassMaterialRole.Tile)
-                                                    else -> Modifier
-                                                })
+                                                .calendarDayFrame(palette, dayStyle, isSelected, isToday)
                                                 .then(if (palette.isLiquidGlass) Modifier.semantics {
                                                     selected = isSelected
                                                     if (isToday) stateDescription = trW(state.language, "Ma", "Today", "Heute", "Astăzi")
                                                 } else Modifier)
-                                                .trainPilotBorder(
-                                                    width = if (isSelected) 1.8.dp else if (palette.isLiquidGlass && isToday) 1.4.dp else 1.dp,
-                                                    color = if (isSelected || (palette.isLiquidGlass && isToday)) palette.primary else palette.cardBorder,
-                                                    shape = RoundedCornerShape(10.dp)
-                                                )
                                                 .testTag("calendar_day_$dayNumber")
-                                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectDay(dayNumber); openedDay = dayNumber }
+                                                .trainPilotClickable(calendarDayShape) { onSelectDay(dayNumber); openedDay = dayNumber }
                                         ) {
                                             Row(
                                                 modifier = Modifier

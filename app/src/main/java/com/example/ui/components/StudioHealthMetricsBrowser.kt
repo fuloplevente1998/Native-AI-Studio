@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassHeaderMaterial
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassTile
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.CalendarMonth
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotFrame
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
@@ -66,7 +69,8 @@ internal fun StudioHealthMetricsBrowser(
     workouts: List<LoggedWorkoutEntry> = emptyList(),
     workoutTitle: (LoggedWorkoutEntry) -> String = { it.titleHu },
     onOpenWorkout: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pinnedHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
@@ -141,7 +145,18 @@ internal fun StudioHealthMetricsBrowser(
     val periodFormat = remember(language) { java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language)) }
     val dayFormat = remember(language) { java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
         .withLocale(Locale.forLanguageTag(language)) }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    com.example.ui.theme.GlassScrollChrome(
+        modifier = modifier.fillMaxWidth(),
+        rootInset = 0.dp,
+        localWindow = true,
+        top = {
+            val shape = RoundedCornerShape(18.dp)
+            Surface(shape = shape,
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surface,
+                modifier = Modifier.fillMaxWidth().glassHeaderMaterial(palette, shape)
+                    .trainPilotBorder(1.dp, palette.cardBorder, shape)) {
+                Column(Modifier.fillMaxWidth().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    pinnedHeader?.invoke()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val pillShape = RoundedCornerShape(14.dp)
             Surface(shape = pillShape, color = palette.overlayRoleFill(palette.glassTile(palette.surfaceCard), GlassMaterialRole.Button), modifier = Modifier
@@ -171,11 +186,15 @@ internal fun StudioHealthMetricsBrowser(
             }
         }
         if (!refreshError.isNullOrBlank()) Text(refreshError, color = palette.danger, modifier = Modifier.testTag("journal_refresh_error"))
+                }
+            }
+        }
+    ) { scrollModifier, topInset, bottomInset ->
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()
+            modifier = scrollModifier.trainPilotListPanel()
                 .testTag("health_journal_sheet_scroll"),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 2.dp + topInset, bottom = 2.dp + bottomInset)
         ) {
             itemsIndexed(days, key = { _, (date, _) -> date.toString() }) { index, (date, snapshot) ->
                 if (index > 0) {
@@ -266,9 +285,13 @@ internal fun StudioHealthMetricsBrowser(
                                         val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
                                         val tileShape = RoundedCornerShape(10.dp)
                                         val role = if (type == recordType) GlassMaterialRole.Selection else GlassMaterialRole.Tile
+                                        val legacyFill = if (type == recordType) palette.primary.copy(alpha = 0.16f)
+                                            else if (palette.isLiquidGlass) palette.surfaceCard else palette.surfaceElevated
                                         Surface(shape = tileShape, color = palette.overlayRoleFill(
-                                            if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard, role),
+                                            legacyFill, role),
                                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).overlayRoleRim(palette, tileShape, role)
+                                                .then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotFrame(
+                                                    0.75.dp, palette.cardBorder, tileShape))
                                                 .testTag("journal_metric_${date}_$metricKey")) {
                                             Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                                                 Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,

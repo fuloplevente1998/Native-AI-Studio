@@ -11,6 +11,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CalendarGlass2Test {
+    @Test fun rangePickerShowsADistinctStartInteriorEndAndTodayWithoutLiveDayLenses() {
+        for (palette in LiquidGlassPalettes.all + TrainPilotPalettes.allPalettes) {
+            val normal = calendarDayAppearance(palette, false, false, false, rangePicker = true)
+            val inside = calendarDayAppearance(palette, false, false, false, rangePicker = true, rangeInterior = true)
+            val edge = calendarDayAppearance(palette, true, false, false, rangePicker = true)
+            val todayEdge = calendarDayAppearance(palette, true, true, false, rangePicker = true)
+            assertNotEquals(normal.fill, inside.fill)
+            assertNotEquals(edge.fill, inside.fill)
+            assertEquals(edge.fill, todayEdge.fill)
+            assertTrue(todayEdge.underlineToday)
+            assertFalse(edge.selectedLens)
+            assertEquals(palette.isLiquidGlass, normal.lightRim)
+            if (palette.isLiquidGlass) assertTrue(edge.fill.alpha > inside.fill.alpha && edge.fill.alpha < 1f)
+            else assertEquals(palette.primary, edge.fill)
+        }
+    }
+
     @Test fun glassDaysUseLightweightTilesExceptForTheSelectedLens() {
         for (palette in LiquidGlassPalettes.all) {
             for (today in listOf(false, true)) for (planned in listOf(false, true)) {
