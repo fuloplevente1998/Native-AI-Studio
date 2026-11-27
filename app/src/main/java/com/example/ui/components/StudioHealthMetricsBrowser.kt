@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.glassHeaderMaterial
+
 import com.example.ui.theme.trainPilotGlassRim
 
 import com.example.ui.theme.glassTile
@@ -141,7 +143,17 @@ internal fun StudioHealthMetricsBrowser(
     val periodFormat = remember(language) { java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language)) }
     val dayFormat = remember(language) { java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
         .withLocale(Locale.forLanguageTag(language)) }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    com.example.ui.theme.GlassScrollChrome(
+        modifier = modifier.fillMaxWidth(),
+        rootInset = 0.dp,
+        localWindow = true,
+        top = {
+            val shape = RoundedCornerShape(18.dp)
+            Surface(shape = shape,
+                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surface,
+                modifier = Modifier.fillMaxWidth().glassHeaderMaterial(palette, shape)
+                    .trainPilotBorder(1.dp, palette.cardBorder, shape)) {
+                Column(Modifier.fillMaxWidth().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val pillShape = RoundedCornerShape(14.dp)
             Surface(shape = pillShape, color = palette.overlayRoleFill(palette.glassTile(palette.surfaceCard), GlassMaterialRole.Button), modifier = Modifier
@@ -171,11 +183,15 @@ internal fun StudioHealthMetricsBrowser(
             }
         }
         if (!refreshError.isNullOrBlank()) Text(refreshError, color = palette.danger, modifier = Modifier.testTag("journal_refresh_error"))
+                }
+            }
+        }
+    ) { scrollModifier, topInset, bottomInset ->
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth().trainPilotListPanel()
+            modifier = scrollModifier.trainPilotListPanel()
                 .testTag("health_journal_sheet_scroll"),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 2.dp + topInset, bottom = 2.dp + bottomInset)
         ) {
             itemsIndexed(days, key = { _, (date, _) -> date.toString() }) { index, (date, snapshot) ->
                 if (index > 0) {
