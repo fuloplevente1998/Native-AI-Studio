@@ -152,7 +152,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/visual/WorkoutRouteMapBox.kt` | 267 | 110, 205, 256 | 260 | — | — | — |
 | `com/example/ui/components/watchinfo/StudioWatchInformationCard.kt` | 186 | 103 | 96 | 69, 71 | — | 67 |
 
-## Témarendszer és natív közös vezérlők – leltár (13/38)
+## Témarendszer és natív közös vezérlők – leltár (26/38)
 
 | Fájl | Sor | Színforrás/semleges token | Vezérlő | Közös üveg | Optikai kapu | Press |
 |---|---:|---|---|---|---|---|
@@ -169,3 +169,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/theme/GlassOptics.kt` | 167 | 72, 82 | — | — | 12, 115 | — |
 | `com/example/ui/theme/GlassPowerSave.kt` | 53 | — | — | — | 20 | — |
 | `com/example/ui/theme/GlassScene.kt` | 291 | — | — | — | 243, 264 | — |
+| `com/example/ui/theme/GlassScenePaintCache.kt` | 77 | — | — | — | — | — |
+| `com/example/ui/theme/GlassScrollChrome.kt` | 75 | — | — | — | 17, 23, 38, 40, 62 | — |
+| `com/example/ui/theme/GlassShaders.kt` | 328 | 90, 111 | — | — | 3, 23, 91, 94, 96, 97 | — |
+| `com/example/ui/theme/GlassSurfaces.kt` | 190 | 24, 107, 109, 120, 167, 174, 181 | — | 34, 54, 80, 86, 131, 165 | 100, 120, 127, 130 | — |
+| `com/example/ui/theme/GlassTouchBubble.kt` | 145 | — | — | — | 78 | 7, 69, 75, 79, 86, 91, 94 |
+| `com/example/ui/theme/KyantGlass.kt` | 230 | 121 | — | 120 | 33, 34, 82, 111, 120, 141, 199, 207, 211 | 114, 140, 176, 177 |
+| `com/example/ui/theme/KyantMaterialSpec.kt` | 80 | — | — | — | 21 | — |
+| `com/example/ui/theme/KyantWindowOverlay.kt` | 63 | — | — | — | 36, 43, 55 | — |
+| `com/example/ui/theme/LiquidDropMaterial.kt` | 59 | — | — | 39, 57 | 44, 45, 46, 50 | 10, 41, 50, 52, 53 |
+| `com/example/ui/theme/LiquidGlassPalettes.kt` | 140 | 34, 54, 60, 75, 88, 90, 91, 97, 104, 112 | — | 118, 126, 133 | — | — |
+| `com/example/ui/theme/MeasuredScrollChrome.kt` | 56 | — | — | — | — | — |
+| `com/example/ui/theme/Theme.kt` | 98 | 22, 41, 45, 52, 61, 65, 72 | — | — | — | — |
+| `com/example/ui/theme/ThemeSelectionColors.kt` | 52 | 21, 37 | — | — | — | — |
