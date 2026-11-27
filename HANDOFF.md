@@ -119,3 +119,9 @@
 - `fix/settings-cloud-quick-sync`, alap `9e0fa11a`. Az összecsukott Beállítások-kártya jobb oldalán a Drive + Naptár szinkron indítható. A gyorsgomb kerek, 36 dp-es vizuális kerettel és 48 dp-es érintési felülettel rendelkezik, a kibontott művelettel azonos útvonalon és tiltásokkal működik. A Biztonsági mentés külön gyorsikonja kikerült. A meglévő Drive-mentés működése megmaradt.
 - A naptár árva teljesítéspipája külön nyitott hibapont. A Liquid megjelenés, a témaváltás és az érintési nyúlás fizikai eszközön ellenőrizendő.
 - Liquid témában a közös Bezárás kerete 8 dp-vel szélesebb a magasságánál, teljesen lekerekített, 48 dp-es érintési felülettel. A naptári Újratervezés és a Liquid fotónéző is ezt használja.
+
+## #432 – Liquid formavilág finomítása (2026-11-27)
+
+- A felhasználó kérésére a #432 meglévő `fix/settings-cloud-quick-sync` ágán folytatva; forráscommit `8c296e33`. A közös piros X már vízszintesen elnyújtott (38×46 dp vizuális méret: szélesség 46, magasság 38; 48 dp érintési cél), a hagyományos forma változatlan.
+- `TrainPilotControls.kt`: Liquid szűrőchipek és egysoros beviteli mezők kapszula alakúak, a több soros mezők 20 dp ívet kapnak; a közös elsődleges/másodlagos gombok tiltott állapotban is megtartják Liquid alakjukat. A nem Liquid paletták eredeti 14 dp geometriája, színek, méretezés és műveletek változatlanok.
+- Szándékosan nincs globális alakcsere: nagy panelek, speciális diagramok, egyedi vezérlők és Wear érintetlenek. Forrásszintű célzott módosítás; fordítás, JVM CI és készülékes vizuális ellenőrzés még szükséges. Nincs merge, APK vagy verzióemelés; közös későbbi CI-kör.
