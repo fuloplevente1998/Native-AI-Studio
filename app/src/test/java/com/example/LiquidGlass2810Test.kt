@@ -144,10 +144,12 @@ class LiquidGlass2810Test {
             val text = src(path)
             assertTrue(path, text.contains("glassCardFill(") && text.contains("trainPilotGlassMaterial("))
         }
-        // Dialog windows stay opaque: the replan dialog keeps its plain card colour.
         val calendar = src("ui/screens/workout/CalendarPlannerScreen.kt")
         val dialog = calendar.substring(calendar.indexOf("androidx.compose.ui.window.Dialog("))
-        assertTrue(dialog.substringBefore("Column(").contains("color = palette.surfaceCard,"))
+        assertTrue(dialog.substringBefore("Column(").contains("CalendarReplanSurface"))
+        val replanSurface = src("ui/screens/workout/PlannerControls.kt").substringAfter("fun CalendarReplanSurface(")
+        assertTrue(replanSurface.contains("KyantWindowOverlay(palette, shape, staticSheet = true)"))
+        assertTrue(replanSurface.contains("palette.glassOverlayFill(palette.surfaceCard)"))
     }
 
     @Test fun previousOpaquePathStaysForOldDevices() {

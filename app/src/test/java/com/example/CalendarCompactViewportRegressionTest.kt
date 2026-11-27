@@ -15,6 +15,7 @@ import com.example.model.AppLanguage
 import com.example.model.CalendarDayEvent
 import com.example.model.CalendarEventStatus
 import com.example.ui.screens.CalendarPlannerScreen
+import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.TrainPilotPalettes
@@ -52,10 +53,12 @@ class CalendarCompactViewportRegressionTest {
     private val months = mutableListOf<String>()
 
     private fun render(height: Int = 720, fontScale: Float = 1f,
-        palette: TrainPilotPalette = TrainPilotPalettes.allPalettes.first()) {
+        palette: TrainPilotPalette = TrainPilotPalettes.allPalettes.first(),
+        glassOpticsEnabled: Boolean = true) {
         compose.setContent {
             val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale),
+                LocalGlassOpticsEnabled provides glassOpticsEnabled) {
                 TrainPilotTheme(palette) {
                     Box(Modifier.size(400.dp, height.dp).testTag("calendar_test_viewport")) {
                         CalendarPlannerScreen(state,
@@ -168,7 +171,7 @@ class CalendarCompactViewportRegressionTest {
     }
 
     @Test fun replanOpensAndClosesInTheGoldLiquidTheme() {
-        render(palette = TrainPilotPalettes.selectablePalettes.single { it.id == 40 })
+        render(palette = TrainPilotPalettes.selectablePalettes.single { it.id == 40 }, glassOpticsEnabled = false)
         compose.onNodeWithTag("calendar_replan_action").performClick()
         compose.onNodeWithTag("calendar_replan_dialog").assertIsDisplayed()
         val close = compose.onNodeWithTag("calendar_replan_close")

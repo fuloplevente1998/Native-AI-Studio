@@ -1,16 +1,8 @@
 package com.example.ui.screens
 
 import com.example.ui.theme.liquidDropMaterial
-import com.example.ui.theme.KyantGlass
-import com.example.ui.theme.KyantWindowOverlay
-import com.example.ui.theme.LocalGlassOpticsEnabled
-import com.example.ui.theme.LocalGlassOverlay
-import com.example.ui.theme.LocalGlassPowerSave
-import com.example.ui.theme.glassOverlayFill
 import com.example.model.StudioCalendarDates
 import com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.Color
 
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
@@ -1096,30 +1088,6 @@ fun CalendarPlannerScreen(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CalendarReplanSurface(content: @Composable () -> Unit) {
-    val palette = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(24.dp)
-    val panel: @Composable (Color) -> Unit = { fill ->
-        Surface(
-            shape = shape,
-            color = fill,
-            modifier = Modifier.fillMaxWidth().testTag("calendar_replan_dialog")
-                .trainPilotBorder(1.dp, palette.cardBorder, shape),
-            content = content
-        )
-    }
-    Box(Modifier.padding(horizontal = 12.dp, vertical = 20.dp)) {
-        if (KyantGlass.active(palette) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current) {
-            KyantWindowOverlay(palette, shape, staticSheet = true) { panel(Color.Transparent) }
-        } else {
-            CompositionLocalProvider(LocalGlassOverlay provides palette.isLiquidGlass) {
-                panel(palette.glassOverlayFill(palette.surfaceCard))
             }
         }
     }
