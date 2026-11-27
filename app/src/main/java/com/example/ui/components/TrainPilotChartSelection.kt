@@ -1,6 +1,13 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.remember
+import com.example.ui.theme.glassTouchBubble
+import com.repforge.app.ui.theme.trainPilotPressIndication
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
@@ -55,8 +62,23 @@ fun Modifier.trainPilotChartTap(
 ): Modifier {
     val currentNearest = rememberUpdatedState(nearest)
     val currentOnSelect = rememberUpdatedState(onSelect)
-    return pointerInput(key) {
-        detectTapGestures { tap -> currentOnSelect.value(currentNearest.value(tap.x, size.width.toFloat())) }
+    val glass = LocalTrainPilotPalette.current.isLiquidGlass
+    val source = if (glass) remember { MutableInteractionSource() } else null
+    val visual = if (source != null) glassTouchBubble(source, true, RoundedCornerShape(6.dp)) else this
+    return visual.pointerInput(key, source) {
+        if (source == null) {
+            detectTapGestures { tap -> currentOnSelect.value(currentNearest.value(tap.x, size.width.toFloat())) }
+        } else {
+            detectTapGestures(onPress = { point ->
+                val press = PressInteraction.Press(point)
+                source.emit(press)
+                var released = false
+                try { released = tryAwaitRelease() }
+                finally {
+                    source.tryEmit(if (released) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+                }
+            }, onTap = { tap -> currentOnSelect.value(currentNearest.value(tap.x, size.width.toFloat())) })
+        }
     }.semantics {
         if (selectedLabel != null) stateDescription = selectedLabel
     }
@@ -73,4 +95,13 @@ fun TrainPilotChartInfoLine(text: String, modifier: Modifier = Modifier) {
     val p = LocalTrainPilotPalette.current
     Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = p.primary,
         modifier = modifier.fillMaxWidth().heightIn(min = 22.dp).semantics { liveRegion = LiveRegionMode.Polite })
+}
+
+/** A bar retains the original clickable semantics, including no extra role or optical layer. */
+@Composable
+internal fun Modifier.trainPilotChartClick(onClick: () -> Unit): Modifier {
+    if (!LocalTrainPilotPalette.current.isLiquidGlass) return clickable(onClick = onClick)
+    val source = remember { MutableInteractionSource() }
+    return trainPilotPressIndication(RoundedCornerShape(6.dp), source)
+        .clickable(interactionSource = source, indication = null, onClick = onClick)
 }

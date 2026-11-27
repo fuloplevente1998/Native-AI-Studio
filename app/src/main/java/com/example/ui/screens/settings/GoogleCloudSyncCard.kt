@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material3.Checkbox
+import com.example.ui.components.TrainPilotCheckbox as Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext

@@ -21,7 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Checkbox
+import com.example.ui.components.TrainPilotCheckbox as Checkbox
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme

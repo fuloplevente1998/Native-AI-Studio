@@ -47,6 +47,7 @@ import com.example.ui.theme.fieldOutline
 import com.example.ui.theme.readablePrimaryLabel
 import androidx.compose.runtime.remember
 import com.repforge.app.ui.theme.trainPilotClickable
+import com.repforge.app.ui.theme.trainPilotPressIndication
 
 /**
  * 2785: the app's own chip. Rounded, theme (palette) colours only: card background, thin card border;
@@ -255,6 +256,7 @@ fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modif
 
 /** Keep native switch semantics and layout; a small shaped thumb highlight is drawn inside
  * the Material thumb, not over the hit area or the track. No independent backdrop. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrainPilotSwitch(
     checked: Boolean,
@@ -272,8 +274,12 @@ internal fun TrainPilotSwitch(
         uncheckedTrackColor = p.glassTile(p.surfaceElevated),
         uncheckedBorderColor = p.cardBorder
     ) else colors
+    val source = if (p.isLiquidGlass && onCheckedChange != null) remember { MutableInteractionSource() } else null
+    val visual = if (source != null) modifier.trainPilotPressIndication(RoundedCornerShape(50), source, enabled)
+        else modifier
+    val nativeSwitch: @Composable () -> Unit = {
     androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange,
-        modifier = modifier, enabled = enabled, colors = glassColors,
+        modifier = visual, enabled = enabled, colors = glassColors, interactionSource = source,
         thumbContent = if (p.isLiquidGlass && enabled) ({
             // A small inset shine; the native thumb retains the checked/unchecked color.
             androidx.compose.foundation.Canvas(Modifier.size(10.dp)) {
@@ -283,4 +289,7 @@ internal fun TrainPilotSwitch(
                     center = androidx.compose.ui.geometry.Offset(size.width * .69f, size.height * .72f))
             }
         }) else null)
+    }
+    if (source != null) CompositionLocalProvider(androidx.compose.material3.LocalRippleConfiguration provides null) { nativeSwitch() }
+    else nativeSwitch()
 }

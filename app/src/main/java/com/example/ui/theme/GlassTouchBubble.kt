@@ -4,6 +4,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.Interaction
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,16 +72,16 @@ internal object GlassTouchBubble {
  * the accessible touch target are unchanged. Draw/layer-phase only while the finger moves.
  */
 @Composable
-internal fun Modifier.glassTouchBubble(source: MutableInteractionSource, enabled: Boolean, shape: Shape?): Modifier {
+internal fun Modifier.glassTouchBubble(source: MutableInteractionSource, enabled: Boolean, shape: Shape?, trackDrag: Boolean = false): Modifier {
     val palette = LocalTrainPilotPalette.current
     if (!GlassTouchBubble.enabled(palette.isLiquidGlass, enabled)) return this
     val motion = rememberGlassMotionEnabled() && !LocalGlassPowerSave.current
     val touch = remember(source) { mutableStateOf(Offset.Unspecified) }
     // Local coordinates are needed when the visual child is smaller than the hit target.
     val localPointer = remember(source) { mutableStateOf(Offset.Unspecified) }
-    val held = remember(source) { mutableStateOf<PressInteraction.Press?>(null) }
+    val held = remember(source) { mutableStateOf<Interaction?>(null) }
     val progress = remember(source) { Animatable(0f) }
-    LaunchedEffect(source, motion) {
+    LaunchedEffect(source, motion, trackDrag) {
         progress.snapTo(0f)
         held.value = null
         var animation: Job? = null
@@ -118,6 +120,28 @@ internal fun Modifier.glassTouchBubble(source: MutableInteractionSource, enabled
                         if (motion) progress.animateTo(0f, spring(dampingRatio = GlassTouchBubble.DAMPING,
                             stiffness = GlassTouchBubble.STIFFNESS)) else progress.snapTo(0f)
                     }
+                }
+                // Only native adjustable controls opt in. A scroll drag that cancels a
+                // normal button's press must not leave the highlight on that button.
+                is DragInteraction.Start -> if (trackDrag && localPointer.value.isSpecified) {
+                    held.value = interaction
+                    touch.value = localPointer.value
+                    animation?.cancel()
+                    animation = launch {
+                        if (motion) progress.animateTo(1f, tween(75)) else progress.snapTo(1f)
+                    }
+                }
+                is DragInteraction.Stop -> if (held.value == interaction.start) {
+                    held.value = null
+                    animation?.cancel()
+                    animation = launch {
+                        if (motion) progress.animateTo(0f, tween(130)) else progress.snapTo(0f)
+                    }
+                }
+                is DragInteraction.Cancel -> if (held.value == interaction.start) {
+                    held.value = null
+                    animation?.cancel()
+                    animation = launch { progress.snapTo(0f) }
                 }
                 else -> Unit
             }

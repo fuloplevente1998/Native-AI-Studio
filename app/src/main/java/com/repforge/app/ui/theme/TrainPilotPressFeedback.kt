@@ -138,11 +138,14 @@ private fun controlFeedbackAlpha(source: MutableInteractionSource, enabled: Bool
 /** Paint on the visual child while the accessible parent retains the larger hit area. */
 @Composable
 internal fun Modifier.trainPilotPressIndication(
-    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true, stretchOnDrag: Boolean = false
+    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true, stretchOnDrag: Boolean = false,
+    trackDrag: Boolean = false
 ): Modifier {
     val alpha = controlFeedbackAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    return glassPressMotion(source, enabled, shape, stretchOnDrag).clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
+    val visual = if (trackDrag) glassTouchBubble(source, enabled, shape, trackDrag = true)
+        else glassPressMotion(source, enabled, shape, stretchOnDrag)
+    return visual.clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
 }
 
 /** Legacy press paint is unchanged; Liquid buttons retain only keyboard/hover tint here. */

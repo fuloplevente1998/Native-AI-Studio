@@ -5,7 +5,6 @@ import com.example.ui.theme.glassTile
 import com.example.ui.components.trainPilotAnimatedExpansion
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -61,7 +60,7 @@ internal fun ExerciseFeedbackChips(effort: String?, note: String, language: Stri
                         else palette.glassTile(palette.surfaceElevated, elevated = true),
                     modifier = Modifier.heightIn(min = 48.dp)
                         .trainPilotBorder(1.dp, if (chosen) accent else if (key == "pain") accent.copy(alpha = 0.45f) else palette.cardBorder, RoundedCornerShape(12.dp))
-                        .selectable(chosen, enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
+                        .trainPilotSelectable(chosen, RoundedCornerShape(12.dp), enabled = enabled, role = Role.RadioButton, onClick = { onEffort(key) })
                         .testTag("${tag}_$key")) {
                     Box(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                         Text(feedbackChoiceLabel(key, language), color = if (chosen) accent else palette.textPrimary,
