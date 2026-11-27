@@ -257,9 +257,10 @@ internal object GlassShaderSource {
             return toSrgb(lin * (mapped / l));
         }
 
-        float3 finish(float3 c) {
+        float3 finish(float3 c, float v) {
             if (guard > 0.5) { c = guardLuma(c); }
-            return c;
+            // Same root-space light falloff as the Compose/Kyant scene.
+            return c * (1.0 - 0.45 * (1.0 - clamp(v / 0.32, 0.0, 1.0)));
         }
     """
 
@@ -289,7 +290,7 @@ internal object GlassShaderSource {
             c = addBlob(c, p, blob1, tone1);
             c = addBlob(c, p, blob2, tone2);
             c = addBlob(c, p, blob3, tone3);
-            return half4(half3(finish(c)), 1.0);
+            return half4(half3(finish(c, v)), 1.0);
         }
     """
 
@@ -302,7 +303,7 @@ internal object GlassShaderSource {
             float2 p = pos + origin;
             float v = clamp(p.y / screen.y, 0.0, 1.0);
             float3 c = mix(float3(photo.eval(p).rgb), float3(base.rgb), 0.16) * (0.88 + 0.12 * (1.0 - v));
-            return half4(half3(finish(c)), 1.0);
+            return half4(half3(finish(c, v)), 1.0);
         }
     """
 

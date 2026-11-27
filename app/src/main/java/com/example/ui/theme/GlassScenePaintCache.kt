@@ -31,6 +31,7 @@ internal class GlassScenePaintCache {
     private val blobs = Slot<BlobKey, List<Brush>>()
     private val crop = Slot<CropKey, Pair<Float, Offset>>()
     private val photo = Slot<Float, ColorFilter>()
+    private val topShade = Slot<Pair<Float, Float>, Brush>()
 
     fun guardedTones(palette: TrainPilotPalette, cap: Float): List<Color> =
         tones.get(ToneKey(palette.id, palette.primary, cap)) { GlassScene.guardedTones(palette, cap) }
@@ -52,6 +53,15 @@ internal class GlassScenePaintCache {
                     1f to tone.copy(alpha = 0f),
                     center = Offset(blob.x - origin.x, blob.y - origin.y), radius = blob.radius.coerceAtLeast(1f))
             }
+        }
+
+    fun topShadeBrush(originY: Float, sceneHeight: Float): Brush =
+        topShade.get(originY to sceneHeight) {
+            Brush.verticalGradient(
+                0f to Color.Black.copy(alpha = GlassScene.TOP_SHADE_ALPHA),
+                1f to Color.Transparent,
+                startY = -originY,
+                endY = sceneHeight.coerceAtLeast(1f) * GlassScene.TOP_LIGHT_END - originY)
         }
 
     fun imageCrop(imageWidth: Int, imageHeight: Int, width: Float, height: Float): Pair<Float, Offset> =

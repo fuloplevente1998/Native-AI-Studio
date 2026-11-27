@@ -123,6 +123,23 @@ class LiquidGlassOverlay2812Test {
         assertFalse(source.contains("freezeSheetScene("))
     }
 
+    @Test fun slidingSheetsRetainPaletteHueInsteadOfNeutralGrey() {
+        for (step in 0..100) {
+            fun fill(key: String) = LiquidGlassPalettes.all.first { it.key == key }
+                .withGlassClarity(step).slidingSheetBackground(Color.Black)
+            val ice = fill("glass_ice")
+            val amber = fill("glass_amber")
+            val emerald = fill("glass_emerald")
+            val rose = fill("glass_rose")
+            assertTrue(ice.blue - ice.red > .08f)
+            assertTrue(amber.red - amber.blue > .08f)
+            assertTrue(emerald.green - emerald.red > .08f)
+            assertTrue(rose.red - rose.green > .08f)
+            assertEquals(ice.alpha, amber.alpha, .0001f)
+            assertTrue(ice.copy(alpha = 1f).luminance() >= .065f)
+        }
+    }
+
     @Test fun overlayRolesStayDistinctAndReadable() {
         for (step in 0..100) {
             val tile = glassOverlayRolePaint(step, GlassMaterialRole.Tile)

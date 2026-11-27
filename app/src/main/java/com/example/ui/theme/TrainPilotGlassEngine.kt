@@ -164,10 +164,17 @@ internal fun DrawScope.drawGlassDropShadow(path: Path) {
  * A highlight over a painted control; its semantic color and text stay unchanged. Vector only, so it
  * also stays on the active measurement screens (2808/10 light glass).
  */
+internal fun glassPrismaticRimRole(role: GlassMaterialRole): Boolean =
+    role in listOf(GlassMaterialRole.Panel, GlassMaterialRole.Navigation,
+        GlassMaterialRole.Button, GlassMaterialRole.Selection, GlassMaterialRole.Input)
+
 @Composable
 internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shape,
-    role: GlassMaterialRole = GlassMaterialRole.Tile): Modifier =
-    if (!palette.glassRimActive()) this else drawWithCache {
+    role: GlassMaterialRole = GlassMaterialRole.Tile): Modifier {
+    if (!palette.glassRimActive()) return this
+    // Do not increase drawing work for dense tiles, measurement or battery saver.
+    val prism = glassPrismaticRimRole(role) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    return drawWithCache {
         val path = Path().apply { addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache)) }
         // 2810/6: a specular edge, not a frame: top strongest, sides and bottom weaker, ~1 dp inside.
         val strength = (GlassOptics.from(palette.glassClarity).specular * when (role) {
@@ -184,6 +191,16 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
         } else {
             Brush.verticalGradient(0f to light, .5f to mid, 1f to dim)
         }
+        // Two directional, palette-colored highlights stay confined to the curved rim.
+        // This is a specular vector approximation, not an additional backdrop capture.
+        val clear = palette.glassClarity.coerceIn(0, 100) / 100f
+        val prismShine = if (prism) Brush.linearGradient(
+            0f to palette.primary.copy(alpha = .14f + .14f * clear),
+            .30f to Color.White.copy(alpha = .20f + .28f * clear),
+            .56f to Color.Transparent,
+            .80f to palette.primary.copy(alpha = .18f + .17f * clear),
+            1f to Color.Transparent,
+            start = Offset.Zero, end = Offset(size.width, size.height)) else null
         // Cache the brushes with the outline, not once per draw during a ticking workout.
         val bevel = Brush.verticalGradient(
             0f to Color.Black.copy(alpha = .02f),
@@ -193,7 +210,9 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
             drawContent()
             clipPath(path) {
                 drawPath(path, bevel, style = Stroke(6.dp.toPx()))
+                if (prismShine != null) drawPath(path, prismShine, style = Stroke((3f + 2f * clear).dp.toPx()))
                 drawPath(path, shine, style = Stroke(2.dp.toPx()))
             }
         }
     }
+}

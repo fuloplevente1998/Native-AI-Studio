@@ -13,6 +13,7 @@ import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.pageFooterArrangement
 import com.example.ui.components.rememberPageLayout
 import androidx.compose.runtime.key
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -184,7 +185,7 @@ fun ProgressTabScreen(
                     state = overviewListState,
                     modifier = scrollModifier.testTag("progress_overview_list"),
                     contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = topInset, bottom = 10.dp + bottomInset),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = remember(layout.draft == null) { pageFooterArrangement(2.dp, layout.draft == null) }
                 ) {
                     item(key = "progress_overview", contentType = "overview") {
                         MainProgressVolumeAndMuscleSection(
@@ -231,7 +232,9 @@ fun ProgressTabScreen(
                             }
                         )
                     }
-                    item(key = "customize", contentType = "footer") { PageLayoutFooter(layout, uiState.language) }
+                    if (layout.draft == null) item(key = "customize", contentType = "footer") {
+                        PageLayoutFooter(layout, uiState.language)
+                    }
                 }
             }
 

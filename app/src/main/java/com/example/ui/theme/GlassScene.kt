@@ -123,6 +123,12 @@ internal object GlassScene {
     fun guardedTones(palette: TrainPilotPalette, cap: Float = lumaCap): List<Color> = tones(palette).map { guard(it, cap) }
 
     /** Page base: the palette backdrop with a gentle top-lit vignette, guarded like the shader. */
+    const val TOP_LIGHT_END = .32f
+    const val TOP_SHADE_ALPHA = .45f
+
+    /** Shared root-space dark-to-clear light falloff; no seam at header height. */
+    fun topShadeAlpha(v: Float): Float = TOP_SHADE_ALPHA * (1f - (v / TOP_LIGHT_END).coerceIn(0f, 1f))
+
     fun base(palette: TrainPilotPalette, v: Float, cap: Float = lumaCap): Color {
         val k = .80f + .20f * (1f - v.coerceIn(0f, 1f))
         return guard(Color(palette.background.red * k, palette.background.green * k, palette.background.blue * k), cap)
@@ -275,8 +281,10 @@ internal fun DrawScope.drawGlassSceneCompose(palette: TrainPilotPalette, scene: 
             dstOffset = IntOffset((at.x - origin.x).roundToInt(), (at.y - origin.y).roundToInt()),
             dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
             colorFilter = cache.photoFilter(cap))
-        return
+    } else {
+        for (brush in cache.blobBrushes(palette, origin, sceneWidth, sceneHeight, scene?.seconds ?: 0f, cap))
+            drawRect(brush)
     }
-    for (brush in cache.blobBrushes(palette, origin, sceneWidth, sceneHeight, scene?.seconds ?: 0f, cap))
-        drawRect(brush)
+    // One continuous page light falloff, also captured by every lens. Not a navbar panel.
+    drawRect(cache.topShadeBrush(origin.y, sceneHeight))
 }

@@ -79,14 +79,13 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
     return boundedSubtleWindowFill(glassOverlayFill(legacy), glassClarity)
 }
 
-/** A sliding panel is neutral smoked glass, not a second procedural page/gradient.
+/** A sliding panel uses the active Liquid palette hue, not a second procedural
+ * scene or a neutral grey fill. Preserve the existing quantized 0–5% transparency.
  * Only its background is translucent. Centered alerts and popup menus stay opaque.
  */
 internal fun TrainPilotPalette.slidingSheetBackground(legacy: Color): Color {
     if (!isLiquidGlass) return legacy
-    val neutral = GlassContrast.grey(.065f)
-    val base = lerp(neutral, glassOverlayFill(legacy), .20f)
-    return boundedSubtleWindowFill(base, glassClarity)
+    return boundedSubtleWindowFill(liquidChromeTint(this), glassClarity)
 }
 
 /** A window is the sole optical surface; descendants use paint and vector rims. */

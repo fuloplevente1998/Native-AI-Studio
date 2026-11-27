@@ -15,6 +15,7 @@ import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.pageFooterArrangement
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
@@ -158,7 +159,7 @@ fun HomeScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
                 .padding(top = 4.dp + LocalGlassTopInset.current, bottom = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            verticalArrangement = remember(layout.draft == null) { pageFooterArrangement(5.dp, layout.draft == null) }
         ) {
         layout.order.forEach { id ->
             key(id) {
