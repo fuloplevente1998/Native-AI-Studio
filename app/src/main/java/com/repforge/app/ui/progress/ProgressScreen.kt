@@ -174,7 +174,18 @@ fun ProgressScreen(
                     Spacer(Modifier.height(12.dp))
 
                     // Independent strength date window. Cardio and weight keep their own filters.
-                    LazyRow(
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        val ranges = NativeStrengthRange.values().toList()
+                        val labels = ranges.map { range -> strings.getString(when (range) {
+                            NativeStrengthRange.DAYS_30 -> R.string.native_progress_strength_30
+                            NativeStrengthRange.DAYS_90 -> R.string.native_progress_strength_90
+                            NativeStrengthRange.YEAR -> R.string.native_progress_strength_year
+                            NativeStrengthRange.ALL -> R.string.native_progress_strength_all
+                        }) }
+                        com.example.ui.components.LiquidSegmentedTabs(labels, ranges.indexOf(state.selectedStrengthRange),
+                            { viewModel.selectStrengthRange(ranges[it]) }, "progress_strength_ranges", scrollable = true,
+                            itemTag = { "progress_strength_${ranges[it].name.lowercase()}" }) { _, label, _ -> Text(label, maxLines = 1) }
+                    } else LazyRow(
                         modifier = Modifier.testTag("progress_strength_ranges"),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
