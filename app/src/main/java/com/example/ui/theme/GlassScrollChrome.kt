@@ -34,9 +34,13 @@ internal fun GlassScrollChrome(
     val sceneLayer = LocalKyantScene.current.forThisWindow()?.backdrop as? LayerBackdrop
     // Opt-in for nested lists / sheets: capture only this window's scrolling body,
     // never an inherited parent-window layer. Static sheet paint stays behind the lens.
+    val powerSave = LocalGlassPowerSave.current
     val localLive = localWindow && KyantGlass.active(LocalTrainPilotPalette.current) &&
-        LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
-    val live = enabled && ((LocalGlassChromeUnderlap.current && sceneLayer != null) || localLive)
+        LocalGlassOpticsEnabled.current && !powerSave
+    // New opt-in list chrome also keeps its padded fallback in battery saver;
+    // preserve the existing root/measurement routes' original policy.
+    val live = enabled && (!localWindow || !powerSave) &&
+        ((LocalGlassChromeUnderlap.current && sceneLayer != null) || localLive)
     if (!live) {
         Column(modifier) {
             if (rootInset > 0.dp) Spacer(Modifier.height(rootInset))
