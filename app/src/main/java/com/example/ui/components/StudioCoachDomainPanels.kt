@@ -14,6 +14,10 @@ import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.ui.theme.GlassScrollChrome
+import com.example.ui.theme.glassHeaderMaterial
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.*
@@ -60,7 +64,9 @@ internal fun StudioCoachRecommendations(
     onCloseVariation: () -> Unit,
     onSaveVariation: () -> Unit,
     showTarget: Boolean = true,
-    programChangeAllowed: Boolean = true
+    programChangeAllowed: Boolean = true,
+    modifier: Modifier = Modifier,
+    pinnedList: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
@@ -100,7 +106,7 @@ internal fun StudioCoachRecommendations(
             } },
             dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (state.initialLoading) CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_coach_initial_loading"))
         if (state.error) Text(coachTr(lang, "A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", "Coach data could not be refreshed. Previous values are not a fresh measurement.", "Coach-Daten konnten nicht aktualisiert werden.", "Datele Coach nu pot fi actualizate."), color = palette.danger)
         if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
@@ -110,12 +116,14 @@ internal fun StudioCoachRecommendations(
             val reasons = state.exercises.map { it.advice.reason }.distinct()
             val sharedReason = reasons.singleOrNull()?.let { NativeCoachAdviceText.reason(text, it) }?.takeIf { it.isNotBlank() }
             var openRow by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
-            Surface(color = palette.glassTile(palette.surfaceCard), shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp)).fillMaxWidth().testTag("studio_coach_advice_list")
-                    .trainPilotBorder(0.75.dp, palette.cardBorder, RoundedCornerShape(16.dp))) {
-                Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-                    Text(coachTr(lang, "Mai javaslat gyakorlatonként", "Today's advice per exercise", "Heutige Empfehlung je Übung", "Recomandarea de azi pe exerciții"),
-                        style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
+            val listShape = RoundedCornerShape(16.dp)
+            val heading: @Composable () -> Unit = {
+                Text(coachTr(lang, "Mai javaslat gyakorlatonként", "Today's advice per exercise", "Heutige Empfehlung je Übung", "Recomandarea de azi pe exerciții"),
+                    style = MaterialTheme.typography.titleSmall, color = palette.textPrimary,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)
+                        .testTag("studio_coach_fixed_advice_header"))
+            }
+            val adviceRows: @Composable () -> Unit = {
                     if (sharedReason != null) Surface(color = palette.glassStateTile(palette.warning, palette.warning.copy(alpha = 0.14f)), shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).testTag("studio_coach_shared_reason")) {
                         Text(sharedReason, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall,
@@ -185,6 +193,33 @@ internal fun StudioCoachRecommendations(
                             }
                         }
                     }
+            }
+            Surface(color = palette.glassTile(palette.surfaceCard), shape = listShape,
+                modifier = (if (pinnedList) Modifier.weight(1f) else Modifier)
+                    .trainPilotGlassRim(palette, listShape).fillMaxWidth().testTag("studio_coach_advice_list")
+                    .trainPilotBorder(0.75.dp, palette.cardBorder, listShape)) {
+                if (pinnedList) {
+                    GlassScrollChrome(modifier = Modifier.fillMaxSize(), rootInset = 0.dp, localWindow = true,
+                        top = {
+                            Column(Modifier.fillMaxWidth().glassHeaderMaterial(palette, listShape)
+                                .then(if (palette.isLiquidGlass) Modifier else Modifier.background(palette.surfaceCard, listShape))) {
+                                heading()
+                                HorizontalDivider(color = palette.coachAdviceDividerColor(),
+                                    modifier = Modifier.padding(horizontal = 12.dp))
+                            }
+                        }
+                    ) { scrollModifier, topInset, bottomInset ->
+                        Column(scrollModifier.verticalScroll(rememberScrollState())
+                            .testTag("studio_coach_advice_scroll")
+                            .padding(horizontal = 12.dp)) {
+                            Spacer(Modifier.height(topInset))
+                            adviceRows()
+                            Spacer(Modifier.height(bottomInset + 6.dp))
+                        }
+                    }
+                } else Column(Modifier.padding(vertical = 6.dp)) {
+                    heading()
+                    Column(Modifier.padding(horizontal = 12.dp)) { adviceRows() }
                 }
             }
         }
@@ -218,7 +253,7 @@ internal fun StudioCoachNextTrainingCard(
         return
     }
     // Do not invent an A/B badge from a UUID; prefer the actual day title.
-    val letterDay = target.title.trim().takeIf { it.length in 1..2 }
+    val letterDay = target.title.trim().uppercase().takeIf { it in setOf("A", "B", "C", "D") }
         ?: target.dayId.uppercase().takeIf { it in setOf("A", "B", "C", "D") }
     val shape = RoundedCornerShape(18.dp)
     Surface(color = palette.glassCardFill(palette.tintedSurface(0.12f)), shape = shape,
@@ -226,7 +261,7 @@ internal fun StudioCoachNextTrainingCard(
             .trainPilotGlassMaterial(palette, shape)
             .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(2.dp, palette.primary.copy(alpha = 0.85f), shape)) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Surface(color = palette.tintedSurface(0.20f), shape = RoundedCornerShape(50.dp)) {
@@ -244,27 +279,28 @@ internal fun StudioCoachNextTrainingCard(
                         style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                         color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.testTag("studio_coach_program_name"))
-                    Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
-                        style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
-                        maxLines = 2, modifier = Modifier.testTag("studio_coach_day_name"))
+                    // Hide only the duplicate label; a descriptive day name must remain visible.
+                    if (letterDay == null || target.title.trim().uppercase() != letterDay)
+                        Text(target.title, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
+                            modifier = Modifier.testTag("studio_coach_day_name"))
                     // 2773: same date line as the Home card (today / still doable today / next date / cycle).
                     val line = homePlannedDateLine(target.schedule?.startIso, java.time.ZonedDateTime.now(),
-                        com.example.model.AppLanguage.entries.firstOrNull { it.code == lang } ?: com.example.model.AppLanguage.HU)
+                        com.example.model.AppLanguage.entries.firstOrNull { it.code == lang } ?: com.example.model.AppLanguage.HU, compact = true)
                     Text(line.text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
                         color = when (line.timing) {
                             HomePlanTiming.TODAY_UPCOMING -> palette.success
                             HomePlanTiming.TODAY_PASSED -> palette.warning
                             else -> palette.textSecondary
-                        }, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("studio_coach_next_date"))
+                        }, modifier = Modifier.testTag("studio_coach_next_date"))
                 }
                 if (letterDay != null) {
                     Surface(color = palette.tintedSurface(0.16f),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.trainPilotBorder(1.25.dp, palette.primary,
                             RoundedCornerShape(16.dp)).testTag("studio_coach_day_badge")) {
-                        Box(Modifier.sizeIn(minWidth = 58.dp, minHeight = 58.dp).padding(8.dp),
+                        Box(Modifier.sizeIn(minWidth = 46.dp, minHeight = 46.dp).padding(5.dp),
                             contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Text(letterDay, style = MaterialTheme.typography.headlineLarge,
+                            Text(letterDay, style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold, color = palette.primary)
                         }
                     }
