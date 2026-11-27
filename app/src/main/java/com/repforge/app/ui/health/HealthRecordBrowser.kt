@@ -1,5 +1,7 @@
 package com.repforge.app.ui.health
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -42,7 +44,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
@@ -206,7 +207,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     )
                     if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
                         com.example.ui.components.TrainPilotRedCloseButton(onClick = onClose, testTag = "health_records_close", closeDescription = resources.getString(R.string.health_records_close))
-                    } else IconButton(
+                    } else TrainPilotIconButton(
                         onClick = onClose,
                         modifier = Modifier.size(48.dp).testTag("health_records_close")
                     ) {
@@ -332,7 +333,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(
+                TrainPilotIconButton(
                     onClick = { restart() },
                     enabled = !loading,
                     modifier = Modifier.size(48.dp).testTag("health_records_reload")
@@ -394,7 +395,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
+                    TrainPilotIconButton(
                         enabled = previous.isNotEmpty(),
                         modifier = Modifier.size(48.dp).testTag("health_records_previous"),
                         onClick = {
@@ -416,7 +417,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
-                    IconButton(
+                    TrainPilotIconButton(
                         enabled = current.next != null,
                         modifier = Modifier.size(48.dp).testTag("health_records_next"),
                         onClick = {

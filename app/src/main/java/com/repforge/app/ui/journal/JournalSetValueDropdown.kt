@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.components.TrainPilotMenuItem
 
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -43,7 +45,7 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
                                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.text),
                                 modifier = Modifier.fillMaxWidth().testTag("${tag}_custom_input"))
                         }
-                        IconButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
+                        TrainPilotIconButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.ExpandMore, label, tint = colors.accentText)
                         }
                     }

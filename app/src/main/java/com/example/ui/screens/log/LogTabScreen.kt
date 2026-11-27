@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.example.ui.components.TrainPilotListDivider
 import com.example.ui.components.trainPilotListPanel
 
@@ -57,7 +59,6 @@ import androidx.compose.material.icons.filled.Search
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -649,7 +650,7 @@ internal fun LogWorkoutCard(
             // A route action belongs to the card content, before the trailing destructive action.
             if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
                 val lang = com.example.localization.LocalTrainPilotStrings.current.language
-                IconButton(
+                TrainPilotIconButton(
                     onClick = onClick,
                     modifier = Modifier.size(48.dp).testTag("journal_route_map_${entry.id}")
                 ) {

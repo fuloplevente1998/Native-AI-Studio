@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotIconButton
+
 import com.repforge.app.ui.theme.trainPilotPressIndication
 
 import com.example.ui.theme.trainPilotGlassRim
@@ -46,7 +48,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import com.example.ui.components.TrainPilotSwitch as Switch
@@ -268,7 +269,7 @@ fun BackupRestoreScreen(
                         Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(if (drive) tr(lang, "Edzések egészségadatai", "Workout health data", "Training-Gesundheitsdaten", "Date de sănătate la antrenament")
                                 else tr(lang, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"), color = palette.textPrimary, modifier = Modifier.weight(1f))
-                            IconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
+                            TrainPilotIconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
                                 Icon(Icons.Default.Info, contentDescription = tr(uiState.language, "Egészségadatok információ", "Health data information", "Informationen zu Gesundheitsdaten", "Informații despre datele de sănătate"), tint = palette.textSecondary)
                             }
                             Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.heightIn(min = 48.dp).testTag("backup_health_switch"))

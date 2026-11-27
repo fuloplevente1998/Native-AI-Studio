@@ -191,3 +191,5 @@
 
 ### #433 L3 – native menu and special control feedback
 - Eleven active popup item call sites (planner, library, custom exercise, map, health, workout values, journal, training mode, GPS) now delegate to TrainPilotMenuItem: original Material sizing, enabled and click semantics, standard ripple unchanged; Liquid one local press with keyboard focus retained. Favorite toggle similarly retains native checked semantics. Video/red close/backup format visual child uses local Liquid feedback instead of broad tint/ripple. No dense-row live optics. Old calendar implementation left untouched pending reachability proof. CI pending.
+
+- L3 follow-up: fourteen checked active native icon action call sites now share TrainPilotIconButton. Material click/disabled semantics and standard branch unchanged, Liquid single local vector feedback, including health, active session, program editing, calendar and journal. Existing non-Liquid-only close branches untouched except where already in a checked shared file. CI pending.

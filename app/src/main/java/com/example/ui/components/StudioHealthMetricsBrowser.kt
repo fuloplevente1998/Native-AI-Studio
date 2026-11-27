@@ -176,7 +176,7 @@ internal fun StudioHealthMetricsBrowser(
                     Icon(if (showCalendar) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                 }
             }
-            IconButton(onClick = {
+            TrainPilotIconButton(onClick = {
                 if (onRefresh != null) onRefresh() else reload++
             }, enabled = !refreshBusy && (pages.isNotEmpty() || failed), modifier = Modifier.testTag("journal_reload")) {
                 if (refreshBusy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)

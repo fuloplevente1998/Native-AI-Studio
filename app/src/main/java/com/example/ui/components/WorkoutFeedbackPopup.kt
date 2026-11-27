@@ -85,7 +85,7 @@ internal fun WorkoutFeedbackPopup(
         TrainPilotTextField(value = note, onValueChange = { onNote(it.take(3000)) }, enabled = enabled,
             placeholder = { Text(feedbackText(language, "Rövid megjegyzés…", "Short note…", "Kurze Notiz…", "Notiță scurtă…")) },
             trailingIcon = if (note.isNotBlank()) {
-                { IconButton(onClick = { onNote("") }, enabled = enabled) {
+                { TrainPilotIconButton(onClick = { onNote("") }, enabled = enabled) {
                     Icon(Icons.Default.Close, feedbackText(language, "Megjegyzés törlése", "Clear note", "Notiz löschen", "Șterge notița"))
                 } }
             } else null,
