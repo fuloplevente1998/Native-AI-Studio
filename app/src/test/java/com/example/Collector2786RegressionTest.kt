@@ -152,15 +152,19 @@ class Collector2786RegressionTest {
         val workouts = compose.onNodeWithTag("health_weekly_workouts_section")
         val stepBounds = steps.getUnclippedBoundsInRoot()
         val workoutBounds = workouts.getUnclippedBoundsInRoot()
-        assertTrue(stepBounds.height.value <= 108f)
-        assertTrue(workoutBounds.height.value <= 108f)
+        val stepHeight = stepBounds.bottom - stepBounds.top
+        val workoutHeight = workoutBounds.bottom - workoutBounds.top
+        assertTrue(stepHeight.value <= 108f)
+        assertTrue(workoutHeight.value <= 108f)
         compose.onNodeWithTag("health_weekly_steps_section_toggle").assertHeightIsAtLeast(androidx.compose.ui.unit.Dp(48f)).performClick()
         compose.onNodeWithTag("health_weekly_steps_bars").assertIsDisplayed()
-        assertTrue(steps.getUnclippedBoundsInRoot().height > stepBounds.height)
+        val expandedBounds = steps.getUnclippedBoundsInRoot()
+        assertTrue(expandedBounds.bottom - expandedBounds.top > stepHeight)
         compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true)
             .assertTextContains("119%", substring = true)
         compose.onNodeWithTag("health_weekly_steps_section_toggle").performClick()
-        assertEquals(stepBounds.height, steps.getUnclippedBoundsInRoot().height)
+        val collapsedBounds = steps.getUnclippedBoundsInRoot()
+        assertEquals(stepHeight, collapsedBounds.bottom - collapsedBounds.top)
     }
 
     @Test fun weeklyChartKeepsOnlyOneDayDetailAndSlidesHistoryFromBottom() {
