@@ -56,7 +56,7 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
 | `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
 
-## Studio közös komponensek – leltár (64/91)
+## Studio közös komponensek – leltár (77/91)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -124,3 +124,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/components/WorkoutEditorAppearance.kt` | 45 | — | — | 14 | — | — |
 | `com/example/ui/components/WorkoutFeedbackPopup.kt` | 113 | 38 | 59, 88 | 58, 103, 104 | — | — |
 | `com/example/ui/components/WorkoutModeArt.kt` | 69 | — | — | — | — | — |
+| `com/example/ui/components/WorkoutPresentationLabels.kt` | 41 | — | — | — | — | — |
+| `com/example/ui/components/common/ComponentText.kt` | 11 | — | — | — | — | — |
+| `com/example/ui/components/common/CustomThemeColorControls.kt` | 111 | — | — | — | — | 102 |
+| `com/example/ui/components/common/CustomThemeColorWheel.kt` | 119 | — | 110, 112, 114 | — | — | 105 |
+| `com/example/ui/components/common/CustomThemeEditorSheet.kt` | 145 | 55 | — | — | 5, 61 | 67, 75 |
+| `com/example/ui/components/common/CustomThemePreview.kt` | 143 | 35, 40, 67, 68, 69, 91, 125 | — | — | 7, 55 | 48, 51 |
+| `com/example/ui/components/common/CustomThemeSection.kt` | 135 | — | — | — | — | — |
+| `com/example/ui/components/common/ExerciseVideoButton.kt` | 112 | 73 | 67 | — | — | — |
+| `com/example/ui/components/common/GlassSelectionPill.kt` | 111 | — | — | 107 | — | — |
+| `com/example/ui/components/common/GoalsEditDialog.kt` | 336 | 68, 159, 167 | 225, 274 | — | 40, 90 | 109, 135 |
+| `com/example/ui/components/common/LiquidGlassControl.kt` | 156 | 129 | 55 | — | 22, 118, 119, 139 | — |
+| `com/example/ui/components/common/PalettePickerSheet.kt` | 221 | 77 | — | — | 43, 83 | 135, 167, 192 |
+| `com/example/ui/components/common/PersonalPlannerModal.kt` | 1012 | 256, 304, 333, 391, 451, 488, 522, 568, 637, 697, 712, 731, 757, 782, 833, 859, 884 | 301, 313, 565, 577, 779, 791, 881, 893 | — | 56, 358 | 264, 530, 739, 841 |
