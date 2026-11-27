@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import com.example.ui.theme.rememberGlassMotionEnabled
+import com.example.ui.theme.glassNavigationFade
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.example.ui.theme.GlassMaterialRole
@@ -129,6 +130,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
         modifier = Modifier
             .fillMaxWidth()
             .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), preserveOriginalMaterial = true)
+            .glassNavigationFade(palette, currentTab, currentSubScreen)
             .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
