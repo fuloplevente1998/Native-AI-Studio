@@ -38,7 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import com.example.ui.theme.glassHeaderMaterial
 import com.example.ui.theme.LocalTrainPilotPalette
-import com.example.ui.theme.glassOverlayFill
+import com.example.ui.theme.photoViewerBackground
 import com.example.ui.theme.trainPilotScreenBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -283,7 +283,7 @@ internal fun NativeProgressPhotoGallery(
                     pinnedHeader?.invoke()
                     Text(strings.getString(R.string.native_progress_photo_title), color = colors.text,
                         modifier = Modifier.fillMaxWidth()
-                            .glassHeaderMaterial(palette, shape)
+                            .glassHeaderMaterial(palette, shape, preserveOriginalMaterial = true)
                             .then(if (palette.isLiquidGlass) Modifier else Modifier.background(colors.card, shape))
                             .trainPilotBorder(1.dp, colors.line, shape)
                             .padding(12.dp))
@@ -407,9 +407,10 @@ internal fun NativeProgressPhotoGallery(
             val frameShape = RoundedCornerShape(28.dp)
             Column(
                 Modifier.fillMaxSize()
-                    .background(palette.glassOverlayFill(colors.bg).copy(alpha = 1f))
+                    .background(palette.photoViewerBackground(colors.bg))
                     .systemBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp)
-                    .clip(frameShape).trainPilotScreenBackdrop(palette)
+                    // No second opaque backdrop: it would cancel the viewer's slight transparency.
+                    .clip(frameShape).then(if (palette.isLiquidGlass) Modifier else Modifier.trainPilotScreenBackdrop(palette))
                     .trainPilotBorder(1.dp, colors.line, frameShape).padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
