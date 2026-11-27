@@ -17,6 +17,10 @@ import com.repforge.app.ui.theme.trainPilotBorder
 
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -96,34 +100,13 @@ internal fun CoachDetailScreen(
         model.reload()
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .trainPilotScreenBackdrop(palette)
-            .testTag("coach_detail_screen"),
-        // Both Coach routes share this scrollable safe area, including the optional back bar.
-        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
-            end = TrainPilotCardSpacing.ScreenGutter, top = 16.dp + LocalGlassTopInset.current, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
-    ) {
+    val upperContent: @Composable () -> Unit = {
         if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {
-            item {
-                SubScreenTopBar(
-                    leadingIcon = com.example.ui.components.TrainPilotCoachIcon,
-                    title = "TrainPilot Coach",
-                    onBack = onBack,
-                    onOpenSettings = onOpenSettings
-                )
-            }
+            SubScreenTopBar(leadingIcon = com.example.ui.components.TrainPilotCoachIcon,
+                title = "TrainPilot Coach", onBack = onBack, onOpenSettings = onOpenSettings)
         }
-
-        // Screenshot 4: Mai felkészültség (Arc gauge + 3 distinct D10 readiness indicators)
-        item {
-            StudioCoachReadinessCard(uiState, readiness)
-        }
-
+        StudioCoachReadinessCard(uiState, readiness)
         if (!nativeState.initialLoading && (!hasScore || nativeState.error || nativeState.refreshFailed || nativeState.refreshing)) {
-            item {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (nativeState.refreshFailed) Text(
                         tr(uiState.language, "Az egészségadatok frissítése sikertelen.", "Health data refresh failed.",
@@ -141,21 +124,56 @@ internal fun CoachDetailScreen(
                             "Gesundheitsdaten aktualisieren", "Actualizează datele de sănătate"))
                     }
                 }
-            }
         }
-
-        // Put the next actionable day immediately after readiness.
-        item {
-            com.example.ui.components.StudioCoachNextTrainingCard(
-                nativeState, onStartCoachTarget, onOpenWorkout
-            )
-        }
-
-        item {
+        com.example.ui.components.StudioCoachNextTrainingCard(nativeState, onStartCoachTarget, onOpenWorkout)
+    }
+    CoachPageLayout(
+        modifier = Modifier.fillMaxSize().trainPilotScreenBackdrop(palette).testTag("coach_detail_screen"),
+        upper = upperContent,
+        recommendations = { pinned, modifier ->
             com.example.ui.components.StudioCoachRecommendations(nativeState,
                 onStartCoachTarget, onOpenWorkout, onOpenExerciseDetail,
                 model::previewProgramApplication, model::closeVariation, model::saveVariation,
-                showTarget = false, programChangeAllowed = !uiState.isWorkoutSessionActive)
+                showTarget = false, programChangeAllowed = !uiState.isWorkoutSessionActive,
+                modifier = modifier, pinnedList = pinned)
+        }
+    )
+}
+
+/** Normal portrait layouts reserve the remaining space for the independently scrolling advice.
+ * Compact/large-text layouts use a single scroll so the upper cards and all actions stay reachable.
+ * A bounded upper scroll is a safety valve for longer translated or Samsung-specific content.
+ */
+@Composable
+internal fun CoachPageLayout(
+    modifier: Modifier = Modifier,
+    upper: @Composable () -> Unit,
+    recommendations: @Composable (Boolean, Modifier) -> Unit
+) {
+    val inset = LocalGlassTopInset.current
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    BoxWithConstraints(modifier) {
+        val usable = maxHeight - inset
+        val pinned = usable >= 420.dp && maxWidth >= 320.dp && fontScale <= 1.3f
+        if (!pinned) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().testTag("coach_fallback_scroll"),
+                contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
+                    end = TrainPilotCardSpacing.ScreenGutter, top = 16.dp + LocalGlassTopInset.current, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                item { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { upper() } }
+                item { recommendations(false, Modifier.fillMaxWidth()) }
+            }
+        } else {
+            Column(Modifier.fillMaxSize().padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                .padding(top = inset + 6.dp, bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.fillMaxWidth().heightIn(max = (usable - 112.dp).coerceAtLeast(1.dp))
+                    .verticalScroll(rememberScrollState()).testTag("studio_coach_fixed_upper"),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) { upper() }
+                recommendations(true, Modifier.weight(1f).fillMaxWidth())
+            }
         }
     }
 }
@@ -177,7 +195,7 @@ internal fun StudioCoachReadinessCard(
             .fillMaxWidth().trainPilotGlassMaterial(palette, RoundedCornerShape(22.dp))
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -216,15 +234,15 @@ internal fun StudioCoachReadinessCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth().testTag("studio_coach_final_readiness"),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CoachReadinessGauge(displayScore.takeIf { hasScore })
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                CoachReadinessGauge(displayScore.takeIf { hasScore }, compact = true)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         text = tr(uiState.language, "Végső Coach készenlét", "Final Coach readiness", "Finale Coach-Bereitschaft", "Pregătirea finală Coach"),
                         style = MaterialTheme.typography.titleSmall,
