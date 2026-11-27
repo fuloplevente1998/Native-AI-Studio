@@ -300,7 +300,13 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     }
 
                     page?.let { current ->
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                            val sources = listOf("") + current.origins.map { it.source }
+                            val labels = listOf(tr("Összes forrás", "All sources", "Alle Quellen", "Toate sursele")) + current.origins.map { friendlyOriginLabel(it, channel, resources) }
+                            com.example.ui.components.LiquidSegmentedTabs(labels, sources.indexOf(query.source),
+                                { restart(sources[it]) }, "health_source_track", scrollable = true,
+                                itemTag = { if (it == 0) "health_origin_all" else "health_origin_${sources[it]}" }) { _, label, _ -> Text(label, maxLines = 1) }
+                        } else LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             item {
                                 SourceFilterPill(
                                     label = tr("Összes forrás", "All sources", "Alle Quellen", "Toate sursele"),
