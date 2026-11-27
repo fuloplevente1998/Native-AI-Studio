@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -32,25 +34,28 @@ internal fun LiquidSegmentedTabs(
     itemTag: (Int) -> String = { "${tag}_$it" },
     weights: List<Float> = List(labels.size) { 1f },
     protectScrollingContent: Boolean = false,
+    scrollable: Boolean = false,
     label: @Composable RowScope.(Int, String, Boolean) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
     val shape = RoundedCornerShape(50)
     val track = remember { GlassPillTrack() }
-    Box(modifier.fillMaxWidth()
+    val scroll = if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier
+    Box(modifier.fillMaxWidth().then(scroll)
         .then(if (protectScrollingContent) Modifier.glassHeaderMaterial(palette, shape, GlassMaterialRole.Navigation)
             else Modifier.glassHeaderControl(palette, shape, GlassMaterialRole.Navigation))
         .padding(2.dp).testTag(tag)) {
         GlassSelectionPill(track, selectedIndex, shape, palette, selection.border)
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).selectableGroup(),
+        Row((if (scrollable) Modifier else Modifier.fillMaxWidth()).height(IntrinsicSize.Min).selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             labels.forEachIndexed { index, text ->
                 val selected = index == selectedIndex
                 val source = remember { MutableInteractionSource() }
                 val drag = if (selected && rememberGlassMotionEnabled()) track.drag.observe() else Modifier
                 val color = if (selected) selection.foreground else palette.textPrimary
-                Box(Modifier.weight(weights[index]).fillMaxHeight().heightIn(min = 48.dp)
+                val itemWidth = if (scrollable) Modifier.widthIn(min = 76.dp) else Modifier.weight(weights[index])
+                Box(itemWidth.fillMaxHeight().heightIn(min = 48.dp)
                     .glassPillSlot(track, index).clip(shape).then(drag)
                     .trainPilotPressIndication(shape, source)
                     .selectable(selected, interactionSource = source, indication = null,
