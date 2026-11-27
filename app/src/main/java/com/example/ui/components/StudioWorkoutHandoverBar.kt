@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
 
-import androidx.compose.foundation.clickable
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -135,8 +135,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 val timeSize = measurer.measure(elapsedText, style = timeStyle, maxLines = 1).size
                 val frameWidth = maxOf(72.dp, with(density) { timeSize.width.toDp() } + 12.dp)
                 val frameHeight = maxOf(36.dp, with(density) { timeSize.height.toDp() } + 6.dp)
-                val controls: @Composable () -> Unit = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val elapsedFrame: @Composable () -> Unit = {
                         Surface(shape = shape, color = fill, border = TrainPilotFrames.stroke(1.dp, selection.border),
                             modifier = Modifier.size(frameWidth, frameHeight)
                                 .trainPilotGlassRim(palette, shape, GlassMaterialRole.Performance)
@@ -145,9 +144,11 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                                 Text(elapsedText, style = timeStyle, color = foreground, maxLines = 1)
                             }
                         }
+                }
+                val transferFrame: @Composable () -> Unit = {
                         if (state.showWatchWorkoutControls) {
                             Box(Modifier.width(frameWidth).heightIn(min = maxOf(48.dp, frameHeight))
-                                .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClick = onToggle)
+                                .trainPilotClickable(shape, enabled = enabled, onClick = onToggle)
                                 .semantics { contentDescription = actionLabel }
                                 .testTag("workout_handover_action"), contentAlignment = Alignment.Center) {
                                 Surface(shape = shape, color = if (enabled) fill else palette.glassTile(palette.surfaceElevated, elevated = true),
@@ -165,6 +166,11 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                                 }
                             }
                         }
+                }
+                val controls: @Composable () -> Unit = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        elapsedFrame()
+                        transferFrame()
                     }
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -172,7 +178,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                     if (maxWidth - controlsWidth < 120.dp || fontScale > 1.3f) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             statusContent()
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { controls() }
+                            if (maxWidth < controlsWidth) {
+                                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    elapsedFrame()
+                                    transferFrame()
+                                }
+                            } else Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { controls() }
                         }
                     } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
