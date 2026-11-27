@@ -38,10 +38,23 @@ internal class GlassBackdrop internal constructor(internal val layer: GraphicsLa
 internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?> { null }
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
-/** Fixed inner chrome must suppress the legibility of content passing behind it,
- * even at maximum clarity. Allow the approved navbar and photo gallery to retain their original material. */
+/** Frosted chrome obscures more of the scrolling body; clear chrome reveals a little more.
+ * Use a colored, luminance-bounded coat instead of multiplying the lens by black.
+ * The high opacity suppresses ghost text without crushing the surface to black.
+ */
 internal fun fixedGlassChromeShadeAlpha(clarity: Int): Float =
-    .50f + .10f * (clarity.coerceIn(0, 100) / 100f)
+    .88f - .06f * (clarity.coerceIn(0, 100) / 100f)
+
+/** A shared, visibly colored midtone for all eight Liquid families. The darker clear
+ * endpoint still has a minimum luminance; the bright frosted endpoint stays below
+ * the existing glass contrast ceiling. Only the coat, not foreground, is tinted.
+ */
+internal fun liquidChromeTint(palette: TrainPilotPalette): Color {
+    val t = palette.glassClarity.coerceIn(0, 100) / 100f
+    val target = .105f - .025f * t
+    val seed = lerp(palette.background, palette.primary, .60f)
+    return GlassContrast.limit(seed, target)
+}
 
 internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
     16f - 4f * (clarity.coerceIn(0, 100) / 100f)
@@ -68,7 +81,7 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     // Inner background draws after the lens but before foreground controls: the text,
     // icons and touch targets are unchanged. This also covers static/old-device fallback.
     return if (preserveOriginalMaterial) material else material.background(
-        Color.Black.copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
+        liquidChromeTint(palette).copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
 }
 
 @Composable
