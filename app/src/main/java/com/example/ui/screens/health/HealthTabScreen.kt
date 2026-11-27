@@ -792,7 +792,9 @@ fun HealthTabScreen(
                             color = palette.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(closeSheet, Modifier.size(48.dp).testTag("health_${healthSectionSheet}_close")) {
+                        if (palette.isLiquidGlass) {
+                            com.example.ui.components.TrainPilotRedCloseButton(onClick = closeSheet, testTag = "health_${healthSectionSheet}_close")
+                        } else IconButton(closeSheet, Modifier.size(48.dp).testTag("health_${healthSectionSheet}_close")) {
                             Icon(Icons.Default.Close, strings.closeAction, tint = palette.danger)
                         }
                     }
