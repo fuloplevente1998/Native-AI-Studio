@@ -39,7 +39,7 @@ internal val LocalGlassHeaderBackdrop = staticCompositionLocalOf<GlassBackdrop?>
 internal val LocalGlassTopInset = compositionLocalOf { 0.dp }
 
 /** Fixed inner chrome must suppress the legibility of content passing behind it,
- * even at maximum clarity. Keep the primary navbar's approved material unchanged. */
+ * even at maximum clarity. Allow the approved navbar and photo gallery to retain their original material. */
 internal fun fixedGlassChromeShadeAlpha(clarity: Int): Float =
     .50f + .10f * (clarity.coerceIn(0, 100) / 100f)
 
@@ -49,9 +49,9 @@ internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
     role: GlassMaterialRole = GlassMaterialRole.Navigation,
-    primaryNavigation: Boolean = false): Modifier {
+    preserveOriginalMaterial: Boolean = false): Modifier {
     if (!palette.isLiquidGlass) return this
-    val minBlur = if (primaryNavigation) 0f else fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+    val minBlur = if (preserveOriginalMaterial) 0f else fixedGlassChromeMinimumBlurDp(palette.glassClarity)
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
     val chrome = LocalKyantHeader.current.forThisWindow()
     val backdrop = LocalGlassHeaderBackdrop.current
@@ -67,7 +67,7 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     }
     // Inner background draws after the lens but before foreground controls: the text,
     // icons and touch targets are unchanged. This also covers static/old-device fallback.
-    return if (primaryNavigation) material else material.background(
+    return if (preserveOriginalMaterial) material else material.background(
         Color.Black.copy(alpha = fixedGlassChromeShadeAlpha(palette.glassClarity)), shape)
 }
 
