@@ -2,7 +2,7 @@
 
 Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; nincs implementáció vagy vizuális elfogadás. A nyolc Liquid téma a hatókör, a 32 standard paletta és Wear változatlan. A teljes fa 310 telefonos UI/VM/root Kotlin-fájlt tartalmaz; nem mind aktív vizuális komponens. A tényleges launcher, TrainPilotAppRoot, TrainPilotSheetRoutes és CODEMAP alapján kell a megkerülő útvonalakat besorolni. A táblázat teljes fájlokon végzett mintakeresés, nem készülékes teszt. A találat lehet szemantikus szín, import alias vagy standard ág; nem automatikusan hiba. A hiányzó találat nem igazol helyességet.
 
-## Studio képernyők – 1. rész (12/49)
+## Studio képernyők – teljes fájlleltár (49/49)
 
 | Fájl | Sor | Közvetlen festék | Vezérlő | Közös üveg | Optika/lista | Közös press |
 |---|---:|---|---|---|---|---|
@@ -42,3 +42,16 @@ Alap: `b14dc497448b2e3b4df0f9715ea65cb675a01775`, 281800. Csak dokumentáció; n
 | `com/example/ui/screens/progress/ProgressVolumeAndMuscle.kt` | 835 | 420, 453, 470, 493, 510, 529, 546, 565, 621, 686, 732, 779 | — | 133, 137, 237, 251, 286, 387, 392, 437, 486, 522, 558, 598, 601, 761 | 41, 398, 682 | 149, 243, 418, 468, 487, 508, 523, 544, 559, 608, 768 |
 | `com/example/ui/screens/settings/BackupRestoreScreen.kt` | 376 | 200 | 224, 269, 272 | 219, 220, 233, 256, 257, 366 | 37, 40, 181, 191, 371 | — |
 | `com/example/ui/screens/settings/GoogleCloudSyncCard.kt` | 463 | 159, 214, 248, 302, 313, 334, 345, 348, 418 | 291, 330, 430 | 164, 165, 189, 192, 241, 243 | — | 207, 234, 287, 298, 428 |
+| `com/example/ui/screens/settings/PermissionsScreen.kt` | 263 | 215 | 243 | 192 | 21, 68 | 212 |
+| `com/example/ui/screens/settings/SettingsMainScreen.kt` | 495 | 120, 149, 480 | — | 208, 261, 279, 302, 450, 453, 474 | 19, 46, 49, 134, 172, 176 | 146, 217, 282, 307, 458 |
+| `com/example/ui/screens/settings/WatchAndSyncScreen.kt` | 468 | 254, 333 | 249 | 132, 350, 405, 418 | 35, 80 | 163, 211, 353, 408 |
+| `com/example/ui/screens/workout/AddCustomExerciseDialog.kt` | 274 | 92, 111, 136, 160, 186 | 133, 139, 183, 189, 235, 244 | — | 17, 88 | 115, 164, 233, 242 |
+| `com/example/ui/screens/workout/CalendarPlannerScreen.kt` | 1081 | 160, 244, 307, 324, 611, 849, 861, 890, 1054, 1064 | 302, 652, 1059 | 270, 360, 417, 420, 460, 486, 627, 632, 755, 796, 799, 825 | 44, 354, 405, 947 | 187, 205, 274, 364, 462, 488, 507, 579, 852, 869 |
+| `com/example/ui/screens/workout/ExerciseDetailScreen.kt` | 354 | 135, 156, 281, 315 | 311 | 129, 167, 168, 274 | 31, 106 | 149 |
+| `com/example/ui/screens/workout/ExerciseLibraryScreen.kt` | 464 | 265, 274, 361, 384 | 269, 329, 381, 389, 398, 410 | 154, 246, 248, 314 | 36, 145, 290 | 173, 176, 179, 199, 317, 356, 375, 457 |
+| `com/example/ui/screens/workout/PlannerControls.kt` | 329 | 261, 288 | 269 | 100, 101, 102, 103, 120, 121, 203, 324 | 5, 6, 7, 320, 323 | 142, 160, 209 |
+| `com/example/ui/screens/workout/ProgramCard.kt` | 325 | 150, 221 | — | 133 | — | 127, 175 |
+| `com/example/ui/screens/workout/ProgramEditorScreen.kt` | 514 | — | 489, 502 | 220, 267, 268, 388, 477 | 45, 120 | 225, 284, 329 |
+| `com/example/ui/screens/workout/ProgramsListScreen.kt` | 792 | 148, 194, 232, 277, 367, 426, 456, 602, 611, 624, 647, 714 | — | 500, 503, 517, 521, 546, 549, 589, 608, 684, 687, 733 | 47, 582, 669 | 450, 522, 565, 620, 712, 750 |
+| `com/example/ui/screens/workout/WorkoutScreenText.kt` | 11 | — | — | — | — | — |
+| `com/example/ui/screens/workout/WorkoutTabScreen.kt` | 493 | 379 | — | 86, 92, 186, 191, 268, 273, 346, 349, 396, 400, 462, 466 | 41, 173 | 91, 190, 272, 311, 375, 399, 465 |
