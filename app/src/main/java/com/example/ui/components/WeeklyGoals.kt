@@ -3,6 +3,7 @@ package com.example.ui.components
 import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
+import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -154,9 +155,12 @@ fun WeeklyGoalsCompact(
                     }
                 }
             }
-            if (onGoals != null && expanded != false) Surface(shape = RoundedCornerShape(12.dp), color = p.glassStateTile(p.primary, p.primary.copy(alpha = 0.12f)),
-                modifier = Modifier.size(if (expanded == null) 44.dp else 48.dp).trainPilotBorder(1.dp, p.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .trainPilotClickable(RoundedCornerShape(12.dp)) { onGoals() }.testTag("weekly_goals_settings")) {
+            val goalControlShape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(12.dp)
+            if (onGoals != null && expanded != false) Surface(shape = goalControlShape, color = p.glassStateTile(p.primary, p.primary.copy(alpha = 0.12f)),
+                modifier = Modifier.size(if (expanded == null) 44.dp else 48.dp)
+                    .then(if (p.isLiquidGlass) Modifier.trainPilotGlassRim(p, goalControlShape, com.example.ui.theme.GlassMaterialRole.Button) else Modifier)
+                    .trainPilotBorder(1.dp, p.primary.copy(alpha = 0.5f), goalControlShape)
+                    .trainPilotClickable(goalControlShape) { onGoals() }.testTag("weekly_goals_settings")) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Tune, contentDescription = wgTr(lang, "Célok beállítása", "Set goals", "Ziele festlegen", "Setează obiective"),
                         tint = p.primary, modifier = Modifier.size(20.dp))
