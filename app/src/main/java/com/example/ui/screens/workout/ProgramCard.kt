@@ -58,6 +58,7 @@ internal fun ProgramCardContent(
     onOpenMoreActions: () -> Unit,
     headerModifier: Modifier = Modifier,
     reorderSlot: (@Composable () -> Unit)? = null,
+    emphasizeActiveBadge: Boolean = false,
     expandedContent: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -145,7 +146,7 @@ internal fun ProgramCardContent(
                     }
                 } else {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(if (emphasizeActiveBadge) 14.dp else 10.dp),
                         color = palette.primary,
                         modifier = Modifier
                             .padding(vertical = 4.dp)
@@ -153,11 +154,15 @@ internal fun ProgramCardContent(
                     ) {
                         Text(
                             text = strings.activeBadgeLabel,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            style = (if (emphasizeActiveBadge) MaterialTheme.typography.labelLarge
+                                else MaterialTheme.typography.labelSmall).copy(fontWeight = FontWeight.Bold),
                             color = palette.onPrimary,
                             maxLines = 1,
                             softWrap = false,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(
+                                horizontal = if (emphasizeActiveBadge) 12.dp else 8.dp,
+                                vertical = if (emphasizeActiveBadge) 8.dp else 4.dp
+                            )
                         )
                     }
                 }
