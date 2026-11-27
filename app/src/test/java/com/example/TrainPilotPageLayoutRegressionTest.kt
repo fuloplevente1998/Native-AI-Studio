@@ -41,6 +41,20 @@ import org.robolectric.annotation.GraphicsMode
 class TrainPilotPageLayoutRegressionTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun customizeFooterUsesFreeViewportSpaceAndKeepsNormalOverflowSpacing() {
+        val density = androidx.compose.ui.unit.Density(1f)
+        val arrange = com.example.ui.components.pageFooterArrangement(5.dp, true)
+        val sizes = intArrayOf(70, 90, 48)
+        val positions = IntArray(3)
+        with(arrange) { with(density) { arrange(400, sizes, positions) } }
+        assertEquals(listOf(0, 75, 352), positions.toList())
+        with(arrange) { with(density) { arrange(218, sizes, positions) } }
+        assertEquals(listOf(0, 75, 170), positions.toList())
+        val editor = com.example.ui.components.pageFooterArrangement(5.dp, false)
+        with(editor) { with(density) { arrange(400, sizes, positions) } }
+        assertEquals(listOf(0, 75, 170), positions.toList())
+    }
+
     @Test fun savedOrderRejectsUnknownAndDuplicateBlocksAndIncludesNewBlocks() {
         assertEquals(listOf("health", "profile", "weekly"),
             reconcilePageLayout(listOf("obsolete", "health", "health"), listOf("profile", "health", "weekly")))
