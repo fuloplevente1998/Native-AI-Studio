@@ -24,6 +24,23 @@ val mapsApiKey = sequenceOf(
     localMapsProperties.getProperty("MAPS_API_KEY")
 ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
+// The normal local and persistent-signing test task still runs every test.
+// Only full CI's phone matrix opts into disjoint exact class filters.
+val phoneTestShard = providers.gradleProperty("trainpilotPhoneTestShard").orNull
+require(phoneTestShard == null || phoneTestShard in setOf("a", "b")) {
+  "trainpilotPhoneTestShard must be a or b"
+}
+val phoneShardBClasses = if (phoneTestShard != null) {
+  providers.fileContents(rootProject.layout.projectDirectory.file("scripts/ci_phone_test_shard_b.txt"))
+    .asText.get().lineSequence().map { it.trim() }
+    .filter { it.isNotEmpty() && !it.startsWith("#") }.toList().also { names ->
+      require(names.isNotEmpty() && names.size == names.toSet().size) { "Invalid phone shard B manifest" }
+      require(names.all { it.matches(Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+")) }) {
+        "Phone shard B must contain exact fully qualified class names"
+      }
+    }
+} else emptyList()
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(37) { minorApiLevel = 1 } }
@@ -92,6 +109,8 @@ android {
         // Two isolated Robolectric JVMs: shorter wall time on 4-vCPU CI runners.
         test.maxParallelForks = 2
         test.maxHeapSize = "3g"
+        if (phoneTestShard == "a") phoneShardBClasses.forEach { test.filter.excludeTestsMatching(it) }
+        if (phoneTestShard == "b") phoneShardBClasses.forEach { test.filter.includeTestsMatching(it) }
       }
     }
   }

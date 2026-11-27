@@ -95,7 +95,7 @@ jobs:
               job.conclusion === 'success' &&
               job.steps?.some(step => step.name === stepName && step.conclusion === 'success')
             );
-            const shards = ['phone', 'wear-shared'].every(suite =>
+            const shards = ['phone-a', 'phone-b', 'wear-shared'].every(suite =>
               passedStep(`JVM regressions (${suite})`, 'Compile and run module JVM tests')
             );
             const r8 = ['app', 'wear'].every(module =>
