@@ -210,6 +210,7 @@ fun PalettePickerBottomSheet(
                 PaletteCategory.entries.firstOrNull { it.name == expandedFamily },
                 onExpand = { expandedFamily = it?.name.orEmpty(); revealThemeId = null; onSelectCategory(it) },
                 onSelect = { id ->
+                    expandedFamily = com.example.ui.theme.TrainPilotPalettes.getById(id).subGroup.name
                     revealThemeId = id
                     onSelectPalette(id)
                 }, choiceTag = "palette_option_", revealSelectedId = revealThemeId,

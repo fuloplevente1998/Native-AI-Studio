@@ -45,3 +45,6 @@ Ellenőrzés: default main kódkeresés, rögzített audit ág teljes érintett 
 
 ## L4 first optical integration
 - #378 reference (b16bcd90) single Kyant fill/edge. Current fixed chrome duplicate paint/rim: shared live path now precomposites coat and retains one Kyant highlight. Old API/overlay fallback unchanged. Minimum blur and alpha left intact pending visual verification. Tile/Performance remain no backdrop.
+
+## L5 implementation
+- VmAppearance / VmBackupSettings: active request/data feedback race guarded by request identity, no route changes. SettingsMainScreen and StudioPaletteCategories: active keyed item/attached tile reveal coordinated with viewport. PalettePickerSheet explicitly retains chosen category. New full root + real store regression (not run).

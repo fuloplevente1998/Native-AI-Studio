@@ -78,6 +78,8 @@ import com.example.model.SubScreen
 import com.example.ui.components.SubScreenTopBar
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * 4/4 #1 BEÁLLÍTÁSOK (Mockup 4/4 #1 + main Beállítások + 4 lenyíló téma-kategória oszlopokban)
@@ -155,11 +157,15 @@ fun SettingsMainScreen(
     }
 
     val settingsListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    androidx.compose.runtime.LaunchedEffect(revealThemeId, uiState.selectedPaletteId, palette.isLiquidGlass) {
-        if (revealThemeId != null && revealThemeId == uiState.selectedPaletteId && revealThemeId == palette.id) {
+    androidx.compose.runtime.LaunchedEffect(revealThemeId, uiState.selectedPaletteId, palette.id, expandedMainThemesSection) {
+        val requested = revealThemeId
+        if (expandedMainThemesSection && requested != null &&
+            requested == uiState.selectedPaletteId && requested == palette.id) {
+            // Wait for the list to have a real viewport after the renderer/inset change.
+            snapshotFlow { settingsListState.layoutInfo.totalItemsCount }.first { it > 2 }
             androidx.compose.runtime.withFrameNanos { }
-            // If a changed header/viewport moved the entire group out of composition, restore
-            // the stable Themes item first; its selected tile then performs minimal reveal.
+            // The keyed Themes group is the third item. Restore it only if it left
+            // the viewport; the child owns the minimal selected-tile reveal.
             if (settingsListState.layoutInfo.visibleItemsInfo.none { it.key == "settings_themes" })
                 settingsListState.scrollToItem(2)
         }
@@ -241,6 +247,8 @@ fun SettingsMainScreen(
                             expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
                             onExpand = { expandedThemeFamily = it?.name.orEmpty(); revealThemeId = null },
                             onSelect = { id ->
+                                expandedMainThemesSection = true
+                                expandedThemeFamily = com.example.ui.theme.TrainPilotPalettes.getById(id).subGroup.name
                                 revealThemeId = id
                                 onSelectPalette(id)
                             },

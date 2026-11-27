@@ -16,6 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.Alignment
@@ -97,15 +101,20 @@ internal fun StudioPaletteCategories(
                         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                             row.forEach { option ->
                                 val active = selectedId == option.id
-                                val requester = remember { BringIntoViewRequester() }
+                                val requester = remember(option.id) { BringIntoViewRequester() }
+                                val laidOut = remember(option.id, palette.id) { mutableStateOf(false) }
                                 if (active && revealSelectedId == option.id && palette.id == option.id) {
-                                    LaunchedEffect(option.id, palette.isLiquidGlass) {
+                                    LaunchedEffect(option.id, palette.id, requester) {
+                                        // The selected tile must be attached and measured in the
+                                        // new viewport before requesting relocation.
+                                        snapshotFlow { laidOut.value }.first { it }
                                         withFrameNanos { }
                                         requester.bringIntoView()
                                         onSelectionRevealed(option.id)
                                     }
                                 }
                                 Box(Modifier.weight(1f).height(48.dp)
+                                    .onGloballyPositioned { laidOut.value = it.isAttached && it.size.height > 0 }
                                     .bringIntoViewRequester(requester)
                                     .trainPilotClickable(CircleShape) { onSelect(option.id) }
                                     .semantics {

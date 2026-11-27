@@ -109,6 +109,8 @@ class TrainPilotViewModel : ViewModel() {
     internal var nativeDatabase: TrainPilotDatabase? = null
     internal var nativeScope: CoroutineScope? = null
     internal var paletteWriteJob: Job? = null
+    // UI-thread request identity: stale DataStore echoes cannot replace a newer visible selection.
+    internal var pendingPaletteWrite: PaletteWriteRequest? = null
     internal var nativeReloadJob: Job? = null
     internal var programEditorContinuation: com.repforge.app.NativeDataReplacement.Continuation? = null
     private var nativeObserversJob: Job? = null
