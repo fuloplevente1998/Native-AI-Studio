@@ -134,6 +134,34 @@ class Collector2779UiRegressionTest {
         compose.onNodeWithTag("log_calendar_sheet").assertDoesNotExist()
     }
 
+    @Test fun journalSearchAndDateRemainFixedAndRowsOpenTheirOwnDetails() {
+        val today = LocalDate.now()
+        val rows = (0 until 36).map { index ->
+            com.example.model.LoggedWorkoutEntry(id = "pinned-$index", titleHu = "Edzés $index",
+                savedStartIso = today.atStartOfDay().plusMinutes((36 - index).toLong()).toString())
+        }
+        var opened: String? = null
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.LogTabScreen(
+                TrainPilotUiState(loggedWorkouts = rows, language = AppLanguage.HU),
+                com.example.localization.TrainPilotStrings.forLanguage(AppLanguage.HU),
+                {}, { opened = it }, {}, {}, {}
+            )
+        } }
+        val search = compose.onNodeWithTag("log_search_input")
+        val date = compose.onNodeWithTag("log_month_picker_button")
+        val searchTop = search.getUnclippedBoundsInRoot().top
+        val dateTop = date.getUnclippedBoundsInRoot().top
+        compose.onNodeWithTag("log_open_latest_detail_shortcut").assertDoesNotExist()
+        val list = compose.onNodeWithTag("log_tab_screen")
+        list.performScrollToIndex(30)
+        assertEquals(searchTop, search.getUnclippedBoundsInRoot().top)
+        assertEquals(dateTop, date.getUnclippedBoundsInRoot().top)
+        list.performScrollToIndex(0)
+        compose.onNodeWithTag("log_card_pinned-0").performClick()
+        assertEquals("pinned-0", opened)
+    }
+
     @Test fun stepChartKeepsMissingDaysEmptyInsteadOfZero() {
         val today = LocalDate.now()
         fun day(back: Long, steps: Int, synced: Boolean) = com.example.ui.viewmodel.WeeklyHealthDaySummary(
