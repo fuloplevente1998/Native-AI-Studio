@@ -68,7 +68,8 @@ internal fun StudioHealthMetricsBrowser(
     workouts: List<LoggedWorkoutEntry> = emptyList(),
     workoutTitle: (LoggedWorkoutEntry) -> String = { it.titleHu },
     onOpenWorkout: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pinnedHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
@@ -154,6 +155,7 @@ internal fun StudioHealthMetricsBrowser(
                 modifier = Modifier.fillMaxWidth().glassHeaderMaterial(palette, shape)
                     .trainPilotBorder(1.dp, palette.cardBorder, shape)) {
                 Column(Modifier.fillMaxWidth().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    pinnedHeader?.invoke()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val pillShape = RoundedCornerShape(14.dp)
             Surface(shape = pillShape, color = palette.overlayRoleFill(palette.glassTile(palette.surfaceCard), GlassMaterialRole.Button), modifier = Modifier
