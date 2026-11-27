@@ -51,3 +51,4 @@
 - A fő naptár, a Napló és az Egészségnapló közös napcsempe-geometriát, peremet és állapotfestést használ. A tartományvégek és a belső napok külön kiemelést kapnak. A mai napot aláhúzás is jelzi az időszakválasztókban.
 - Az Alap programok fülön az Új program teljes szélességű. A három művelet a Saját programok fülön érhető el. A hagyományos témák egészségnaplós értékei külön háttérrel és finom kerettel jelennek meg.
 - A teljes JVM és R8 CI szükséges. Készüléken ellenőrizendő a naptárfestés és a görgetés.
+- A 2816-os készülékes próbához a belső verzió telefonon 281600, Wear OS-en 281602. Megjelenített verzió 1.5.5.
