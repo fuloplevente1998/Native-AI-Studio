@@ -186,7 +186,14 @@ fun ExerciseLibraryScreen(
             }
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
-            Row(
+            if (palette.isLiquidGlass) {
+                val categories = ExerciseCategory.entries.filter { !timedOnly || it == ExerciseCategory.ALL || pool.any { e -> e.category == it } }
+                val labels = categories.map { cat -> "${cat.localized(state.language)} (${if (cat == ExerciseCategory.ALL) pool.size else pool.count { it.category == cat }})" }
+                com.example.ui.components.LiquidSegmentedTabs(labels, categories.indexOf(state.selectedExerciseCategory),
+                    { onSelectCategory(categories[it]) }, "exercise_category_track", scrollable = true) { _, label, _ ->
+                    Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
+            } else Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
