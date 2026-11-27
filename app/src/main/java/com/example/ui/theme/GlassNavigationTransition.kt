@@ -16,13 +16,13 @@ import com.example.model.SubScreen
 
 internal const val NAVIGATION_FADE_MILLIS = 240
 
-/** A bounded palette-colored coat keeps the different route backdrops in the same tonal family.
+/** A temporary palette-colored coat bridges route changes without a permanent navbar background.
  * Only the new backdrop is revealed during a route change; no old-window bitmap or
  * duplicate header is retained. The labels, icons, press feedback and touch targets
  * remain fully opaque and keep their current semantics.
  */
 internal fun navigationHeaderCoatAlpha(reveal: Float): Float =
-    .65f + .23f * reveal.coerceIn(0f, 1f)
+    .24f * reveal.coerceIn(0f, 1f)
 
 @Composable
 internal fun Modifier.glassNavigationFade(
