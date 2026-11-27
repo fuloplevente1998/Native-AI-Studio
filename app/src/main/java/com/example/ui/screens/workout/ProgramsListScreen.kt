@@ -1,4 +1,7 @@
 package com.example.ui.screens
+
+import com.example.ui.components.TrainPilotListDivider
+import com.example.ui.components.trainPilotListPanel
 import com.example.ui.theme.glassStateTile
 import androidx.compose.foundation.background
 import com.example.ui.theme.glassCardFill
@@ -445,14 +448,11 @@ fun ProgramsListScreen(
         )
     }
 
-    val listShape = RoundedCornerShape(24.dp)
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 6.dp)
-            .trainPilotGlassMaterial(palette, listShape)
-            .background(palette.glassCardFill(palette.surface), listShape)
-            .trainPilotBorder(1.dp, palette.cardBorder, listShape)
+            .trainPilotListPanel()
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
@@ -617,7 +617,7 @@ fun ProgramsListScreen(
                 filteredPrograms.forEachIndexed { index, program -> key(program.id) {
                     val progName = program.localizedName(state.language)
                     val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
-                    if (index > 0) HorizontalDivider(color = palette.cardBorder.copy(alpha = .40f))
+                    if (index > 0) TrainPilotListDivider()
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = if (program.isActive || isExpanded)

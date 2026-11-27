@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import com.repforge.app.ui.theme.glassPressMotion
 
 /** Only opt-in controls use a live lens while measuring. Dense rows, separate-window children,
  * battery saver and older APIs retain a bounded, dimensional paint. No new capture layer. */
@@ -45,8 +46,12 @@ internal fun Modifier.liquidDropMaterial(palette: TrainPilotPalette, shape: Shap
         allowMeasurement, live, role)
     if (optical) {
         val scene = LocalKyantScene.current.forThisWindow()
-        if (scene != null) return kyantGlass(scene, palette, shape, role, accent, pressSource.takeIf { fullOptics })
+        if (scene != null) return kyantGlass(scene, palette, shape, role, accent, pressSource)
     }
-    return background(Brush.verticalGradient(liquidDropPaints(palette, role, accent)), shape)
+    val materialMotion = if (pressSource != null) Modifier.glassPressMotion(
+        pressSource, enabled = true, shape = shape, stretchOnDrag = true, includeTouchBubble = false
+    ) else Modifier
+    return then(materialMotion)
+        .background(Brush.verticalGradient(liquidDropPaints(palette, role, accent)), shape)
         .trainPilotGlassRim(palette, shape, role)
 }

@@ -89,11 +89,22 @@ class LiquidGlass2808Test {
 
     @Test fun pressPathCarriesTheBubbleForButtonsChipsAndNav() {
         val press = java.io.File("src/main/java/com/repforge/app/ui/theme/TrainPilotPressFeedback.kt").readText()
-        assertTrue(press.contains("}.glassTouchBubble(source, enabled, shape)"))
-        for (file in listOf("TrainPilotOutlinedButton.kt", "TrainPilotButton.kt", "TrainPilotActionButtons.kt")) {
+        assertTrue(press.contains("Modifier.glassTouchBubble(source, enabled, shape)"))
+        for (file in listOf("TrainPilotOutlinedButton.kt", "TrainPilotButton.kt")) {
             val text = java.io.File("src/main/java/com/repforge/app/ui/theme/$file").readText()
             assertTrue(file, text.contains(".glassTouchBubble(source, enabled, shape)"))
         }
+        val actions = java.io.File("src/main/java/com/repforge/app/ui/theme/TrainPilotActionButtons.kt").readText()
+        assertTrue(actions.contains(".glassPressMotion(source, enabled, shape, stretchOnDrag = true)"))
+    }
+
+    @Test fun aShortDragStretchesTheGlassAndAReleaseReturnsItToRest() {
+        val finger = Offset(9f, -3f)
+        val travel = glassDragTransform(finger, limit = 5f, progress = 1f)
+        assertTrue(travel.x > 1.5f && travel.y < 0f)
+        assertTrue(glassDragStretch(travel.x, 48f) > .03f)
+        assertEquals(.065f, glassDragStretch(5f, 48f), 0f)
+        assertEquals(Offset.Zero, glassDragTransform(finger, limit = 5f, progress = 0f))
     }
 
     // ---- 12 ----

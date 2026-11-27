@@ -1,11 +1,11 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.components.TrainPilotListDivider
+import com.example.ui.components.trainPilotListPanel
 
-import com.example.ui.theme.liquidDropMaterial
+
 import com.example.ui.theme.glassCardFill
 import com.example.ui.theme.trainPilotGlassMaterial
-import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassTile
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -130,9 +130,11 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             lazyListState = listState,
             modifier = scrollModifier
         ) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("studio_statistics_screen"),
+            val exerciseList = state.statsSubTab == 0
+            val panel = if (exerciseList) Modifier.padding(horizontal = 6.dp).trainPilotListPanel() else Modifier
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().then(panel).testTag("studio_statistics_screen"),
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp + topInset, bottom = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                verticalArrangement = Arrangement.spacedBy(if (exerciseList) 0.dp else 6.dp)) {
             // 2779: three tabs in one row: Strength (records) · Cardio · Steps. The stored state stays
             // statsSubTab 0/1 + cardioFilterStepsMode, so the view model and saved settings are unchanged.
             val visibleTab = when {
@@ -140,7 +142,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 state.cardioFilterStepsMode -> 2
                 else -> 1
             }
-            item(key = "statistics_tabs", contentType = "tabs") { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            item(key = "statistics_tabs", contentType = "tabs") { Row(Modifier.fillMaxWidth().padding(bottom = if (exerciseList) 6.dp else 0.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
                     statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
                 subTabLabels.forEachIndexed { index, label ->
@@ -163,17 +165,17 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         item(key = "records_retry", contentType = "retry") { TextButton(onClick = onRefreshRecords) { Text(statsTr(lang, "Újrapróbálás", "Retry", "Erneut versuchen", "Reîncearcă")) } }
                     }
                     state.savedExerciseBests.isEmpty() -> item(key = "records_empty", contentType = "status") { Text(statsTr(lang, "Még nincs mentett, befejezett sorozat.", "No saved completed sets yet.", "Noch keine gespeicherten Sätze.", "Nicio serie finalizată salvată încă."), color = palette.textSecondary) }
-                    else -> items(state.savedExerciseBests, key = { "record_${it.exerciseId}" }, contentType = { "record" }) { record ->
+                    else -> itemsIndexed(state.savedExerciseBests, key = { _, record -> "record_${record.exerciseId}" }, contentType = { _, _ -> "record" }) { index, record ->
+                        if (index > 0) TrainPilotListDivider()
                         val expanded = selectedRecord == record.exerciseId
                         // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
                         val trendKind = exerciseTrendKind(record)
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
-                        Surface(shape = MaterialTheme.shapes.large, color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.surfaceCard,
-                            modifier = Modifier.fillMaxWidth().liquidDropMaterial(palette, MaterialTheme.shapes.large, GlassMaterialRole.Tile, live = false)
-                                .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+                        Surface(shape = MaterialTheme.shapes.large, color = androidx.compose.ui.graphics.Color.Transparent,
+                            modifier = Modifier.fillMaxWidth()
                                 .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp)) {
+                                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp), stretchOnDrag = true) {
                                     selectedRecord = if (expanded) null else record.exerciseId
                                     if (!expanded) onExercise(record.exerciseId)
                                 }, verticalAlignment = Alignment.CenterVertically) {

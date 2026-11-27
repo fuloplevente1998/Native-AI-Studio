@@ -185,8 +185,9 @@ internal fun Modifier.kyantGlass(
                 val travel = glassDragTransform(drag.offset, 5.dp.toPx(), press.value.coerceIn(0f, 1f))
                 translationX = travel.x
                 translationY = travel.y
-                scaleX = scale + glassDragStretch(travel.x, size.width)
-                scaleY = scale + glassDragStretch(travel.y, size.height)
+                val shortEdge = minOf(size.width, size.height)
+                scaleX = scale + glassDragStretch(travel.x, shortEdge)
+                scaleY = scale + glassDragStretch(travel.y, shortEdge)
             }
             animateLayer
         }

@@ -1,9 +1,9 @@
 package com.example.ui.screens
 
-import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.components.TrainPilotListDivider
+import com.example.ui.components.trainPilotListPanel
 
 import com.example.ui.theme.glassStateTile
-import com.example.ui.theme.glassTile
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 
@@ -49,7 +49,6 @@ import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -133,11 +132,15 @@ fun ExerciseLibraryScreen(
             (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
     }
 
+    val panelMargin = 6.dp
+    val contentGutter = TrainPilotCardSpacing.ScreenGutter - panelMargin
     Column(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
+            .padding(horizontal = panelMargin)
+            .trainPilotListPanel()
             .verticalScroll(rememberScrollState())
-            .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp, bottom = 24.dp)
+            .padding(start = contentGutter, end = contentGutter, top = 4.dp, bottom = 24.dp)
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         if (!embedded) SubScreenTopBar(
@@ -268,18 +271,10 @@ fun ExerciseLibraryScreen(
             }
         }
 
-        val listShape = RoundedCornerShape(20.dp)
-        if (filtered.isNotEmpty()) Column(
-            Modifier.fillMaxWidth()
-                .padding(top = 4.dp)
-                .background(palette.glassTile(palette.surface), listShape)
-                .trainPilotGlassRim(palette, listShape)
-                .trainPilotBorder(1.dp, palette.cardBorder, listShape)
-                .clip(listShape)
-        ) {
+        if (filtered.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
             filtered.forEachIndexed { index, ex -> key(ex.id) {
                 if (index > 0) {
-                    HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
+                    TrainPilotListDivider()
                 }
                 val inQueue = state.quickWorkoutQueue.any { it.id == ex.id }
                 val favorite = ex.id in state.favoriteExerciseIds

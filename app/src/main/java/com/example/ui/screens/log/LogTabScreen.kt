@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotListDivider
+import com.example.ui.components.trainPilotListPanel
+
 import com.example.ui.theme.liquidDropMaterial
 
 import com.example.ui.theme.GlassMaterialRole
@@ -52,7 +55,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -310,6 +312,8 @@ fun LogTabScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .trainPilotScreenBackdrop(palette)
+                .padding(horizontal = 6.dp)
+                .trainPilotListPanel()
                 .testTag("log_tab_screen"),
             // The measured header inset scrolls with the list; no extra item or opaque clip.
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter,
@@ -520,14 +524,8 @@ fun LogTabScreen(
         }
 
         itemsIndexed(filteredLogs, key = { _, entry -> "workout_${entry.id}" }, contentType = { _, _ -> "workout" }) { index, logEntry ->
-            // Contiguous segments keep the panel scrollable without composing all history at once.
-            val top = if (index == 0) 20.dp else 0.dp
-            val bottom = if (index == filteredLogs.lastIndex) 20.dp else 0.dp
-            val segmentShape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
-            Column(Modifier.fillMaxWidth().background(palette.glassTile(palette.surfaceCard), segmentShape)) {
-                if (index > 0) {
-                    HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = palette.cardBorder.copy(alpha = .40f))
-                }
+            Column(Modifier.fillMaxWidth()) {
+                if (index > 0) TrainPilotListDivider()
                 LogWorkoutCard(
                     entry = logEntry,
                     onClick = { onOpenRouteMap(logEntry.id) },

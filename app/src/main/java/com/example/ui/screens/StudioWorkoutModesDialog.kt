@@ -355,6 +355,6 @@ private fun WorkoutModesContainer(
     } else {
         TrainPilotAlertDialog(onDismissRequest = onDismissRequest, containerColor = containerColor,
             titleContentColor = titleContentColor, title = title, text = text,
-            dismissButton = dismissButton, confirmButton = confirmButton)
+            dismissButton = dismissButton, confirmButton = confirmButton, maxHeightFraction = .96f)
     }
 }
