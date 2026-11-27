@@ -491,6 +491,7 @@ fun ProgramsListScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             rootInset = if (state.currentSubScreen == SubScreen.PROGRAMS_LIST) 0.dp
                 else com.example.ui.theme.LocalGlassTopInset.current,
+            localWindow = true,
             top = {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Column(
