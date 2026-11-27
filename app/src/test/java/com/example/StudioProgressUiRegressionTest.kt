@@ -314,12 +314,22 @@ class StudioProgressUiRegressionTest {
         var state by mutableStateOf(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true, watchConnected = true,
             permissionAccess = com.example.ui.viewmodel.StudioPermissionAccess(trainPilotWearEnabled = true)))
         compose.setContent { TrainPilotTheme { StudioWorkoutHandoverBar(state, TrainPilotStrings.forLanguage(AppLanguage.HU)) { calls++ } } }
-        compose.onNodeWithTag("workout_handover_action").performClick()
+        val strings = TrainPilotStrings.forLanguage(AppLanguage.HU)
+        compose.onNodeWithTag("workout_control_owner", useUnmergedTree = true).assertContentDescriptionEquals("Telefon")
+        val action = compose.onNodeWithTag("workout_handover_action")
+        action.assertContentDescriptionEquals(strings.handoverToWatchAction).assertHeightIsAtLeast(48.dp)
+        val time = compose.onNodeWithTag("active_workout_elapsed").getUnclippedBoundsInRoot()
+        val frame = compose.onNodeWithTag("workout_handover_frame", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(time.width, frame.width)
+        assertEquals(time.top, frame.top)
+        assertEquals(time.bottom, frame.bottom)
+        action.performClick()
         assertEquals(1, calls)
         compose.runOnIdle { state = state.copy(watchControlPending = true) }
         compose.onNodeWithTag("workout_handover_action").assertIsNotEnabled()
         compose.runOnIdle { state = state.copy(watchControlPending = false, phoneControlsWorkout = false, watchAppAvailable = false) }
-        compose.onNodeWithTag("workout_handover_action").assertIsEnabled().performClick()
+        compose.onNodeWithTag("workout_control_owner", useUnmergedTree = true).assertContentDescriptionEquals("Óra")
+        compose.onNodeWithTag("workout_handover_action").assertContentDescriptionEquals(strings.reclaimToPhoneAction).assertIsEnabled().performClick()
         assertEquals(2, calls)
         compose.runOnIdle { state = state.copy(phoneControlsWorkout = true, watchAppAvailable = false) }
         compose.onNodeWithTag("workout_handover_action").assertDoesNotExist()
