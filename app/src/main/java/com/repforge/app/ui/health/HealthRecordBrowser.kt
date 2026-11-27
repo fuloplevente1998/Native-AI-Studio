@@ -204,7 +204,9 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(
+                    if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = onClose, testTag = "health_records_close", closeDescription = resources.getString(R.string.health_records_close))
+                    } else IconButton(
                         onClick = onClose,
                         modifier = Modifier.size(48.dp).testTag("health_records_close")
                     ) {
