@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -11,6 +12,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -85,10 +88,10 @@ class UnifiedHealthJournalUiRegressionTest {
     private fun awaitReloadDisabled() = awaitUi {
         compose.onAllNodes(hasTestTag("journal_reload") and isNotEnabled()).fetchSemanticsNodes().size == 1
     }
-    private fun journal(samsungSupplement: Boolean = false) {
+    private fun journal(samsungSupplement: Boolean = false, modifier: Modifier = Modifier) {
         compose.setContent { TrainPilotTheme {
             Column(Modifier.fillMaxSize()) {
-                StudioHealthMetricsBrowser("en", "fixture", samsungSupplement = samsungSupplement)
+                StudioHealthMetricsBrowser("en", "fixture", samsungSupplement = samsungSupplement, modifier = modifier)
             }
         } }
     }
@@ -216,12 +219,26 @@ class UnifiedHealthJournalUiRegressionTest {
     @Test fun scrollingLoadsTheNextWeekWithoutMovingTheDateFilter() {
         val older = day.minusDays(8)
         store.healthDay(older.toString(), JSONObject().put("steps", 42), store.generation())
-        journal()
+        // A short viewport prevents the entire first week from triggering eager pagination.
+        journal(modifier = Modifier.height(220.dp))
         awaitTag("journal_day_$day")
         val filter = compose.onNodeWithTag("journal_period_button")
         val top = filter.getUnclippedBoundsInRoot().top
-        compose.onNodeWithTag("health_journal_sheet_scroll").performScrollToIndex(6)
+        val list = compose.onNodeWithTag("health_journal_sheet_scroll")
+        fun indexOf(date: LocalDate): Int =
+            list.fetchSemanticsNode().config.getOrNull(SemanticsProperties.IndexForKey)
+                ?.invoke(date.toString()) ?: -1
+        assertEquals(6, indexOf(day.minusDays(6)))
+        assertEquals("The second week must not be loaded before scrolling", -1, indexOf(older))
+        list.performScrollToIndex(6)
+        // Lazy items need not have semantics nodes until actually scrolled into view.
+        // Wait for the loaded key, then prove its row and stored value are displayed.
+        awaitUi { indexOf(older) == 8 }
+        list.performScrollToKey(older.toString())
         awaitTag("journal_day_$older")
+        compose.onNodeWithTag("journal_day_$older").assertIsDisplayed()
+        compose.onNodeWithTag("journal_summary_${older}_steps", useUnmergedTree = true).assertTextEquals("42")
+        filter.assertIsDisplayed()
         assertEquals(top, filter.getUnclippedBoundsInRoot().top)
         compose.onNodeWithTag("journal_older").assertDoesNotExist()
         compose.onNodeWithTag("journal_newer").assertDoesNotExist()

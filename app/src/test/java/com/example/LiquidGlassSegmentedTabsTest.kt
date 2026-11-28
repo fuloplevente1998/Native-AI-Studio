@@ -60,6 +60,7 @@ class LiquidGlassSegmentedTabsTest {
         var generation by mutableIntStateOf(0)
         compose.setContent {
             TrainPilotTheme(TrainPilotPalettes.getById(34)) {
+                com.example.ui.components.GlassPillTrackMotion(track, selected)
                 key(generation) {
                     LiquidSegmentedTabs(listOf("Exercises", "Cardio", "Steps"), selected,
                         { selected = it }, "recreated_track", sharedTrack = track) { _, text, _ -> Text(text) }
@@ -67,15 +68,32 @@ class LiquidGlassSegmentedTabsTest {
             }
         }
         compose.waitForIdle()
-        val before = compose.runOnIdle { track.left.value }
+        val before = compose.runOnIdle {
+            assertTrue("The initial slot must be placed", track.placed)
+            assertEquals(requireNotNull(track.bounds[0]).first, track.left.value, 1f)
+            track.left.value
+        }
+        val destination = compose.runOnIdle { requireNotNull(track.bounds[2]).first }
+        assertTrue("The destination must be to the right of the initial slot", destination > before)
         compose.mainClock.autoAdvance = false
         try {
             compose.runOnIdle { selected = 2; generation++ }
-            compose.mainClock.advanceTimeBy(64)
-            val moving = compose.runOnIdle { track.left.value }
-            val destination = compose.runOnIdle { requireNotNull(track.bounds[2]).first }
+            // Flush placement/recomposition between manual frames; a single bulk advance can
+            // precede the Android layout and the effect's first frame on Robolectric.
+            var moving = before
+            repeat(8) {
+                if (moving <= before) {
+                    compose.mainClock.advanceTimeByFrame()
+                    moving = compose.runOnIdle { track.left.value }
+                }
+            }
             assertTrue("The retained pill should not snap to the new slot", moving < destination)
             assertTrue("The retained spring should advance", moving > before)
+            compose.runOnIdle { generation++ }
+            compose.mainClock.advanceTimeByFrame()
+            val afterRecreation = compose.runOnIdle { track.left.value }
+            assertTrue("Header recreation must not reset or snap the travelling pill",
+                afterRecreation >= moving && afterRecreation < destination)
         } finally { compose.mainClock.autoAdvance = true }
         compose.waitForIdle()
         compose.runOnIdle { assertEquals(requireNotNull(track.bounds[2]).first, track.left.value, 1f) }

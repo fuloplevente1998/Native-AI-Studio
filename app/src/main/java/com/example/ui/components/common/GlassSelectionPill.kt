@@ -54,24 +54,11 @@ internal fun Modifier.glassPillSlot(track: GlassPillTrack?, index: Int): Modifie
         if (track.bounds[index] != bounds) track.bounds[index] = bounds
     }
 
-/**
- * One glass selection pill shared by a row of items. Its two edges ride separate springs: the
- * edge facing the travel direction is stiffer, the trailing one follows, so the pill stretches
- * and slightly squashes like a drop of liquid, then settles. Reduced motion: it jumps.
- * Must be the first child of the Box that also holds the item row (drawn behind the labels).
- */
+/** Own the travel coroutine at the same lifetime as the retained track, not a subcomposed header. */
 @Composable
-internal fun BoxScope.GlassSelectionPill(
-    track: GlassPillTrack,
-    selectedIndex: Int,
-    shape: Shape,
-    palette: TrainPilotPalette,
-    @Suppress("UNUSED_PARAMETER") outline: Color
-) {
+internal fun GlassPillTrackMotion(track: GlassPillTrack, selectedIndex: Int) {
     val target = track.bounds[selectedIndex]
     val motion = rememberGlassMotionEnabled()
-    val dragProgress = animateFloatAsState(if (motion && track.drag.held) 1f else 0f,
-        spring(dampingRatio = .62f, stiffness = 520f), label = "Liquid navigation touch")
     val left = track.left
     val right = track.right
     LaunchedEffect(target, motion) {
@@ -86,6 +73,31 @@ internal fun BoxScope.GlassSelectionPill(
         launch { left.animateTo(toLeft, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = !towardsEnd))) }
         launch { right.animateTo(toRight, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = towardsEnd))) }
     }
+}
+
+/**
+ * One glass selection pill shared by a row of items. Its two edges ride separate springs: the
+ * edge facing the travel direction is stiffer, the trailing one follows, so the pill stretches
+ * and slightly squashes like a drop of liquid, then settles. Reduced motion: it jumps.
+ * Must be the first child of the Box that also holds the item row (drawn behind the labels).
+ */
+@Composable
+internal fun BoxScope.GlassSelectionPill(
+    track: GlassPillTrack,
+    selectedIndex: Int,
+    shape: Shape,
+    palette: TrainPilotPalette,
+    @Suppress("UNUSED_PARAMETER") outline: Color,
+    driveMotion: Boolean = true
+) {
+    if (driveMotion) GlassPillTrackMotion(track, selectedIndex)
+    val target = track.bounds[selectedIndex]
+    val motion = rememberGlassMotionEnabled()
+    val dragProgress = animateFloatAsState(if (motion && track.drag.held) 1f else 0f,
+        spring(dampingRatio = .62f, stiffness = 520f), label = "Liquid navigation touch")
+    val left = track.left
+    val right = track.right
+
     if (target == null || !track.placed) return
     val restWidth = target.second - target.first
     Box(

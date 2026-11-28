@@ -134,6 +134,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
     val activityListState = rememberLazyListState()
     val listState = if (exerciseList) exerciseListState else activityListState
     val track = remember { com.example.ui.components.GlassPillTrack() }
+    if (sharedPanel) com.example.ui.components.GlassPillTrackMotion(track, statisticsVisibleTab(state))
     val tabs: @Composable (Modifier) -> Unit = { modifier ->
         StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier, track)
     }
@@ -287,6 +288,12 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
     }
 }
 
+private fun statisticsVisibleTab(state: TrainPilotUiState): Int = when {
+    state.statsSubTab == 0 -> 0
+    state.cardioFilterStepsMode -> 2
+    else -> 1
+}
+
 @Composable
 private fun StatisticsTabs(
     state: TrainPilotUiState,
@@ -297,11 +304,7 @@ private fun StatisticsTabs(
     track: com.example.ui.components.GlassPillTrack
 ) {
     val lang = state.language
-    val visibleTab = when {
-        state.statsSubTab == 0 -> 0
-        state.cardioFilterStepsMode -> 2
-        else -> 1
-    }
+    val visibleTab = statisticsVisibleTab(state)
     val labels = listOf(
         statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"),
         statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
