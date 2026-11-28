@@ -133,8 +133,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
     val exerciseListState = rememberLazyListState()
     val activityListState = rememberLazyListState()
     val listState = if (exerciseList) exerciseListState else activityListState
+    val track = remember { com.example.ui.components.GlassPillTrack() }
     val tabs: @Composable (Modifier) -> Unit = { modifier ->
-        StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier)
+        StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier, track)
     }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
         GlassScrollChrome(
@@ -292,7 +293,8 @@ private fun StatisticsTabs(
     onSelectTab: (Int) -> Unit,
     onStepsMode: (Boolean) -> Unit,
     onActivity: (String) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    track: com.example.ui.components.GlassPillTrack
 ) {
     val lang = state.language
     val visibleTab = when {
@@ -324,7 +326,7 @@ private fun StatisticsTabs(
         com.example.ui.components.LiquidSegmentedTabs(
             labels = labels, selectedIndex = visibleTab, onSelect = select,
             tag = "statistics_subtab_track", itemTag = { "statistics_subtab_$it" },
-            modifier = modifier, protectScrollingContent = true,
+            modifier = modifier, protectScrollingContent = true, sharedTrack = track,
             weights = labels.map { com.example.ui.components.trainPilotLabelWeight(it, labels) }
         ) { index, label, _ ->
             com.example.ui.components.TrainPilotFitText(label,
