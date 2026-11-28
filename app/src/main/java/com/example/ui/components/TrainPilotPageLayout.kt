@@ -60,6 +60,13 @@ internal data class PageLayoutBlock(val id: String, val title: String)
 internal fun reconcilePageLayout(saved: List<String>, defaults: List<String>): List<String> =
     (saved.filter { it in defaults } + defaults).distinct()
 
+/** Keep the surviving block at its saved position; migrate an older lone alias in place. */
+internal fun mergeSavedPageBlocks(saved: List<String>, mergedBlocks: Map<String, String>): List<String> =
+    saved.mapNotNull { id ->
+        val target = mergedBlocks[id]
+        if (target == null) id else if (target in saved) null else target
+    }.distinct()
+
 internal fun movePageLayoutBlock(ids: List<String>, from: Int, to: Int): List<String> =
     ids.toMutableList().apply { add(to, removeAt(from)) }
 
@@ -112,12 +119,13 @@ internal class PageLayoutState(val page: String, val defaults: List<String>, ini
 
 @Composable
 internal fun rememberPageLayout(
-    page: String, defaults: List<String>, newBlockPlacements: List<Pair<String, String>> = emptyList()
+    page: String, defaults: List<String>, newBlockPlacements: List<Pair<String, String>> = emptyList(),
+    mergedBlocks: Map<String, String> = emptyMap()
 ): PageLayoutState {
     val context = LocalContext.current.applicationContext
-    return remember(context, page, defaults, newBlockPlacements) {
+    return remember(context, page, defaults, newBlockPlacements, mergedBlocks) {
         val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
-        val previous = prefs.getString(page, null).orEmpty().split(',')
+        val previous = mergeSavedPageBlocks(prefs.getString(page, null).orEmpty().split(','), mergedBlocks)
         val children = runCatching { JSONObject(prefs.getString("${page}_children", "{}") ?: "{}") }
             .getOrDefault(JSONObject())
         val savedChildren = children.keys().asSequence().mapNotNull { group ->
