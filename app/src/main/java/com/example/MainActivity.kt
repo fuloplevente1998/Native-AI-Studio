@@ -1071,7 +1071,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                             inlineProgramEditor(program, pending)
                                         }
                                     },
-                                    onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
+                                    onOpenQuickWorkout = { viewModel.openQuickWorkoutSheet(0) },
                                     onOpenWeeklyGoals = { viewModel.openHealthAndExpand(weeklyGoals = true) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                                     onOpenHealthJournal = { focus ->
