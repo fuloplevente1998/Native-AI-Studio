@@ -101,4 +101,49 @@ class LiquidGlassNav373Test {
         compose.onNodeWithTag("top_nav_home").assertIsSelected()
         compose.onAllNodesWithTag("glass_selection_pill").assertCountEquals(0)
     }
+
+    @Test fun allNineNavigationButtonsKeepSharedHeaderGeometryAndRouteActions() {
+        var tab by mutableStateOf(MainTab.HOME)
+        var screen by mutableStateOf(SubScreen.NONE)
+        val clicks = mutableListOf<String>()
+        compose.setContent {
+            TrainPilotTheme(palette = TrainPilotPalettes.getById(33)) {
+                Box(Modifier.width(420.dp)) {
+                    TrainPilotGlobalTopHeaderAndNav(tab, screen, AppLanguage.HU, 33,
+                        TrainPilotStrings.forLanguage(AppLanguage.HU),
+                        { tab = it; screen = SubScreen.NONE; clicks += it.name },
+                        { _, _ -> }, {}, {}, { screen = SubScreen.SETTINGS_MAIN; clicks += "SETTINGS" })
+                }
+            }
+        }
+        val background = compose.onNodeWithTag("top_header_glass_background", useUnmergedTree = true)
+        val initial = background.getUnclippedBoundsInRoot()
+        val routes = listOf(
+            "top_nav_programs" to MainTab.PROGRAMS,
+            "top_nav_workout" to MainTab.WORKOUT,
+            "top_nav_progress" to MainTab.PROGRESS,
+            "top_nav_health" to MainTab.HEALTH,
+            "top_bar_coach_button" to MainTab.COACH,
+            "top_bar_journal_button" to MainTab.LOG,
+            "top_bar_calendar_button" to MainTab.CALENDAR,
+            "top_nav_home" to MainTab.HOME
+        )
+        for ((tag, expected) in routes) {
+            compose.onNodeWithTag(tag).performClick()
+            compose.runOnIdle { assertEquals(expected, tab); assertEquals(SubScreen.NONE, screen) }
+            assertEquals(initial, background.getUnclippedBoundsInRoot())
+            if (tag.startsWith("top_nav_")) {
+                compose.onNodeWithTag(tag).assertIsSelected()
+                compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
+            }
+        }
+        compose.onNodeWithTag("top_bar_settings_button").performClick()
+        compose.runOnIdle {
+            assertEquals(SubScreen.SETTINGS_MAIN, screen)
+            assertEquals(routes.map { it.second.name } + "SETTINGS", clicks)
+        }
+        assertEquals(initial, background.getUnclippedBoundsInRoot())
+        compose.onNodeWithTag("top_nav_home").performClick().assertIsSelected()
+        assertEquals(initial, background.getUnclippedBoundsInRoot())
+    }
 }
