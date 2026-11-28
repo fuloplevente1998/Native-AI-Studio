@@ -130,8 +130,8 @@ internal fun Modifier.kyantGlass(
     val prism = glassPrismaticRimRole(role) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
     val highlight = remember(spec, interactiveSurface, prism, showRim) {
         val value = Highlight(
-            width = (if (prism) 0.9f + 1.5f * spec.highlightAlpha else 0.5f + 0.8f * spec.highlightAlpha).dp,
-            alpha = if (prism) (spec.highlightAlpha * 1.12f).coerceAtMost(1f) else spec.highlightAlpha,
+            width = (if (prism) 1.05f + 1.65f * spec.highlightAlpha else 0.5f + 0.8f * spec.highlightAlpha).dp,
+            alpha = if (prism) (spec.highlightAlpha * 1.20f).coerceAtMost(1f) else spec.highlightAlpha,
             style = if (interactiveSurface || prism) HighlightStyle.Default(angle = 34f, falloff = 1.15f) else HighlightStyle.Default)
         val provider: () -> Highlight? = { value.takeIf { showRim } }
         provider
