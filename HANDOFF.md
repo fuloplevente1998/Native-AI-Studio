@@ -328,3 +328,7 @@ User requested completing the Coach page material (including start workout) and 
 - **6.** `StudioCoachDomainPanels` teljes, tördelhető gyakorlatnevet és külön tördelhető ajánlást ad. Regresszió lefedi a layoutot, lenyitást, indítást és az önálló görgetést.
 - **8.** [Teljesítményaudit és fizikai mérési terv](docs/LIQUID_PERFORMANCE_AUDIT.md). A Coach közös indoka újrafelhasználható és a csepp effektje a meglévő rajzolásban fut. Fizikai látvány, FPS, memória és energia ellenőrzése nyitott.
 - **2, 5, 7.** Kizárva a felhasználói kérés alapján.
+
+### 2823 / 1.5.9 – telefon és Wear
+
+A felhasználó jóváhagyta a #450 merge-ét, valamint a belső és külső verzió emelését. A main merge `13dda452c2673e4f78b1e7bc5d8c71c73776e8d0` fájlfája megegyezik a CI #919-ben ellenőrzött PR-fej fájlfájával. A kiadási commit a telefonos `282300`, a Wear `282302` kódot és mindkét modulban az `1.5.9` nevet állítja be. A végleges kiadási commiton teljes main CI és a meglévő persistent signing kapu fut. A fizikai készülékes jóváhagyás külön állapot.
