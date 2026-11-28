@@ -300,7 +300,13 @@ internal fun WeightLogBody(
     if (expanded) {
         val labels = listOf(tr(lang, "7 nap", "7 days", "7 Tage", "7 zile"), tr(lang, "30 nap", "30 days", "30 Tage", "30 zile"),
             tr(lang, "3 hó", "3 mo", "3 Mon.", "3 luni"), tr(lang, "1 év", "1 yr", "1 Jahr", "1 an"), tr(lang, "Mind", "All", "Alle", "Toate"))
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (palette.isLiquidGlass) {
+            com.example.ui.components.LiquidSegmentedTabs(
+                labels = labels, selectedIndex = uiState.selectedWeightRangeIndex,
+                onSelect = onSelectRange, tag = "health_weight_range_track",
+                itemTag = { "health_weight_range_$it" }, scrollable = true
+            ) { _, label, _ -> Text(label, maxLines = 1) }
+        } else Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             labels.forEachIndexed { idx, label ->
                 com.example.ui.components.TrainPilotFilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_range_$idx"))

@@ -195,7 +195,16 @@ fun LogWorkoutDetailScreen(
                 trL(uiState.language, "Statisztikák", "Statistics", "Statistiken", "Statistici"),
                 trL(uiState.language, "Forrás", "Source", "Quelle", "Sursă")
             )
-            Row(
+            if (palette.isLiquidGlass) {
+                com.example.ui.components.LiquidSegmentedTabs(
+                    labels = tabTitles, selectedIndex = uiState.logDetailTabIndex,
+                    onSelect = onSelectDetailTab, tag = "log_detail_tab_track",
+                    itemTag = { "log_detail_tab_$it" },
+                    weights = tabTitles.map { com.example.ui.components.trainPilotLabelWeight(it, tabTitles) }
+                ) { _, label, _ ->
+                    com.example.ui.components.TrainPilotFitText(label, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            } else Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {

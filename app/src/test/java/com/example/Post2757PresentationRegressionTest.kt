@@ -80,7 +80,7 @@ class Post2757PresentationRegressionTest {
         compose.runOnIdle { assertEquals(1, dismissed); assertEquals(last, started) }
     }
 
-    @Test fun quickSheetGrowsForLongerContentWithoutForcingShortTabsToFullHeight() {
+    @Test fun quickSheetKeepsFullViewportForShortLongAndOutdoorContent() {
         var tab by mutableIntStateOf(0)
         compose.setContent { TrainPilotTheme {
             QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, {}, {},
@@ -90,12 +90,18 @@ class Post2757PresentationRegressionTest {
                 })
         } }
         val content = compose.onNodeWithTag("quick_workout_sheet_host_body")
-        val short = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
-        compose.onNodeWithTag("quick_tab_1").performClick()
-        val tall = content.getUnclippedBoundsInRoot().let { it.bottom - it.top }
-        assertTrue("Short content must not reserve the full viewport", tall > short)
-        compose.onNodeWithTag("quick_tab_0").performClick()
-        assertEquals(short, content.getUnclippedBoundsInRoot().let { it.bottom - it.top })
+        // Device feedback after #439 explicitly supersedes the old wrap-content policy
+        // for this sheet only: keep its expanded viewport stable across all three tabs.
+        val initial = content.getUnclippedBoundsInRoot()
+        assertTrue("Even short content must reserve the full safe-area viewport",
+            initial.bottom - initial.top > 500.dp)
+        for (index in listOf(1, 2, 0)) {
+            compose.onNodeWithTag("quick_tab_$index").performClick()
+            compose.runOnIdle { assertEquals(index, tab) }
+            val bounds = content.getUnclippedBoundsInRoot()
+            assertEquals("Tab switching must not move the sheet top", initial.top, bounds.top)
+            assertEquals("Tab switching must not move the sheet bottom", initial.bottom, bounds.bottom)
+        }
     }
 
     @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {

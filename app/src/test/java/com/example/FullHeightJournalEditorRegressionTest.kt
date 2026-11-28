@@ -154,4 +154,47 @@ class FullHeightJournalEditorRegressionTest {
         compose.onNodeWithTag("journal_editor_cancel_footer").performClick()
         compose.runOnIdle { assertEquals(1, cancelled); assertEquals(0, saved) }
     }
+
+    @Test fun compactRemoveSetUsesSharedRedXAndPreservesDeletionGuardsAcrossThemes() {
+        var state by mutableStateOf(fixture())
+        var liquid by mutableStateOf(true)
+        compose.setContent {
+            TrainPilotTheme(com.example.ui.theme.TrainPilotPalettes.getById(if (liquid) 34 else 1)) {
+                StudioNativeEditorTheme {
+                    JournalEditorDialog(state, "hu", { state = state.copy(draft = it) }, {}, {})
+                }
+            }
+        }
+        val list = compose.onNodeWithTag("journal_editor_list")
+        list.performScrollToNode(hasTestTag("journal_editor_remove_set_0_0"))
+        val button = compose.onNodeWithTag("journal_editor_remove_set_0_0")
+        button.assertIsEnabled()
+        val visual = compose.onNodeWithTag("journal_editor_remove_set_0_0_visual", useUnmergedTree = true)
+        val liquidBounds = visual.getUnclippedBoundsInRoot()
+        assertEquals(48.dp, liquidBounds.right - liquidBounds.left)
+        assertEquals(28.dp, liquidBounds.bottom - liquidBounds.top)
+        assertEquals(48.dp, button.getUnclippedBoundsInRoot().let { it.bottom - it.top })
+        button.performClick()
+        compose.runOnIdle {
+            assertEquals(9, state.draft.exercises.single().sets.size)
+            assertEquals(1, state.draft.exercises.single().sets.first().originalIndex)
+            liquid = false
+        }
+        list.performScrollToNode(hasTestTag("journal_editor_remove_set_0_0"))
+        val classicBounds = visual.getUnclippedBoundsInRoot()
+        assertEquals(38.dp, classicBounds.right - classicBounds.left)
+        assertEquals(38.dp, classicBounds.bottom - classicBounds.top)
+        compose.runOnIdle { state = state.copy(saving = true) }
+        button.assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(9, state.draft.exercises.single().sets.size) }
+        compose.runOnIdle {
+            val exercise = state.draft.exercises.single()
+            state = state.copy(saving = false, draft = state.draft.copy(
+                exercises = listOf(exercise.copy(sets = exercise.sets.take(1)))))
+        }
+        list.performScrollToNode(hasTestTag("journal_editor_remove_set_0_0"))
+        button.assertIsNotEnabled()
+        list.performScrollToNode(hasTestTag("journal_editor_remove_exercise_0"))
+        compose.onNodeWithTag("journal_editor_remove_exercise_0").assertIsNotEnabled()
+    }
 }
