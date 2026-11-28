@@ -174,4 +174,38 @@ class LiquidGlassOverlay2812Test {
                 KyantMaterialSpec.forRole(GlassMaterialRole.Panel, step).blurDp)
         }
     }
+
+    @Test fun actualSheetInheritsFrozenSceneAndPhotoWithoutFollowingRootDrift() {
+        val root = GlassSceneState().apply { seconds = 17f }
+        val photo = android.graphics.Bitmap.createBitmap(8, 8, android.graphics.Bitmap.Config.ARGB_8888)
+        root.image = photo
+        var opened = mutableStateOf(true)
+        var observed: GlassSceneState? = null
+        compose.setContent {
+            TrainPilotTheme(TrainPilotPalettes.getById(34)) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalGlassScene provides root,
+                    LocalGlassOpticsEnabled provides false) {
+                    if (opened.value) TrainPilotScreenSheet({ opened.value = false }, "frozen_scene") {
+                        val scene = LocalGlassScene.current
+                        androidx.compose.runtime.SideEffect { observed = scene }
+                        Box(Modifier.fillMaxWidth().height(100.dp))
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("frozen_scene").assertExists()
+        compose.runOnIdle {
+            assertTrue(root.coveredBySheet)
+            assertNotSame(root, observed)
+            assertSame(photo, observed?.image)
+            assertEquals(17f, observed!!.seconds, 0f)
+            root.seconds = 43f
+        }
+        compose.runOnIdle {
+            assertEquals(17f, observed!!.seconds, 0f)
+            opened.value = false
+        }
+        compose.waitForIdle()
+        compose.runOnIdle { assertFalse(root.coveredBySheet) }
+    }
 }
