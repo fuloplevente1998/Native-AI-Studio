@@ -55,7 +55,7 @@ internal fun liquidChromeTint(palette: TrainPilotPalette): Color {
 }
 
 internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
-    22f - 4f * (clarity.coerceIn(0, 100) / 100f)
+    26f - 4f * (clarity.coerceIn(0, 100) / 100f)
 
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
@@ -80,7 +80,7 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     // protective coat into its body fill and retain only the original Kyant rim.
     // Tile/Performance never acquire a live backdrop.
     val optical = if (KyantMaterialSpec.forRole(role, palette.glassClarity).usesBackdrop) when {
-        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat)
+        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat, pinnedRefraction = true)
         LocalGlassOverlay.current -> null
         // Keep the existing chrome-only optics exception on scrolling measurement routes.
         LocalGlassChromeUnderlap.current && chrome != null ->
