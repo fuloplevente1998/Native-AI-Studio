@@ -54,11 +54,12 @@ class LiquidGlass2810Test {
         assertEquals(.06f, GlassOptics.from(100).coat, 1e-6f)
         val tint = GlassOptics.TINT
         assertTrue("white-ish tint", minOf(tint.red, tint.green, tint.blue) >= .9f)
-        // Strong blur + vibrancy at Clear (approved: ~18–24 dp, ~1.8x), top rim ~45 % white.
+        // Strong blur + vibrancy at Clear (approved: ~18–24 dp, ~1.8x), top rim ~54 % white after the approved brighter-rim polish.
         val clear = GlassOptics.from(100)
         assertTrue(clear.blurDp in 18f..24f)
         assertEquals(1.8f, clear.saturation, .05f)
-        assertEquals(.45f, clear.specular, .02f)
+        assertEquals(.54f, clear.specular, .02f)
+        assertEquals(.145f, GlassOptics.SURFACE_LUMA_MAX, .0001f)
         assertTrue(GlassOptics.from(0).blurDp > clear.blurDp)
     }
 
