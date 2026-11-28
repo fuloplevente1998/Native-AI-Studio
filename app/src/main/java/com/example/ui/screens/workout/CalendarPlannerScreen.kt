@@ -1069,7 +1069,7 @@ fun CalendarPlannerScreen(
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    Button(
+                    TrainPilotGlassPrimaryButton(
                         onClick = { onApplyReplan(selectedNewStartDate, selectedFirstDay, selectedProgObj?.id ?: "") },
                         enabled = selectedProgObj != null && !state.libraryMutationBusy,
                         shape = RoundedCornerShape(16.dp),

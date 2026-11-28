@@ -1,6 +1,9 @@
 package com.repforge.app.ui.journal
 
 import com.example.ui.components.TrainPilotModalBottomSheet
+import com.example.ui.components.OperationFeedbackKind
+import com.example.ui.components.OperationFeedbackLine
+import com.example.ui.components.OperationFeedbackMark
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.example.ui.components.trainPilotSheetTopPadding
 import com.example.ui.components.trainPilotSheetTopSafeArea
@@ -225,8 +228,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 modifier = Modifier.fillMaxWidth().testTag("journal_editor_add_exercise")) { Text(text.getString(R.string.journal_edit_add_exercise)) }
                         }
                     }
-                    if (invalid || state.failed) Text(text.getString(if (invalid) R.string.journal_edit_invalid else R.string.journal_edit_failed),
-                        color = colors.dangerText, modifier = Modifier.testTag("journal_editor_error"))
+                    if (!state.saving && (invalid || state.failed)) OperationFeedbackLine(
+                        OperationFeedbackKind.FAILED,
+                        text.getString(if (invalid) R.string.journal_edit_invalid else R.string.journal_edit_failed),
+                        modifier = Modifier.testTag("journal_editor_error"), color = colors.dangerText
+                    )
                     com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = {
                         val start = Instant.parse(started)
                         val finish = Instant.parse(finished)
@@ -234,9 +240,16 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                         // Match the native editor's validation; the repository still revalidates.
                         if (duration.isNegative || duration.isZero || duration > java.time.Duration.ofHours(24) ||
                             finish.toEpochMilli() > System.currentTimeMillis() + 60_000L) invalid = true
-                        else onSave(draft.copy(started = started, finished = finished))
+                        else {
+                            invalid = false
+                            onSave(draft.copy(started = started, finished = finished))
+                        }
                     }, enabled = !state.saving, shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_save")) {
+                        if (state.saving) {
+                            OperationFeedbackMark(OperationFeedbackKind.RUNNING)
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(text.getString(if (state.saving) R.string.journal_edit_saving else R.string.journal_edit_save))
                     }
                     TextButton(onClick = { if (!savingNow) onCancel() }, enabled = !state.saving,

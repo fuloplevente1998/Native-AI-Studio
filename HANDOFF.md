@@ -317,3 +317,14 @@ Branch `fix/journal-picker-nav-spacing` from released main 908ba10c3f145fb44c7ae
 
 ### Additional Liquid Coach and upper navigation polish (PR #450)
 User requested completing the Coach page material (including start workout) and one shared glass shortcut track above the five main tabs. Reuse existing GlassSelectionPill with independent row bounds, same spring/optics guard; settings takes precedence over retained origin and only one row displays an active drop. Keep existing brand and legacy shortcut branch. Coach start uses audited TrainPilotGlassPrimaryButton, semantic badges use guarded state fills and lightweight rims, recommendation list uses static panel material rather than thin tile; no per-row live capture. Existing callbacks, disabled admission, fixed list scroll and measured source remain. Expanded nine-route selection regression and Liquid Coach start admission test. Exact new head CI pending; earlier #916 was green on previous head only. No main/version/build change.
+
+### Liquid Glass végső finomhangolás · PR #450
+
+[Draft #450](https://github.com/fuloplevente1998/Native-AI-Studio/pull/450), `fix/journal-picker-nav-spacing`. Main alap `908ba10c3f145fb44c7ae26919e92a79525cc633`, PR baseline `bd0ea5122050bbf8b055328672c8ac16abcdabac` ([CI #917](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/46178598235)). A pontos candidate és a futás nyers eredménye a PR átadójában szerepel.
+
+- **1.** [Útvonalaudit](docs/LIQUID_FINAL_AUDIT.md). `CalendarPlannerScreen` és `GoogleCloudSyncCard` elsődleges műveletei a közös Liquid gombot használják.
+- **3.** `GlassSelectionPill` a meglévő rugó és drag értékéből, az ovális clipben fest korlátozott csúcsfényt. A meglévő optikai és mozgási kapuk érvényesek.
+- **4.** `OperationFeedback`, `StudioTodayHeader`, `BackupRestoreScreen`, `GoogleCloudSyncCard`, `JournalEditorDialog` és a root banner közös jelzést használ. A régi szöveges producerek semlegesek maradnak egységes, commit-alapú eredményszerződés hiányában.
+- **6.** `StudioCoachDomainPanels` teljes, tördelhető gyakorlatnevet és külön tördelhető ajánlást ad. Regresszió lefedi a layoutot, lenyitást, indítást és az önálló görgetést.
+- **8.** [Teljesítményaudit és fizikai mérési terv](docs/LIQUID_PERFORMANCE_AUDIT.md). A Coach közös indoka újrafelhasználható és a csepp effektje a meglévő rajzolásban fut. Fizikai látvány, FPS, memória és energia ellenőrzése nyitott.
+- **2, 5, 7.** Kizárva a felhasználói kérés alapján.

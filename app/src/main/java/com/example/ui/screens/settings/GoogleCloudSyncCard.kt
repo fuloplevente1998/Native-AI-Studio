@@ -7,6 +7,8 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
 
 import com.example.ui.components.trainPilotAnimatedExpansion
+import com.example.ui.components.OperationFeedbackKind
+import com.example.ui.components.OperationFeedbackLine
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
@@ -37,7 +39,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.foundation.BorderStroke
-import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -327,7 +328,7 @@ fun StudioGoogleCloudSyncCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
-                Button(
+                com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(
                     onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
                     enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),
@@ -344,14 +345,14 @@ fun StudioGoogleCloudSyncCard(
             if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
                 Surface(shape = RoundedCornerShape(10.dp), color = palette.primary.copy(alpha = 0.14f),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")) {
-                    Text(gs.stageMessage, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
-                        color = palette.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    OperationFeedbackLine(OperationFeedbackKind.RUNNING, gs.stageMessage,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
-            if (!compact && !gs.errorMessage.isNullOrBlank()) {
+            if (!compact && !gs.isBusy && !gs.errorMessage.isNullOrBlank()) {
                 Surface(shape = RoundedCornerShape(10.dp), color = palette.danger.copy(alpha = 0.14f),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")) {
-                    Text(gs.errorMessage, style = MaterialTheme.typography.labelMedium, color = palette.danger,
+                    OperationFeedbackLine(OperationFeedbackKind.FAILED, gs.errorMessage,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }

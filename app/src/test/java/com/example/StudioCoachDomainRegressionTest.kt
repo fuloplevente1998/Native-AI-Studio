@@ -13,6 +13,10 @@ import com.example.ui.components.StudioCoachRecommendations
 import com.example.ui.components.StudioCoachNextTrainingCard
 import com.example.ui.components.StudioWorkoutCoachAdvice
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import com.example.ui.theme.TrainPilotTheme
 import com.repforge.app.StudioWorkoutFeedback
 import com.repforge.app.NativeProgramEditor
@@ -171,6 +175,51 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_coach_start_target").performClick()
         assertEquals(0, workoutPage)
         assertEquals(1, started)
+    }
+
+    @Test fun longExerciseNamesHaveACompleteLayoutAboveTheirRecommendations() {
+        val fixtures = listOf(
+            Triple(320, 1.6f, "hu" to "Döntött törzsű evezés kétkezes rúddal"),
+            Triple(360, 1.3f, "en" to "Single-arm bent-over dumbbell row with support"),
+            Triple(360, 1f, "de" to "Vorgebeugtes Rudern mit der Langhantel im Obergriff"),
+            Triple(480, 1.6f, "ro" to "Îndreptări românești cu gantere și sprijin unilateral")
+        )
+        val current = mutableStateOf(fixtures.first())
+        compose.setContent {
+            val (width, fontScale, translation) = current.value
+            val (language, name) = translation
+            val density = LocalDensity.current.density
+            val advice = NativeCoachExerciseAdvice.Advice("increase", "stable", 22.5, 20.0,
+                false, 3, NativeCoachExerciseAdvice.Target("reps", text = "12–15 / 8–12 / 6–8"))
+            val state = CoachUiState(loading = false, language = language,
+                exercises = listOf(CoachExerciseAdvice("long", name, advice, "total")))
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
+                TrainPilotTheme {
+                    Box(Modifier.size(width.dp, 720.dp)) {
+                        StudioCoachRecommendations(state, { _, _, _ -> }, {}, {}, {}, {}, {}, showTarget = false)
+                    }
+                }
+            }
+        }
+        val row = compose.onNodeWithTag("studio_coach_advice_long")
+        val nameNode = compose.onNodeWithTag("studio_coach_name_long", useUnmergedTree = true)
+        val action = compose.onNodeWithTag("studio_coach_action_long", useUnmergedTree = true)
+        val target = compose.onNodeWithTag("studio_coach_target_long", useUnmergedTree = true)
+        fixtures.forEach { fixture ->
+            compose.runOnIdle { current.value = fixture }
+            val layouts = mutableListOf<TextLayoutResult>()
+            nameNode.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            val layout = layouts.single()
+            assertEquals(fixture.third.second, layout.layoutInput.text.text)
+            assertFalse(layout.hasVisualOverflow)
+            if (fixture.first == 320) assertTrue(layout.lineCount > 1)
+            assertTrue(row.getUnclippedBoundsInRoot().height >= 48.dp)
+            assertTrue(nameNode.getUnclippedBoundsInRoot().bottom <= action.getUnclippedBoundsInRoot().top)
+            target.assertIsDisplayed()
+            row.performClick()
+            compose.onNodeWithTag("studio_coach_details_long").assertIsDisplayed()
+            row.performClick()
+        }
     }
 
     @Test fun coachAdviceScrollsIndependentlyAndRetainsExpandedActions() {

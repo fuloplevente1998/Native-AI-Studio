@@ -15,6 +15,7 @@ import com.example.model.AppLanguage
 import com.example.model.MainTab
 import com.example.model.SubScreen
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
+import com.example.ui.components.common.pillReflection
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.TrainPilotTheme
@@ -66,6 +67,18 @@ class LiquidGlassNav373Test {
         assertEquals(health.left, end.left, 2f)
         assertEquals(health.right, end.right, 2f)
         return Triple(widest, rest, end.left to health.left)
+    }
+
+    @Test fun pillReflectionFollowsTravelAndDragWithinTheExistingMotionGate() {
+        assertEquals(0f, pillReflection(0f, 0f, 80f, enabled = true), 0f)
+        val towardsRight = pillReflection(12f, 0f, 80f, enabled = true)
+        assertTrue(towardsRight > 0f && towardsRight < 1f)
+        assertEquals(-towardsRight, pillReflection(-12f, 0f, 80f, enabled = true), .001f)
+        assertTrue(pillReflection(0f, -3f, 80f, enabled = true) < 0f)
+        assertEquals(1f, pillReflection(1000f, 30f, 80f, enabled = true), 0f)
+        assertEquals(-1f, pillReflection(-1000f, -30f, 80f, enabled = true), 0f)
+        assertEquals(0f, pillReflection(40f, 3f, 80f, enabled = false), 0f)
+        assertEquals(0f, pillReflection(40f, 3f, 0f, enabled = true), 0f)
     }
 
     @Test fun pillSlidesToTheSelectedTabWithLiquidStretch() {

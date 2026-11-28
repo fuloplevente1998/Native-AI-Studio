@@ -60,10 +60,13 @@ class BackupCompactViewportRegressionTest {
         }
         compose.onNodeWithTag("backup_operation_status").assertIsDisplayed()
         compose.onNodeWithText("ZIP backup saved").assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertIsDisplayed()
         compose.runOnIdle {
             state = state.copy(localBackupStatus = LocalBackupStatus("File could not be restored", failed = true))
         }
         compose.onNodeWithText("File could not be restored").assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_failed", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithText("ZIP backup saved").assertDoesNotExist()
 
         val settings = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]

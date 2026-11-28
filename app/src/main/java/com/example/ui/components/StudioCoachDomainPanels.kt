@@ -47,6 +47,25 @@ import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.ui.theme.trainPilotBorder
 import androidx.compose.foundation.shape.RoundedCornerShape
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CoachRecommendationMetadata(
+    id: String, labelColor: androidx.compose.ui.graphics.Color, label: String, target: String, sets: Int?
+) {
+    val palette = LocalTrainPilotPalette.current
+    val chipShape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(8.dp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Surface(color = palette.glassStateTile(labelColor, labelColor.copy(alpha = .16f)), shape = chipShape,
+            modifier = Modifier.trainPilotGlassRim(palette, chipShape, GlassMaterialRole.Tile)) {
+            Text(label, color = labelColor, style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp).testTag("studio_coach_action_$id"))
+        }
+        Text(listOfNotNull(target.takeIf(String::isNotBlank), sets?.let { "${it}×" }).joinToString(" · "),
+            color = palette.textSecondary, style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.align(Alignment.CenterVertically).testTag("studio_coach_target_$id"))
+    }
+}
+
 private fun coachTr(lang: String, hu: String, en: String, de: String, ro: String): String =
     when (lang.lowercase().take(2)) {
         "en" -> en
@@ -72,7 +91,8 @@ internal fun StudioCoachRecommendations(
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
-    val text = nativeResources(LocalContext.current, lang)
+    val context = LocalContext.current
+    val text = remember(context, lang) { nativeResources(context, lang) }
     state.variationPreview?.let { preview ->
         TrainPilotFormSheet(onDismissRequest = onCloseVariation,
             title = { Text(coachTr(lang, "Programmódosítás előnézete", "Preview program change", "Programmanpassung prüfen", "Previzualizare modificare program")) },
@@ -112,11 +132,14 @@ internal fun StudioCoachRecommendations(
         if (state.initialLoading) CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_coach_initial_loading"))
         if (state.error) Text(coachTr(lang, "A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", "Coach data could not be refreshed. Previous values are not a fresh measurement.", "Coach-Daten konnten nicht aktualisiert werden.", "Datele Coach nu pot fi actualizate."), color = palette.danger)
         if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
-        // 2783: one compact card, one row per exercise (name · action chip · target · sets); the reason
-        // shared by every exercise is shown once on top, the rest opens per row.
+        // Keep shared advice above the list and let the name and recommendation wrap independently.
         if (state.exercises.isNotEmpty()) {
-            val reasons = state.exercises.map { it.advice.reason }.distinct()
-            val sharedReason = reasons.singleOrNull()?.let { NativeCoachAdviceText.reason(text, it) }?.takeIf { it.isNotBlank() }
+            val sharedReason = remember(state.exercises, text) {
+                val reason = state.exercises.first().advice.reason
+                if (state.exercises.all { it.advice.reason == reason })
+                    NativeCoachAdviceText.reason(text, reason).takeIf(String::isNotBlank)
+                else null
+            }
             var openRow by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
             val listShape = RoundedCornerShape(16.dp)
             val heading: @Composable () -> Unit = {
@@ -139,25 +162,20 @@ internal fun StudioCoachRecommendations(
                             else -> palette.primary
                         }
                         androidx.compose.material3.HorizontalDivider(thickness = 1.dp, color = palette.coachAdviceDividerColor())
-                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        Column(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { openRow = if (open) null else row.id }
-                            .testTag("studio_coach_advice_${row.id}"),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(row.name, style = MaterialTheme.typography.bodyMedium, color = palette.textPrimary,
-                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            val chipShape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(8.dp)
-                            Surface(color = palette.glassStateTile(chipColor, chipColor.copy(alpha = 0.16f)),
-                                shape = chipShape, modifier = if (palette.isLiquidGlass)
-                                    Modifier.trainPilotGlassRim(palette, chipShape, GlassMaterialRole.Tile) else Modifier) {
-                                Text(NativeCoachAdviceText.label(text, row.advice.action), color = chipColor,
-                                    style = MaterialTheme.typography.labelSmall, maxLines = 1,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp).testTag("studio_coach_action_${row.id}"))
+                            .testTag("studio_coach_advice_${row.id}").padding(vertical = 5.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(row.name, style = MaterialTheme.typography.bodyMedium, color = palette.textPrimary,
+                                    modifier = Modifier.weight(1f).testTag("studio_coach_name_${row.id}"))
+                                Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null,
+                                    tint = palette.textSecondary, modifier = Modifier.size(18.dp))
                             }
-                            val target = if (row.advice.target.text.isNotBlank()) coachTargetText(row.advice.target, row.repUnit, lang) else ""
-                            val sets = row.modePreview?.workingSets?.let { "$it×" }.orEmpty()
-                            Text(listOf(target, sets).filter { it.isNotBlank() }.joinToString(" · "), color = palette.textSecondary,
-                                style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.testTag("studio_coach_target_${row.id}"))
-                            Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
+                            CoachRecommendationMetadata(row.id, chipColor,
+                                NativeCoachAdviceText.label(text, row.advice.action),
+                                if (row.advice.target.text.isNotBlank()) coachTargetText(row.advice.target, row.repUnit, lang) else "",
+                                row.modePreview?.workingSets)
                         }
                         if (open) Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("studio_coach_details_${row.id}"),
                             verticalArrangement = Arrangement.spacedBy(4.dp)) {

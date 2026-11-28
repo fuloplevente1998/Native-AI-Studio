@@ -14,6 +14,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
+import com.example.ui.theme.GlassContrast
+import com.example.ui.theme.GlassOptics
+import com.example.ui.theme.LocalGlassOpticsEnabled
+import com.example.ui.theme.LocalGlassPowerSave
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,6 +55,13 @@ internal class GlassPillTrack {
     internal val right = Animatable(0f)
     internal var placed by mutableStateOf(false)
     internal val bounds = mutableStateMapOf<Int, Pair<Float, Float>>()
+}
+
+/** Signed reflection displacement, constrained to the moving pill and zero at rest. */
+internal fun pillReflection(remaining: Float, drag: Float, width: Float, enabled: Boolean): Float {
+    if (!enabled || width <= 0f) return 0f
+    val movement = (remaining / (width * .65f) + drag / (width * .12f)).coerceIn(-1f, 1f)
+    return movement * (2f - kotlin.math.abs(movement))
 }
 
 /** Reports this item's horizontal bounds to the shared pill; no effect without a track. */
@@ -100,6 +118,28 @@ internal fun BoxScope.GlassSelectionPill(
 
     if (target == null || !track.placed) return
     val restWidth = target.second - target.first
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val reflect = motion && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current &&
+        lifecycle.isAtLeast(Lifecycle.State.STARTED)
+    val reflection = if (reflect) Modifier.drawWithCache {
+        // The brush is retained per draw size. Moving the highlight only changes its
+        // position and alpha, with no additional backdrop capture or clock.
+        val radius = size.height * .62f
+        val tint = GlassContrast.limit(palette.primary, GlassOptics.SURFACE_LUMA_MAX - .006f)
+        val light = Brush.radialGradient(listOf(tint, tint.copy(alpha = 0f)), Offset.Zero,
+            radius.coerceAtLeast(1f))
+        onDrawWithContent {
+            drawContent()
+            val remaining = (target.first + target.second - left.value - right.value) * .5f
+            val drag = glassDragTransform(track.drag.offset, 4.dp.toPx(), dragProgress.value).x
+            val direction = pillReflection(remaining, drag, restWidth, enabled = true)
+            if (direction != 0f) {
+                translate(size.width * (.5f + .32f * direction), size.height * .13f) {
+                    drawCircle(light, radius, center = Offset.Zero, alpha = kotlin.math.abs(direction) * .22f)
+                }
+            }
+        }
+    } else Modifier
     Box(
         Modifier
             .matchParentSize()
@@ -119,6 +159,7 @@ internal fun BoxScope.GlassSelectionPill(
                     glassDragStretch(travel.y, size.height) else 1f
             }
             .clip(shape)
+            .then(reflection)
             .glassHeaderControl(palette, shape, GlassMaterialRole.Selection)
             .testTag("glass_selection_pill")
     )

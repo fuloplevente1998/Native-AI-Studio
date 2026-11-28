@@ -18,6 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
+import com.example.ui.components.OperationFeedbackKind
+import com.example.ui.components.OperationFeedbackMark
+import com.example.ui.components.operationFeedbackColor
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.TrainPilotUiState
 import java.time.LocalDate
@@ -57,39 +60,37 @@ internal fun StudioTodayCompactHeader(state: TrainPilotUiState, strings: Localiz
 @Composable
 internal fun StudioTodaySyncFeedback(state: TrainPilotUiState, tag: String, onRefresh: () -> Unit) {
     val palette = LocalTrainPilotPalette.current
-    val outcome = when {
-        state.healthSyncBusy -> "RUNNING"
-        state.healthSyncOutcome == "CANCELLED" -> "CANCELLED"
-        state.healthSyncFailed -> "FAILED"
-        state.healthSyncPartial -> "PARTIAL"
-        state.healthSyncOutcome == "SUCCESS" -> "SUCCESS"
-        else -> ""
+    val kind = when {
+        state.healthSyncBusy -> OperationFeedbackKind.RUNNING
+        state.healthSyncOutcome == "CANCELLED" -> OperationFeedbackKind.CANCELLED
+        state.healthSyncFailed -> OperationFeedbackKind.FAILED
+        state.healthSyncPartial -> OperationFeedbackKind.PARTIAL
+        state.healthSyncOutcome == "SUCCESS" -> OperationFeedbackKind.SUCCESS
+        else -> return
     }
-    var show by remember(outcome, state.healthSyncMessage) { mutableStateOf(true) }
-    LaunchedEffect(outcome, state.healthSyncMessage) {
-        if (outcome == "SUCCESS") { delay(3500); show = false }
+    var show by remember(kind, state.healthSyncMessage) { mutableStateOf(true) }
+    LaunchedEffect(kind, state.healthSyncMessage) {
+        if (kind == OperationFeedbackKind.SUCCESS) {
+            delay(3500)
+            show = false
+        }
     }
-    if (!show || outcome.isEmpty()) return
-    val error = outcome in setOf("FAILED", "PARTIAL", "CANCELLED")
-    val color = when (outcome) {
-        "FAILED" -> palette.danger
-        "PARTIAL", "CANCELLED" -> palette.warning
-        "SUCCESS" -> palette.success
-        else -> palette.textSecondary
-    }
-    val message = when (outcome) {
-        "RUNNING" -> statusText(state.language, "Frissítés…", "Refreshing…", "Aktualisierung…", "Se actualizează…")
-        "SUCCESS" -> statusText(state.language, "Mai állapot frissítve", "Today's status refreshed", "Heutiger Status aktualisiert", "Starea de azi actualizată")
-        "PARTIAL" -> statusText(state.language, "Részleges szinkron", "Partial sync", "Teilweise synchronisiert", "Sincronizare parțială")
-        "CANCELLED" -> statusText(state.language, "Frissítés megszakítva", "Refresh cancelled", "Aktualisierung abgebrochen", "Actualizare anulată")
-        else -> statusText(state.language, "Szinkron sikertelen", "Sync failed", "Synchronisierung fehlgeschlagen", "Sincronizare eșuată")
+    if (!show) return
+    val error = kind == OperationFeedbackKind.FAILED || kind == OperationFeedbackKind.PARTIAL ||
+        kind == OperationFeedbackKind.CANCELLED
+    val color = palette.operationFeedbackColor(kind)
+    val message = when (kind) {
+        OperationFeedbackKind.RUNNING -> statusText(state.language, "Frissítés…", "Refreshing…", "Aktualisierung…", "Se actualizează…")
+        OperationFeedbackKind.SUCCESS -> statusText(state.language, "Mai állapot frissítve", "Today's status refreshed", "Heutiger Status aktualisiert", "Starea de azi actualizată")
+        OperationFeedbackKind.PARTIAL -> statusText(state.language, "Részleges szinkron", "Partial sync", "Teilweise synchronisiert", "Sincronizare parțială")
+        OperationFeedbackKind.CANCELLED -> statusText(state.language, "Frissítés megszakítva", "Refresh cancelled", "Aktualisierung abgebrochen", "Actualizare anulată")
+        OperationFeedbackKind.FAILED -> statusText(state.language, "Szinkron sikertelen", "Sync failed", "Synchronisierung fehlgeschlagen", "Sincronizare eșuată")
+        OperationFeedbackKind.INFORMATION -> return
     }
     Row(Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }
         .testTag("${tag}_today_sync_result"), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (outcome == "RUNNING") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = color)
-        else Icon(if (outcome == "SUCCESS") Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
-            null, tint = color, modifier = Modifier.size(17.dp))
+        OperationFeedbackMark(kind)
         Column(Modifier.weight(1f)) {
             Text(message, color = color, style = MaterialTheme.typography.labelSmall)
             if (error && state.healthSyncMessage.isNotBlank())
