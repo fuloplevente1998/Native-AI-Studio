@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.rememberGlassMotionEnabled
-import com.example.ui.theme.glassNavigationFade
 import com.repforge.app.ui.theme.trainPilotClickable
 
 import com.example.ui.theme.GlassMaterialRole
@@ -135,6 +134,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
     if (palette.isLiquidGlass) {
         // Only the optical background is feathered. The foreground stays sharp and
         // interactive; the shared dark upper scene is visible at the lower edge.
+        // Never pulse the whole header on navigation: only the selected control animates.
         Box(Modifier.matchParentSize()
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
@@ -143,7 +143,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     1f to Color.Transparent), blendMode = BlendMode.DstIn)
             }
             .glassHeaderMaterial(palette, RoundedCornerShape(0.dp), preserveOriginalMaterial = true)
-            .glassNavigationFade(palette, currentTab, currentSubScreen))
+            .testTag("top_header_glass_background"))
     }
     Surface(
         color = if (palette.isLiquidGlass) Color.Transparent else palette.customCardPaint ?: palette.background,
