@@ -208,4 +208,22 @@ class ProfileAndRecordLayoutRegressionTest {
         }
     }
 
+
+    @Test fun auroraProfileKeepsSelectorsAndSavesTheirValues() {
+        var saved: Pair<Int, Float>? = null
+        compose.setContent {
+            TrainPilotTheme(com.example.ui.theme.TrainPilotPalettes.getById(34)) {
+                PersonalPlannerModalDialog(initialEquipmentHu = "Saját testsúly",
+                    onSaveAndOpenPlan = { height, weight, _, _, _, _, _, _, _, _ ->
+                        saved = height to weight
+                    }, onDismiss = {})
+            }
+        }
+        compose.onNodeWithTag("profile_height_box").performClick()
+        compose.onNodeWithText("181 cm").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_weight_box").performClick()
+        compose.onNodeWithText("66 kg").performScrollTo().performClick()
+        compose.onNodeWithTag("planner_save_button").performClick()
+        compose.runOnIdle { assertEquals(181 to 66f, saved) }
+    }
 }
