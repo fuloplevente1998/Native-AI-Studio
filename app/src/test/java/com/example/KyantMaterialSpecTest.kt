@@ -100,8 +100,16 @@ class KyantMaterialSpecTest {
         assertFalse(header.contains("glassNavigationFade"))
         for (p in LiquidGlassPalettes.all) for (step in 0..100) {
             val palette = p.withGlassClarity(step)
+            val spec = KyantMaterialSpec.forRole(GlassMaterialRole.Navigation, step)
             val paint = com.example.ui.theme.kyantSurfaceCoat(palette, GlassMaterialRole.Navigation, null, null)
-            val composite = paint.compositeOver(GlassOptics.lensWorstCase)
+            assertEquals(GlassOptics.TINT.copy(alpha = spec.tintAlpha), paint)
+            // The optical input is scaled BEFORE the tint. lensWorstCase is already
+            // a final composite, so applying paint to it again double-counts the coat.
+            val worst = maxOf(
+                GlassContrast.blurOnlyWorst(paint.alpha, spec.saturation, spec.colorScale),
+                KyantMaterialSpec.sceneWorst(paint.alpha, spec.saturation, spec.sceneScale))
+            assertTrue(worst <= GlassOptics.SURFACE_LUMA_MAX)
+            val composite = GlassContrast.grey(worst)
             assertTrue(NativeThemeTokens.contrast(palette.textPrimary, composite) >= 4.5f)
             assertTrue(NativeThemeTokens.contrast(palette.textSecondary, composite) >= 4.5f)
         }
