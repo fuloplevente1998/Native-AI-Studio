@@ -48,9 +48,9 @@ internal data class GlassOptics(
     companion object {
         /**
          * 2810/6: luminance ceiling of every glass composite (tint over the limited backdrop, page,
-         * tiles). White text keeps 5.8:1; palette text/accents are lifted against it ([lensWorstCase]).
+         * tiles). White text keeps at least 5.38:1; palette text/accents are lifted against it ([lensWorstCase]).
          */
-        const val SURFACE_LUMA_MAX = .13f
+        const val SURFACE_LUMA_MAX = .145f
         /** V4 scene bound; kept as an extra contrast surface (2809 page backdrop: [GlassScene.lumaCap]). */
         const val SCENE_ACCENT_MAX = .16f
         const val FROSTED_BLUR_DP = 32f
@@ -102,7 +102,7 @@ internal data class GlassOptics(
                 dispersion = .004f + .056f * t * t,
                 coat = coat,
                 saturation = saturation,
-                specular = .30f + .15f * t,
+                specular = .34f + .20f * t,
                 shadow = .10f + .08f * t,
                 backdropCap = GlassContrast.backdropCap(coat),
                 blurOnlyScale = GlassContrast.blurOnlyScale(coat, saturation),
