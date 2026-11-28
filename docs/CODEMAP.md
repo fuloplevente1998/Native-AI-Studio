@@ -168,3 +168,8 @@ régi natív képernyő; mielőtt módosítod, `rg` -vel nézd meg, hívja-e val
 | #405 Liquid Glass | `ex/ui/theme/GlassTouchBubble.kt` (érintésfény), `KyantGlass.kt` és `LiquidDropMaterial.kt` (egyetlen optikai felület), `ex/ui/components/TrainPilotModalBottomSheet.kt` és `ex/ui/screens/health/HealthTodayStatusSheet.kt` (Mai állapot fagyasztott háttér), `ProgressVolumeAndMuscle.kt`, `rf/ui/progress/NativeCardioProgressPanel.kt`, `StatisticsMetricTile.kt` |
 
 | #441–#446 közös Liquid polish | `StudioStatisticsScreen.kt` + `MeasuredScrollChrome.kt` (`wrapBody`, stable `GlassPillTrack`), `TrainPilotModalBottomSheet.kt` (frozen `GlassScene`, `sheetSceneOpacity/LumaCap`), `GlassContentBackdrop.kt` / `KyantGlass.kt` (pinned blur/refraction), `PersonalPlannerModal.kt`, `WorkoutTabScreen.kt` / `TrainPilotPageLayout.kt` (mergedBlocks), `LiquidGlassPalettes.kt` (Aurora, legacy glass_ice), `GlassOptics.kt`, `KyantMaterialSpec.kt`; célzott tesztek: `LiquidGlassOverlay2812Test`, `GlassScrollChrome2813Test`, `LiquidGlassSegmentedTabsTest`, `ProfileAndRecordLayoutRegressionTest`, `TrainPilotPageLayoutRegressionTest`, `LiquidGlass433PaintTest` |
+
+### Liquid finomhangolás és műveleti jelzések
+
+- Telefonos route- és komponensleltár: [LIQUID_FINAL_AUDIT.md](LIQUID_FINAL_AUDIT.md). Scene, cache és készülékes mérés: [LIQUID_PERFORMANCE_AUDIT.md](LIQUID_PERFORMANCE_AUDIT.md).
+- A `com/example/ui/components/OperationFeedback.kt` az eredmény típusához tartozó ikont, folyamatjelzőt, palettaszínt és élő feliratot adja. Az eredmény tulajdonosa az adott szinkron, mentés, visszaállítás vagy szerkesztő.

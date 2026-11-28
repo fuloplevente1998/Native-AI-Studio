@@ -1,5 +1,7 @@
 package com.example.ui.viewmodel
 
+import com.example.ui.components.OperationFeedbackKind
+
 import kotlinx.coroutines.sync.withLock
 import com.example.model.SubScreen
 import kotlinx.coroutines.flow.update
@@ -31,9 +33,9 @@ internal fun TrainPilotViewModel.mutateStudioLibrary(
     action: suspend (Context, TrainPilotDatabase, TrainPilotSettingsStore) -> String?
 ) {
     if (_uiState.value.libraryMutationBusy) return
-    fun unavailable() { _uiState.update { it.copy(statusBannerMessage = tr(
+    fun unavailable() { reportOperation(tr(
         "A mentés nem sikerült. Próbáld újra.", "Could not save. Please try again.",
-        "Speichern fehlgeschlagen. Bitte erneut versuchen.", "Salvarea a eșuat. Încearcă din nou.")) } }
+        "Speichern fehlgeschlagen. Bitte erneut versuchen.", "Salvarea a eșuat. Încearcă din nou."), OperationFeedbackKind.FAILED) }
     val context = nativeContext ?: run { unavailable(); return }
     val db = nativeDatabase ?: run { unavailable(); return }
     val store = nativeSettingsStore ?: run { unavailable(); return }
@@ -42,7 +44,9 @@ internal fun TrainPilotViewModel.mutateStudioLibrary(
         catch (_: Exception) { unavailable(); return }
     val editorTicket = if (editor) programEditorContinuation ?: ticket else null
     nativeReloadJob?.cancel()
-    _uiState.update { it.copy(libraryMutationBusy = true) }
+    _uiState.update {
+        it.copy(libraryMutationBusy = true, statusBannerMessage = null, operationBanner = null)
+    }
     scope.launch {
         try {
             awaitStudioProgramWrites()
@@ -85,8 +89,8 @@ internal fun TrainPilotViewModel.mutateStudioLibrary(
                             programs.none { it.id == open } -> null
                             else -> open
                         }
-                    },
-                    statusBannerMessage = success))
+                    }
+                ).withOperationBanner(success, OperationFeedbackKind.SUCCESS))
             }
         } catch (error: Exception) {
             // A closed Room database cancels its own query scope. Report that failure while
@@ -154,7 +158,7 @@ internal fun TrainPilotViewModel.mutateStudioLibrary(
                     lang
                 )
             }
-            _uiState.update { it.copy(statusBannerMessage = message) }
+            reportOperation(message, OperationFeedbackKind.FAILED)
         } finally { _uiState.update { it.copy(libraryMutationBusy = false) } }
     }
 }

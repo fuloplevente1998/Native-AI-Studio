@@ -159,7 +159,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 4.dp + LocalGlassTopInset.current, bottom = 6.dp),
+                .padding(top = com.example.ui.theme.MainTabContentGap + LocalGlassTopInset.current, bottom = 6.dp),
             verticalArrangement = remember(layout.draft == null) { pageFooterArrangement(5.dp, layout.draft == null) }
         ) {
         layout.order.forEach { id ->

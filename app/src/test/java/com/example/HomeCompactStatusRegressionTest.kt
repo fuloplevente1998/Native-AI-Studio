@@ -90,16 +90,25 @@ class HomeCompactStatusRegressionTest {
         }
         compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
         awaitText("Frissítés…")
+        compose.onNodeWithTag("operation_feedback_running", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertDoesNotExist()
         compose.runOnIdle { state = state.copy(healthSyncBusy = false, healthSyncFailed = true, healthSyncOutcome = "FAILED") }
         awaitText("Szinkron sikertelen")
+        compose.onNodeWithTag("operation_feedback_failed", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("home_today_sync_retry").performClick()
         compose.runOnIdle { assertEquals(1, retries); state = state.copy(healthSyncFailed = false, healthSyncPartial = true, healthSyncOutcome = "PARTIAL") }
         awaitText("Részleges szinkron")
+        compose.onNodeWithTag("operation_feedback_partial", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("home_today_sync_retry").assertExists()
         compose.runOnIdle { state = state.copy(healthSyncPartial = false, healthSyncOutcome = "CANCELLED") }
         awaitText("Frissítés megszakítva")
+        compose.onNodeWithTag("operation_feedback_cancelled", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertDoesNotExist()
         compose.runOnIdle { state = state.copy(healthSyncOutcome = "SUCCESS") }
         awaitText("Mai állapot frissítve")
+        compose.onNodeWithTag("operation_feedback_success", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("home_today_sync_retry").assertDoesNotExist()
     }
     @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {

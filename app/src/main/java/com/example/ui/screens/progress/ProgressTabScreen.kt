@@ -119,7 +119,7 @@ fun ProgressTabScreen(
                 onSelect = { onSelectMainSection(sections[it].first) },
                 tag = "progress_section_track",
                 itemTag = { "progress_section_tab_${sections[it].first}" },
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = com.example.ui.theme.MainTabContentGap, bottom = 2.dp)
             ) { index, label, selected ->
                 val idx = sections[index].first
                 val tint = if (selected) selection.foreground else palette.textSecondary
@@ -136,7 +136,7 @@ fun ProgressTabScreen(
             } else palette.cardPaint,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .padding(start = 12.dp, end = 12.dp, top = com.example.ui.theme.MainTabContentGap, bottom = 2.dp)
                 .then(if (exerciseStatistics && palette.isLiquidGlass)
                     Modifier.trainPilotGlassRim(palette, selectorShape, GlassMaterialRole.Panel)
                     else if (exerciseStatistics) Modifier.trainPilotGlassMaterial(palette, selectorShape)

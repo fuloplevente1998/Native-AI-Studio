@@ -67,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalGlassTopInset
+import com.example.ui.theme.glassStateTile
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
@@ -224,8 +225,10 @@ internal fun StudioCoachReadinessCard(
                 }
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = statusBadgeColor.copy(alpha = 0.16f),
-                    modifier = Modifier.trainPilotFrame(1.dp, statusBadgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                    color = palette.glassStateTile(statusBadgeColor, statusBadgeColor.copy(alpha = 0.16f)),
+                    modifier = Modifier.then(if (palette.isLiquidGlass)
+                        Modifier.trainPilotGlassRim(palette, RoundedCornerShape(8.dp), GlassMaterialRole.Tile) else Modifier)
+                        .trainPilotFrame(1.dp, statusBadgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                 ) {
                     Text(
                         text = statusBadgeText,

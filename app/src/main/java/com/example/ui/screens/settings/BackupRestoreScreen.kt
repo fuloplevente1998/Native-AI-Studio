@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.components.OperationFeedbackMark
+import com.example.ui.components.OperationFeedbackKind
+import com.example.ui.components.operationFeedbackColor
 import com.example.ui.components.TrainPilotIconButton
 
 import com.repforge.app.ui.theme.trainPilotPressIndication
@@ -362,12 +365,13 @@ fun BackupRestoreScreen(
             }
         }
         if (status != null) {
-            val color = when {
-                status.failed -> palette.danger
-                status.busy -> palette.primary
-                pickerMessage == null && (!drive || driveBlock == null) &&
-                    (status === localStatus || feedback != null) -> palette.success
-                else -> palette.textSecondary
+            val kind = when {
+                status.failed -> OperationFeedbackKind.FAILED
+                status.busy -> OperationFeedbackKind.RUNNING
+                pickerMessage != null -> OperationFeedbackKind.CANCELLED
+                (!drive || driveBlock == null) &&
+                    (status === localStatus || feedback?.failed == false) -> OperationFeedbackKind.SUCCESS
+                else -> OperationFeedbackKind.INFORMATION
             }
             Surface(
                 shape = RoundedCornerShape(12.dp),
@@ -375,8 +379,12 @@ fun BackupRestoreScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
                     .testTag("backup_operation_status").semantics { liveRegion = LiveRegionMode.Polite }
             ) {
-                Text(status.message, color = color, style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()).padding(10.dp))
+                Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    OperationFeedbackMark(kind)
+                    Text(status.message, color = palette.operationFeedbackColor(kind), style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f).heightIn(max = 100.dp).verticalScroll(rememberScrollState()))
+                }
             }
         }
     }

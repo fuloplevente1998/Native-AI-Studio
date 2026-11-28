@@ -90,6 +90,9 @@ internal fun GlassAwareScaffold(
     }
 }
 
+/** Compact, common initial gap below the five-tab navigation; independent of safe-area/optics. */
+internal val MainTabContentGap = 4.dp
+
 /** Tabs with an in-scroll [LocalGlassTopInset] safe area. Calendar keeps its padded host. */
 internal val GlassUnderlapTabs: Set<MainTab> = setOf(MainTab.HOME, MainTab.PROGRAMS, MainTab.WORKOUT, MainTab.PROGRESS, MainTab.HEALTH, MainTab.COACH, MainTab.LOG)
 

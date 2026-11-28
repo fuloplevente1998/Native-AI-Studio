@@ -465,8 +465,12 @@ data class TrainPilotUiState(
 
     // Toast / Feedback banner for immediate visual confirmation of actions
     val statusBannerMessage: String? = null,
+    val operationBanner: OperationBanner? = null,
     val localBackupStatus: LocalBackupStatus? = null
 ) {
+    val currentOperationBanner: OperationBanner?
+        get() = operationBanner?.takeIf { it.message == statusBannerMessage }
+
     // Preserve existing screen/read-only API; writes use permissionAccess.copy(...).
     val permissionGpsEnabled: Boolean get() = permissionAccess.gpsEnabled
     val permissionGpsGranted: Boolean get() = permissionAccess.gpsGranted

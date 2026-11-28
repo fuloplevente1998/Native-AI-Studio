@@ -736,7 +736,7 @@ fun HealthTabScreen(
                 .fillMaxSize()
                 .trainPilotPageBackdrop(palette)
                 .testTag("health_tab_screen"),
-            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp + LocalGlassTopInset.current, bottom = 28.dp),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = com.example.ui.theme.MainTabContentGap + LocalGlassTopInset.current, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         if (layout.draft == null) {

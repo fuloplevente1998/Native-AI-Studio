@@ -1,5 +1,8 @@
 package com.example
 
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.glassOverlayFill
@@ -35,7 +38,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -144,6 +146,7 @@ import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
 import com.example.ui.viewmodel.nextActiveExercise
 import com.example.ui.viewmodel.onLoggedWorkoutDeleted
+import com.example.ui.viewmodel.onLoggedWorkoutSaved
 import com.example.ui.viewmodel.onStudioCustomExerciseDeleted
 import com.example.ui.viewmodel.openActiveExerciseLibrary
 import com.example.ui.viewmodel.openCalendarEventWorkoutDetail
@@ -334,8 +337,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         viewModel.navigateBack()
     }
 
-    LaunchedEffect(uiState.statusBannerMessage) {
-        if (uiState.statusBannerMessage != null) {
+    val bannerKind = uiState.currentOperationBanner?.kind ?: com.example.ui.components.OperationFeedbackKind.INFORMATION
+    LaunchedEffect(uiState.statusBannerMessage, bannerKind) {
+        if (uiState.statusBannerMessage != null && bannerKind != com.example.ui.components.OperationFeedbackKind.FAILED) {
             delay(3200)
             viewModel.clearBannerMessage()
         }
@@ -894,7 +898,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenHealthTab = { viewModel.openHealthAndExpand(connect = true) },
                             deleteActions = {
                                 com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
-                                    uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
+                                    uiState.language.name.lowercase(), onSaved = { viewModel.onLoggedWorkoutSaved(context) })
                                 com.example.ui.components.StudioLoggedWorkoutDeleteActions(
                                     uiState.selectedLogWorkoutId, viewModel::onLoggedWorkoutDeleted)
                             },
@@ -1329,6 +1333,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         .heightIn(min = 48.dp)
                         .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Overlay)
                             else Modifier.trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp)))
+                        .semantics { liveRegion = LiveRegionMode.Polite }
                         .trainPilotClickable(RoundedCornerShape(16.dp)) { viewModel.clearBannerMessage() }
                 ) {
                     Row(
@@ -1336,17 +1341,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(18.dp)
+                        com.example.ui.components.OperationFeedbackMark(
+                            bannerKind
                         )
                         Text(
                             text = uiState.statusBannerMessage.orEmpty(),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
+                            color = palette.textPrimary,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Icon(
                             imageVector = Icons.Default.Close,

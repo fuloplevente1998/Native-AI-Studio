@@ -7,6 +7,8 @@ import com.example.ui.theme.trainPilotGlassRim
 import com.example.ui.theme.GlassMaterialRole
 
 import com.example.ui.components.trainPilotAnimatedExpansion
+import com.example.ui.components.OperationFeedbackKind
+import com.example.ui.components.OperationFeedbackLine
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
@@ -37,7 +39,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.foundation.BorderStroke
-import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -100,9 +101,10 @@ fun StudioGoogleCloudSyncCard(
         }
     )
 
+    val feedback = settingsState.googleActionFeedback
     LaunchedEffect(settingsState.statusMessage, compact) {
         val msg = settingsState.statusMessage
-        if (!compact && !msg.isNullOrBlank()) {
+        if (!compact && !msg.isNullOrBlank() && msg != feedback?.message) {
             onShowBanner(msg)
         }
     }
@@ -128,7 +130,13 @@ fun StudioGoogleCloudSyncCard(
         }
     }
     val connected = gs.connectedEmail.isNotEmpty()
-    val feedback = settingsState.googleActionFeedback
+    var showActionResult by remember(feedback) { mutableStateOf(true) }
+    LaunchedEffect(feedback) {
+        if (feedback?.failed == false) {
+            kotlinx.coroutines.delay(3500)
+            showActionResult = false
+        }
+    }
     val driveFailMessage = feedback?.takeIf { it.failed && it.action == "drive" }?.message ?: autoFailures.first.takeIf { it.isNotBlank() }
     val calendarFailMessage = feedback?.takeIf { it.failed && it.action == "calendar" }?.message ?: autoFailures.second.takeIf { it.isNotBlank() }
     val driveStatus = cloudServiceStatus(connected, gs.lastDriveSyncIso, driveFailMessage != null, expectedAuto = autoSync.drive)
@@ -327,7 +335,7 @@ fun StudioGoogleCloudSyncCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
-                Button(
+                com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(
                     onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
                     enabled = !busyAny && activity != null,
                     shape = RoundedCornerShape(12.dp),
@@ -344,18 +352,27 @@ fun StudioGoogleCloudSyncCard(
             if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
                 Surface(shape = RoundedCornerShape(10.dp), color = palette.primary.copy(alpha = 0.14f),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")) {
-                    Text(gs.stageMessage, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
-                        color = palette.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    OperationFeedbackLine(OperationFeedbackKind.RUNNING, gs.stageMessage,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
-            if (!compact && !gs.errorMessage.isNullOrBlank()) {
+            if (!compact && !gs.isBusy && feedback == null && !gs.errorMessage.isNullOrBlank()) {
                 Surface(shape = RoundedCornerShape(10.dp), color = palette.danger.copy(alpha = 0.14f),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")) {
-                    Text(gs.errorMessage, style = MaterialTheme.typography.labelMedium, color = palette.danger,
+                    OperationFeedbackLine(OperationFeedbackKind.FAILED, gs.errorMessage,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
                 }
+            }
+
+            if (!compact && !gs.isBusy && showActionResult && feedback != null &&
+                !(cloudExpanded && connected && feedback.failed && feedback.action in listOf("drive", "calendar"))
+            ) {
+                OperationFeedbackLine(
+                    if (feedback.failed) OperationFeedbackKind.FAILED else OperationFeedbackKind.SUCCESS,
+                    feedback.message, Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
             }
 
             NativeGoogleMaintenanceFeedback(

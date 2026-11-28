@@ -15,6 +15,7 @@ import com.example.model.AppLanguage
 import com.example.model.MainTab
 import com.example.model.SubScreen
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
+import com.example.ui.components.pillReflection
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.TrainPilotTheme
@@ -68,6 +69,18 @@ class LiquidGlassNav373Test {
         return Triple(widest, rest, end.left to health.left)
     }
 
+    @Test fun pillReflectionFollowsTravelAndDragWithinTheExistingMotionGate() {
+        assertEquals(0f, pillReflection(0f, 0f, 80f, enabled = true), 0f)
+        val towardsRight = pillReflection(12f, 0f, 80f, enabled = true)
+        assertTrue(towardsRight > 0f && towardsRight < 1f)
+        assertEquals(-towardsRight, pillReflection(-12f, 0f, 80f, enabled = true), .001f)
+        assertTrue(pillReflection(0f, -3f, 80f, enabled = true) < 0f)
+        assertEquals(1f, pillReflection(1000f, 30f, 80f, enabled = true), 0f)
+        assertEquals(-1f, pillReflection(-1000f, -30f, 80f, enabled = true), 0f)
+        assertEquals(0f, pillReflection(40f, 3f, 80f, enabled = false), 0f)
+        assertEquals(0f, pillReflection(40f, 3f, 0f, enabled = true), 0f)
+    }
+
     @Test fun pillSlidesToTheSelectedTabWithLiquidStretch() {
         val (widest, rest, _) = travel(animatorScale = 1f)
         assertTrue("pill should stretch while travelling: widest=$widest rest=$rest", widest > rest + 4f)
@@ -99,6 +112,7 @@ class LiquidGlassNav373Test {
                 TrainPilotStrings.forLanguage(AppLanguage.HU), {}, { _, _ -> }, {}, {}, {})
         } }
         compose.onNodeWithTag("top_nav_home").assertIsSelected()
+        compose.onNodeWithTag("top_shortcut_track").assertDoesNotExist()
         compose.onAllNodesWithTag("glass_selection_pill").assertCountEquals(0)
     }
 
@@ -132,12 +146,18 @@ class LiquidGlassNav373Test {
             compose.onNodeWithTag(tag).performClick()
             compose.runOnIdle { assertEquals(expected, tab); assertEquals(SubScreen.NONE, screen) }
             assertEquals(initial, background.getUnclippedBoundsInRoot())
-            if (tag.startsWith("top_nav_")) {
-                compose.onNodeWithTag(tag).assertIsSelected()
-                compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
-            }
+            compose.onNodeWithTag(tag).assertIsSelected()
+            compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
+            val bounds = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+            val drop = compose.onNodeWithTag("glass_selection_pill", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            assertEquals(bounds.left, drop.left, 2f)
+            assertEquals(bounds.right, drop.right, 2f)
+            assertEquals(bounds.top, drop.top, 2f)
         }
-        compose.onNodeWithTag("top_bar_settings_button").performClick()
+        compose.onNodeWithTag("top_bar_settings_button").performClick().assertIsSelected()
+        compose.onNodeWithTag("top_nav_home").assertIsNotSelected()
+        compose.onNodeWithTag("top_shortcut_track").assertExists()
+        compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
         compose.runOnIdle {
             assertEquals(SubScreen.SETTINGS_MAIN, screen)
             assertEquals(routes.map { it.second.name } + "SETTINGS", clicks)

@@ -164,7 +164,9 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         editRevision++
         _editor.value = null
     }
-    internal fun saveEditor(draft: NativeJournalEditor.Draft) {
+    internal fun saveEditor(draft: NativeJournalEditor.Draft) = saveEditor(draft) {}
+
+    internal fun saveEditor(draft: NativeJournalEditor.Draft, onSaved: () -> Unit) {
         val state = _editor.value ?: return
         if (state.saving) return
         _editor.value = state.copy(draft = draft, saving = true, failed = false)
@@ -173,6 +175,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                 withContext(Dispatchers.IO) { NativeJournalEditor.save(context, database, state.opened, draft) }
                 _editor.value = null
                 closeRouteMap()
+                runCatching(onSaved)
                 runCatching { WearSyncRepository.publishWatchHomeSnapshot(context) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (_: Exception) { _editor.update { it?.copy(saving = false, failed = true) } }

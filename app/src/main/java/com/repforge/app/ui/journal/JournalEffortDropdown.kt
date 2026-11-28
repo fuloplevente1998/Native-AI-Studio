@@ -3,7 +3,8 @@ package com.repforge.app.ui.journal
 import com.example.ui.components.TrainPilotMenuItem
 
 import com.example.ui.components.trainPilotMenuSelection
-import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.*
+import androidx.compose.ui.graphics.Color
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 
@@ -30,6 +31,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
     enabled: Boolean, onSelect: (String) -> Unit, tag: String = "journal_editor_feedback_selector",
     optionTagPrefix: String = "journal_editor_feedback") {
     val colors = LocalTrainPilotColors.current
+    val palette = LocalTrainPilotPalette.current
     val selectedFill = colors.accent.copy(alpha = 0.16f).compositeOver(colors.card)
     var expanded by remember { mutableStateOf(false) }
     val answer = choices.firstOrNull {
@@ -39,12 +41,13 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
     }
     Box(Modifier.fillMaxWidth()) {
         Surface(onClick = { expanded = true }, enabled = enabled,
-            shape = RoundedCornerShape(12.dp),
-            color = if (answer != null) selectedFill else colors.card2,
+            shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(12.dp),
+            color = if (palette.isLiquidGlass) Color.Transparent else if (answer != null) selectedFill else colors.card2,
             border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(if (answer != null) colors.accent else colors.line, selected = answer != null)),
-            modifier = Modifier.fillMaxWidth().testTag(tag)) {
-            Row(Modifier.heightIn(min = 48.dp).background(Brush.horizontalGradient(listOf(
-                if (answer != null) selectedFill else colors.card2, colors.card)))
+            modifier = Modifier.fillMaxWidth().then(if (palette.isLiquidGlass)
+                Modifier.liquidDropMaterial(palette, RoundedCornerShape(50), GlassMaterialRole.Input) else Modifier).testTag(tag)) {
+            Row(Modifier.heightIn(min = 48.dp).then(if (palette.isLiquidGlass) Modifier else Modifier.background(Brush.horizontalGradient(listOf(
+                if (answer != null) selectedFill else colors.card2, colors.card))))
                 .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accentText, modifier = Modifier.size(20.dp))
