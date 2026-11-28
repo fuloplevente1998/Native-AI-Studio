@@ -161,7 +161,12 @@ internal fun WeightJournalOverview(state: WeightJournalUiState, onRange: (String
             }
             Button(onClick = onAction, enabled = !state.loading && !state.writing,
                 modifier = Modifier.testTag("weight_journal_action")) { Text(resources.getString(actionLabel)) }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("weight_range_choices")) {
+            if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                val ranges = listOf("7", "30", "90", "365", "all")
+                com.example.ui.components.LiquidSegmentedTabs(ranges.map { range -> if (range == "all") resources.getString(R.string.weight_all) else resources.getString(R.string.weight_days, range.toInt()) },
+                    ranges.indexOf(state.range), { onRange(ranges[it]) }, "weight_range_choices", scrollable = true,
+                    enabled = !state.writing, itemTag = { "weight_range_${ranges[it]}" }) { _, label, _ -> Text(label, maxLines = 1) }
+            } else LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("weight_range_choices")) {
                 items(listOf("7", "30", "90", "365", "all")) { range ->
                     com.example.ui.components.TrainPilotFilterChip(selected = state.range == range, enabled = !state.writing, onClick = { onRange(range) },
                         modifier = Modifier.testTag("weight_range_$range"),

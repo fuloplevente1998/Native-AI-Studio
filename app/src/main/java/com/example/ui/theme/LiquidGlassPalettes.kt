@@ -91,7 +91,7 @@ internal fun TrainPilotPalette.withGlassClarity(value: Int): TrainPilotPalette {
 }
 
 /** API < 31 / software paint: preserve the old .82 -> .18 opacity curve,
- * but derive the opaque RGB seed from the active Liquid background hue. */
+ * but derive the opaque RGB seed from the active Liquid scene material hue. */
 internal fun glassFallbackPaint(palette: TrainPilotPalette, clarity: Int): Color =
     palette.glassBackgroundTint(.054f, saturation = .55f)
         .copy(alpha = .82f - .64f * clarity.coerceIn(0, 100) / 100f)

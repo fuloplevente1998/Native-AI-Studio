@@ -29,9 +29,9 @@ class LiquidGlass433PaintTest {
                 val fallback = glassFallbackPaint(p, step)
                 val popup = p.glassOverlayFill(Color.Magenta)
                 val overlay = GlassMaterialRole.entries.map { glassOverlayRolePaint(p, it) }
-                val paints = listOf(tile, elevated, selection, nav, fallback, popup, p.surface, p.surfaceElevated, p.selectionColors().surface) + overlay
+                val paints = listOf(tile, elevated, selection, nav, fallback, popup, p.surface, p.surfaceElevated, p.selectionColors().surface, liquidChromeTint(p), p.slidingSheetBackground(Color.Magenta), p.photoViewerBackground(Color.Magenta)) + overlay
                 for (paint in paints) {
-                    assertTrue("${p.key} step=$step hue=$paint", hueDistance(p.background, paint) <= 6f)
+                    assertTrue("${p.key} step=$step hue=$paint", hueDistance(if (p.id == 33) Color.hsv(307f, .55f, 1f) else p.background, paint) <= 6f)
                     assertTrue("${p.key} step=$step bounded=$paint",
                         paint.copy(alpha = 1f).luminance() <= GlassOptics.SURFACE_LUMA_MAX)
                     val composited = paint.compositeOver(GlassOptics.lensWorstCase)
@@ -60,6 +60,52 @@ class LiquidGlass433PaintTest {
             val emerald = LiquidGlassPalettes.all.single { it.id == 37 }.withGlassClarity(step)
             assertNotEquals(gold.glassTile(Color.Black), emerald.glassTile(Color.Black))
             assertNotEquals(gold.glassOverlayFill(Color.Black), emerald.glassOverlayFill(Color.Black))
+        }
+    }
+
+    @Test fun allEightMaterialFamiliesMatchTheirLivingScene() {
+        // Independent expected hue bands; do not derive expected colors from the
+        // material helper under test. The multicolor graphite scene uses violet.
+        val expected = mapOf(33 to 307f, 34 to 202f, 35 to 222f, 36 to 190f,
+            37 to 163f, 38 to 265f, 39 to 313f, 40 to 45f)
+        assertEquals(expected.keys, LiquidGlassPalettes.all.map { it.id }.toSet())
+        for (p in LiquidGlassPalettes.all) {
+            val seed = Color.hsv(expected.getValue(p.id), .55f, 1f)
+            val actual = Color.hsv(GlassScene.materialHue(p), .55f, 1f)
+            assertTrue("${p.key} material family", hueDistance(seed, actual) <= 8f)
+            assertTrue("${p.key} material must match at least one scene light",
+                GlassScene.tones(p).any { hueDistance(it, actual) <= 24f })
+            if (p.id != 33) {
+                assertEquals(GlassScene.hueOf(p.background), GlassScene.materialHue(p), .01f)
+            }
+        }
+    }
+
+    @Test fun multicolorGraphiteChromeFollowsVioletSceneWithoutChangingGoldOrPage() {
+        val graphite = LiquidGlassPalettes.all.single { it.id == 33 }
+        val gold = LiquidGlassPalettes.all.single { it.id == 40 }
+        assertEquals("glass_graphite", graphite.key)
+        assertEquals(Color(0xFF172333), graphite.background)
+        assertEquals(Color(0xFF382E08), gold.background)
+        assertEquals(307f, GlassScene.materialHue(graphite), .01f)
+        assertEquals(GlassScene.hueOf(gold.background), GlassScene.materialHue(gold), .01f)
+        assertTrue(GlassScene.tones(graphite).any {
+            hueDistance(it, Color.hsv(307f, .55f, 1f)) <= 2f
+        })
+        for (step in 0..100) {
+            val p = graphite.withGlassClarity(step)
+            val amber = gold.withGlassClarity(step)
+            for (paint in listOf(p.photoViewerBackground(Color.Black),
+                p.slidingSheetBackground(Color.Black), liquidChromeTint(p),
+                p.surface, p.surfaceElevated, p.selectionColors().surface)) {
+                assertTrue("Graphite violet material at $step: $paint", paint.red > paint.green && paint.blue > paint.green)
+                assertTrue(hueDistance(Color.hsv(307f, .55f, 1f), paint) <= 6f)
+            }
+            for (paint in listOf(amber.photoViewerBackground(Color.Black),
+                amber.slidingSheetBackground(Color.Black), liquidChromeTint(amber))) {
+                assertTrue("Gold material at $step: $paint", paint.red > paint.blue)
+                assertTrue(hueDistance(amber.background, paint) <= 6f)
+            }
         }
     }
 

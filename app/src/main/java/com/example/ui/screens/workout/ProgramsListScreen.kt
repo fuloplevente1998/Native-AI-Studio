@@ -495,7 +495,19 @@ fun ProgramsListScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
-            Surface(
+            if (palette.isLiquidGlass) {
+                val builtinCount = remember(state.programs) { state.programs.count { !it.isCustom } }
+                val customCount = state.programs.size - builtinCount
+                val labels = listOf(
+                    trW(state.language, "Alap programok ($builtinCount)", "Built-in programs ($builtinCount)", "Standardprogramme ($builtinCount)", "Programe de bază ($builtinCount)"),
+                    trW(state.language, "Saját programok ($customCount)", "Custom programs ($customCount)", "Eigene Programme ($customCount)", "Programe proprii ($customCount)")
+                )
+                com.example.ui.components.LiquidSegmentedTabs(labels, if (state.programsTabCustomOnly) 1 else 0,
+                    { onToggleCustomTab(it == 1) }, "programs_tab_track",
+                    itemTag = { if (it == 1) "programs_tab_custom" else "programs_tab_builtin" }) { _, label, _ ->
+                    com.example.ui.components.TrainPilotFitText(label)
+                }
+            } else Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = palette.glassTile(palette.surface),
                 modifier = Modifier

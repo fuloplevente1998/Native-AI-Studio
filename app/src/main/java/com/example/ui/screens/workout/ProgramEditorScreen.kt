@@ -197,7 +197,12 @@ internal fun ProgramEditorContent(
         }
 
         // Segmented A nap | B nap selector (Mockup 4/4 #6)
-        Row(
+        if (palette.isLiquidGlass && program.days.isNotEmpty()) {
+            com.example.ui.components.LiquidSegmentedTabs(program.days.map { it.localizedDayCode(state.language) },
+                dayIndex, onSelectDayIndex, "program_day_track", scrollable = true) { _, label, _ ->
+                Text(label, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+            }
+        } else Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {

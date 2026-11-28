@@ -91,7 +91,19 @@ fun GoalsEditDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // 1. Period Selector (Heti vs Havi cél)
-                Row(
+                if (palette.isLiquidGlass) {
+                    val labels = when (strings.language) {
+                        AppLanguage.HU -> listOf("Heti cél (1–14)", "Havi cél (1–60)")
+                        AppLanguage.EN -> listOf("Weekly (1–14)", "Monthly (1–60)")
+                        AppLanguage.DE -> listOf("Wöchentlich (1–14)", "Monatlich (1–60)")
+                        AppLanguage.RO -> listOf("Săptămânal (1–14)", "Lunar (1–60)")
+                    }
+                    LiquidSegmentedTabs(labels, if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) 0 else 1,
+                        { period = if (it == 0) com.example.model.WorkoutGoalPeriod.WEEKLY else com.example.model.WorkoutGoalPeriod.MONTHLY },
+                        "goal_period_track", itemTag = { if (it == 0) "goal_period_weekly_btn" else "goal_period_monthly_btn" }) { _, label, _ ->
+                        TrainPilotFitText(label, style = MaterialTheme.typography.labelMedium)
+                    }
+                } else Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp),

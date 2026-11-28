@@ -83,7 +83,7 @@ internal fun TrainPilotPalette.photoViewerBackground(legacy: Color): Color {
 }
 
 internal fun TrainPilotPalette.glassBackgroundTint(cap: Float, saturation: Float = .42f): Color =
-    GlassContrast.limit(Color.hsv(GlassScene.hueOf(background), saturation, 1f), cap)
+    GlassContrast.limit(Color.hsv(GlassScene.materialHue(this), saturation, 1f), cap)
 
 internal fun TrainPilotPalette.glassTintedTile(legacy: Color): Color =
     if (isLiquidGlass) glassBackgroundTint(GLASS_TILE_LUMA).copy(alpha = glassTileAlpha(glassClarity)) else legacy

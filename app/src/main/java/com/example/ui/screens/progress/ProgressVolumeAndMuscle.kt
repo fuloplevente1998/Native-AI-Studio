@@ -226,7 +226,13 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         trL(uiState.language, "3 hó", "3 mo", "3 Mon.", "3 luni")
                                     )
 
-                                    Row(
+                                    if (palette.isLiquidGlass) {
+                                        com.example.ui.components.LiquidSegmentedTabs(rangeLabels, uiState.selectedProgressRangeIndex,
+                                            onSelectRange, "progress_compact_ranges", itemTag = { "progress_range_$it" }) { index, label, _ ->
+                                            com.example.ui.components.TrainPilotFitText(label, style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.testTag("progress_range_visual_$index"))
+                                        }
+                                    } else Row(
                                         modifier = Modifier.fillMaxWidth().testTag("progress_compact_ranges"),
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {

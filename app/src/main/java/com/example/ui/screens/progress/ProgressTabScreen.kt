@@ -107,10 +107,29 @@ fun ProgressTabScreen(
     PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
     GlassScrollChrome(
         modifier = Modifier.fillMaxSize().trainPilotPageBackdrop(palette).testTag("progress_tab_screen"),
-        enabled = layout.draft == null && !exerciseStatistics,
+        // Keep the outer selector on the same padded track in every Liquid section.
+        // Statistics owns its own local scrolling chrome below this track.
+        enabled = layout.draft == null && !exerciseStatistics && !palette.isLiquidGlass,
         rootInset = LocalGlassTopInset.current,
         top = {
-        if (layout.draft == null) Surface(
+        if (layout.draft == null && palette.isLiquidGlass) {
+            com.example.ui.components.LiquidSegmentedTabs(
+                labels = sections.map { it.second },
+                selectedIndex = sections.indexOfFirst { it.first == activeSection },
+                onSelect = { onSelectMainSection(sections[it].first) },
+                tag = "progress_section_track",
+                itemTag = { "progress_section_tab_${sections[it].first}" },
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+            ) { index, label, selected ->
+                val idx = sections[index].first
+                val tint = if (selected) selection.foreground else palette.textSecondary
+                Icon(if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
+                    contentDescription = null, tint = tint,
+                    modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx"))
+                com.example.ui.components.TrainPilotFitText(label, color = tint,
+                    modifier = Modifier.weight(1f).testTag("progress_section_label_$idx"))
+            }
+        } else if (layout.draft == null) Surface(
             shape = selectorShape,
             color = if (palette.isLiquidGlass) {
                 if (exerciseStatistics) palette.glassTile(palette.surface) else Color.Transparent

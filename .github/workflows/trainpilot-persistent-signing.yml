@@ -108,17 +108,22 @@ jobs:
             }
             core.setOutput('source_sha', run.head_sha);
 
-  signed-pair:
+  signed-modules:
+    name: Signed release (${{ matrix.module }})
     needs: [release-source]
     if: ${{ github.ref == 'refs/heads/main' && needs.release-source.outputs.source_sha != '' }}
     environment: android-signing
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [app, wear]
     env:
       TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
-      TRAINPILOT_REQUIRE_WEAR_PAIR: 'true'
-      TRAINPILOT_VERIFY_RELEASE: 'true'
+      MODULE: ${{ matrix.module }}
+      BUILD_AAB: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
       TRAINPILOT_RELEASE_CERT_SHA256: ${{ secrets.TRAINPILOT_RELEASE_CERT_SHA256 }}
     steps:
       - name: Checkout trusted main
@@ -127,10 +132,14 @@ jobs:
           ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
+      - name: Verify trusted source checkout
+        run: test "$(git rev-parse HEAD)" = "$TRAINPILOT_SOURCE_SHA"
+
       - name: Validate release APK verification script and signer parser
         run: |
           python3 -m py_compile scripts/verify_android_apk_metadata.py
           python3 scripts/verify_android_apk_metadata.py --self-test
+          python3 scripts/stage_signed_module.py --self-test
 
       - name: Set up JDK 25 LTS
         uses: actions/setup-java@v6.3.0
@@ -172,18 +181,93 @@ jobs:
               output.write('KEYSTORE_PATH=' + str(target) + '\n')
           PY
 
-      - name: Build signed phone and Wear pair
+      - name: Build signed APK and AAB for module
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           BUILD_AAB: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
         shell: bash
         run: |
-          tasks=(:app:assembleRelease :wear:assembleRelease)
+          case "$MODULE" in app|wear) ;; *) exit 1 ;; esac
+          tasks=(":${MODULE}:assembleRelease")
           if [[ "$BUILD_AAB" == "true" ]]; then
-            tasks+=(:app:bundleRelease :wear:bundleRelease)
+            tasks+=(":${MODULE}:bundleRelease")
           fi
           gradle --no-daemon --stacktrace --profile --continue "${tasks[@]}"
+
+      - name: Remove temporary private signing file
+        if: always()
+        shell: bash
+        run: rm -f -- "${RUNNER_TEMP}/trainpilot-release.jks"
+
+      - name: Stage signed module files and exact source evidence
+        run: python3 scripts/stage_signed_module.py stage
+
+      - name: Upload signed module files
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: staged-signed-module-${{ matrix.module }}
+          path: signed-module/
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: trainpilot-build-profile-${{ matrix.module }}-attempt-${{ github.run_attempt }}
+          path: build/reports/profile/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  signed-pair:
+    name: Verify signed phone and Wear pair
+    needs: [release-source, signed-modules]
+    if: ${{ github.ref == 'refs/heads/main' && needs.release-source.outputs.source_sha != '' }}
+    environment: android-signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
+      TRAINPILOT_REQUIRE_WEAR_PAIR: 'true'
+      TRAINPILOT_VERIFY_RELEASE: 'true'
+      TRAINPILOT_RELEASE_CERT_SHA256: ${{ secrets.TRAINPILOT_RELEASE_CERT_SHA256 }}
+      BUILD_AAB: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.release-source.outputs.source_sha }}
+          persist-credentials: false
+
+      - name: Verify trusted source checkout
+        run: test "$(git rev-parse HEAD)" = "$TRAINPILOT_SOURCE_SHA"
+
+      - name: Set up JDK 25 LTS
+        uses: actions/setup-java@v6.3.0
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Install Android API 37.1 stable SDK
+        shell: bash
+        run: bash scripts/install_android_build_sdk.sh
+
+      - name: Download staged phone outputs
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: staged-signed-module-app
+          path: signed-modules/app
+
+      - name: Download staged Wear outputs
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: staged-signed-module-wear
+          path: signed-modules/wear
+
+      - name: Verify exact signed module evidence and assemble
+        run: python3 scripts/stage_signed_module.py assemble
 
       - name: Verify package, embedded Maps configuration and pinned signer
         run: python3 scripts/verify_android_apk_metadata.py
@@ -241,11 +325,6 @@ jobs:
           print(json.dumps(meta, indent=2))
           PY
 
-      - name: Remove temporary private signing file
-        if: always()
-        shell: bash
-        run: rm -f -- "${RUNNER_TEMP}/trainpilot-release.jks"
-
       - name: Stage verified signed APKs and public metadata
         if: success()
         uses: actions/upload-artifact@v7.0.2
@@ -256,7 +335,8 @@ jobs:
             wear/build/outputs/apk/release/wear-release.apk
             app/build/outputs/apk-verification.json
           if-no-files-found: error
-          retention-days: 1
+          overwrite: true
+          retention-days: 7
 
       - name: Stage signed Play Console AAB pair
         if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.build_aab) }}
@@ -268,15 +348,7 @@ jobs:
             wear/build/outputs/bundle/release/wear-release.aab
             app/build/outputs/play-aab-metadata.json
           if-no-files-found: error
-          retention-days: 1
-
-      - name: Upload Gradle task timing profile
-        if: always()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: trainpilot-build-profile
-          path: build/reports/profile/
-          if-no-files-found: ignore
+          overwrite: true
           retention-days: 7
 
   jvm-shards:

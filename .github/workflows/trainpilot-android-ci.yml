@@ -35,6 +35,7 @@ on:
       - 'scripts/run_jvm_regression_shard.sh'
       - 'scripts/stage_jvm_regression_shard.sh'
       - 'scripts/test_jvm_shard_commands.py'
+      - 'scripts/stage_signed_module.py'
       - '.github/workflows/trainpilot-persistent-signing.yml'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
@@ -168,6 +169,7 @@ jobs:
           python3 scripts/test_jvm_shard_commands.py
           python3 scripts/test_assemble_jvm_shards.py
           python3 scripts/verify_android_apk_metadata.py --self-test
+          python3 scripts/stage_signed_module.py --self-test
 
       - name: Assemble disjoint raw XML from the exact checkout
         env:

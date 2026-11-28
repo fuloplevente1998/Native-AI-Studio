@@ -290,7 +290,13 @@ fun SettingsMainScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(strings.languageTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
+                    if (palette.isLiquidGlass) {
+                        val languages = AppLanguage.entries
+                        com.example.ui.components.LiquidSegmentedTabs(languages.map { "${it.flag} ${it.code}" },
+                            languages.indexOf(uiState.language), { onSelectLanguage(languages[it]) }, "settings_language_track") { _, label, _ ->
+                            com.example.ui.components.TrainPilotFitText(label, style = MaterialTheme.typography.labelMedium)
+                        }
+                    } else Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

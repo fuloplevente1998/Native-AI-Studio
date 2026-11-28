@@ -70,6 +70,13 @@ internal object GlassScene {
         39 to listOf(333f, 353f, 314f, 214f),  // Rose
         40 to listOf(goldHue, goldHue - 7f, goldHue + 6f, goldHue - 14f) // Gold
     )
+    // The multicolor Graphite preset retained its original blue page base when
+    // the living scene was replaced. Its solid chrome must instead follow the
+    // scene's violet light, while the actual page base and saved key stay intact.
+    // Other presets already have a compatible material seed (including Gold).
+    fun materialHue(palette: TrainPilotPalette): Float =
+        if (palette.id == 33) paletteHues.getValue(33)[2] else hueOf(palette.background)
+
     private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
     private val periods = floatArrayOf(53f, 67f, 59f, 79f)
     // x, y (fraction of the screen), radius (fraction of the width).

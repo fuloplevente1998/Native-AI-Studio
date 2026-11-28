@@ -75,7 +75,16 @@ fun QuickWorkoutHubSheet(
                 qw(language, "Kültéri", "Outdoor", "Outdoor", "Exterior")
             )
             val segShape = RoundedCornerShape(14.dp)
-            Surface(shape = segShape, color = palette.glassCardFill(palette.surfaceCard),
+            if (palette.isLiquidGlass) {
+                LiquidSegmentedTabs(tabs, tab, onSelectTab, "quick_workout_track",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    itemTag = { "quick_tab_$it" }, weights = tabs.map { trainPilotLabelWeight(it, tabs) }) { i, label, selected ->
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        WorkoutModeArt(modes[i], Modifier.width(35.dp), height = 28.dp, selected = selected)
+                        TrainPilotFitText(label, textAlign = TextAlign.Center, modifier = Modifier.testTag("quick_tab_label_$i"))
+                    }
+                }
+            } else Surface(shape = segShape, color = palette.glassCardFill(palette.surfaceCard),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
                     .trainPilotGlassMaterial(palette, segShape)
                     .trainPilotBorder(1.dp, palette.cardBorder, segShape)) {
