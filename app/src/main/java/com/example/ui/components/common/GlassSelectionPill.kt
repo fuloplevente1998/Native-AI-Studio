@@ -39,6 +39,10 @@ import kotlin.math.roundToInt
 @Stable
 internal class GlassPillTrack {
     val drag = GlassControlDrag()
+    // The host can own the motion state above a measured/subcomposed header.
+    internal val left = Animatable(0f)
+    internal val right = Animatable(0f)
+    internal var placed by mutableStateOf(false)
     internal val bounds = mutableStateMapOf<Int, Pair<Float, Float>>()
 }
 
@@ -68,22 +72,21 @@ internal fun BoxScope.GlassSelectionPill(
     val motion = rememberGlassMotionEnabled()
     val dragProgress = animateFloatAsState(if (motion && track.drag.held) 1f else 0f,
         spring(dampingRatio = .62f, stiffness = 520f), label = "Liquid navigation touch")
-    val left = remember { Animatable(0f) }
-    val right = remember { Animatable(0f) }
-    var placed by remember { mutableStateOf(false) }
+    val left = track.left
+    val right = track.right
     LaunchedEffect(target, motion) {
         val (toLeft, toRight) = target ?: return@LaunchedEffect
-        if (!GlassMotion.animateTravel(motion, placed)) {
+        if (!GlassMotion.animateTravel(motion, track.placed)) {
             left.snapTo(toLeft)
             right.snapTo(toRight)
-            placed = true
+            track.placed = true
             return@LaunchedEffect
         }
         val towardsEnd = toLeft > left.value
         launch { left.animateTo(toLeft, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = !towardsEnd))) }
         launch { right.animateTo(toRight, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = towardsEnd))) }
     }
-    if (target == null || !placed) return
+    if (target == null || !track.placed) return
     val restWidth = target.second - target.first
     Box(
         Modifier
