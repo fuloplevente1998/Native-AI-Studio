@@ -68,4 +68,28 @@ class GlassScrollChrome2813Test {
         compose.onNodeWithTag("chrome_list").performScrollToIndex(39)
         assertTrue(compose.onNodeWithTag("chrome_row_39").getUnclippedBoundsInRoot().bottom <= lower.top)
     }
+
+    @Test fun wrappingPanelSharesStableHeaderAndFollowsShortBodyHeight() {
+        val tall = androidx.compose.runtime.mutableStateOf(false)
+        compose.setContent {
+            TrainPilotTheme {
+                MeasuredScrollChrome(rootInset = 0.dp, wrapBody = true,
+                    panel = Modifier.testTag("wrapped_panel"),
+                    top = { Box(Modifier.fillMaxWidth().height(48.dp).testTag("wrapped_top")) }
+                ) { modifier, top, _ ->
+                    Box(modifier.height(top + if (tall.value) 240.dp else 80.dp).testTag("wrapped_body"))
+                }
+            }
+        }
+        val panel = compose.onNodeWithTag("wrapped_panel")
+        val header = compose.onNodeWithTag("wrapped_top")
+        val initial = header.getUnclippedBoundsInRoot()
+        val small = panel.getUnclippedBoundsInRoot()
+        assertEquals(128.dp, small.bottom - small.top)
+        compose.runOnIdle { tall.value = true }
+        val large = panel.getUnclippedBoundsInRoot()
+        assertEquals(initial, header.getUnclippedBoundsInRoot())
+        assertEquals(small.top, large.top)
+        assertEquals(288.dp, large.bottom - large.top)
+    }
 }
