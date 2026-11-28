@@ -51,9 +51,9 @@ internal data class KyantMaterialSpec(
 
         private fun compute(role: GlassMaterialRole, t: Float): KyantMaterialSpec {
             val baseBlur = 24f * (.5f / 24f).pow(t)
-            val baseHeight = 6f + 18f * t
-            val baseAmount = 10f + 38f * t
-            val saturation = 1.08f + .22f * t
+            val baseHeight = 7f + 19f * t
+            val baseAmount = 12f + 42f * t
+            val saturation = 1.12f + .25f * t
             // Tile paint is composited over its parent, not separately captured or blurred.
             val (blur, lens, coat) = when (role) {
                 GlassMaterialRole.Panel -> Triple(1f, 1.12f, .20f - .15f * t)
