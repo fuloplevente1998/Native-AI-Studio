@@ -33,9 +33,10 @@ internal fun StudioHealthRootEffects(viewModel: TrainPilotViewModel, uiState: Tr
         if (workoutSaveSeen && !uiState.isSavingWorkout && !uiState.isWorkoutSessionActive) nativeHealth.afterWorkoutSaved()
         workoutSaveSeen = uiState.isSavingWorkout
     }
-    androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
+    androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial, health.syncOutcome, health.syncCancelled) {
         viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-            failed = health.syncFailed, message = health.syncMessage)
+            failed = health.syncFailed, message = health.syncMessage,
+            outcome = if (health.syncCancelled) "CANCELLED" else health.syncOutcome)
     }
     androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
         viewModel.reloadHealthJournal()

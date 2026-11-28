@@ -61,14 +61,14 @@ internal object GlassScene {
     // own backdrop without changing stored theme IDs, accent colors or the user photo path.
     private val goldHue = hueOf(Color(TRAIN_PILOT_GOLD))
     private val paletteHues = mapOf(
-        33 to listOf(4f, 48f, 307f, 152f),     // Graphite
-        34 to listOf(24f, 209f, 306f, 173f),   // Aurora (legacy glass_ice id/key)
-        35 to listOf(222f, 233f, 254f, 20f),   // Sapphire
-        36 to listOf(169f, 184f, 203f, 294f),  // Turquoise
-        37 to listOf(146f, 111f, 166f, 41f),   // Emerald
-        38 to listOf(268f, 254f, 295f, 174f),  // Amethyst
-        39 to listOf(333f, 353f, 314f, 214f),  // Rose
-        40 to listOf(goldHue, goldHue - 7f, goldHue + 6f, goldHue - 14f) // Gold
+        33 to listOf(44f, 215f, 307f, 165f),  // Graphite: amber / cobalt / violet / teal
+        34 to listOf(258f, 195f, 322f, 168f), // Aurora: violet / ice-cyan / pink / aurora green
+        35 to listOf(224f, 202f, 264f, 300f), // Sapphire: royal blue / cyan-blue / violet / magenta
+        36 to listOf(205f, 165f, 184f, 275f), // Turquoise: ocean / mint / cyan / violet
+        37 to listOf(159f, 130f, 173f, 46f),  // Emerald: emerald / green / teal / gold
+        38 to listOf(265f, 245f, 310f, 183f), // Amethyst: violet / indigo / magenta / cyan
+        39 to listOf(350f, 326f, 300f, 215f), // Rose: coral / pink / magenta / cobalt
+        40 to listOf(goldHue, 26f, 43f, 318f) // Gold: brand gold / copper / amber / rose
     )
     // The multicolor Graphite preset retained its original blue page base when
     // the living scene was replaced. Its solid chrome must instead follow the
@@ -80,8 +80,10 @@ internal object GlassScene {
     private val hueOffsets = floatArrayOf(0f, 48f, -56f, 150f)
     private val periods = floatArrayOf(53f, 67f, 59f, 79f)
     // x, y (fraction of the screen), radius (fraction of the width).
-    private val anchors = arrayOf(floatArrayOf(.84f, .12f, .76f), floatArrayOf(.10f, .40f, .80f),
-        floatArrayOf(.80f, .68f, .70f), floatArrayOf(.26f, .94f, .78f))
+    // Wide overlapping pools of light, not isolated dim circles: the mockup's
+    // colour transitions reach across the page, with the existing dark top falloff.
+    private val anchors = arrayOf(floatArrayOf(.78f, .12f, 1.04f), floatArrayOf(.12f, .33f, 1.12f),
+        floatArrayOf(.82f, .69f, 1.12f), floatArrayOf(.14f, .92f, 1.04f))
     val blobCount: Int get() = anchors.size
 
     /**
@@ -115,6 +117,14 @@ internal object GlassScene {
         val dx = DRIFT * sin(phase + i * 1.7f)
         val dy = DRIFT * cos(phase * .83f + i * .9f)
         GlassBlob((a[0] + dx) * width, (a[1] + dy) * height, a[2] * width, BLOB_STRENGTH)
+    }
+
+    /** Smooth extended core and soft edge, shared with the four-source AGSL scene.
+     * Compose samples this curve at five stops; it does not add a capture or render pass.
+     */
+    fun lightFalloff(distance: Float): Float {
+        val t = ((distance - .20f) / .80f).coerceIn(0f, 1f)
+        return 1f - t * t * (3f - 2f * t)
     }
 
     /** Vivid hue rotations of the theme accent (the shader guards their luminance after mixing). */

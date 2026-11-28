@@ -162,6 +162,41 @@ class Wear2808Test {
         }
     }
 
+    @Test fun liquidWatchPairsKeepDistinctSurfacesAndIgnorePhoneClarity() {
+        val expected = mapOf(
+            "glass_graphite" to Color(0xFFAAB7CA), "glass_ice" to Color(0xFF35CBFF),
+            "glass_sapphire" to Color(0xFF8BA7FF), "glass_turquoise" to Color(0xFF48E3D0),
+            "glass_emerald" to Color(0xFF5EF1AC), "glass_amethyst" to Color(0xFFC69AFF),
+            "glass_rose" to Color(0xFFFFA0CC), "glass_amber" to Color(0xFFFFD17B)
+        )
+        for ((key, accent) in expected) {
+            val raw = palette("contrast", "#172333", "#ffffff", "#e0e8f1", "#ffffff") {
+                put("key", key).put("surface", "#555b64").put("elevated", "#555b64")
+            }
+            val watch = raw.forWatch()
+            assertEquals(key, watch.key)
+            assertEquals("contrast", watch.family)
+            assertEquals(accent, watch.accentColor)
+            assertEquals(Color(0xFF080A0F), watch.backgroundColor)
+            assertTrue(wearContrast(watch.backgroundColor, watch.surfaceColor) >= 1.2f)
+            assertTrue(wearContrast(watch.surfaceColor, watch.elevatedColor) >= 1.3f)
+            for (surface in listOf(watch.backgroundColor, watch.surfaceColor, watch.elevatedColor)) {
+                assertEquals(1f, surface.alpha, 0f)
+                for (foreground in listOf(watch.accentColor, watch.secondaryColor, watch.textColor, watch.mutedColor))
+                    assertTrue("$key $foreground on $surface", wearContrast(foreground, surface) >= 4.5f)
+                assertTrue("$key frame on $surface", wearContrast(watch.outlineColor, surface) >= 3f)
+            }
+            assertTrue(wearContrast(watch.onAccentColor, watch.accentColor) >= 4.5f)
+            // Changes to the phone's glass slider/colors do not alter watch rendering.
+            assertEquals(watch, raw.copy(surface = "#111722", elevated = "#737983",
+                accent = "#aabbcc", accent2 = "#ccddff").forWatch())
+            assertEquals(watch, watch.forWatch())
+            assertEquals("#555b64", raw.surface)
+            assertEquals(watch.surfaceColor, watch.materialColors().surfaceContainer)
+            assertEquals(watch.elevatedColor, watch.materialColors().surfaceContainerHigh)
+        }
+    }
+
     @Test fun darkDefaultKeepsItsIdentityAndStoredPaletteIsUntouched() {
         val watch = WearHomeTheme.DEFAULT.forWatch()
         assertEquals(WearHomeTheme.DEFAULT.accentColor, watch.accentColor)

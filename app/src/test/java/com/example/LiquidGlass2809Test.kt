@@ -75,6 +75,21 @@ class LiquidGlass2809Test {
         assertEquals("a long pause never jumps the drift", 2f, GlassScene.advance(1f, 3600f), 1e-6f)
     }
 
+    @Test fun extendedLightCoreRemainsSmoothAndCoversMoreOfThePage() {
+        assertEquals(1f, GlassScene.lightFalloff(0f), 1e-6f)
+        assertEquals(1f, GlassScene.lightFalloff(.20f), 1e-6f)
+        assertEquals(.5f, GlassScene.lightFalloff(.60f), 1e-6f)
+        assertEquals(0f, GlassScene.lightFalloff(1f), 1e-6f)
+        val weights = (0..100).map { GlassScene.lightFalloff(it / 100f) }
+        assertTrue(weights.zipWithNext().all { (a, b) -> a >= b && a - b < .025f })
+        // Old .7–.8 width pools left dark gaps. Keep wide, overlapping coverage
+        // without increasing source count, luminance cap or clock frequency.
+        assertEquals(4, GlassScene.blobCount)
+        assertTrue(GlassScene.blobs(1080f, 2340f, 0f).all { it.radius >= 1080f })
+        assertEquals(83L, GlassScene.FRAME_MS)
+        assertEquals(.145f * .96f, GlassScene.lumaCap, 1e-6f)
+    }
+
     @Test fun backdropIsColourfulButGuardedForText() {
         val grid = (0..10).flatMap { r -> (0..10).flatMap { g -> (0..10).map { b -> Color(r / 10f, g / 10f, b / 10f) } } }
         for (c in grid) {
@@ -94,7 +109,10 @@ class LiquidGlass2809Test {
             if (seed.key == "glass_amber") {
                 val brandHue = GlassScene.hueOf(legacy.single { it.id == 9 }.primary)
                 assertEquals(brandHue, hues.first(), .5f)
-                assertTrue(hues.all { abs(it - brandHue) <= 15f })
+                // User requested a multicolor Gold scene; retain brand gold and
+                // two warm sources, but allow a distinct rose counter-light.
+                assertTrue(hues.count { abs(it - brandHue) <= 30f } >= 3)
+                assertTrue(hues.any { it in 305f..335f })
             } else {
                 assertTrue("${seed.key} hues spread", hues.max() - hues.min() > 90f)
             }

@@ -1,6 +1,8 @@
 package com.example
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
@@ -46,12 +48,13 @@ class HomeCompactStatusRegressionTest {
             ))
         var coach = 0
         var planner = 0
+        var sync = 0
         compose.setContent { TrainPilotTheme {
             Box(Modifier.size(393.dp, 680.dp).clipToBounds().testTag("home_viewport")) {
                 HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                     onOpenWatchAndSync = {},
-                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ })
+                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onTriggerHealthSync = { sync++ })
             }
         } }
         compose.onNodeWithTag("home_personal_planner_mini_card").assertIsDisplayed().performClick()
@@ -59,11 +62,45 @@ class HomeCompactStatusRegressionTest {
         for (key in listOf("sleep", "calories", "pulse", "steps", "workout", "recovery"))
             compose.onNodeWithTag("home_today_$key").assertIsDisplayed()
         compose.onNodeWithTag("home_today_pulse").assertTextContains("61 bpm")
+        compose.onNodeWithTag("home_today_date").assertIsDisplayed()
+        compose.onNodeWithTag("home_today_header_sync").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, sync) }
         val viewport = compose.onNodeWithTag("home_viewport").getUnclippedBoundsInRoot()
         val card = compose.onNodeWithTag("home_coach_advice_card").assertIsDisplayed()
         assertTrue("Coach should fit without scrolling at default size", card.getUnclippedBoundsInRoot().bottom <= viewport.bottom)
         compose.onNodeWithTag("home_coach_summary", useUnmergedTree = true).assertTextContains("friss adat", substring = true)
         card.performClick(); assertEquals(1, coach)
+    }
+    @Test fun syncFeedbackUsesActualOutcomeAndRetry() {
+        var state by androidx.compose.runtime.mutableStateOf(TrainPilotUiState(language = AppLanguage.HU))
+        var retries = 0
+        // Let Compose settle the snapshot/recomposition/layout for each state;
+        // a single manually advanced frame can precede the snapshot apply.
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.StudioTodaySyncFeedback(state, "home") { retries++ }
+        } }
+        compose.onNodeWithTag("home_today_sync_result").assertDoesNotExist()
+        fun awaitText(label: String) {
+            compose.waitUntil(5_000) {
+                androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                compose.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithText(label).assertIsDisplayed()
+        }
+        compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
+        awaitText("Frissítés…")
+        compose.runOnIdle { state = state.copy(healthSyncBusy = false, healthSyncFailed = true, healthSyncOutcome = "FAILED") }
+        awaitText("Szinkron sikertelen")
+        compose.onNodeWithTag("home_today_sync_retry").performClick()
+        compose.runOnIdle { assertEquals(1, retries); state = state.copy(healthSyncFailed = false, healthSyncPartial = true, healthSyncOutcome = "PARTIAL") }
+        awaitText("Részleges szinkron")
+        compose.onNodeWithTag("home_today_sync_retry").assertExists()
+        compose.runOnIdle { state = state.copy(healthSyncPartial = false, healthSyncOutcome = "CANCELLED") }
+        awaitText("Frissítés megszakítva")
+        compose.runOnIdle { state = state.copy(healthSyncOutcome = "SUCCESS") }
+        awaitText("Mai állapot frissítve")
+        compose.onNodeWithTag("home_today_sync_retry").assertDoesNotExist()
     }
     @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {
         val state = TrainPilotUiState(todayPulseReading = PulseDayReading(

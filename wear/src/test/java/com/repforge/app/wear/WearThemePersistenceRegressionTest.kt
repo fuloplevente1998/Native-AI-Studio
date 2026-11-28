@@ -49,6 +49,23 @@ class WearThemePersistenceRegressionTest {
         assertEquals(key, WatchHomeStore.load(context)!!.theme.key)
     }
 
+    @Test fun liquidDisplayPairNeverReplacesTheStoredPhonePalette() {
+        val packet = theme("contrast").put("key", "glass_ice")
+            .put("background", "#172333").put("surface", "#555b64").put("elevated", "#555b64")
+        val stored = WatchHomeStore.save(context, home(600, packet))!!.theme
+        val display = stored.forWatch()
+        assertEquals("glass_ice", display.key)
+        assertNotEquals(stored.surfaceColor, display.surfaceColor)
+        assertEquals(stored, WatchHomeStore.load(context)!!.theme)
+        assertEquals(stored, WatchHomeStore.save(context, home(700, null))!!.theme)
+        val ordinary = theme("matte").put("key", "graphite_gold").put("background", "#101318")
+            .put("surface", "#1b2027").put("elevated", "#232933")
+        val next = WatchHomeStore.save(context, home(800, ordinary))!!.theme
+        assertEquals("graphite_gold", next.key)
+        assertEquals(Color(0xFF101318), next.forWatch().backgroundColor)
+        assertEquals(next, WatchHomeStore.load(context)!!.theme)
+    }
+
     @Test fun restartAndPartialOrOlderHomePacketsRetainLastValidTheme() {
         val selected = WatchHomeStore.save(context, home(100, theme()))!!
         assertEquals("phone-light", selected.theme.key)

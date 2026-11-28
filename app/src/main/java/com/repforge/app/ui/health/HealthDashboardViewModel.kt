@@ -219,6 +219,20 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
             requestSamsungPermission = true, fullSync = full, allProviders = true)
     }
 
+    /** Home is not the journal screen. Use the same single app-visible flight and
+     * admission/lease checks, without forcing a history navigation or permission dialog.
+     */
+    fun syncTodayFromHome(activity: Activity?) {
+        if (activity == null || !appVisible || appActivity?.get() !== activity ||
+            samsungPermissionPending || manualSamsungPermissionVisible) {
+            _uiState.update { it.copy(syncFailed = true, syncPartial = false, syncOutcome = "BLOCKED",
+                syncMessage = "A frissítés most nem indítható.") }
+            return
+        }
+        launchRefresh(activity, NativeHealthAutoRefreshGate.Trigger.MANUAL,
+            fullSync = false, allProviders = true, appAuto = true)
+    }
+
     fun syncProviderHealth(activity: Activity?, provider: String) {
         if (activity == null || provider !in NativeHealthProviderBatch.providers) return
         launchRefresh(activity, NativeHealthAutoRefreshGate.Trigger.MANUAL,
@@ -518,7 +532,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
             var ticket: NativeHealthAutoRefreshGate.Ticket? = null
             try {
                 val visibleGeneration = if (appAuto) appGeneration else screenGeneration
-                val selected = historyQuery.day.toString()
+                val selected = if (appAuto) LocalDate.now().toString() else historyQuery.day.toString()
                 fun sceneCurrent(): Boolean = if (appAuto)
                     appVisible && appActivity?.get() === activity && appGeneration == visibleGeneration
                 else screenVisible && screenActivity?.get() === activity && screenGeneration == visibleGeneration &&
@@ -575,7 +589,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val activeTicket = ticket!!
                 manualSamsungPermissionVisible = trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL &&
                     requestSamsungPermission && (allProviders || snapshot.provider == HealthJournalStore.SAMSUNG)
-                val day = if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO) LocalDate.now()
+                val day = if (appAuto || trigger == NativeHealthAutoRefreshGate.Trigger.AUTO) LocalDate.now()
                     else historyQuery.day
                 _uiState.update { it.copy(healthRefreshing = true, syncFailed = false, syncPartial = false,
                     syncCancelled = false, syncCompleted = 0, syncTotal = 0, syncPages = 0, syncStage = "PREPARING",

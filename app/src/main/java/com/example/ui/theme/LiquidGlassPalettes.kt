@@ -14,16 +14,20 @@ internal object LiquidGlassPalettes {
     private data class Tone(val key: String, val hu: String, val en: String, val de: String, val ro: String,
         val accent: Long, val backdrop: Long)
     private val tones = listOf(
-        Tone("graphite", "Grafit", "Graphite", "Graphit", "Grafit", 0xFFD0DBE8, 0xFF172333),
+        Tone("graphite", "Grafit", "Graphite", "Graphit", "Grafit", 0xFFAAB7CA, 0xFF172333),
         // Keep the stored glass_ice key and id 34 for existing backups and Wear sync.
-        Tone("ice", "Aurora", "Aurora", "Aurora", "Aurora", 0xFFCDDEFF, 0xFF142C3D),
-        Tone("sapphire", "Zafír", "Sapphire", "Saphir", "Safir", 0xFF8DB9FF, 0xFF172952),
-        Tone("turquoise", "Türkiz", "Turquoise", "Türkis", "Turcoaz", 0xFF70E5EF, 0xFF123B43),
-        Tone("emerald", "Smaragd", "Emerald", "Smaragd", "Smarald", 0xFF78F2BC, 0xFF12392E),
-        Tone("amethyst", "Ametiszt", "Amethyst", "Amethyst", "Ametist", 0xFFD0B2FF, 0xFF35234F),
-        Tone("rose", "Rózsaszín", "Rose", "Rosé", "Roz", 0xFFFFB9D8, 0xFF41253B),
-        Tone("amber", "Arany", "Gold", "Gold", "Auriu", 0xFFFFD18C, 0xFF382E08)
+        Tone("ice", "Aurora", "Aurora", "Aurora", "Aurora", 0xFF35CBFF, 0xFF142C3D),
+        Tone("sapphire", "Zafír", "Sapphire", "Saphir", "Safir", 0xFF557BFF, 0xFF172952),
+        Tone("turquoise", "Türkiz", "Turquoise", "Türkis", "Turcoaz", 0xFF28E0CB, 0xFF123B43),
+        Tone("emerald", "Smaragd", "Emerald", "Smaragd", "Smarald", 0xFF4BEBA3, 0xFF12392E),
+        Tone("amethyst", "Ametiszt", "Amethyst", "Amethyst", "Ametist", 0xFFAB79FF, 0xFF35234F),
+        Tone("rose", "Rózsaszín", "Rose", "Rosé", "Roz", 0xFFFF73B4, 0xFF41253B),
+        Tone("amber", "Arany", "Gold", "Gold", "Auriu", 0xFFFFBC4B, 0xFF382E08)
     )
+    // Swatches are decorative samples, not foreground text. Keep the vivid seed
+    // instead of the contrast-lifted primary (which can look nearly white).
+    fun swatchColor(id: Int): Color? = tones.getOrNull(id - 33)?.let { Color(it.accent) }
+
     val all: List<TrainPilotPalette> = tones.mapIndexed { i, t ->
         val bg = Color(t.backdrop)
         val accent = Color(t.accent)

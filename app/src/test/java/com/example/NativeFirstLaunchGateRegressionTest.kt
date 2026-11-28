@@ -56,9 +56,26 @@ class NativeFirstLaunchGateRegressionTest {
         awaitTag("onboarding_welcome")
         assertEquals(false, com.repforge.app.ui.onboarding.firstRunPermissionsPending(context))
         compose.onNodeWithTag("gated_home").assertDoesNotExist()
-        compose.onNodeWithTag("onboarding_skip").performClick()
+        compose.onNodeWithTag("onboarding_language_EN").performScrollTo().performClick()
+        compose.waitUntil(30_000) {
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            runBlocking { store.current().language == "en" } &&
+                compose.onAllNodes(hasTestTag("onboarding_skip") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("settings_theme_category_toggle_4").performScrollTo().performClick()
+        compose.onNodeWithTag("onboarding_palette_34").performScrollTo().performClick()
+        compose.waitUntil(30_000) {
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            runBlocking { store.current().themeKey == "glass_ice" } &&
+                compose.onAllNodes(hasTestTag("onboarding_skip") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("onboarding_skip").performScrollTo().performClick()
         awaitTag("gated_home")
         assertEquals("skipped",runBlocking { store.current().onboarding128 })
+        assertEquals("en", runBlocking { store.current().language })
+        assertEquals("glass_ice", runBlocking { store.current().themeKey })
     }
     @Test fun migratedUserDoesNotReceiveFreshInstallOnboarding() {
         val store=TrainPilotSettingsStore(context)

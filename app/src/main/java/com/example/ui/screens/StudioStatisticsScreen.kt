@@ -152,9 +152,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     if (palette.isLiquidGlass) {
                         tabs(Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
                     } else {
-                        val shape = RoundedCornerShape(14.dp)
-                        tabs(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                            .glassHeaderMaterial(palette, shape).padding(4.dp))
+                        // Legacy exercise tabs stay pinned, with the same 12dp
+                        // horizontal inset and 4dp top spacing as Cardio/Steps.
+                        tabs(Modifier.padding(horizontal = 12.dp).padding(top = 4.dp))
                     }
                 }
             }
@@ -165,7 +165,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             modifier = listModifier
         ) {
             val panel = if (exerciseList && !sharedPanel) Modifier.padding(horizontal = 6.dp).trainPilotListPanel() else Modifier
-            val contentTop = 4.dp + (if (fixedTabs) tabsInset else topInset)
+            val contentTop = (if (exerciseList && !sharedPanel) 6.dp else 4.dp) + (if (fixedTabs) tabsInset else topInset)
             LazyColumn(state = listState, modifier = (if (sharedPanel) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).then(panel).testTag("studio_statistics_screen"),
                 contentPadding = PaddingValues(start = if (sharedPanel) 6.dp else 12.dp, end = if (sharedPanel) 6.dp else 12.dp, top = contentTop, bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(if (exerciseList) 0.dp else 6.dp)) {

@@ -290,40 +290,7 @@ fun SettingsMainScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(strings.languageTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (palette.isLiquidGlass) {
-                        val languages = AppLanguage.entries
-                        com.example.ui.components.LiquidSegmentedTabs(languages.map { "${it.flag} ${it.code}" },
-                            languages.indexOf(uiState.language), { onSelectLanguage(languages[it]) }, "settings_language_track") { _, label, _ ->
-                            com.example.ui.components.TrainPilotFitText(label, style = MaterialTheme.typography.labelMedium)
-                        }
-                    } else Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AppLanguage.entries.forEach { lang ->
-                            val selected = uiState.language == lang
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else if (selected) palette.primary else palette.surfaceElevated,
-                                border = if (palette.isLiquidGlass && selected) BorderStroke(1.dp, palette.primary) else null,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .liquidDropMaterial(palette, RoundedCornerShape(10.dp), if (selected) GlassMaterialRole.Selection else GlassMaterialRole.Button,
-                                        accent = if (selected) palette.primary else null, live = selected)
-                                    .semantics { this.selected = selected }
-                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
-                            ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                                    Text(
-                                        text = "${lang.flag} ${lang.code}",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (selected && !palette.isLiquidGlass) palette.onPrimary else palette.textPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    com.example.ui.components.StudioLanguageSelector(uiState.language, onSelectLanguage)
                 }
             }
         }

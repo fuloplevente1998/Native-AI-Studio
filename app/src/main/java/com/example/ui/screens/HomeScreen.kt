@@ -120,7 +120,8 @@ fun HomeScreen(
     onNavigateFromToday: (com.example.model.SubScreen) -> Unit = {},
     /** 2786: Home weekly goals → Health with the weekly view open. */
     onOpenWeeklyGoals: () -> Unit = onOpenGoalsDialog,
-    inlineProgramEditor: (@Composable () -> Unit)? = null
+    inlineProgramEditor: (@Composable () -> Unit)? = null,
+    onTriggerHealthSync: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     var todayTile by remember { mutableStateOf<String?>(null) }
@@ -472,11 +473,14 @@ fun HomeScreen(
                                     .trainPilotFrame(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
                                     .testTag("home_today_status_group")
                             ) {
-                                Box(Modifier.padding(8.dp)) {
+                                Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    StudioTodayCompactHeader(state, strings, editing = layout.draft != null,
+                                        onRefresh = onTriggerHealthSync)
                                     StudioTodayStatusGrid(state, compact = true, layout = layout) { key ->
                                         todayTile = key
                                         if (key == "pulse") onTogglePulseTrend()
                                     }
+                                    if (layout.draft == null) StudioTodaySyncFeedback(state, "home", onTriggerHealthSync)
                                 }
                             }
                         }
