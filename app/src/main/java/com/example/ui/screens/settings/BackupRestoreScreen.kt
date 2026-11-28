@@ -213,7 +213,12 @@ fun BackupRestoreScreen(
                 )
             }
             item(key = "formats") {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (palette.isLiquidGlass) {
+                    val formats = listOf("JSON", "ZIP", "DRIVE")
+                    com.example.ui.components.LiquidSegmentedTabs(formats, formats.indexOf(uiState.selectedBackupFormat),
+                        { onSelectFormat(formats[it]) }, "backup_format_track",
+                        itemTag = { "backup_format_${formats[it]}" }) { _, label, _ -> Text(label) }
+                } else Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
                         val sel = uiState.selectedBackupFormat == fmt
                         val interaction = remember(fmt) { MutableInteractionSource() }

@@ -93,10 +93,15 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         }
     }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (source in com.repforge.app.NativeHealthProviderBatch.providers.filter {
-                    it == HealthJournalStore.HC || samsungEnabled
-                }) {
+            val providers = com.repforge.app.NativeHealthProviderBatch.providers.filter {
+                it == HealthJournalStore.HC || samsungEnabled
+            }
+            if (palette.isLiquidGlass && providers.size > 1) {
+                com.example.ui.components.LiquidSegmentedTabs(providers.map { NativeWorkoutHealthSource.label(it) },
+                    providers.indexOf(provider), { provider = providers[it]; result = null; message = "" },
+                    "workout_health_provider_track", enabled = !busy) { _, label, _ -> Text(label) }
+            } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (source in providers) {
                     com.example.ui.components.TrainPilotFilterChip(selected = provider == source, enabled = !busy,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         onClick = { provider = source; result = null; message = "" },

@@ -116,19 +116,31 @@ internal fun CustomExerciseDialog(
                     label = { Text(words[3]) }, minLines = 2, maxLines = 4,
                     modifier = Modifier.fillMaxWidth().testTag("custom_exercise_note"))
                 Text(words[4])
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                    com.example.ui.components.LiquidSegmentedTabs(muscleLabels, muscles.indexOf(draft.muscle),
+                        { draft = draft.copy(muscle = muscles[it]) }, "custom_exercise_muscle_track",
+                        scrollable = true, itemTag = { "custom_exercise_muscle_${muscles[it]}" }) { _, label, _ -> Text(label) }
+                } else Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (key in muscles) com.example.ui.components.TrainPilotFilterChip(selected = draft.muscle == key,
                         onClick = { draft = draft.copy(muscle = key) },
                         label = { Text(muscleLabels[muscles.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_muscle_$key"))
                 }
                 Text(words[5])
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                    com.example.ui.components.LiquidSegmentedTabs(measureLabels, measurements.indexOf(draft.measurement),
+                        { draft = draft.copy(measurement = measurements[it]) }, "custom_exercise_measure_track",
+                        scrollable = true, itemTag = { "custom_exercise_measure_${measurements[it]}" }) { _, label, _ -> Text(label) }
+                } else Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (key in measurements) com.example.ui.components.TrainPilotFilterChip(selected = draft.measurement == key,
                         onClick = { draft = draft.copy(measurement = key) },
                         label = { Text(measureLabels[measurements.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_measure_$key"))
                 }
                 Text(words[6])
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                    com.example.ui.components.LiquidSegmentedTabs(loadLabels, loads.indexOf(draft.load),
+                        { draft = draft.copy(load = loads[it]) }, "custom_exercise_load_track",
+                        scrollable = true, itemTag = { "custom_exercise_load_${loads[it]}" }) { _, label, _ -> Text(label) }
+                } else Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (key in loads) com.example.ui.components.TrainPilotFilterChip(selected = draft.load == key,
                         onClick = { draft = draft.copy(load = key) },
                         label = { Text(loadLabels[loads.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_load_$key"))

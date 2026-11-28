@@ -81,8 +81,13 @@ internal fun PersonalProgramPreviewDialog(
         text = {
             Column(Modifier.heightIn(max = 490.dp).verticalScroll(rememberScrollState())
                 .testTag("personal_preview"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for ((id, name) in listOf("home-basic" to label[1], "home-level2" to label[2])) {
+                val templates = listOf("home-basic" to label[1], "home-level2" to label[2])
+                if (com.example.ui.theme.LocalTrainPilotPalette.current.isLiquidGlass) {
+                    com.example.ui.components.LiquidSegmentedTabs(templates.map { it.second }, templates.indexOfFirst { it.first == choice },
+                        { choice = templates[it].first }, "personal_template_track", enabled = !saving,
+                        itemTag = { "personal_template_${templates[it].first}" }) { _, name, _ -> Text(name) }
+                } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for ((id, name) in templates) {
                         com.example.ui.components.TrainPilotFilterChip(selected = choice == id, enabled = !saving,
                             onClick = { choice = id }, label = { Text(name) },
                             modifier = Modifier.testTag("personal_template_$id"))

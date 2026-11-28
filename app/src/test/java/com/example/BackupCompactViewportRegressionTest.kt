@@ -229,6 +229,41 @@ class BackupCompactViewportRegressionTest {
         }
         compose.runOnIdle { assertEquals(8, toggleCalls) }
     }
+    @Test fun liquidFormatsShareOneDropAndLegacyKeepsSeparateVisuals() {
+        var paletteId by mutableIntStateOf(34)
+        var format by mutableStateOf("JSON")
+        var changes by mutableIntStateOf(0)
+        compose.setContent {
+            val strings = TrainPilotStrings.forLanguage(AppLanguage.EN)
+            CompositionLocalProvider(LocalTrainPilotStrings provides strings) {
+                TrainPilotTheme(com.example.ui.theme.TrainPilotPalettes.getById(paletteId)) {
+                    BackupRestoreScreen(TrainPilotUiState(language = AppLanguage.EN, selectedBackupFormat = format),
+                        strings, onBack = {}, onOpenSettings = {},
+                        onSelectFormat = { format = it; changes++ },
+                        onToggleIncludeHealth = {}, onShowBanner = {})
+                }
+            }
+        }
+        val inTrack = hasAnyAncestor(hasTestTag("backup_format_track"))
+        val drop = hasTestTag("glass_selection_pill") and inTrack
+        val formats = listOf("JSON", "ZIP", "DRIVE")
+        for (next in listOf("ZIP", "DRIVE", "JSON")) {
+            compose.onNodeWithTag("backup_format_$next").performClick().assertIsSelected()
+            compose.onAllNodes(drop, useUnmergedTree = true).assertCountEquals(1)
+            formats.filter { it != next }.forEach {
+                compose.onNodeWithTag("backup_format_$it").assertIsNotSelected()
+            }
+            compose.runOnIdle { assertEquals(next, format) }
+        }
+        compose.runOnIdle { assertEquals(3, changes); paletteId = 1 }
+        compose.onNodeWithTag("backup_format_track").assertDoesNotExist()
+        formats.forEach {
+            compose.onNodeWithTag("backup_format_${it}_visual", useUnmergedTree = true).assertExists()
+        }
+        compose.onNodeWithTag("backup_format_ZIP").performClick().assertIsSelected()
+        compose.runOnIdle { assertEquals("ZIP", format); assertEquals(4, changes) }
+    }
+
     private fun capture(name: String) = compose.runOnIdle {
         val view = compose.activity.findViewById<View>(android.R.id.content)
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

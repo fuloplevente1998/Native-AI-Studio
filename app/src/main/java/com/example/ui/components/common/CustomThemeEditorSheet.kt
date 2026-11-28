@@ -62,7 +62,12 @@ internal fun CustomThemeEditorSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(word("Alapstílus (a színek visszaállnak)", "Base style (resets colors)",
                     "Grundstil (setzt Farben zurück)", "Stil de bază (resetează culorile)"), color = palette.textPrimary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (palette.isLiquidGlass) {
+                    val styles = CustomThemeStyle.entries
+                    com.example.ui.components.LiquidSegmentedTabs(styles.map { it.title(language) }, styles.indexOf(draft.style),
+                        { index -> val style = styles[index]; if (style != draft.style) draft = CustomThemeDraft.fromStyle(style, draft.name) },
+                        "custom_theme_style_track", scrollable = true, enabled = !saving) { _, label, _ -> Text(label) }
+                } else FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CustomThemeStyle.entries.forEach { style ->
                         TrainPilotFilterChip(draft.style == style, {
                             if (style != draft.style) draft = CustomThemeDraft.fromStyle(style, draft.name)
@@ -70,7 +75,12 @@ internal fun CustomThemeEditorSheet(
                     }
                 }
                 Text(word("Színszerep", "Color role", "Farbrolle", "Rolul culorii"), color = palette.textPrimary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (palette.isLiquidGlass) {
+                    val roles = CustomThemeRole.entries
+                    com.example.ui.components.LiquidSegmentedTabs(roles.map { it.title(language) }, roles.indexOf(role),
+                        { role = roles[it] }, "custom_theme_role_track", scrollable = true, enabled = !saving,
+                        itemTag = { "custom_theme_role_" + roles[it].name.lowercase() }) { _, label, _ -> Text(label) }
+                } else FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CustomThemeRole.entries.forEach { option ->
                         TrainPilotFilterChip(role == option, { role = option }, { Text(option.title(language)) },
                             enabled = !saving, modifier = Modifier.testTag("custom_theme_role_" + option.name.lowercase()))
