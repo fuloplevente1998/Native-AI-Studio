@@ -278,7 +278,7 @@ internal object GlassShaderSource {
 
         float3 addBlob(float3 c, float2 p, float4 b, half4 tone) {
             float2 d = (p - b.xy) / max(b.z, 1.0);
-            float w = clamp(b.w * exp(-2.2 * dot(d, d)), 0.0, 1.0);
+            float w = clamp(b.w * (1.0 - smoothstep(0.20, 1.0, length(d))), 0.0, 1.0);
             return mix(c, float3(tone.rgb), w);
         }
 

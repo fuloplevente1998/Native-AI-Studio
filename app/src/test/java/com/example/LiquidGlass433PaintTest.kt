@@ -117,10 +117,25 @@ class LiquidGlass433PaintTest {
         assertEquals("Liquid Glass – Aurora", p.nameEn)
         assertEquals(8, LiquidGlassPalettes.all.size)
         val tones = GlassScene.tones(p)
-        for (hue in listOf(24f, 209f, 306f, 173f)) {
+        for (hue in listOf(258f, 195f, 322f, 168f)) {
             assertTrue(tones.any { hueDistance(it, Color.hsv(hue, .96f, 1f)) <= 2f })
         }
         assertTrue(GlassScene.lumaCap > .13f * .96f)
+    }
+
+    @Test fun allEightSwatchesAreVividIndependentOfTextContrastAndLegacyIsUntouched() {
+        val expected = mapOf(33 to 0xFFAAB7CAL, 34 to 0xFF35CBFFL, 35 to 0xFF557BFFL,
+            36 to 0xFF28E0CBL, 37 to 0xFF4BEBA3L, 38 to 0xFFAB79FFL,
+            39 to 0xFFFF73B4L, 40 to 0xFFFFBC4BL)
+        for ((id, argb) in expected) {
+            val color = requireNotNull(LiquidGlassPalettes.swatchColor(id))
+            assertEquals(Color(argb), color)
+            assertTrue(com.repforge.app.ui.theme.NativeThemeTokens.contrast(
+                com.repforge.app.ui.theme.NativeThemeTokens.onFill(color), color) >= 4.5f)
+        }
+        assertEquals(8, expected.keys.map { LiquidGlassPalettes.swatchColor(it) }.distinct().size)
+        for (id in 1..32) assertEquals(null, LiquidGlassPalettes.swatchColor(id))
+        assertEquals(null, LiquidGlassPalettes.swatchColor(-1))
     }
 
     @Test fun standardAndCustomPaintsArePassedThroughUnchanged() {

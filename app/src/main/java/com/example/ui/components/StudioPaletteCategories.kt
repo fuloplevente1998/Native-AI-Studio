@@ -101,6 +101,9 @@ internal fun StudioPaletteCategories(
                         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                             row.forEach { option ->
                                 val active = selectedId == option.id
+                                val swatch = com.example.ui.theme.LiquidGlassPalettes.swatchColor(option.id) ?: option.primary
+                                val checkColor = if (option.isLiquidGlass)
+                                    com.repforge.app.ui.theme.NativeThemeTokens.onFill(swatch) else option.onPrimary
                                 val requester = remember(option.id) { BringIntoViewRequester() }
                                 val laidOut = remember(option.id) { mutableStateOf(false) }
                                 if (active && revealSelectedId == option.id && palette.id == option.id) {
@@ -128,9 +131,9 @@ internal fun StudioPaletteCategories(
                                         val glow = if (option.hasGlow) Modifier.border(1.dp,
                                             option.primary.copy(alpha = 0.25f), CircleShape).padding(2.dp) else Modifier
                                         Box(Modifier.size(29.dp).then(glow)
-                                            .background(option.primary, CircleShape)
+                                            .background(swatch, CircleShape)
                                             .border(1.dp, option.secondary, CircleShape), contentAlignment = Alignment.Center) {
-                                            if (active) Icon(Icons.Default.Check, null, Modifier.size(15.dp), tint = option.onPrimary)
+                                            if (active) Icon(Icons.Default.Check, null, Modifier.size(15.dp), tint = checkColor)
                                         }
                                     }
                                 }

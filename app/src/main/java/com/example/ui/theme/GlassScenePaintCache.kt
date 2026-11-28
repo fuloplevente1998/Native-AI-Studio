@@ -49,7 +49,10 @@ internal class GlassScenePaintCache {
                 val tone = colors[i]
                 Brush.radialGradient(
                     0f to tone.copy(alpha = blob.strength),
-                    .5f to tone.copy(alpha = blob.strength * .46f),
+                    .20f to tone.copy(alpha = blob.strength),
+                    .40f to tone.copy(alpha = blob.strength * GlassScene.lightFalloff(.40f)),
+                    .60f to tone.copy(alpha = blob.strength * GlassScene.lightFalloff(.60f)),
+                    .80f to tone.copy(alpha = blob.strength * GlassScene.lightFalloff(.80f)),
                     1f to tone.copy(alpha = 0f),
                     center = Offset(blob.x - origin.x, blob.y - origin.y), radius = blob.radius.coerceAtLeast(1f))
             }
