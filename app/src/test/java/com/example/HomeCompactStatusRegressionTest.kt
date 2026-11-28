@@ -74,21 +74,32 @@ class HomeCompactStatusRegressionTest {
     @Test fun syncFeedbackUsesActualOutcomeAndRetry() {
         var state by androidx.compose.runtime.mutableStateOf(TrainPilotUiState(language = AppLanguage.HU))
         var retries = 0
-        compose.mainClock.autoAdvance = false
+        // Let Compose settle the snapshot/recomposition/layout for each state;
+        // a single manually advanced frame can precede the snapshot apply.
         compose.setContent { TrainPilotTheme {
             com.example.ui.screens.StudioTodaySyncFeedback(state, "home") { retries++ }
         } }
         compose.onNodeWithTag("home_today_sync_result").assertDoesNotExist()
+        fun awaitText(label: String) {
+            compose.waitUntil(5_000) {
+                androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                compose.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithText(label).assertIsDisplayed()
+        }
         compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
-        compose.mainClock.advanceTimeByFrame()
-        compose.onNodeWithText("Frissítés…").assertExists()
+        awaitText("Frissítés…")
         compose.runOnIdle { state = state.copy(healthSyncBusy = false, healthSyncFailed = true, healthSyncOutcome = "FAILED") }
-        compose.mainClock.advanceTimeByFrame()
-        compose.onNodeWithText("Szinkron sikertelen").assertExists()
+        awaitText("Szinkron sikertelen")
         compose.onNodeWithTag("home_today_sync_retry").performClick()
-        compose.runOnIdle { assertEquals(1, retries); state = state.copy(healthSyncFailed = false, healthSyncOutcome = "SUCCESS") }
-        compose.mainClock.advanceTimeByFrame()
-        compose.onNodeWithText("Mai állapot frissítve").assertExists()
+        compose.runOnIdle { assertEquals(1, retries); state = state.copy(healthSyncFailed = false, healthSyncPartial = true, healthSyncOutcome = "PARTIAL") }
+        awaitText("Részleges szinkron")
+        compose.onNodeWithTag("home_today_sync_retry").assertExists()
+        compose.runOnIdle { state = state.copy(healthSyncPartial = false, healthSyncOutcome = "CANCELLED") }
+        awaitText("Frissítés megszakítva")
+        compose.runOnIdle { state = state.copy(healthSyncOutcome = "SUCCESS") }
+        awaitText("Mai állapot frissítve")
         compose.onNodeWithTag("home_today_sync_retry").assertDoesNotExist()
     }
     @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {

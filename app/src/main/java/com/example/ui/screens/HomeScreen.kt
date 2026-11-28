@@ -473,7 +473,7 @@ fun HomeScreen(
                                     .trainPilotFrame(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
                                     .testTag("home_today_status_group")
                             ) {
-                                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     StudioTodayCompactHeader(state, strings, editing = layout.draft != null,
                                         onRefresh = onTriggerHealthSync)
                                     StudioTodayStatusGrid(state, compact = true, layout = layout) { key ->
