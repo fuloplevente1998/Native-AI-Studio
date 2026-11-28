@@ -86,23 +86,25 @@ class KyantMaterialSpecTest {
         assertTrue(amber.red > amber.blue)
     }
 
-    @Test fun navigationFadeCoatIsBoundedAndPreservesContrastThroughoutReveal() {
-        var previous = 1f
-        for (frame in 100 downTo 0) {
-            val alpha = com.example.ui.theme.navigationHeaderCoatAlpha(frame / 100f)
-            assertTrue(alpha <= previous + .0001f)
-            assertTrue(alpha in 0f..0.241f)
-            previous = alpha
-            for (p in LiquidGlassPalettes.all) {
-                val coat = liquidChromeTint(p).copy(alpha = alpha)
-                val composite = coat.compositeOver(GlassOptics.lensWorstCase)
-                assertTrue(composite.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
-                assertTrue(NativeThemeTokens.contrast(p.textPrimary, composite) >= 4.5f)
-                assertTrue(NativeThemeTokens.contrast(p.textSecondary, composite) >= 4.5f)
-            }
+    @Test fun globalHeaderPaintDoesNotDependOnNavigationRoute() {
+        // Device feedback: all nine navigation buttons previously triggered a full-header
+        // 24% tint pulse. Keep the static feather and optical material, but never key its
+        // paint on the selected tab or subscreen. Selection animations belong to the controls.
+        val header = java.io.File("src/main/java/com/example/ui/components/common/TopHeaderAndNav.kt").readText()
+        val background = header.substringAfter("Box(Modifier.matchParentSize()")
+            .substringBefore(".testTag(\"top_header_glass_background\")")
+        assertTrue(background.contains("BlendMode.DstIn"))
+        assertTrue(background.contains("glassHeaderMaterial(palette"))
+        assertFalse(background.contains("currentTab"))
+        assertFalse(background.contains("currentSubScreen"))
+        assertFalse(header.contains("glassNavigationFade"))
+        for (p in LiquidGlassPalettes.all) for (step in 0..100) {
+            val palette = p.withGlassClarity(step)
+            val paint = com.example.ui.theme.kyantSurfaceCoat(palette, GlassMaterialRole.Navigation, null, null)
+            val composite = paint.compositeOver(GlassOptics.lensWorstCase)
+            assertTrue(NativeThemeTokens.contrast(palette.textPrimary, composite) >= 4.5f)
+            assertTrue(NativeThemeTokens.contrast(palette.textSecondary, composite) >= 4.5f)
         }
-        assertEquals(0f, com.example.ui.theme.navigationHeaderCoatAlpha(-1f), .001f)
-        assertEquals(.24f, com.example.ui.theme.navigationHeaderCoatAlpha(2f), .001f)
     }
 
     @Test fun pageLightFallsOffContinuouslyWithoutAHeaderCutAndPrismAvoidsDenseRoles() {
