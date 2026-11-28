@@ -178,4 +178,34 @@ class ProfileAndRecordLayoutRegressionTest {
         }
     }
 
+
+    @Test fun liquidStatisticsUsesOnePanelAndFixedHeaderForAllThreeTabs() {
+        var state by androidx.compose.runtime.mutableStateOf(TrainPilotUiState(
+            statsSubTab = 0, savedRecordsLoading = false))
+        compose.setContent {
+            TrainPilotTheme(com.example.ui.theme.TrainPilotPalettes.getById(34)) {
+                StudioStatisticsContent(state, ProgressUiState(),
+                    onSelectTab = { state = state.copy(statsSubTab = it) },
+                    onStepsMode = { state = state.copy(cardioFilterStepsMode = it) },
+                    onExercise = {}, onActivity = {}, onRetry = {}, onRefreshRecords = {})
+            }
+        }
+        val track = compose.onNodeWithTag("statistics_subtab_track", useUnmergedTree = true)
+        val panel = compose.onNodeWithTag("statistics_shared_panel", useUnmergedTree = true)
+        val initial = track.getUnclippedBoundsInRoot()
+        val panelStart = panel.getUnclippedBoundsInRoot()
+        for (index in listOf(1, 2, 0)) {
+            compose.onNodeWithTag("statistics_subtab_$index").performClick().assertIsSelected()
+            assertEquals(initial, track.getUnclippedBoundsInRoot())
+            val bounds = panel.getUnclippedBoundsInRoot()
+            assertEquals(panelStart.top, bounds.top)
+            assertEquals(panelStart.left, bounds.left)
+            assertEquals(panelStart.right, bounds.right)
+            assertTrue(bounds.bottom >= initial.bottom)
+            compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
+            if (index == 1) compose.onNodeWithTag("progress_cardio").assertExists()
+            if (index == 2) compose.onNodeWithTag("statistics_daily_activity").assertExists()
+        }
+    }
+
 }
