@@ -156,13 +156,12 @@ fun WorkoutTabScreen(
 
     val scrollState = rememberScrollState()
     val blocks = listOf(
-        PageLayoutBlock("quick", strings.quickWorkoutTitle),
-        PageLayoutBlock("modes", trW(state.language, "Ismétléses, időzített és kültéri", "Reps, timed and outdoor", "Wiederholungen, Zeit und Outdoor", "Repetări, timp și exterior")),
+        PageLayoutBlock("modes", strings.quickWorkoutTitle),
         PageLayoutBlock("library", trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții")),
         PageLayoutBlock("program", strings.currentProgramTitle),
         PageLayoutBlock("settings", trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament"))
     ).filter { it.id != "settings" || activeProgram != null }
-    val layout = rememberPageLayout("workout", blocks.map { it.id })
+    val layout = rememberPageLayout("workout", blocks.map { it.id }, mergedBlocks = mapOf("quick" to "modes"))
     PageLayoutFrame(layout, state.language, blocks, scrollState, TrainPilotCardSpacing.CardGap) {
     // 2779: no "more below" arrow; the tab fits one screen. Scrolling stays only as a fallback for
     // very small screens / large font scale, so nothing becomes unreachable.
@@ -179,49 +178,10 @@ fun WorkoutTabScreen(
             key(id) {
                 PageLayoutTile(layout, id, hasHorizontalTiles = id == "modes" || id == "program") {
                     when (id) {
-                        "quick" -> {
-                            // 1. Gyors edzés Card (Mockup 1/4 #2)
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                color = palette.glassCardFill(palette.surface),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(18.dp), stretchOnDrag = true) { onOpenQuickWorkout() }
-                                    .liquidDropMaterial(palette, RoundedCornerShape(18.dp), GlassMaterialRole.Button, live = false)
-                                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                    .testTag("workout_tab_quick_card")
-                            ) {
-                                // 2779: flatter row (48 dp touch target kept) so the whole tab fits without scrolling.
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = strings.quickWorkoutTitle,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = palette.textPrimary
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = null,
-                                        tint = palette.textSecondary
-                                    )
-                                }
-                            }
-                        }
                         "modes" -> {
+                            Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+                            Text(strings.quickWorkoutTitle, style = MaterialTheme.typography.titleMedium,
+                                color = palette.textPrimary, modifier = Modifier.testTag("workout_tab_quick_title"))
                             // 2. Three tall tiles (2772): Strength / Timed / Outdoor, title on top, big icon below.
                             //    Each opens the Quick workout sheet on its own tab (no separate page).
                             val timedCount = quickWorkoutExercisePool(state.exercises, timedOnly = true).size
@@ -260,6 +220,7 @@ fun WorkoutTabScreen(
                                 ) { WorkoutModeArt(QuickWorkoutMode.OUTDOOR, height = 52.dp) }
                                 }
                             }
+                        }
                         }
                         "library" -> {
                             // 2773 (A): exercise library entry right under the three tiles.
