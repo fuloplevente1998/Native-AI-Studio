@@ -43,7 +43,7 @@ import kotlin.math.roundToLong
 
 /** The real Room-backed Cardio section of the native Progress page. */
 @Composable
-internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Unit) {
+internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Unit, embeddedInPanel: Boolean = false) {
     val colors = LocalTrainPilotColors.current
     val palette = LocalTrainPilotPalette.current
     val panelShape = MaterialTheme.shapes.large
@@ -52,10 +52,10 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Un
     val strings = remember(context, state.language) { nativeResources(context, state.language) }
     val model = state.cardio
     var recordsOpen by remember { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, panelShape).testTag("progress_cardio"),
+    Card(Modifier.fillMaxWidth().then(if (embeddedInPanel) Modifier else Modifier.trainPilotGlassMaterial(palette, panelShape)).testTag("progress_cardio"),
         shape = panelShape,
-        colors = CardDefaults.cardColors(containerColor = palette.glassCardFill(colors.card)),
-        border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder))) {
+        colors = CardDefaults.cardColors(containerColor = if (embeddedInPanel) androidx.compose.ui.graphics.Color.Transparent else palette.glassCardFill(colors.card)),
+        border = if (embeddedInPanel) null else com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when {
                 state.cardioLoading -> Text(strings.getString(R.string.cardio_progress_loading),
