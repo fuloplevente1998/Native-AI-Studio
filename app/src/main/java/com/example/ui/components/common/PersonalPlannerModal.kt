@@ -50,6 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.glassTile
+import com.example.ui.theme.GlassMaterialRole
+import com.example.ui.theme.liquidDropMaterial
+import com.example.ui.theme.trainPilotGlassRim
+import com.example.ui.theme.TrainPilotPalette
 
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
@@ -58,6 +62,15 @@ import androidx.compose.foundation.verticalScroll
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 import androidx.compose.ui.semantics.contentDescription
 import com.example.localization.LocalTrainPilotStrings
+
+/** No backdrop per form field: reuse the shared bounded glass control and rim. */
+@Composable
+private fun Modifier.plannerGlassField(palette: TrainPilotPalette): Modifier =
+    liquidDropMaterial(palette, RoundedCornerShape(12.dp), GlassMaterialRole.Input, live = false)
+
+@Composable
+private fun Modifier.plannerGlassSection(palette: TrainPilotPalette): Modifier =
+    if (palette.isLiquidGlass) liquidDropMaterial(palette, RoundedCornerShape(14.dp), GlassMaterialRole.Panel, live = false) else this
 
 @Composable
 fun PersonalPlannerModalDialog(
@@ -253,9 +266,10 @@ fun PersonalPlannerModalDialog(
         Box(modifier = modifier) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = palette.glassTile(palette.surface),
+                color = if (palette.isLiquidGlass) Color.Transparent else palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
+                                    .plannerGlassField(palette)
                     .trainPilotBorder(
                         1.dp,
                         if (isOpen) palette.primary else palette.cardBorder,
@@ -388,9 +402,10 @@ fun PersonalPlannerModalDialog(
                 // 1. Cél és edzettség
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                    color = if (palette.isLiquidGlass) Color.Transparent else palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .plannerGlassSection(palette)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
@@ -448,8 +463,9 @@ fun PersonalPlannerModalDialog(
 
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                        color = if (palette.isLiquidGlass) Color.Transparent else palette.surfaceElevated,
                         modifier = Modifier.fillMaxWidth()
+                        .plannerGlassSection(palette)
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                     ) {
                         Column(
@@ -485,9 +501,10 @@ fun PersonalPlannerModalDialog(
                 // 2. Felszerelés (Több opció egyidejű kijelölése)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                    color = if (palette.isLiquidGlass) Color.Transparent else palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .plannerGlassSection(palette)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
@@ -519,9 +536,10 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.glassTile(palette.surface),
+                                color = if (palette.isLiquidGlass) Color.Transparent else palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .plannerGlassField(palette)
                                     .trainPilotBorder(
                                         1.dp,
                                         if (isEquipmentOpen) palette.primary else palette.cardBorder,
@@ -634,9 +652,10 @@ fun PersonalPlannerModalDialog(
                 // 3. Edzésbeosztás
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                    color = if (palette.isLiquidGlass) Color.Transparent else palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .plannerGlassSection(palette)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
@@ -694,9 +713,10 @@ fun PersonalPlannerModalDialog(
                 // 4. Korlátozások (Piros kiemeléssel, fölé nyíló legördülő menükkel)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.glassTile(palette.surfaceElevated, elevated = true),
+                    color = if (palette.isLiquidGlass) Color.Transparent else palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .plannerGlassSection(palette)
                         .trainPilotFrame(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
@@ -728,9 +748,10 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.glassTile(palette.surface),
+                                color = if (palette.isLiquidGlass) Color.Transparent else palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .plannerGlassField(palette)
                                     .border(
                                         1.dp,
                                         if (isMusclesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),
@@ -830,9 +851,10 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = palette.glassTile(palette.surface),
+                                color = if (palette.isLiquidGlass) Color.Transparent else palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .plannerGlassField(palette)
                                     .border(
                                         1.dp,
                                         if (isExercisesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),

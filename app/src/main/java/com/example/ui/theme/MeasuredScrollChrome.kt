@@ -2,6 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -18,6 +19,7 @@ internal fun MeasuredScrollChrome(
     rootInset: Dp,
     capture: Modifier = Modifier,
     panel: Modifier? = null,
+    wrapBody: Boolean = false,
     top: (@Composable () -> Unit)? = null,
     bottom: (@Composable () -> Unit)? = null,
     content: @Composable (Modifier, Dp, Dp) -> Unit
@@ -34,17 +36,20 @@ internal fun MeasuredScrollChrome(
         val lower = subcompose("bottom") {
             Box(Modifier.pointerInput(Unit) {}) { bottom?.invoke() }
         }.single().measure(barConstraints.copy(maxHeight = (height - inset - upper.height).coerceAtLeast(0)))
-        val panelSurface = panel?.let {
-            subcompose("panel") { Box(it) }.single()
-                .measure(Constraints.fixed(width, height - inset - lower.height))
-        }
         val body = subcompose("body") {
             // The initial and terminal safe areas live INSIDE the scrolling viewport. The
             // measured heights are available in the same layout pass, including large font/rest dock.
-            Box(Modifier.fillMaxSize().then(capture)) {
-                content(Modifier.fillMaxSize(), (inset + upper.height).toDp(), lower.height.toDp())
+            val bodySize = if (wrapBody) Modifier.fillMaxWidth() else Modifier.fillMaxSize()
+            Box(bodySize.then(capture)) {
+                content(bodySize, (inset + upper.height).toDp(), lower.height.toDp())
             }
-        }.single().measure(Constraints.fixed(width, height))
+        }.single().measure(if (wrapBody) Constraints(minWidth = width, maxWidth = width, maxHeight = height)
+            else Constraints.fixed(width, height))
+        val panelHeight = (maxOf(body.height, inset + upper.height) - inset - lower.height).coerceIn(0, height - inset)
+        val panelSurface = panel?.let {
+            subcompose("panel") { Box(it) }.single()
+                .measure(Constraints.fixed(width, if (wrapBody) panelHeight else height - inset - lower.height))
+        }
         layout(width, height) {
             panelSurface?.placeRelative(0, inset)
             body.placeRelative(0, 0)

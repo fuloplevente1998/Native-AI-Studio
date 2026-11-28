@@ -105,6 +105,15 @@ class LiquidGlassOverlay2812Test {
             assertTrue(fill.alpha - requested < 1f / 255f + .0001f)
             assertTrue(fill.alpha >= .95f)
             assertEquals(p.photoViewerBackground(Color.Black).alpha, fill.alpha, .001f)
+            assertEquals(fill.alpha, sheetSceneOpacity(step), .0001f)
+            val cap = sheetSceneLumaCap(step)
+            assertTrue(cap <= GlassScene.lumaCap)
+            for (sceneColor in GlassScene.guardedTones(p, cap) + GlassContrast.grey(cap)) {
+                val composite = sceneColor.copy(alpha = sheetSceneOpacity(step)).compositeOver(Color.White)
+                assertTrue(composite.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
+                assertTrue(NativeThemeTokens.contrast(p.textPrimary, composite) >= 4.5f)
+                assertTrue(NativeThemeTokens.contrast(p.textSecondary, composite) >= 4.5f)
+            }
             val brightest = fill.compositeOver(Color.White)
             assertTrue(brightest.luminance() <= GlassOptics.SURFACE_LUMA_MAX + .003f)
             assertTrue(NativeThemeTokens.contrast(p.textPrimary, brightest) >= 4.5f)
@@ -117,10 +126,15 @@ class LiquidGlassOverlay2812Test {
         assertEquals(1f, subtleGlassWindowOpacity(-1), .001f)
         assertEquals(.95f, subtleGlassWindowOpacity(101), .001f)
         val source = java.io.File("src/main/java/com/example/ui/components/TrainPilotModalBottomSheet.kt").readText()
-        assertTrue(source.contains("palette.slidingSheetBackground(containerColor)"))
+        // The approved #444 contract replaces the former single-color fill with one
+        // frozen background sibling. Only that sibling, not the content, gets window alpha.
+        assertTrue(source.contains("val fill = if (glass) Color.Transparent"))
         assertTrue(source.contains("containerColor = fill"))
-        assertFalse(source.contains("drawGlassSceneCompose"))
-        assertFalse(source.contains("freezeSheetScene("))
+        assertTrue(source.contains("freezeSheetScene(parentScene)"))
+        assertTrue(source.contains("graphicsLayer { alpha = sheetSceneOpacity(palette.glassClarity) }"))
+        assertTrue(source.contains("rememberKyantSceneBackdrop(palette, frozen, cap)"))
+        assertTrue(source.contains("drawGlassSceneCompose(palette, frozen"))
+        assertFalse(source.contains("captureGlassBackdrop("))
     }
 
     @Test fun slidingSheetsRetainPaletteHueInsteadOfNeutralGrey() {
@@ -159,5 +173,39 @@ class LiquidGlassOverlay2812Test {
             assertTrue(KyantMaterialSpec.forRole(GlassMaterialRole.Overlay, step).blurDp >
                 KyantMaterialSpec.forRole(GlassMaterialRole.Panel, step).blurDp)
         }
+    }
+
+    @Test fun actualSheetInheritsFrozenSceneAndPhotoWithoutFollowingRootDrift() {
+        val root = GlassSceneState().apply { seconds = 17f }
+        val photo = android.graphics.Bitmap.createBitmap(8, 8, android.graphics.Bitmap.Config.ARGB_8888)
+        root.image = photo
+        var opened = mutableStateOf(true)
+        var observed: GlassSceneState? = null
+        compose.setContent {
+            TrainPilotTheme(TrainPilotPalettes.getById(34)) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalGlassScene provides root,
+                    LocalGlassOpticsEnabled provides false) {
+                    if (opened.value) TrainPilotScreenSheet({ opened.value = false }, "frozen_scene") {
+                        val scene = LocalGlassScene.current
+                        androidx.compose.runtime.SideEffect { observed = scene }
+                        Box(Modifier.fillMaxWidth().height(100.dp))
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("frozen_scene").assertExists()
+        compose.runOnIdle {
+            assertTrue(root.coveredBySheet)
+            assertNotSame(root, observed)
+            assertSame(photo, observed?.image)
+            assertEquals(17f, observed!!.seconds, 0f)
+            root.seconds = 43f
+        }
+        compose.runOnIdle {
+            assertEquals(17f, observed!!.seconds, 0f)
+            opened.value = false
+        }
+        compose.waitForIdle()
+        compose.runOnIdle { assertFalse(root.coveredBySheet) }
     }
 }

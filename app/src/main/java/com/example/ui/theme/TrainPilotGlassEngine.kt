@@ -201,10 +201,10 @@ internal fun Modifier.trainPilotGlassRim(palette: TrainPilotPalette, shape: Shap
         // This is a specular vector approximation, not an additional backdrop capture.
         val clear = palette.glassClarity.coerceIn(0, 100) / 100f
         val prismShine = if (prism) Brush.linearGradient(
-            0f to palette.primary.copy(alpha = .14f + .14f * clear),
-            .30f to Color.White.copy(alpha = .20f + .28f * clear),
+            0f to palette.primary.copy(alpha = .17f + .16f * clear),
+            .30f to Color.White.copy(alpha = .24f + .30f * clear),
             .56f to Color.Transparent,
-            .80f to palette.primary.copy(alpha = .18f + .17f * clear),
+            .80f to palette.primary.copy(alpha = .20f + .20f * clear),
             1f to Color.Transparent,
             start = Offset.Zero, end = Offset(size.width, size.height)) else null
         // Cache the brushes with the outline, not once per draw during a ticking workout.

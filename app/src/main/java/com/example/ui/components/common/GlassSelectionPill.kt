@@ -39,6 +39,10 @@ import kotlin.math.roundToInt
 @Stable
 internal class GlassPillTrack {
     val drag = GlassControlDrag()
+    // The host can own the motion state above a measured/subcomposed header.
+    internal val left = Animatable(0f)
+    internal val right = Animatable(0f)
+    internal var placed by mutableStateOf(false)
     internal val bounds = mutableStateMapOf<Int, Pair<Float, Float>>()
 }
 
@@ -49,6 +53,27 @@ internal fun Modifier.glassPillSlot(track: GlassPillTrack?, index: Int): Modifie
         val bounds = left to left + coordinates.size.width
         if (track.bounds[index] != bounds) track.bounds[index] = bounds
     }
+
+/** Own the travel coroutine at the same lifetime as the retained track, not a subcomposed header. */
+@Composable
+internal fun GlassPillTrackMotion(track: GlassPillTrack, selectedIndex: Int) {
+    val target = track.bounds[selectedIndex]
+    val motion = rememberGlassMotionEnabled()
+    val left = track.left
+    val right = track.right
+    LaunchedEffect(target, motion) {
+        val (toLeft, toRight) = target ?: return@LaunchedEffect
+        if (!GlassMotion.animateTravel(motion, track.placed)) {
+            left.snapTo(toLeft)
+            right.snapTo(toRight)
+            track.placed = true
+            return@LaunchedEffect
+        }
+        val towardsEnd = toLeft > left.value
+        launch { left.animateTo(toLeft, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = !towardsEnd))) }
+        launch { right.animateTo(toRight, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = towardsEnd))) }
+    }
+}
 
 /**
  * One glass selection pill shared by a row of items. Its two edges ride separate springs: the
@@ -62,28 +87,18 @@ internal fun BoxScope.GlassSelectionPill(
     selectedIndex: Int,
     shape: Shape,
     palette: TrainPilotPalette,
-    @Suppress("UNUSED_PARAMETER") outline: Color
+    @Suppress("UNUSED_PARAMETER") outline: Color,
+    driveMotion: Boolean = true
 ) {
+    if (driveMotion) GlassPillTrackMotion(track, selectedIndex)
     val target = track.bounds[selectedIndex]
     val motion = rememberGlassMotionEnabled()
     val dragProgress = animateFloatAsState(if (motion && track.drag.held) 1f else 0f,
         spring(dampingRatio = .62f, stiffness = 520f), label = "Liquid navigation touch")
-    val left = remember { Animatable(0f) }
-    val right = remember { Animatable(0f) }
-    var placed by remember { mutableStateOf(false) }
-    LaunchedEffect(target, motion) {
-        val (toLeft, toRight) = target ?: return@LaunchedEffect
-        if (!GlassMotion.animateTravel(motion, placed)) {
-            left.snapTo(toLeft)
-            right.snapTo(toRight)
-            placed = true
-            return@LaunchedEffect
-        }
-        val towardsEnd = toLeft > left.value
-        launch { left.animateTo(toLeft, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = !towardsEnd))) }
-        launch { right.animateTo(toRight, spring(GlassMotion.EDGE_DAMPING, GlassMotion.edgeStiffness(leading = towardsEnd))) }
-    }
-    if (target == null || !placed) return
+    val left = track.left
+    val right = track.right
+
+    if (target == null || !track.placed) return
     val restWidth = target.second - target.first
     Box(
         Modifier

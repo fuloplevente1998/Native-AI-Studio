@@ -55,7 +55,7 @@ internal fun liquidChromeTint(palette: TrainPilotPalette): Color {
 }
 
 internal fun fixedGlassChromeMinimumBlurDp(clarity: Int): Float =
-    22f - 4f * (clarity.coerceIn(0, 100) / 100f)
+    26f - 4f * (clarity.coerceIn(0, 100) / 100f)
 
 @Composable
 internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Shape,
@@ -64,10 +64,12 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     showRim: Boolean = true,
     softenUnderlap: Boolean = false): Modifier {
     if (!palette.isLiquidGlass) return this
+    val fullOptics = LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    val fixedBlur = fixedGlassChromeMinimumBlurDp(palette.glassClarity) - if (fullOptics) 0f else 4f
     val minBlur = when {
         preserveOriginalMaterial && !LocalGlassChromeUnderlap.current -> 0f
-        softenUnderlap -> fixedGlassChromeMinimumBlurDp(palette.glassClarity) + 2f
-        else -> fixedGlassChromeMinimumBlurDp(palette.glassClarity)
+        softenUnderlap -> fixedBlur + 2f
+        else -> fixedBlur
     }
     val pinned = LocalPinnedGlassChrome.current.forThisWindow()
     val chrome = LocalKyantHeader.current.forThisWindow()
@@ -80,7 +82,7 @@ internal fun Modifier.glassHeaderMaterial(palette: TrainPilotPalette, shape: Sha
     // protective coat into its body fill and retain only the original Kyant rim.
     // Tile/Performance never acquire a live backdrop.
     val optical = if (KyantMaterialSpec.forRole(role, palette.glassClarity).usesBackdrop) when {
-        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat)
+        pinned != null -> kyantGlass(pinned, palette, shape, role, minimumBlurDp = minBlur, showRim = showRim, chromeCoat = coat, pinnedRefraction = fullOptics)
         LocalGlassOverlay.current -> null
         // Keep the existing chrome-only optics exception on scrolling measurement routes.
         LocalGlassChromeUnderlap.current && chrome != null ->

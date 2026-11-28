@@ -1,5 +1,20 @@
 package com.example.ui.components
 import com.example.ui.theme.LocalGlassScene
+import com.example.ui.theme.LocalKyantScene
+import com.example.ui.theme.LocalKyantHeader
+import com.example.ui.theme.LocalPinnedGlassChrome
+import com.example.ui.theme.KyantGlass
+import com.example.ui.theme.KyantSceneBackground
+import com.example.ui.theme.rememberKyantSceneBackdrop
+import com.example.ui.theme.rememberKyantScene
+import com.example.ui.theme.freezeSheetScene
+import com.example.ui.theme.drawGlassSceneCompose
+import com.example.ui.theme.sheetSceneOpacity
+import com.example.ui.theme.sheetSceneLumaCap
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
 import com.example.ui.theme.LocalGlassOverlay
 import com.example.ui.theme.GlassMaterialRole
 import com.example.ui.theme.LocalGlassOpticsEnabled
@@ -15,7 +30,6 @@ import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.material3.SheetValue
 import kotlinx.coroutines.launch
-import com.example.ui.theme.slidingSheetBackground
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -62,12 +76,11 @@ internal fun TrainPilotModalBottomSheet(
 ) {
     val shape = BottomSheetDefaults.ExpandedShape
     val palette = LocalTrainPilotPalette.current
-    // Liquid sheets composite their bounded paint over the actual parent window.
+    // Only the frozen scene is composited over the actual parent window.
     val customPaint = palette.customCardPaint != null && containerColor == palette.surface
     val glass = sheetUsesGlass(palette, containerColor)
     val parentScene = LocalGlassScene.current
-    // Keep the existing root-animation pause while any sheet is visible; do not
-    // copy the root scene into the sheet or record the obscured parent window.
+    // Pause the parent drift; inherit its scene parameters, never pixels of another window.
     if (glass && parentScene != null) {
         DisposableEffect(parentScene) {
             parentScene.sheetOpened()
@@ -75,7 +88,7 @@ internal fun TrainPilotModalBottomSheet(
         }
     }
     val scope = rememberCoroutineScope()
-    val fill = if (glass) palette.slidingSheetBackground(containerColor) else if (customPaint) palette.background else containerColor
+    val fill = if (glass) Color.Transparent else if (customPaint) palette.background else containerColor
     // Material owns measurement, anchors, drag and settling; the background alone is translucent.
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -88,10 +101,32 @@ internal fun TrainPilotModalBottomSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
+        val frozen = if (glass) remember(parentScene) { freezeSheetScene(parentScene) } else null
+        val cap = sheetSceneLumaCap(palette.glassClarity)
+        // Static scene layer is reused by the one opt-in local scrolling capture, if present.
+        val layer = if (glass && KyantGlass.active(palette) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current)
+            rememberKyantSceneBackdrop(palette, frozen, cap) else null
+        val scene = if (layer != null) rememberKyantScene(layer) else null
         CompositionLocalProvider(
+            LocalGlassScene provides (frozen ?: parentScene),
+            LocalKyantScene provides scene,
+            LocalKyantHeader provides null,
+            LocalPinnedGlassChrome provides null,
             LocalGlassOverlay provides glass,
             LocalTrainPilotSheetMotion provides true
         ) {
+            Box(Modifier.fillMaxWidth(), propagateMinConstraints = true) {
+            if (glass) {
+                val background = Modifier.matchParentSize().clip(shape)
+                    .graphicsLayer { alpha = sheetSceneOpacity(palette.glassClarity) }
+                if (layer != null) KyantSceneBackground(layer, background)
+                else Box(background.drawWithCache {
+                    onDrawBehind {
+                        drawGlassSceneCompose(palette, frozen, Offset.Zero,
+                            size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f), cap)
+                    }
+                })
+            }
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .then(if (customPaint && !palette.isLiquidGlass) Modifier.background(palette.pageBrush).background(palette.cardPaint) else Modifier)
@@ -126,6 +161,7 @@ internal fun TrainPilotModalBottomSheet(
                     }, contentAlignment = Alignment.Center) { dragHandle() }
                 }
                 content()
+            }
             }
         }
     }

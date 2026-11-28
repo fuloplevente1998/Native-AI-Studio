@@ -100,11 +100,13 @@ class Collector2772UiRegressionTest {
                 onStartWorkoutDay = {}, onOpenCalendar = {}, onOpenCoach = {}, onOpenProgressionModal = {},
                 onOpenTimed = { calls += "timed" }, onOpenExerciseCatalog = { calls += "catalog" })
         } }
-        listOf("workout_tab_quick_card", "workout_tab_exercise_picker", "workout_tab_timed_card",
+        compose.onNodeWithTag("workout_tab_quick_card").assertDoesNotExist()
+        compose.onNodeWithTag("workout_tab_quick_title").assertHasNoClickAction()
+        listOf("workout_tab_exercise_picker", "workout_tab_timed_card",
             "workout_tab_outdoor_card", "workout_tab_exercise_catalog").forEach {
             compose.onNodeWithTag(it).performScrollTo().performClick()
         }
-        compose.runOnIdle { assertEquals(listOf("quick", "strength", "timed", "outdoor", "catalog"), calls) }
+        compose.runOnIdle { assertEquals(listOf("strength", "timed", "outdoor", "catalog"), calls) }
     }
 
     @Test fun libraryButtonReadsSwapWhileReplacingTheActiveExercise() {

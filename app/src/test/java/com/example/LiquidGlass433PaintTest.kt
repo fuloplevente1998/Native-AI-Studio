@@ -109,6 +109,20 @@ class LiquidGlass433PaintTest {
         }
     }
 
+    @Test fun auroraPreservesStoredIceIdentityAndHasTheApprovedMulticolorLights() {
+        val p = LiquidGlassPalettes.all.single { it.id == 34 }
+        assertEquals("glass_ice", p.key)
+        assertEquals(p, TrainPilotPalettes.getByKey("glass_ice"))
+        assertEquals("Liquid Glass – Aurora", p.nameHu)
+        assertEquals("Liquid Glass – Aurora", p.nameEn)
+        assertEquals(8, LiquidGlassPalettes.all.size)
+        val tones = GlassScene.tones(p)
+        for (hue in listOf(24f, 209f, 306f, 173f)) {
+            assertTrue(tones.any { hueDistance(it, Color.hsv(hue, .96f, 1f)) <= 2f })
+        }
+        assertTrue(GlassScene.lumaCap > .13f * .96f)
+    }
+
     @Test fun standardAndCustomPaintsArePassedThroughUnchanged() {
         val custom = requireNotNull(resolveCustomTheme(
             CustomThemeDraft.fromStyle(CustomThemeStyle.CONTRAST, "433"), newCustomThemeKey())).palette

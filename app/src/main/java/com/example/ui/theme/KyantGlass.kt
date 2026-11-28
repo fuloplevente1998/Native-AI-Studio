@@ -72,14 +72,15 @@ internal fun KyantScene?.forThisWindow(): KyantScene? {
 @Composable
 internal fun rememberKyantSceneBackdrop(
     palette: TrainPilotPalette,
-    scene: GlassSceneState? = LocalGlassScene.current
+    scene: GlassSceneState? = LocalGlassScene.current,
+    cap: Float = GlassScene.lumaCap
 ): LayerBackdrop {
-    val onDraw: ContentDrawScope.() -> Unit = remember(palette, scene) { { drawKyantScene(palette, scene) } }
+    val onDraw: ContentDrawScope.() -> Unit = remember(palette, scene, cap) { { drawKyantScene(palette, scene, cap) } }
     return rememberLayerBackdrop(rememberGraphicsLayer(), onDraw)
 }
 
-private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?) =
-    drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
+private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?, cap: Float) =
+    drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f), cap)
 
 /**
  * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
@@ -103,24 +104,29 @@ internal fun Modifier.kyantGlass(
     pressSource: MutableInteractionSource? = null,
     minimumBlurDp: Float = 0f,
     showRim: Boolean = true,
-    chromeCoat: Color? = null
+    chromeCoat: Color? = null,
+    pinnedRefraction: Boolean = false
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
     if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
-    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
+    val fullOptics = LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim, pinnedRefraction, fullOptics) {
         val filter = ColorMatrixColorFilter(ColorMatrix(glassVibrancyMatrix(spec.saturation, scale)))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
-        val height = with(density) { spec.lensHeightDp.dp.toPx() }
-        val amount = with(density) { spec.lensAmountDp.dp.toPx() }
+        val t = clarity.coerceIn(0, 100) / 100f
+        val h = if (fullOptics) spec.lensHeightDp else spec.lensHeightDp * (6f + 18f * t) / (7f + 19f * t)
+        val a = if (fullOptics) spec.lensAmountDp else spec.lensAmountDp * (10f + 38f * t) / (12f + 42f * t)
+        val height = with(density) { (if (pinnedRefraction) maxOf(14f, h * 1.25f) else h).dp.toPx() }
+        val amount = with(density) { (if (pinnedRefraction) maxOf(22f, a * 1.45f) else a).dp.toPx() }
         val block: com.kyant.backdrop.BackdropEffectScope.() -> Unit = {
             colorFilter(filter)
             blur(blurPx)
             if (showRim && Build.VERSION.SDK_INT >= 33 && spec.usesLens && this.shape is CornerBasedShape && size.minDimension > 1f) {
                 lens(height.coerceAtMost(size.minDimension / 2f), amount,
-                    depthEffect = role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
+                    depthEffect = pinnedRefraction || role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
                     chromaticAberration = clarity > 60)
             }
         }
@@ -130,8 +136,8 @@ internal fun Modifier.kyantGlass(
     val prism = glassPrismaticRimRole(role) && LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
     val highlight = remember(spec, interactiveSurface, prism, showRim) {
         val value = Highlight(
-            width = (if (prism) 0.9f + 1.5f * spec.highlightAlpha else 0.5f + 0.8f * spec.highlightAlpha).dp,
-            alpha = if (prism) (spec.highlightAlpha * 1.12f).coerceAtMost(1f) else spec.highlightAlpha,
+            width = (if (prism) 1.05f + 1.65f * spec.highlightAlpha else 0.5f + 0.8f * spec.highlightAlpha).dp,
+            alpha = if (prism) (spec.highlightAlpha * 1.20f).coerceAtMost(1f) else spec.highlightAlpha,
             style = if (interactiveSurface || prism) HighlightStyle.Default(angle = 34f, falloff = 1.15f) else HighlightStyle.Default)
         val provider: () -> Highlight? = { value.takeIf { showRim } }
         provider

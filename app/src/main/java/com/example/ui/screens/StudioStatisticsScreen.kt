@@ -128,23 +128,29 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
     val exerciseList = state.statsSubTab == 0
+    val sharedPanel = palette.isLiquidGlass
     val fixedTabs = exerciseList || palette.isLiquidGlass
     val exerciseListState = rememberLazyListState()
     val activityListState = rememberLazyListState()
     val listState = if (exerciseList) exerciseListState else activityListState
+    val track = remember { com.example.ui.components.GlassPillTrack() }
+    if (sharedPanel) com.example.ui.components.GlassPillTrackMotion(track, statisticsVisibleTab(state))
     val tabs: @Composable (Modifier) -> Unit = { modifier ->
-        StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier)
+        StatisticsTabs(state, onSelectTab, onStepsMode, onActivity, modifier, track)
     }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
         GlassScrollChrome(
-            modifier = if (fixedTabs) scrollModifier.clipToBounds() else scrollModifier,
+            modifier = (if (fixedTabs) scrollModifier.clipToBounds() else scrollModifier)
+                .then(if (sharedPanel) Modifier.padding(horizontal = 6.dp) else Modifier),
             enabled = fixedTabs,
             rootInset = if (fixedTabs) topInset else 0.dp,
             localWindow = true,
+            panel = if (sharedPanel) Modifier.trainPilotListPanel().testTag("statistics_shared_panel") else null,
+            wrapBody = sharedPanel,
             top = {
                 if (fixedTabs) {
                     if (palette.isLiquidGlass) {
-                        tabs(Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                        tabs(Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
                     } else {
                         val shape = RoundedCornerShape(14.dp)
                         tabs(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -158,10 +164,10 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             lazyListState = listState,
             modifier = listModifier
         ) {
-            val panel = if (exerciseList) Modifier.padding(horizontal = 6.dp).trainPilotListPanel() else Modifier
+            val panel = if (exerciseList && !sharedPanel) Modifier.padding(horizontal = 6.dp).trainPilotListPanel() else Modifier
             val contentTop = 4.dp + (if (fixedTabs) tabsInset else topInset)
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().then(panel).testTag("studio_statistics_screen"),
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = contentTop, bottom = 4.dp),
+            LazyColumn(state = listState, modifier = (if (sharedPanel) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).then(panel).testTag("studio_statistics_screen"),
+                contentPadding = PaddingValues(start = if (sharedPanel) 6.dp else 12.dp, end = if (sharedPanel) 6.dp else 12.dp, top = contentTop, bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(if (exerciseList) 0.dp else 6.dp)) {
             if (!fixedTabs) item(key = "statistics_tabs", contentType = "tabs") { tabs(Modifier) }
             if (exerciseList) {
@@ -272,8 +278,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     }
                 }
             } else {
-                if (state.cardioFilterStepsMode) item(key = "daily_steps", contentType = "steps") { DailyActivityStatistics(state, number) }
-                else item(key = "cardio", contentType = "cardio") { NativeCardioProgressPanel(native, onRetry) }
+                if (state.cardioFilterStepsMode) item(key = "daily_steps", contentType = "steps") { DailyActivityStatistics(state, number, sharedPanel) }
+                else item(key = "cardio", contentType = "cardio") { NativeCardioProgressPanel(native, onRetry, embeddedInPanel = sharedPanel) }
             }
         }
     }
@@ -282,20 +288,23 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
     }
 }
 
+private fun statisticsVisibleTab(state: TrainPilotUiState): Int = when {
+    state.statsSubTab == 0 -> 0
+    state.cardioFilterStepsMode -> 2
+    else -> 1
+}
+
 @Composable
 private fun StatisticsTabs(
     state: TrainPilotUiState,
     onSelectTab: (Int) -> Unit,
     onStepsMode: (Boolean) -> Unit,
     onActivity: (String) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    track: com.example.ui.components.GlassPillTrack
 ) {
     val lang = state.language
-    val visibleTab = when {
-        state.statsSubTab == 0 -> 0
-        state.cardioFilterStepsMode -> 2
-        else -> 1
-    }
+    val visibleTab = statisticsVisibleTab(state)
     val labels = listOf(
         statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"),
         statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
@@ -320,7 +329,7 @@ private fun StatisticsTabs(
         com.example.ui.components.LiquidSegmentedTabs(
             labels = labels, selectedIndex = visibleTab, onSelect = select,
             tag = "statistics_subtab_track", itemTag = { "statistics_subtab_$it" },
-            modifier = modifier, protectScrollingContent = true,
+            modifier = modifier, protectScrollingContent = true, sharedTrack = track,
             weights = labels.map { com.example.ui.components.trainPilotLabelWeight(it, labels) }
         ) { index, label, _ ->
             com.example.ui.components.TrainPilotFitText(label,
@@ -395,7 +404,7 @@ internal fun dailyStepBars(days: List<com.example.ui.viewmodel.WeeklyHealthDaySu
 }
 
 @Composable
-private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberFormat) {
+private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberFormat, embeddedInPanel: Boolean = false) {
     val palette = LocalTrainPilotPalette.current
     val lang = state.language
     val refresh = LocalSyncDailyHealth.current
@@ -413,9 +422,10 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
         val available = days.filter { it.stepsAvailable && it.dateIso >= from.toString() && it.dateIso < until.toString() }
         return if (available.isEmpty()) "—" else number.format(available.sumOf { it.steps })
     }
-    Surface(shape = MaterialTheme.shapes.large, color = palette.glassCardFill(palette.surfaceCard),
-        modifier = Modifier.fillMaxWidth().trainPilotGlassMaterial(palette, MaterialTheme.shapes.large)
-            .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+    Surface(shape = MaterialTheme.shapes.large, color = if (embeddedInPanel) androidx.compose.ui.graphics.Color.Transparent else palette.glassCardFill(palette.surfaceCard),
+        modifier = Modifier.fillMaxWidth().then(if (embeddedInPanel) Modifier else Modifier
+            .trainPilotGlassMaterial(palette, MaterialTheme.shapes.large)
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large))
             .testTag("statistics_daily_activity")) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

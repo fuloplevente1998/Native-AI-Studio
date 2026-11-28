@@ -15,7 +15,8 @@ internal object LiquidGlassPalettes {
         val accent: Long, val backdrop: Long)
     private val tones = listOf(
         Tone("graphite", "Grafit", "Graphite", "Graphit", "Grafit", 0xFFD0DBE8, 0xFF172333),
-        Tone("ice", "Jég", "Ice", "Eis", "Gheață", 0xFFBCEBFF, 0xFF142C3D),
+        // Keep the stored glass_ice key and id 34 for existing backups and Wear sync.
+        Tone("ice", "Aurora", "Aurora", "Aurora", "Aurora", 0xFFCDDEFF, 0xFF142C3D),
         Tone("sapphire", "Zafír", "Sapphire", "Saphir", "Safir", 0xFF8DB9FF, 0xFF172952),
         Tone("turquoise", "Türkiz", "Turquoise", "Türkis", "Turcoaz", 0xFF70E5EF, 0xFF123B43),
         Tone("emerald", "Smaragd", "Emerald", "Smaragd", "Smarald", 0xFF78F2BC, 0xFF12392E),

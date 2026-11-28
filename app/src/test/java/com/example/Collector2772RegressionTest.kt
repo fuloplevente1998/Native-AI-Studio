@@ -27,5 +27,10 @@ class Collector2772RegressionTest {
         assertEquals(com.example.model.SubScreen.NONE, model.uiState.value.currentSubScreen)
         model.openQuickWorkoutSheet(9)
         assertEquals(2, model.uiState.value.quickWorkoutTab)
+        // Home now uses this explicit default route, not the retained-tab toggle.
+        model.toggleQuickWorkoutSheet(false)
+        model.openQuickWorkoutSheet(0)
+        assertTrue(model.uiState.value.showQuickWorkoutSheet)
+        assertEquals(0, model.uiState.value.quickWorkoutTab)
     }
 }
