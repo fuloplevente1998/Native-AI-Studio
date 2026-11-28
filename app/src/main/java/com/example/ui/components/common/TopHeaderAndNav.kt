@@ -457,19 +457,20 @@ fun TrainPilotRedCloseButton(
     val width = if (palette.isLiquidGlass) size + 10.dp else size
     val height = if (palette.isLiquidGlass) (size - 10.dp).coerceAtLeast(minOf(size, 24.dp)) else size
     val fill = lerp(colors.negativeBackground, colors.negativeForeground, if (pressed) .10f else 0f)
+    val disabledAlpha = if (enabled) 1f else .5f
     // The visual capsule sits inside the same accessible hit target.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
-        Surface(shape = shape, color = if (palette.isLiquidGlass) fill.copy(alpha = .78f) else fill,
+        Surface(shape = shape, color = fill.copy(alpha = (if (palette.isLiquidGlass) .78f else 1f) * disabledAlpha),
             modifier = Modifier.size(width, height).clip(shape)
                 .then(if (palette.isLiquidGlass) Modifier.trainPilotPressIndication(shape, interaction, enabled) else Modifier.indication(interaction, ripple()))
-                .trainPilotGlassRim(palette, shape, GlassMaterialRole.Button)
-                .border(1.dp, colors.negativeOutline.copy(alpha = 0.7f), shape)
+                .then(if (enabled) Modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Button) else Modifier)
+                .border(1.dp, colors.negativeOutline.copy(alpha = if (enabled) .7f else .3f), shape)
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(Icons.Default.Close, contentDescription = closeDescription ?: strings.closeAction,
-                    tint = colors.negativeForeground, modifier = Modifier.size(18.dp))
+                    tint = colors.negativeForeground.copy(alpha = if (enabled) 1f else .38f), modifier = Modifier.size(18.dp))
             }
         }
     }
