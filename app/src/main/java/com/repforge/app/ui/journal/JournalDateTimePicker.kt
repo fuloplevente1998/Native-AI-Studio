@@ -10,8 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,7 +88,7 @@ internal fun JournalDateTimeField(value: String, zone: ZoneId, language: String,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Default.DateRange, word(language, "Dátum", "Date", "Datum", "Dată"),
                         tint = p.primary, modifier = Modifier.size(18.dp))
-                    TrainPilotFitText(dateLabel, color = p.textPrimary)
+                    TrainPilotFitText(dateLabel, color = p.textPrimary, modifier = Modifier.weight(1f))
                 }
                 Box(Modifier.width(1.dp).height(28.dp).trainPilotBorder(1.dp, p.cardBorder, RoundedCornerShape(1.dp)))
                 Row(Modifier.weight(.68f).heightIn(min = 48.dp).testTag("${tag}_time")
@@ -114,8 +114,9 @@ internal fun JournalDateTimeSheet(value: String, zone: ZoneId, language: String,
     val month = YearMonth.parse(monthKey)
     val today = LocalDate.now(zone)
     var error by rememberSaveable { mutableStateOf(false) }
-    val hourState = rememberLazyListState(24 + old.hour)
-    val minuteState = rememberLazyListState(60 + old.minute)
+    // A generous finite wheel allows repeated midnight/minute wrap without an infinite item count.
+    val hourState = rememberLazyListState(24 * 50 + old.hour)
+    val minuteState = rememberLazyListState(60 * 50 + old.minute)
     val hour by remember { derivedStateOf { centeredWheelValue(hourState, 24, old.hour) } }
     val minute by remember { derivedStateOf { centeredWheelValue(minuteState, 60, old.minute) } }
     val tag = if (chooseDate) "journal_date_picker" else "journal_time_picker"
@@ -135,18 +136,18 @@ internal fun JournalDateTimeSheet(value: String, zone: ZoneId, language: String,
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TrainPilotOutlinedButton(onClick = { monthKey = month.minusMonths(1).toString() },
                             modifier = Modifier.size(48.dp).testTag("${tag}_previous")) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, word(language, "Előző hónap", "Previous month", "Vorheriger Monat", "Luna anterioară"))
+                            Icon(Icons.Default.KeyboardArrowLeft, word(language, "Előző hónap", "Previous month", "Vorheriger Monat", "Luna anterioară"))
                         }
                         Text(month.format(DateTimeFormatter.ofPattern("yyyy. MMMM", locale(language))),
                             Modifier.weight(1f), textAlign = TextAlign.Center,
                             color = p.textPrimary, fontWeight = FontWeight.Bold)
                         TrainPilotOutlinedButton(onClick = { monthKey = month.plusMonths(1).toString() },
                             modifier = Modifier.size(48.dp).testTag("${tag}_next")) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, word(language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"))
+                            Icon(Icons.Default.KeyboardArrowRight, word(language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"))
                         }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(calendarDayColumnGap)) {
-                        DayOfWeek.entries.forEach { day ->
+                        DayOfWeek.values().forEach { day ->
                             Text(day.getDisplayName(TextStyle.SHORT, locale(language)),
                                 Modifier.weight(1f), textAlign = TextAlign.Center, color = p.textSecondary,
                                 style = MaterialTheme.typography.labelSmall, maxLines = 1)
@@ -179,7 +180,8 @@ internal fun JournalDateTimeSheet(value: String, zone: ZoneId, language: String,
                     }
                 }
             } else {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth().weight(1f, fill = false),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     JournalTimeWheel(word(language, "Óra", "Hour", "Stunde", "Oră"), 24, hourState, hour,
                         Modifier.weight(1f), "journal_hour")
                     JournalTimeWheel(word(language, "Perc", "Minute", "Minute", "Minut"), 60, minuteState, minute,
@@ -225,14 +227,18 @@ private fun JournalTimeWheel(label: String, count: Int, state: androidx.compose.
         Surface(shape = shape, color = if (p.isLiquidGlass) p.glassTile(p.surfaceCard) else p.surfaceCard,
             modifier = Modifier.fillMaxWidth().then(if (p.isLiquidGlass)
                 Modifier.trainPilotGlassRim(p, shape, GlassMaterialRole.Panel) else Modifier.trainPilotBorder(1.dp, p.cardBorder, shape))) {
+            // Exactly five equally tall rows: content padding positions the first
+            // visible index at the center, including after a tap-to-scroll.
+            val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            val rowHeight = (44f * fontScale.coerceAtLeast(1f)).dp
             LazyColumn(state = state, flingBehavior = rememberSnapFlingBehavior(lazyListState = state),
-                modifier = Modifier.fillMaxWidth().height(220.dp).testTag(tag),
-                contentPadding = PaddingValues(vertical = 88.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                items(count * 3) { index ->
+                modifier = Modifier.fillMaxWidth().height(rowHeight * 5).testTag(tag),
+                contentPadding = PaddingValues(vertical = rowHeight * 2), horizontalAlignment = Alignment.CenterHorizontally) {
+                items(count * 101) { index ->
                     val n = index % count
                     val active = n == value
                     val itemShape = if (p.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(12.dp)
-                    Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 5.dp)
+                    Box(Modifier.fillMaxWidth().height(rowHeight).padding(horizontal = 5.dp)
                         .then(if (active && p.isLiquidGlass)
                             Modifier.liquidDropMaterial(p, itemShape, GlassMaterialRole.Selection, accent = p.primary)
                         else if (active) Modifier.trainPilotBorder(1.dp, p.primary, itemShape) else Modifier)
