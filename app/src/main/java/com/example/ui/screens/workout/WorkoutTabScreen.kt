@@ -171,7 +171,7 @@ fun WorkoutTabScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 8.dp + com.example.ui.theme.LocalGlassTopInset.current, bottom = 12.dp),
+                .padding(top = com.example.ui.theme.MainTabContentGap + com.example.ui.theme.LocalGlassTopInset.current, bottom = 12.dp),
             verticalArrangement = remember(layout.draft == null) { pageFooterArrangement(TrainPilotCardSpacing.CardGap, layout.draft == null) }
         ) {
         layout.order.forEach { id ->

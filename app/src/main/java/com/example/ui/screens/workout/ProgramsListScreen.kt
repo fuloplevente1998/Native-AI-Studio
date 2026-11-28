@@ -488,7 +488,7 @@ fun ProgramsListScreen(
                 modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
-            Spacer(Modifier.height(com.example.ui.theme.LocalGlassTopInset.current))
+            Spacer(Modifier.height(com.example.ui.theme.LocalGlassTopInset.current + com.example.ui.theme.MainTabContentGap))
         }
         Column(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
