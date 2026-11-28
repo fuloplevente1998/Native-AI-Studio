@@ -51,7 +51,7 @@ internal object GlassScene {
     /** Drift step: about 12 fps is enough for blobs that cross the screen in about a minute. */
     const val FRAME_MS = 83L
     /** 2810/6: brighter, larger blobs: more colour for the glass to refract (still guarded). */
-    const val BLOB_STRENGTH = .95f
+    const val BLOB_STRENGTH = 1f
     /** Blob drift amplitude as a fraction of the screen. */
     const val DRIFT = .10f
     /** Knee of the luminance guard, as a fraction of [lumaCap]: darker colours pass unchanged. */
@@ -62,7 +62,7 @@ internal object GlassScene {
     private val goldHue = hueOf(Color(TRAIN_PILOT_GOLD))
     private val paletteHues = mapOf(
         33 to listOf(4f, 48f, 307f, 152f),     // Graphite
-        34 to listOf(196f, 212f, 186f, 33f),   // Ice
+        34 to listOf(24f, 209f, 306f, 173f),   // Aurora (legacy glass_ice id/key)
         35 to listOf(222f, 233f, 254f, 20f),   // Sapphire
         36 to listOf(169f, 184f, 203f, 294f),  // Turquoise
         37 to listOf(146f, 111f, 166f, 41f),   // Emerald
@@ -120,7 +120,7 @@ internal object GlassScene {
     /** Vivid hue rotations of the theme accent (the shader guards their luminance after mixing). */
     fun tones(palette: TrainPilotPalette): List<Color> {
         val hues = paletteHues[palette.id] ?: hueOffsets.map { hueOf(palette.primary) + it }
-        return hues.map { Color.hsv(((it % 360f) + 360f) % 360f, .90f, 1f) }
+        return hues.map { Color.hsv(((it % 360f) + 360f) % 360f, .96f, 1f) }
     }
 
     /**
