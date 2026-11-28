@@ -68,12 +68,21 @@ internal fun TrainPilotPalette.glassOverlayFill(legacy: Color): Color {
 internal fun subtleGlassWindowOpacity(clarity: Int): Float =
     1f - .05f * (clarity.coerceIn(0, 100) / 100f)
 
+internal fun sheetSceneOpacity(clarity: Int): Float =
+    (255 - clarity.coerceIn(0, 100) * 255 / 2000) / 255f
+
+/** Same bound for every pixel of a frozen multicolor scene and the single-color fallback. */
+internal fun sheetSceneLumaCap(clarity: Int): Float {
+    val opacity = sheetSceneOpacity(clarity)
+    return minOf(GlassScene.lumaCap, (GlassOptics.SURFACE_LUMA_MAX - (1f - opacity)) / opacity)
+}
+
 private fun boundedSubtleWindowFill(base: Color, clarity: Int): Color {
     // Compose sRGB Color stores alpha in 8 bits. Round transparency DOWN so
     // the encoded colour never exceeds the requested 5% maximum (or any slider step).
-    val opacity = (255 - clarity.coerceIn(0, 100) * 255 / 2000) / 255f
+    val opacity = sheetSceneOpacity(clarity)
     // Convex sRGB mixing: even a white parent cannot lift the composite above the ceiling.
-    val cap = (GlassOptics.SURFACE_LUMA_MAX - (1f - opacity)) / opacity
+    val cap = sheetSceneLumaCap(clarity)
     return GlassContrast.limit(base, cap).copy(alpha = opacity)
 }
 
@@ -88,8 +97,8 @@ internal fun TrainPilotPalette.glassBackgroundTint(cap: Float, saturation: Float
 internal fun TrainPilotPalette.glassTintedTile(legacy: Color): Color =
     if (isLiquidGlass) glassBackgroundTint(GLASS_TILE_LUMA).copy(alpha = glassTileAlpha(glassClarity)) else legacy
 
-/** A sliding panel uses the active Liquid palette hue, not a second procedural
- * scene or a neutral grey fill. Preserve the existing quantized 0–5% transparency.
+/** A single-color bounded fallback for sliding panels; the shared host paints the frozen scene.
+ * Preserve the existing quantized 0–5% transparency.
  * Only its background is translucent. Centered alerts and popup menus stay opaque.
  */
 internal fun TrainPilotPalette.slidingSheetBackground(legacy: Color): Color {
