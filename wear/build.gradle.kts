@@ -14,7 +14,7 @@ android {
         applicationId = "com.TrainPilot.com"
         minSdk = 30
         targetSdk = 36
-        versionCode = 281902 // Play scheme: release 2819, Wear suffix 02
+        versionCode = 282002 // Play scheme: release 2820, Wear suffix 02
         versionName = "1.5.8"
     }
     signingConfigs {
