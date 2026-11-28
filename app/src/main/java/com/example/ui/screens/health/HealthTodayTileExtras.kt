@@ -243,10 +243,15 @@ internal fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today
     val g = data.getLong("generation")
     if (key == "calories") {
         Text(com.repforge.app.NativeWorkoutHealthSource.label(provider), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            for ((filter, label) in listOf(
-                "ActiveCaloriesBurnedRecord" to tr(lang,"Aktív kcal","Active kcal","Aktiv kcal","Kcal active"),
-                "TotalCaloriesBurnedRecord" to tr(lang,"Teljes kcal","Total kcal","Gesamt kcal","Kcal totale"))) {
+        val filters = listOf(
+            "ActiveCaloriesBurnedRecord" to tr(lang,"Aktív kcal","Active kcal","Aktiv kcal","Kcal active"),
+            "TotalCaloriesBurnedRecord" to tr(lang,"Teljes kcal","Total kcal","Gesamt kcal","Kcal totale"))
+        if (palette.isLiquidGlass) {
+            com.example.ui.components.LiquidSegmentedTabs(filters.map { it.second }, filters.indexOfFirst { it.first == type },
+                { energyType = filters[it].first }, "today_energy_filter_track",
+                itemTag = { "today_energy_filter_${filters[it].first}" }) { _, label, _ -> Text(label) }
+        } else FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for ((filter, label) in filters) {
                 com.example.ui.components.TrainPilotFilterChip(selected = type == filter, onClick = { energyType = filter },
                     label = { Text(label) }, modifier = Modifier.testTag("today_energy_filter_$filter"))
             }

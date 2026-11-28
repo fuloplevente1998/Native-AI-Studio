@@ -214,7 +214,21 @@ internal fun HealthSourcesContent(
                 else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
                 modifier = Modifier.testTag("health_auto_refresh_status"))
-            if (uiState.healthAutoOnOpen) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (uiState.healthAutoOnOpen && palette.isLiquidGlass) {
+                val intervals = com.repforge.app.NativeSyncSchedule.FOREGROUND_MINUTES
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(tr(uiState.language, "Előtér", "Foreground", "Vordergrund", "Prim-plan"),
+                        style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                    com.example.ui.components.LiquidSegmentedTabs(
+                        intervals.map { m -> tr(uiState.language, "$m perc", "$m min", "$m Min.", "$m min") },
+                        intervals.indexOf(foregroundMin), { index ->
+                            val m = intervals[index]
+                            if (com.repforge.app.NativeSyncSchedule.setForegroundMinutes(syncContext, m)) foregroundMin = m
+                        }, "health_foreground_interval_track",
+                        itemTag = { "health_foreground_interval_${intervals[it]}" },
+                        scrollable = true) { _, label, _ -> Text(label) }
+                }
+            } else if (uiState.healthAutoOnOpen) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(tr(uiState.language, "Előtér", "Foreground", "Vordergrund", "Prim-plan"), style = MaterialTheme.typography.labelMedium,
                     color = palette.textSecondary, modifier = Modifier.weight(1f))
                 com.repforge.app.NativeSyncSchedule.FOREGROUND_MINUTES.forEach { m ->
@@ -224,7 +238,24 @@ internal fun HealthSourcesContent(
                         modifier = Modifier.testTag("health_foreground_interval_$m"))
                 }
             }
-            if (uiState.healthBackgroundOptedIn) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (uiState.healthBackgroundOptedIn && palette.isLiquidGlass) {
+                val intervals = com.repforge.app.NativeSyncSchedule.BACKGROUND_MINUTES
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(tr(uiState.language, "Háttér", "Background", "Hintergrund", "Fundal"),
+                        style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                    com.example.ui.components.LiquidSegmentedTabs(
+                        intervals.map { m -> tr(uiState.language, "$m perc", "$m min", "$m Min.", "$m min") },
+                        intervals.indexOf(backgroundMin), { index ->
+                            val m = intervals[index]
+                            if (com.repforge.app.NativeSyncSchedule.setBackgroundMinutes(syncContext, m)) {
+                            backgroundMin = m
+                            runCatching { com.repforge.app.HealthBackgroundJob.schedule(syncContext) }
+                        }
+                        }, "health_background_interval_track",
+                        itemTag = { "health_background_interval_${intervals[it]}" },
+                        scrollable = true) { _, label, _ -> Text(label) }
+                }
+            } else if (uiState.healthBackgroundOptedIn) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(tr(uiState.language, "Háttér", "Background", "Hintergrund", "Fundal"), style = MaterialTheme.typography.labelMedium,
                     color = palette.textSecondary, modifier = Modifier.weight(1f))
                 com.repforge.app.NativeSyncSchedule.BACKGROUND_MINUTES.forEach { m ->
