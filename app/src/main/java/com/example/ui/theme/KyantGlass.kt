@@ -112,11 +112,15 @@ internal fun Modifier.kyantGlass(
     if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
-    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim, pinnedRefraction) {
+    val fullOptics = LocalGlassOpticsEnabled.current && !LocalGlassPowerSave.current
+    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim, pinnedRefraction, fullOptics) {
         val filter = ColorMatrixColorFilter(ColorMatrix(glassVibrancyMatrix(spec.saturation, scale)))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
-        val height = with(density) { (if (pinnedRefraction) maxOf(14f, spec.lensHeightDp * 1.25f) else spec.lensHeightDp).dp.toPx() }
-        val amount = with(density) { (if (pinnedRefraction) maxOf(22f, spec.lensAmountDp * 1.45f) else spec.lensAmountDp).dp.toPx() }
+        val t = clarity.coerceIn(0, 100) / 100f
+        val h = if (fullOptics) spec.lensHeightDp else spec.lensHeightDp * (6f + 18f * t) / (7f + 19f * t)
+        val a = if (fullOptics) spec.lensAmountDp else spec.lensAmountDp * (10f + 38f * t) / (12f + 42f * t)
+        val height = with(density) { (if (pinnedRefraction) maxOf(14f, h * 1.25f) else h).dp.toPx() }
+        val amount = with(density) { (if (pinnedRefraction) maxOf(22f, a * 1.45f) else a).dp.toPx() }
         val block: com.kyant.backdrop.BackdropEffectScope.() -> Unit = {
             colorFilter(filter)
             blur(blurPx)
