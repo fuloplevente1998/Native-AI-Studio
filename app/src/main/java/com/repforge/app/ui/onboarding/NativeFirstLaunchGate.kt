@@ -52,5 +52,7 @@ internal fun NativeFirstLaunchGate(viewModel: com.example.ui.viewmodel.TrainPilo
                 viewModel = viewModel, completeOnboarding = true, onDismiss = dismiss
             )
         },
-        onBack = {})
+        onBack = {},
+        onSelectLanguage = { lang -> write { store.setOnboardingAppearance(it, language = lang.code.lowercase()) } },
+        onSelectPalette = { id -> write { store.setOnboardingAppearance(it, paletteId = id) } })
 }

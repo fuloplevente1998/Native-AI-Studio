@@ -599,6 +599,29 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
+    /** First-run appearance persists before advancing. Same settings keys and replacement lease. */
+    internal suspend fun setOnboardingAppearance(ticket: NativeDataReplacement.Continuation,
+        language: String? = null, paletteId: Int? = null): Boolean {
+        require(language == null || language in listOf("hu", "en", "de", "ro"))
+        require(paletteId == null || paletteId in 1..40)
+        var changed = false
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                if (NativeOnboardingPolicy.destination(prefs[KEY_ONBOARDING_128] ?: NativeOnboardingPolicy.COMPLETE)
+                    != NativeOnboardingPolicy.Destination.WELCOME) return@edit
+                if (language != null) prefs[KEY_LANGUAGE] = language
+                if (paletteId != null) {
+                    val palette = TrainPilotPalettes.getById(paletteId)
+                    writePaletteSelection(prefs, palette.withGlassClarity(prefs[KEY_GLASS_CLARITY] ?: DEFAULT_GLASS_CLARITY))
+                }
+                changed = true
+            }
+        }
+        if (changed && paletteId != null) publishThemeAfterCommit()
+        return changed
+    }
+
     /** Compare-and-set under the same replacement lease as restore/erase. */
     internal suspend fun transitionOnboarding(expected: String, next: String,
         ticket: NativeDataReplacement.Continuation): Boolean {

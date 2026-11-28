@@ -206,10 +206,10 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         startupScreen.markNativeReady()
                     }
-                    com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
-                        CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
-                            LocalGlassOpticsEnabled provides glassOpticsEnabledFor(uiState)) {
-                            GlassSceneHost(settings.glassBackdropImage, { GlassBackdropImages.load(applicationContext, it) }) {
+                    CompositionLocalProvider(LocalCustomThemeAccess provides customThemeAccess, LocalGlassThemeAccess provides glassAccess,
+                        LocalGlassOpticsEnabled provides glassOpticsEnabledFor(uiState)) {
+                        GlassSceneHost(settings.glassBackdropImage, { GlassBackdropImages.load(applicationContext, it) }) {
+                            com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
                                 TrainPilotAppRoot(viewModel = viewModel)
                             }
                         }
