@@ -93,7 +93,19 @@ data class WearHomeTheme(
      * background and light cards; text and controls are darkened only as far as needed. Either way
      * text >= 4.5:1 and controls >= 3:1 on every surface.
      */
-    fun forWatch(): WearHomeTheme = if (wearLightPalette()) forLightWatch() else forDarkWatch()
+    fun forWatch(): WearHomeTheme {
+        // The phone transports Liquid as "contrast" for older watches. Its stable
+        // key, not the family or slider-derived colors, identifies the eight presets.
+        // Never persist this display copy or send it back to the phone.
+        val liquid = wearLiquidStyles[key]
+        if (liquid != null) return copy(
+            family = "contrast", accent = liquid.accent, accent2 = liquid.secondary,
+            background = "#080A0F", surface = liquid.card, elevated = liquid.raised,
+            text = "#F6F8FB", muted = "#B9C5D6", outline = "#91A2B8",
+            onAccent = "#000000"
+        ).forDarkWatch()
+        return if (wearLightPalette()) forLightWatch() else forDarkWatch()
+    }
 
     /** A light family, or a custom/phone background that is genuinely light (not a mid grey). */
     internal fun wearLightPalette(): Boolean =
@@ -158,6 +170,23 @@ data class WearHomeTheme(
             blue = a.blue * (1f - amount) + b.blue * amount,
         )
 }
+
+/** Watch-specific opaque equivalents: distinct base/card/raised hierarchy,
+ * vivid recognizable accents, no glass tint, background capture or drift clock.
+ * The original Liquid key is retained even after deriving this rendering palette.
+ */
+private data class WearLiquidStyle(val accent: String, val secondary: String, val card: String, val raised: String)
+
+private val wearLiquidStyles = mapOf(
+    "glass_graphite" to WearLiquidStyle("#AAB7CA", "#88C7FF", "#19232F", "#303D50"),
+    "glass_ice" to WearLiquidStyle("#35CBFF", "#C4A0FF", "#132B3A", "#284353"), // Aurora
+    "glass_sapphire" to WearLiquidStyle("#8BA7FF", "#52D8FF", "#182742", "#2B3D60"),
+    "glass_turquoise" to WearLiquidStyle("#48E3D0", "#76CFFF", "#102F33", "#23464B"),
+    "glass_emerald" to WearLiquidStyle("#5EF1AC", "#F6D878", "#142D24", "#294639"),
+    "glass_amethyst" to WearLiquidStyle("#C69AFF", "#77DDE8", "#2A203D", "#413351"),
+    "glass_rose" to WearLiquidStyle("#FFA0CC", "#9BBEFF", "#34202E", "#4D3547"),
+    "glass_amber" to WearLiquidStyle("#FFD17B", "#FFAD78", "#302719", "#493C26"),
+)
 
 internal const val WEAR_TEXT_CONTRAST = 4.5f
 internal const val WEAR_CONTROL_CONTRAST = 3f
