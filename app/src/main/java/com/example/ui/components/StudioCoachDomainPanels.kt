@@ -145,7 +145,10 @@ internal fun StudioCoachRecommendations(
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(row.name, style = MaterialTheme.typography.bodyMedium, color = palette.textPrimary,
                                 maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            Surface(color = chipColor.copy(alpha = 0.16f), shape = RoundedCornerShape(8.dp)) {
+                            val chipShape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(8.dp)
+                            Surface(color = palette.glassStateTile(chipColor, chipColor.copy(alpha = 0.16f)),
+                                shape = chipShape, modifier = if (palette.isLiquidGlass)
+                                    Modifier.trainPilotGlassRim(palette, chipShape, GlassMaterialRole.Tile) else Modifier) {
                                 Text(NativeCoachAdviceText.label(text, row.advice.action), color = chipColor,
                                     style = MaterialTheme.typography.labelSmall, maxLines = 1,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp).testTag("studio_coach_action_${row.id}"))
@@ -196,9 +199,12 @@ internal fun StudioCoachRecommendations(
                         }
                     }
             }
-            Surface(color = palette.glassTile(palette.surfaceCard), shape = listShape,
+            Surface(color = if (palette.isLiquidGlass) androidx.compose.ui.graphics.Color.Transparent else palette.glassTile(palette.surfaceCard), shape = listShape,
                 modifier = (if (pinnedList) Modifier.weight(1f) else Modifier)
-                    .trainPilotGlassRim(palette, listShape).fillMaxWidth().testTag("studio_coach_advice_list")
+                    .then(if (palette.isLiquidGlass)
+                        Modifier.liquidDropMaterial(palette, listShape, GlassMaterialRole.Panel, live = false)
+                        else Modifier.trainPilotGlassRim(palette, listShape))
+                    .fillMaxWidth().testTag("studio_coach_advice_list")
                     .trainPilotBorder(0.75.dp, palette.cardBorder, listShape)) {
                 if (pinnedList) {
                     GlassScrollChrome(modifier = Modifier.fillMaxSize(), rootInset = 0.dp, localWindow = true,
@@ -271,7 +277,9 @@ internal fun StudioCoachNextTrainingCard(
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                Surface(color = palette.tintedSurface(0.20f), shape = RoundedCornerShape(50.dp)) {
+                val badgeShape = RoundedCornerShape(50.dp)
+                Surface(color = palette.glassStateTile(palette.primary, palette.tintedSurface(0.20f)), shape = badgeShape,
+                    modifier = if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, badgeShape, GlassMaterialRole.Tile) else Modifier) {
                     Text(coachTr(lang, "KÖVETKEZŐ EDZÉSNAP", "NEXT WORKOUT DAY", "NÄCHSTER TRAININGSTAG", "URMĂTOAREA ZI DE ANTRENAMENT"), color = palette.primary,
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
@@ -301,9 +309,11 @@ internal fun StudioCoachNextTrainingCard(
                         }, modifier = Modifier.testTag("studio_coach_next_date"))
                 }
                 if (letterDay != null) {
-                    Surface(color = palette.tintedSurface(0.16f),
+                    Surface(color = palette.glassStateTile(palette.primary, palette.tintedSurface(0.16f)),
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.trainPilotBorder(1.25.dp, palette.primary,
+                        modifier = Modifier.then(if (palette.isLiquidGlass)
+                            Modifier.trainPilotGlassRim(palette, RoundedCornerShape(16.dp), GlassMaterialRole.Tile) else Modifier)
+                            .trainPilotBorder(1.25.dp, palette.primary,
                             RoundedCornerShape(16.dp)).testTag("studio_coach_day_badge")) {
                         Box(Modifier.sizeIn(minWidth = 46.dp, minHeight = 46.dp).padding(5.dp),
                             contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -313,7 +323,7 @@ internal fun StudioCoachNextTrainingCard(
                     }
                 }
             }
-            Button(enabled = !state.loading && !state.error,
+            com.repforge.app.ui.theme.TrainPilotGlassPrimaryButton(enabled = !state.loading && !state.error,
                 onClick = { onStart(target.programId, target.dayId, target.schedule?.id) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("studio_coach_start_target")) {

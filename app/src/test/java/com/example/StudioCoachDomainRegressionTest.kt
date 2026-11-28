@@ -129,6 +129,20 @@ class StudioCoachDomainRegressionTest {
         assertEquals(0, workoutPage)
     }
 
+    @Test fun liquidCoachStartKeepsActualTargetAndDisabledAdmission() {
+        var started = ""
+        val state = mutableStateOf(CoachUiState(loading = false,
+            target = CoachTarget("p", "b", "B", upcoming = true)))
+        compose.setContent {
+            TrainPilotTheme(com.example.ui.theme.TrainPilotPalettes.getById(40)) {
+                StudioCoachNextTrainingCard(state.value, { p, d, _ -> started = "$p:$d" }, {})
+            }
+        }
+        compose.onNodeWithTag("studio_coach_start_target").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals("p:b", started); state.value = state.value.copy(loading = true) }
+        compose.onNodeWithTag("studio_coach_start_target").assertIsNotEnabled()
+    }
+
     @Test fun explicitUpcomingDayStartUsesCanonicalStartCallback() {
         var starts = 0
         var workoutPage = 0

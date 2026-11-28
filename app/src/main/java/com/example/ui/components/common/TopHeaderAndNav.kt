@@ -129,6 +129,15 @@ fun TrainPilotGlobalTopHeaderAndNav(
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
     var showLangMenu by remember { mutableStateOf(false) }
+    // A settings overlay takes precedence over its retained origin tab. The two
+    // tracks have independent row coordinates, but only the active row owns a drop.
+    val shortcutIndex = when {
+        currentSubScreen == SubScreen.SETTINGS_MAIN -> 3
+        currentTab == MainTab.COACH || currentSubScreen == SubScreen.COACH_DETAIL -> 0
+        currentTab == MainTab.LOG -> 1
+        currentTab == MainTab.CALENDAR || currentSubScreen == SubScreen.CALENDAR_PLANNER -> 2
+        else -> -1
+    }
 
     Box(Modifier.fillMaxWidth()) {
     if (palette.isLiquidGlass) {
@@ -191,8 +200,33 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     }
                 }
 
-                // Labelled shortcuts followed by icon-only actions.
-                Row(
+                // Liquid shortcuts share the same header material and spring as the five-tab row.
+                // Keep the brand outside the track and retain the original legacy controls verbatim.
+                if (palette.isLiquidGlass) {
+                    val shape = RoundedCornerShape(50)
+                    val track = if (palette.glassEffectsActive(LocalGlassOpticsEnabled.current))
+                        remember { GlassPillTrack() } else null
+                    val labels = listOf(strings.navCoach, strings.navLog, strings.navCalendar, strings.settingsTitle)
+                    val icons = listOf(TrainPilotCoachIcon, Icons.Default.Description, Icons.Default.CalendarMonth, Icons.Default.Settings)
+                    val tags = listOf("top_bar_coach_button", "top_bar_journal_button", "top_bar_calendar_button", "top_bar_settings_button")
+                    val actions = listOf<() -> Unit>(
+                        { onSelectTab(MainTab.COACH) }, { onSelectTab(MainTab.LOG) },
+                        { onSelectTab(MainTab.CALENDAR) }, onOpenSettings)
+                    Box(Modifier.width(214.dp)
+                        .glassHeaderControl(palette, shape, GlassMaterialRole.Navigation)
+                        .testTag("top_shortcut_track").padding(2.dp)) {
+                        if (track != null) GlassSelectionPill(track, shortcutIndex, shape, palette, selection.border)
+                        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).selectableGroup(),
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            labels.forEachIndexed { index, label ->
+                                TopNavPillItem(label, icons[index], shortcutIndex == index, actions[index],
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                                    testTag = tags[index], compact = true, pillTrack = track, pillIndex = index,
+                                    iconOnly = index >= 2, sharedGlassRow = true)
+                            }
+                        }
+                    }
+                } else Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
@@ -283,7 +317,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 isWorkoutTabSelected(currentTab, currentSubScreen),
                 currentTab == MainTab.PROGRESS && currentSubScreen == SubScreen.NONE,
                 currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE
-            )
+            ).map { it && (!palette.isLiquidGlass || shortcutIndex < 0) }
             val trackShape = RoundedCornerShape(50)
             val navRow: @Composable () -> Unit = {
             Row(
@@ -374,7 +408,9 @@ internal fun TopNavPillItem(
     compact: Boolean = false,
     /** Non-null: a shared [GlassSelectionPill] paints the selection; the item stays transparent. */
     pillTrack: GlassPillTrack? = null,
-    pillIndex: Int = -1
+    pillIndex: Int = -1,
+    iconOnly: Boolean = false,
+    sharedGlassRow: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
@@ -386,7 +422,7 @@ internal fun TopNavPillItem(
     val glowModifier = if (selected && !glass) Modifier.trainPilotSoftGlow(palette.primary, legacyShape) else Modifier
     val fill = if (glass) Color.Transparent else if (selected) selection.surface else palette.surface
     val source = remember { MutableInteractionSource() }
-    val ownGlass = !hosted && (selected || compact)
+    val ownGlass = !hosted && (selected || (compact && !sharedGlassRow))
     val observeDrag = if (hosted && selected && rememberGlassMotionEnabled()) pillTrack?.drag?.observe() ?: Modifier else Modifier
     val selectedModifier = if (glass) observeDrag.trainPilotPressIndication(itemShape, source)
         .selectable(selected, interactionSource = source,
@@ -421,10 +457,11 @@ internal fun TopNavPillItem(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = if (iconOnly) label else null,
                 tint = if (selected) selection.foreground else palette.textSecondary,
-                modifier = Modifier.size(if (compact) 16.dp else 18.dp)
+                modifier = Modifier.size(if (iconOnly) 20.dp else if (compact) 16.dp else 18.dp)
             )
+            if (!iconOnly) {
             Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
             val labelStyle = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
@@ -435,6 +472,7 @@ internal fun TopNavPillItem(
                 minSize = 8.sp, textAlign = TextAlign.Center)
             else Text(label, style = labelStyle, color = labelColor, maxLines = 2,
                 textAlign = TextAlign.Center, softWrap = true, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
