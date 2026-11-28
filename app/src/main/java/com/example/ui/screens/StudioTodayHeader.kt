@@ -90,7 +90,12 @@ internal fun StudioTodaySyncFeedback(state: TrainPilotUiState, tag: String, onRe
         if (outcome == "RUNNING") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = color)
         else Icon(if (outcome == "SUCCESS") Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
             null, tint = color, modifier = Modifier.size(17.dp))
-        Text(message, color = color, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(message, color = color, style = MaterialTheme.typography.labelSmall)
+            if (error && state.healthSyncMessage.isNotBlank())
+                Text(state.healthSyncMessage, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
         if (error) com.repforge.app.ui.theme.TrainPilotTextButton(onClick = onRefresh,
             modifier = Modifier.testTag("${tag}_today_sync_retry")) {
             Text(statusText(state.language, "Újra", "Retry", "Erneut", "Reîncearcă"))

@@ -1,6 +1,8 @@
 package com.example
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
@@ -68,6 +70,26 @@ class HomeCompactStatusRegressionTest {
         assertTrue("Coach should fit without scrolling at default size", card.getUnclippedBoundsInRoot().bottom <= viewport.bottom)
         compose.onNodeWithTag("home_coach_summary", useUnmergedTree = true).assertTextContains("friss adat", substring = true)
         card.performClick(); assertEquals(1, coach)
+    }
+    @Test fun syncFeedbackUsesActualOutcomeAndRetry() {
+        var state by androidx.compose.runtime.mutableStateOf(TrainPilotUiState(language = AppLanguage.HU))
+        var retries = 0
+        compose.mainClock.autoAdvance = false
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.StudioTodaySyncFeedback(state, "home") { retries++ }
+        } }
+        compose.onNodeWithTag("home_today_sync_result").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText("Frissítés…").assertExists()
+        compose.runOnIdle { state = state.copy(healthSyncBusy = false, healthSyncFailed = true, healthSyncOutcome = "FAILED") }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText("Szinkron sikertelen").assertExists()
+        compose.onNodeWithTag("home_today_sync_retry").performClick()
+        compose.runOnIdle { assertEquals(1, retries); state = state.copy(healthSyncFailed = false, healthSyncOutcome = "SUCCESS") }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText("Mai állapot frissítve").assertExists()
+        compose.onNodeWithTag("home_today_sync_retry").assertDoesNotExist()
     }
     @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {
         val state = TrainPilotUiState(todayPulseReading = PulseDayReading(
