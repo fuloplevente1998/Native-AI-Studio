@@ -103,24 +103,25 @@ internal fun Modifier.kyantGlass(
     pressSource: MutableInteractionSource? = null,
     minimumBlurDp: Float = 0f,
     showRim: Boolean = true,
-    chromeCoat: Color? = null
+    chromeCoat: Color? = null,
+    pinnedRefraction: Boolean = false
 ): Modifier {
     val density = LocalDensity.current
     val spec = remember(role, palette.glassClarity) { KyantMaterialSpec.forRole(role, palette.glassClarity) }
     if (!spec.usesBackdrop) return if (showRim) trainPilotGlassRim(palette, shape) else this
     val clarity = palette.glassClarity
     val scale = if (scene.samplesContent) spec.colorScale else spec.sceneScale
-    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim) {
+    val effects = remember(spec, density, shape, clarity, scale, minimumBlurDp, showRim, pinnedRefraction) {
         val filter = ColorMatrixColorFilter(ColorMatrix(glassVibrancyMatrix(spec.saturation, scale)))
         val blurPx = with(density) { maxOf(spec.blurDp, minimumBlurDp).dp.toPx() }
-        val height = with(density) { spec.lensHeightDp.dp.toPx() }
-        val amount = with(density) { spec.lensAmountDp.dp.toPx() }
+        val height = with(density) { (if (pinnedRefraction) maxOf(14f, spec.lensHeightDp * 1.25f) else spec.lensHeightDp).dp.toPx() }
+        val amount = with(density) { (if (pinnedRefraction) maxOf(22f, spec.lensAmountDp * 1.45f) else spec.lensAmountDp).dp.toPx() }
         val block: com.kyant.backdrop.BackdropEffectScope.() -> Unit = {
             colorFilter(filter)
             blur(blurPx)
             if (showRim && Build.VERSION.SDK_INT >= 33 && spec.usesLens && this.shape is CornerBasedShape && size.minDimension > 1f) {
                 lens(height.coerceAtMost(size.minDimension / 2f), amount,
-                    depthEffect = role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
+                    depthEffect = pinnedRefraction || role == GlassMaterialRole.Button || role == GlassMaterialRole.Selection || clarity > 50,
                     chromaticAberration = clarity > 60)
             }
         }
