@@ -282,7 +282,7 @@ fun TrainPilotViewModel.togglePrimaryHealthSource() {
     }
 }
 
-fun TrainPilotViewModel.updateHealthSyncStatus(busy: Boolean, partial: Boolean = false, failed: Boolean = false, message: String) {
+fun TrainPilotViewModel.updateHealthSyncStatus(busy: Boolean, partial: Boolean = false, failed: Boolean = false, message: String, outcome: String = "") {
     _uiState.update { it.copy(healthSyncBusy = busy, healthSyncPartial = partial,
-        healthSyncFailed = failed, healthSyncMessage = message) }
+        healthSyncFailed = failed, healthSyncMessage = message, healthSyncOutcome = outcome) }
 }

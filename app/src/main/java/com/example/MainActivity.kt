@@ -1072,6 +1072,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         }
                                     },
                                     onOpenQuickWorkout = { viewModel.openQuickWorkoutSheet(0) },
+                                    onTriggerHealthSync = { nativeHealth.syncTodayFromHome(activity) },
                                     onOpenWeeklyGoals = { viewModel.openHealthAndExpand(weeklyGoals = true) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                                     onOpenHealthJournal = { focus ->

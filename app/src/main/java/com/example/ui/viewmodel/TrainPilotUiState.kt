@@ -264,6 +264,7 @@ data class TrainPilotUiState(
     val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
     val healthSyncMessage: String = "", val healthSyncBusy: Boolean = false,
     val healthSyncPartial: Boolean = false, val healthSyncFailed: Boolean = false,
+    val healthSyncOutcome: String = "",
     val samsungGrantedCount: Int = -1, val samsungPermissionCount: Int = com.repforge.app.SamsungHealthRepository.PERMISSION_KEYS.size,
     val lastHealthReadLabel: String = "—",
     val samsungEnergyScore: Int = 0,

@@ -554,6 +554,7 @@ fun HealthTabScreen(
                             expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
                             if (key == "pulse") onToggleHealthSection("pulse")
                         }
+                        if (layout.draft == null) StudioTodaySyncFeedback(uiState, "health", onTriggerHealthSync)
 
                     }
                 }

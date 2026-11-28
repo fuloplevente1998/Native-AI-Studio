@@ -46,12 +46,13 @@ class HomeCompactStatusRegressionTest {
             ))
         var coach = 0
         var planner = 0
+        var sync = 0
         compose.setContent { TrainPilotTheme {
             Box(Modifier.size(393.dp, 680.dp).clipToBounds().testTag("home_viewport")) {
                 HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                     onOpenWatchAndSync = {},
-                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ })
+                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onTriggerHealthSync = { sync++ })
             }
         } }
         compose.onNodeWithTag("home_personal_planner_mini_card").assertIsDisplayed().performClick()
@@ -59,6 +60,9 @@ class HomeCompactStatusRegressionTest {
         for (key in listOf("sleep", "calories", "pulse", "steps", "workout", "recovery"))
             compose.onNodeWithTag("home_today_$key").assertIsDisplayed()
         compose.onNodeWithTag("home_today_pulse").assertTextContains("61 bpm")
+        compose.onNodeWithTag("home_today_date").assertIsDisplayed()
+        compose.onNodeWithTag("home_today_header_sync").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, sync) }
         val viewport = compose.onNodeWithTag("home_viewport").getUnclippedBoundsInRoot()
         val card = compose.onNodeWithTag("home_coach_advice_card").assertIsDisplayed()
         assertTrue("Coach should fit without scrolling at default size", card.getUnclippedBoundsInRoot().bottom <= viewport.bottom)
