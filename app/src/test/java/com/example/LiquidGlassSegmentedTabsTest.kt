@@ -53,4 +53,33 @@ class LiquidGlassSegmentedTabsTest {
         compose.onNodeWithTag("scroll_track_7").performScrollTo().performClick().assertIsSelected()
         compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
     }
+
+    @Test fun sharedTrackRetainsSpringTravelAcrossHeaderRecomposition() {
+        val track = com.example.ui.components.GlassPillTrack()
+        var selected by mutableIntStateOf(0)
+        var generation by mutableIntStateOf(0)
+        compose.setContent {
+            TrainPilotTheme(TrainPilotPalettes.getById(34)) {
+                key(generation) {
+                    LiquidSegmentedTabs(listOf("Exercises", "Cardio", "Steps"), selected,
+                        { selected = it }, "recreated_track", sharedTrack = track) { _, text, _ -> Text(text) }
+                }
+            }
+        }
+        compose.waitForIdle()
+        val before = compose.runOnIdle { track.left.value }
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.runOnIdle { selected = 2; generation++ }
+            compose.mainClock.advanceTimeBy(64)
+            val moving = compose.runOnIdle { track.left.value }
+            val destination = compose.runOnIdle { requireNotNull(track.bounds[2]).first }
+            assertTrue("The retained pill should not snap to the new slot", moving < destination)
+            assertTrue("The retained spring should advance", moving > before)
+        } finally { compose.mainClock.autoAdvance = true }
+        compose.waitForIdle()
+        compose.runOnIdle { assertEquals(requireNotNull(track.bounds[2]).first, track.left.value, 1f) }
+        compose.onNodeWithTag("recreated_track_2").assertIsSelected()
+        compose.onAllNodesWithTag("glass_selection_pill", useUnmergedTree = true).assertCountEquals(1)
+    }
 }
