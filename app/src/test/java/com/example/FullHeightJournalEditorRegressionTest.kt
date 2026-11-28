@@ -177,7 +177,7 @@ class FullHeightJournalEditorRegressionTest {
         button.performClick()
         compose.runOnIdle {
             assertEquals(9, state.draft.exercises.single().sets.size)
-            assertEquals("set-1", state.draft.exercises.single().sets.first().setId)
+            assertEquals(1, state.draft.exercises.single().sets.first().originalIndex)
             liquid = false
         }
         list.performScrollToNode(hasTestTag("journal_editor_remove_set_0_0"))
