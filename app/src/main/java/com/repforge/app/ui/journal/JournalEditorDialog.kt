@@ -155,11 +155,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 JournalEditorPanel {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                        com.repforge.app.ui.theme.TrainPilotNegativeButton(contentPadding = PaddingValues(8.dp), shape = RoundedCornerShape(10.dp), onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
+                                        com.example.ui.components.TrainPilotRedCloseButton(
+                                            onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
                                             enabled = !state.saving && draft.exercises.size > 1,
-                                            modifier = Modifier.size(48.dp).testTag("journal_editor_remove_exercise_$e")) {
-                                            Icon(Icons.Default.Close, text.getString(R.string.journal_edit_remove))
-                                        }
+                                            size = 38.dp, testTag = "journal_editor_remove_exercise_$e",
+                                            closeDescription = text.getString(R.string.journal_edit_remove))
                                 }
                                 com.example.ui.components.ExerciseFeedbackControl(
                                     effort = exercise.effort, note = exercise.note, language = language,
@@ -183,11 +183,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                                 Checkbox(set.done, onCheckedChange = null, enabled = !state.saving)
                                                 Text(text.getString(R.string.journal_edit_done), style = MaterialTheme.typography.labelMedium)
                                             }
-                                            com.repforge.app.ui.theme.TrainPilotNegativeButton(contentPadding = PaddingValues(8.dp), shape = RoundedCornerShape(10.dp), onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
+                                            com.example.ui.components.TrainPilotRedCloseButton(
+                                                onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
                                                 enabled = !state.saving && exercise.sets.size > 1,
-                                                modifier = Modifier.size(48.dp).testTag("journal_editor_remove_set_${e}_$s")) {
-                                                Icon(Icons.Default.Close, text.getString(R.string.journal_edit_remove))
-                                            }
+                                                size = 38.dp, testTag = "journal_editor_remove_set_${e}_$s",
+                                                closeDescription = text.getString(R.string.journal_edit_remove))
                                         }
                                         fun shortLabel(hu: String, en: String, de: String, ro: String) = when (language) { "en" -> en; "de" -> de; "ro" -> ro; else -> hu }
                                         val customLabel = when (language) { "en" -> "Custom"; "de" -> "Eigener Wert"; "ro" -> "Personalizat"; else -> "Egyéni" }
