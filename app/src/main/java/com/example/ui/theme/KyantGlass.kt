@@ -72,14 +72,15 @@ internal fun KyantScene?.forThisWindow(): KyantScene? {
 @Composable
 internal fun rememberKyantSceneBackdrop(
     palette: TrainPilotPalette,
-    scene: GlassSceneState? = LocalGlassScene.current
+    scene: GlassSceneState? = LocalGlassScene.current,
+    cap: Float = GlassScene.lumaCap
 ): LayerBackdrop {
-    val onDraw: ContentDrawScope.() -> Unit = remember(palette, scene) { { drawKyantScene(palette, scene) } }
+    val onDraw: ContentDrawScope.() -> Unit = remember(palette, scene, cap) { { drawKyantScene(palette, scene, cap) } }
     return rememberLayerBackdrop(rememberGraphicsLayer(), onDraw)
 }
 
-private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?) =
-    drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
+private fun DrawScope.drawKyantScene(palette: TrainPilotPalette, scene: GlassSceneState?, cap: Float) =
+    drawGlassSceneCompose(palette, scene, Offset.Zero, size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f), cap)
 
 /**
  * One root scene, drawn as an empty sibling behind the scaffold, never around its content.
