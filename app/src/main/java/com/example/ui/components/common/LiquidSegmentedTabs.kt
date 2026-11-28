@@ -36,12 +36,14 @@ internal fun LiquidSegmentedTabs(
     protectScrollingContent: Boolean = false,
     scrollable: Boolean = false,
     enabled: Boolean = true,
+    sharedTrack: GlassPillTrack? = null,
     label: @Composable RowScope.(Int, String, Boolean) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
     val selection = remember(palette) { palette.selectionColors() }
     val shape = RoundedCornerShape(50)
-    val track = remember { GlassPillTrack() }
+    val localTrack = remember { GlassPillTrack() }
+    val track = sharedTrack ?: localTrack
     val scroll = if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier
     Box(modifier.fillMaxWidth().then(scroll)
         .then(if (protectScrollingContent) Modifier.glassHeaderMaterial(palette, shape, GlassMaterialRole.Navigation)
