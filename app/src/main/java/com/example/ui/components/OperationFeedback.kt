@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalette
 
-internal enum class OperationFeedbackKind {
+enum class OperationFeedbackKind {
     RUNNING, SUCCESS, PARTIAL, FAILED, CANCELLED, INFORMATION
 }
 

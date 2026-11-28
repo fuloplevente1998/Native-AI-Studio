@@ -101,9 +101,10 @@ fun StudioGoogleCloudSyncCard(
         }
     )
 
+    val feedback = settingsState.googleActionFeedback
     LaunchedEffect(settingsState.statusMessage, compact) {
         val msg = settingsState.statusMessage
-        if (!compact && !msg.isNullOrBlank()) {
+        if (!compact && !msg.isNullOrBlank() && msg != feedback?.message) {
             onShowBanner(msg)
         }
     }
@@ -129,7 +130,13 @@ fun StudioGoogleCloudSyncCard(
         }
     }
     val connected = gs.connectedEmail.isNotEmpty()
-    val feedback = settingsState.googleActionFeedback
+    var showActionResult by remember(feedback) { mutableStateOf(true) }
+    LaunchedEffect(feedback) {
+        if (feedback?.failed == false) {
+            kotlinx.coroutines.delay(3500)
+            showActionResult = false
+        }
+    }
     val driveFailMessage = feedback?.takeIf { it.failed && it.action == "drive" }?.message ?: autoFailures.first.takeIf { it.isNotBlank() }
     val calendarFailMessage = feedback?.takeIf { it.failed && it.action == "calendar" }?.message ?: autoFailures.second.takeIf { it.isNotBlank() }
     val driveStatus = cloudServiceStatus(connected, gs.lastDriveSyncIso, driveFailMessage != null, expectedAuto = autoSync.drive)
@@ -349,7 +356,7 @@ fun StudioGoogleCloudSyncCard(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
-            if (!compact && !gs.isBusy && !gs.errorMessage.isNullOrBlank()) {
+            if (!compact && !gs.isBusy && feedback == null && !gs.errorMessage.isNullOrBlank()) {
                 Surface(shape = RoundedCornerShape(10.dp), color = palette.danger.copy(alpha = 0.14f),
                     modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")) {
                     OperationFeedbackLine(OperationFeedbackKind.FAILED, gs.errorMessage,
@@ -357,6 +364,15 @@ fun StudioGoogleCloudSyncCard(
                 }
             }
                 }
+            }
+
+            if (!compact && !gs.isBusy && showActionResult && feedback != null &&
+                !(cloudExpanded && connected && feedback.failed && feedback.action in listOf("drive", "calendar"))
+            ) {
+                OperationFeedbackLine(
+                    if (feedback.failed) OperationFeedbackKind.FAILED else OperationFeedbackKind.SUCCESS,
+                    feedback.message, Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
             }
 
             NativeGoogleMaintenanceFeedback(

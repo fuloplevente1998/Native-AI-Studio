@@ -15,7 +15,7 @@ import com.example.model.AppLanguage
 import com.example.model.MainTab
 import com.example.model.SubScreen
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
-import com.example.ui.components.common.pillReflection
+import com.example.ui.components.pillReflection
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.LocalGlassOpticsEnabled
 import com.example.ui.theme.TrainPilotTheme

@@ -324,7 +324,7 @@ User requested completing the Coach page material (including start workout) and 
 
 - **1.** [Útvonalaudit](docs/LIQUID_FINAL_AUDIT.md). `CalendarPlannerScreen` és `GoogleCloudSyncCard` elsődleges műveletei a közös Liquid gombot használják.
 - **3.** `GlassSelectionPill` a meglévő rugó és drag értékéből, az ovális clipben fest korlátozott csúcsfényt. A meglévő optikai és mozgási kapuk érvényesek.
-- **4.** `OperationFeedback`, `StudioTodayHeader`, `BackupRestoreScreen`, `GoogleCloudSyncCard`, `JournalEditorDialog` és a root banner közös jelzést használ. A régi szöveges producerek semlegesek maradnak egységes, commit-alapú eredményszerződés hiányában.
+- **4.** `OperationFeedback`, `StudioTodayHeader`, `BackupRestoreScreen`, `GoogleCloudSyncCard`, `JournalEditorDialog` és a root banner közös jelzést használ. A napló mentése és törlése, valamint a programkönyvtár módosítása a tárolási visszaigazolás után ad sikerjelzést. A szabad szöveges producerek semlegesek maradnak.
 - **6.** `StudioCoachDomainPanels` teljes, tördelhető gyakorlatnevet és külön tördelhető ajánlást ad. Regresszió lefedi a layoutot, lenyitást, indítást és az önálló görgetést.
 - **8.** [Teljesítményaudit és fizikai mérési terv](docs/LIQUID_PERFORMANCE_AUDIT.md). A Coach közös indoka újrafelhasználható és a csepp effektje a meglévő rajzolásban fut. Fizikai látvány, FPS, memória és energia ellenőrzése nyitott.
 - **2, 5, 7.** Kizárva a felhasználói kérés alapján.

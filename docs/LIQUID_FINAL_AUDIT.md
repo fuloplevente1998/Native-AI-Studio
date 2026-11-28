@@ -25,5 +25,5 @@ A Coach mellett a program-, edzés-, fejlődés-, napló- és könyvtárlisták 
 
 - Mai állapot: futó, siker, részleges, hiba és megszakítás a szinkron eredményéből. Az újrapróbálás és az átmeneti sikerablak meglévő életciklusa megmarad.
 - Biztonsági mentés: futó és visszaigazolt helyi eredmény, tartós hiba és fájlválasztás megszakítása. A felhőnél a felület a már meglévő szolgáltatásonkénti eredményeket használja.
-- Napló: mentés közben futó jelzés, érvénytelen adat és sikertelen mentés tartós hibajelzése. A mentés és a törlés visszatérési, megerősítési és tárolási útja változatlan.
-- Általános root üzenetek: ahol a producer csak szöveget ad (például több naptár-, program- és edzésműveletnél), az ikon semleges. A teljes producer-szintű migrációhoz műveletszintű típusok és visszaigazolások szükségesek; szöveg alapján a felület nem következtet sikerre.
+- Napló: futó és hibaállapot a szerkesztőben és a törlésdialogban. Mentés és törlés sikerjelzése a natív tárolási művelet visszaigazolása után jelenik meg. Programkönyvtár: a sikert Room-módosítás és visszaolvasás után jelezzük, a hiba elérhető marad bezárásig.
+- Általános root üzenetek: ahol a producer csak szöveget ad (például több naptár- és edzésműveletnél), az ikon semleges. A teljes producer-szintű migrációhoz műveletszintű típusok és visszaigazolások szükségesek; szöveg alapján a felület nem következtet sikerre.

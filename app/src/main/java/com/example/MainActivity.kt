@@ -146,6 +146,7 @@ import com.example.ui.viewmodel.navigateBack
 import com.example.ui.viewmodel.navigateToSubScreen
 import com.example.ui.viewmodel.nextActiveExercise
 import com.example.ui.viewmodel.onLoggedWorkoutDeleted
+import com.example.ui.viewmodel.onLoggedWorkoutSaved
 import com.example.ui.viewmodel.onStudioCustomExerciseDeleted
 import com.example.ui.viewmodel.openActiveExerciseLibrary
 import com.example.ui.viewmodel.openCalendarEventWorkoutDetail
@@ -336,8 +337,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         viewModel.navigateBack()
     }
 
-    LaunchedEffect(uiState.statusBannerMessage) {
-        if (uiState.statusBannerMessage != null) {
+    val bannerKind = uiState.currentOperationBanner?.kind ?: com.example.ui.components.OperationFeedbackKind.INFORMATION
+    LaunchedEffect(uiState.statusBannerMessage, bannerKind) {
+        if (uiState.statusBannerMessage != null && bannerKind != com.example.ui.components.OperationFeedbackKind.FAILED) {
             delay(3200)
             viewModel.clearBannerMessage()
         }
@@ -896,7 +898,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenHealthTab = { viewModel.openHealthAndExpand(connect = true) },
                             deleteActions = {
                                 com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
-                                    uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
+                                    uiState.language.name.lowercase(), onSaved = { viewModel.onLoggedWorkoutSaved(context) })
                                 com.example.ui.components.StudioLoggedWorkoutDeleteActions(
                                     uiState.selectedLogWorkoutId, viewModel::onLoggedWorkoutDeleted)
                             },
@@ -1340,7 +1342,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         com.example.ui.components.OperationFeedbackMark(
-                            com.example.ui.components.OperationFeedbackKind.INFORMATION
+                            bannerKind
                         )
                         Text(
                             text = uiState.statusBannerMessage.orEmpty(),

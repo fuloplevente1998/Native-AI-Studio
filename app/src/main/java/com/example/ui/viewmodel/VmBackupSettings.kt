@@ -1,5 +1,7 @@
 package com.example.ui.viewmodel
 
+import com.example.ui.components.OperationFeedbackKind
+
 import com.example.model.AppLanguage
 import com.example.ui.theme.TrainPilotPalettes
 import kotlinx.coroutines.flow.update
@@ -147,12 +149,21 @@ fun TrainPilotViewModel.updatePrivacyChoice(feature: String, enabled: Boolean) {
 
 fun TrainPilotViewModel.updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionAccess = it.permissionAccess.copy(samsungHealthGranted = granted)) } }
 
+data class OperationBanner(val message: String, val kind: OperationFeedbackKind)
+
+internal fun TrainPilotUiState.withOperationBanner(message: String, kind: OperationFeedbackKind) =
+    copy(statusBannerMessage = message, operationBanner = OperationBanner(message, kind))
+
+internal fun TrainPilotViewModel.reportOperation(message: String, kind: OperationFeedbackKind) {
+    _uiState.update { it.withOperationBanner(message, kind) }
+}
+
 fun TrainPilotViewModel.showBannerMessage(message: String) {
-    _uiState.update { it.copy(statusBannerMessage = message) }
+    _uiState.update { it.copy(statusBannerMessage = message, operationBanner = null) }
 }
 
 fun TrainPilotViewModel.clearBannerMessage() {
-    _uiState.update { it.copy(statusBannerMessage = null) }
+    _uiState.update { it.copy(statusBannerMessage = null, operationBanner = null) }
 }
 
 fun TrainPilotViewModel.syncNativeSettings(

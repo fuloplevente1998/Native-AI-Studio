@@ -11,7 +11,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.journal.JournalViewModel
 
 @Composable
@@ -29,7 +28,6 @@ internal fun StudioLoggedWorkoutDeleteActions(workoutId: String, onDeleted: (Str
 internal fun StudioWorkoutDeleteConfirmation(workoutId: String?, onDeleted: (String) -> Unit,
     model: JournalViewModel) {
     val state by model.uiState.collectAsStateWithLifecycle()
-    val palette = LocalTrainPilotPalette.current
     val lang = com.example.localization.LocalTrainPilotStrings.current.language
     fun word(hu: String, en: String, de: String, ro: String) = when (lang) {
         com.example.model.AppLanguage.HU -> hu
@@ -48,15 +46,19 @@ internal fun StudioWorkoutDeleteConfirmation(workoutId: String?, onDeleted: (Str
                 "Das gespeicherte Training sowie zugehörige lokale Fotos und Routen werden dauerhaft gelöscht.",
                 "Antrenamentul salvat și fotografiile și traseele locale aferente vor fi șterse definitiv."
             ))
-            if (state.operationFailed) Text(word(
+            if (state.operationFailed) OperationFeedbackLine(OperationFeedbackKind.FAILED, word(
                 "A törlés nem fejeződött be. Próbáld újra; ha az edzés közben változott, nyisd meg újra.",
                 "Deletion did not complete. Try again; if the workout changed in the meantime, reopen it.",
                 "Das Löschen wurde nicht abgeschlossen. Versuche es erneut; falls das Training geändert wurde, öffne es neu.",
                 "Ștergerea nu s-a finalizat. Încearcă din nou; dacă antrenamentul s-a modificat între timp, redeschide-l."
-            ), color = palette.danger)
+            ))
         } },
         confirmButton = { com.repforge.app.ui.theme.TrainPilotNegativeButton(enabled = !state.deleting,
             onClick = { model.confirmDeleteWorkout(onDeleted) }, modifier = Modifier.testTag("journal_confirm_delete")) {
+            if (state.deleting) {
+                OperationFeedbackMark(OperationFeedbackKind.RUNNING)
+                Spacer(Modifier.width(8.dp))
+            }
             Text(if (state.deleting) word("Törlés…", "Deleting…", "Löschen…", "Se șterge…") else word("Törlés", "Delete", "Löschen", "Șterge"), color = androidx.compose.material3.LocalContentColor.current)
         } },
         dismissButton = { TextButton(enabled = !state.deleting, onClick = model::cancelDeleteWorkout,

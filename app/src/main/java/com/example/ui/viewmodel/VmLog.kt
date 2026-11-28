@@ -93,6 +93,12 @@ fun TrainPilotViewModel.openCalendarEventWorkoutDetail(eventId: String) {
     }
 }
 
+internal fun TrainPilotViewModel.onLoggedWorkoutSaved(context: android.content.Context) {
+    refreshAfterCloudSync(context)
+    reportOperation(tr("Edzés mentve.", "Workout saved.", "Training gespeichert.", "Antrenament salvat."),
+        com.example.ui.components.OperationFeedbackKind.SUCCESS)
+}
+
 fun TrainPilotViewModel.onLoggedWorkoutDeleted(id: String) {
     _uiState.update { state -> state.copy(
         loggedWorkouts = state.loggedWorkouts.filterNot { it.id == id },
@@ -101,6 +107,8 @@ fun TrainPilotViewModel.onLoggedWorkoutDeleted(id: String) {
     if (_uiState.value.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL && _uiState.value.selectedLogWorkoutId.isBlank())
         navigateBack()
     nativeContext?.let(::refreshAfterCloudSync)
+    reportOperation(tr("Edzés törölve.", "Workout deleted.", "Training gelöscht.", "Antrenament șters."),
+        com.example.ui.components.OperationFeedbackKind.SUCCESS)
 }
 
 fun TrainPilotViewModel.updateLoggedWorkoutHealthSources(workoutId: String, wear: Boolean, healthConnect: Boolean) {
