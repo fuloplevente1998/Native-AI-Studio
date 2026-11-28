@@ -4,7 +4,8 @@ import com.example.ui.components.TrainPilotIconButton
 
 import com.example.ui.components.TrainPilotMenuItem
 
-import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.theme.*
+import androidx.compose.ui.graphics.Color
 
 import com.example.ui.components.TrainPilotDropdownMenu as DropdownMenu
 
@@ -30,13 +31,17 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 internal fun JournalSetValueDropdown(value: String, label: String, tag: String, enabled: Boolean,
     choices: List<String>, customLabel: String, onChange: (String) -> Unit) {
     val colors = LocalTrainPilotColors.current
+    val palette = LocalTrainPilotPalette.current
+    val shape = if (palette.isLiquidGlass) RoundedCornerShape(50) else RoundedCornerShape(8.dp)
+    val fill = if (palette.isLiquidGlass) Color.Transparent else colors.card
+    val material = if (palette.isLiquidGlass) Modifier.liquidDropMaterial(palette, shape, GlassMaterialRole.Input) else Modifier
     var expanded by remember(tag, enabled) { mutableStateOf(false) }
     var custom by remember(tag, enabled) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth()) {
         Box {
             if (custom) {
-                Surface(shape = RoundedCornerShape(8.dp), color = colors.card,
-                    border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)), modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = shape, color = fill,
+                    border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)), modifier = Modifier.fillMaxWidth().then(material)) {
                     Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(label, style = MaterialTheme.typography.labelSmall, color = colors.muted, maxLines = 1)
@@ -51,9 +56,9 @@ internal fun JournalSetValueDropdown(value: String, label: String, tag: String, 
                     }
                 }
             } else {
-                Surface(onClick = { expanded = true }, enabled = enabled, shape = RoundedCornerShape(8.dp),
-                    color = colors.card, border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag)) {
+                Surface(onClick = { expanded = true }, enabled = enabled, shape = shape,
+                    color = fill, border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.control(colors.line)),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).then(material).testTag(tag)) {
                     Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(label, style = MaterialTheme.typography.labelSmall, color = colors.muted, maxLines = 1)

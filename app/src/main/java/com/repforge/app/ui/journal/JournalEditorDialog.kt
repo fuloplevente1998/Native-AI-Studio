@@ -32,9 +32,7 @@ import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 import com.repforge.shared.SetEditorRules212
 import java.time.Instant
-import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** Functional editor over a ViewModel-owned isolated draft. Only Save touches Room. */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -48,11 +46,12 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
         LegacyWebViewMigrator.workoutJson(state.opened.detail).optJSONObject("feedback")?.optBoolean("applied") == true
     }
     val original = remember(state.opened) { LegacyWebViewMigrator.workoutJson(state.opened.detail).getJSONArray("exercises") }
-    val format = remember { DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss XXX")
-        .withResolverStyle(java.time.format.ResolverStyle.STRICT) }
-    fun local(value: String) = format.format(Instant.parse(value).atZone(ZoneId.systemDefault()))
-    var started by rememberSaveable(state.opened.detail.workout.id) { mutableStateOf(local(draft.started)) }
-    var finished by rememberSaveable(state.opened.detail.workout.id) { mutableStateOf(local(draft.finished)) }
+    // Keep the exact original Instant (including seconds/fraction/offset) unless the
+    // user explicitly confirms a different local date or time.
+    var started by rememberSaveable(state.opened.detail.workout.id) { mutableStateOf(draft.started) }
+    var finished by rememberSaveable(state.opened.detail.workout.id) { mutableStateOf(draft.finished) }
+    val zone = ZoneId.systemDefault()
+    var picker by rememberSaveable(state.opened.detail.workout.id) { mutableStateOf<String?>(null) }
     var invalid by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
@@ -112,12 +111,12 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                         }
                         item {
                             JournalEditorPanel {
-                                Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted,
-                                    style = MaterialTheme.typography.labelSmall)
-                                JournalEditField(started, { started = it; invalid = false }, text.getString(R.string.journal_edit_started),
-                                    "journal_editor_started", !state.saving, KeyboardType.Text)
-                                JournalEditField(finished, { finished = it; invalid = false }, text.getString(R.string.journal_edit_finished),
-                                    "journal_editor_finished", !state.saving, KeyboardType.Text)
+                                JournalDateTimeField(started, zone, language, text.getString(R.string.journal_edit_started),
+                                    "journal_editor_started", !state.saving, onDate = { picker = "started_date" },
+                                    onTime = { picker = "started_time" })
+                                JournalDateTimeField(finished, zone, language, text.getString(R.string.journal_edit_finished),
+                                    "journal_editor_finished", !state.saving, onDate = { picker = "finished_date" },
+                                    onTime = { picker = "finished_time" })
                             }
                         }
                         item {
@@ -229,13 +228,13 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                     if (invalid || state.failed) Text(text.getString(if (invalid) R.string.journal_edit_invalid else R.string.journal_edit_failed),
                         color = colors.dangerText, modifier = Modifier.testTag("journal_editor_error"))
                     com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = {
-                        val dates = runCatching {
-                            val oldStart = state.opened.detail.workout.started
-                            val oldFinish = state.opened.detail.workout.finished
-                            draft.copy(started = if (started == local(oldStart)) oldStart else OffsetDateTime.parse(started, format).toInstant().toString(),
-                                finished = if (finished == local(oldFinish)) oldFinish else OffsetDateTime.parse(finished, format).toInstant().toString())
-                        }.getOrNull()
-                        if (dates == null) invalid = true else onSave(dates)
+                        val start = Instant.parse(started)
+                        val finish = Instant.parse(finished)
+                        val duration = java.time.Duration.between(start, finish)
+                        // Match the native editor's validation; the repository still revalidates.
+                        if (duration.isNegative || duration.isZero || duration > java.time.Duration.ofHours(24) ||
+                            finish.toEpochMilli() > System.currentTimeMillis() + 60_000L) invalid = true
+                        else onSave(draft.copy(started = started, finished = finished))
                     }, enabled = !state.saving, shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_save")) {
                         Text(text.getString(if (state.saving) R.string.journal_edit_saving else R.string.journal_edit_save))
@@ -245,6 +244,20 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                         Text(text.getString(R.string.journal_cancel))
                     }
                 }
+        }
+        // Child sheet is in the editor window's composition, preserving the original draft and
+        // using the existing window-local frozen Liquid material rather than a new capture.
+        picker?.let { target ->
+            val start = target.startsWith("started")
+            JournalDateTimeSheet(
+                value = if (start) started else finished, zone = zone, language = language,
+                chooseDate = target.endsWith("date"),
+                onDismiss = { picker = null },
+                onConfirm = { chosen ->
+                    if (start) started = chosen else finished = chosen
+                    invalid = false
+                    picker = null
+                })
         }
     }
     if (confirmDiscard && !savingNow) {
@@ -269,15 +282,6 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                 }
             })
     }
-}
-
-@Composable
-private fun JournalEditField(value: String, change: (String) -> Unit, label: String, tag: String,
-    enabled: Boolean, keyboard: KeyboardType = KeyboardType.Decimal) {
-    com.example.ui.components.TrainPilotTextField(value, change, label = { Text(label) }, singleLine = true, enabled = enabled,
-        shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
-        colors = journalEditorFieldColors(),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().testTag(tag))
 }
 
 /** Three compact controls fit normal phones; larger text and narrow widths wrap safely. */

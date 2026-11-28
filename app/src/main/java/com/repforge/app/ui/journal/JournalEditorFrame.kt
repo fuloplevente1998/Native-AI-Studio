@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 import com.repforge.app.ui.theme.trainPilotFrame
+import com.example.ui.theme.*
+import androidx.compose.ui.graphics.Color
 
 import android.graphics.Rect
 import androidx.compose.foundation.background
@@ -27,6 +29,7 @@ import com.repforge.app.ui.theme.trainPilotSoftGlow
 internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> Unit,
     topSafeAreaPx: Int = 0, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
+    val palette = LocalTrainPilotPalette.current
     val density = LocalDensity.current
     val view = LocalView.current
     var bounds by remember(view) { mutableStateOf<List<Int>?>(null) }
@@ -49,14 +52,16 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
         val top = with(density) { (viewport?.topInset ?: 0).toDp() }
         val height = viewport?.let { with(density) { it.height.toDp() }.coerceAtMost(maxHeight) } ?: maxHeight
         val shape = RoundedCornerShape(20.dp)
-        Surface(color = colors.card, shape = shape,
+        Surface(color = if (palette.isLiquidGlass) Color.Transparent else colors.card, shape = shape,
             modifier = Modifier.align(Alignment.TopCenter).offset(y = top).height(height)
                 .padding(horizontal = 8.dp, vertical = 6.dp).widthIn(max = 620.dp).fillMaxWidth()
-                .trainPilotSoftGlow(colors.accent, shape)
+                .then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Panel)
+                    else Modifier.trainPilotSoftGlow(colors.accent, shape))
                 .trainPilotFrame(TrainPilotFrames.page(colors.line, colors.accent), shape)
                 .testTag("journal_editor_visible_viewport")) {
-            Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-                colors.accent.copy(alpha = 0.06f), colors.card, colors.card2))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.fillMaxSize().then(if (palette.isLiquidGlass) Modifier else
+                Modifier.background(Brush.verticalGradient(listOf(colors.accent.copy(alpha = 0.06f), colors.card, colors.card2))))
+                .padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     HorizontalDivider(Modifier.width(32.dp).height(4.dp), color = colors.muted.copy(alpha = 0.5f))
                 }
@@ -75,10 +80,13 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
 @Composable
 internal fun JournalEditorPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
-    Surface(modifier = modifier, color = colors.card2, shape = RoundedCornerShape(12.dp),
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(12.dp)
+    Surface(modifier = modifier.then(if (palette.isLiquidGlass) Modifier.trainPilotGlassRim(palette, shape, GlassMaterialRole.Tile) else Modifier),
+        color = if (palette.isLiquidGlass) palette.glassTile(palette.surfaceCard) else colors.card2, shape = shape,
         border = com.repforge.app.ui.theme.trainPilotFrameStroke(TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, colors.line))) {
-        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
-            colors.accent.copy(alpha = 0.05f), colors.card2))).padding(8.dp),
+        Column(Modifier.fillMaxWidth().then(if (palette.isLiquidGlass) Modifier else
+            Modifier.background(Brush.linearGradient(listOf(colors.accent.copy(alpha = 0.05f), colors.card2)))).padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
     }
 }
