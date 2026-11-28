@@ -260,3 +260,8 @@ Baseline main `8515d048fb437a8f485eebfc921eb612ad8ebe48`, signed run 46080732648
 
 
 Integration: both #438 and #439 independently passed exact-head CI and raw XML verification (1366 and 1370 unique tests respectively, no failures/errors/skips). Combined tree requires its own CI before final merge; release remains gated on trusted main.
+
+
+## Device feedback after #439 (2026-11-28)
+
+Main b4fc1de8: #902 and signed #175 succeeded, four packages delivered. User screenshots show that the actual Studio WeightLogBody and LogWorkoutDetailScreen were missed by the earlier native-host conversions. Both now reuse LiquidSegmentedTabs/GlassSelectionPill on Liquid 33–40; the existing non-Liquid rows and callbacks stay intact. QuickWorkoutHubSheet uses one full-height safe-area viewport for all three modes, both theme families; the outdoor list still scrolls and GPS continuation is unchanged. JournalEditorDialog exercise/set removal reuses the existing calendar-style TrainPilotRedCloseButton (Liquid 48×28dp capsule, conventional 38×38dp rounded square, both 48dp touch target, original negative colors/labels and disabled guards). Shared X now visibly dims when disabled. No changes to data model, save/remove logic, navigation, versions or signing. Four regression cases cover actual screen selection callbacks, legacy branches, sheet size and GPS callback, and removal geometry/guards with both themes. Full PR CI and physical device verification pending; do not merge without user acceptance.
